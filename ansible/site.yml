@@ -1,0 +1,31 @@
+---
+- name: Converge all machines
+  hosts: all
+  become: true
+
+  roles:
+    - base
+
+    - role: packages_void
+      when: "'void' in group_names"
+
+    - role: packages_ubuntu
+      when: "'ubuntu' in group_names"
+
+    - role: services_runit
+      when: "'void' in group_names"
+
+    - role: services_systemd
+      when: "'ubuntu' in group_names"
+
+    - role: profile_desktop_i3
+      when: "'desktop' in group_names"
+
+    - role: profile_workstation_gnome
+      when: "'workstation' in group_names"
+
+    - role: profile_server
+      when: "'server' in group_names"
+
+    - role: dotfiles
+      become: false

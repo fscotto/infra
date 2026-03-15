@@ -1,0 +1,16 @@
+---
+- name: Copy .bashrc
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/common/.bashrc"
+    dest: "{{ user_home }}/.bashrc"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0644"
+
+- name: Copy .bash_profile
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/common/.bash_profile"
+    dest: "{{ user_home }}/.bash_profile"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0644"

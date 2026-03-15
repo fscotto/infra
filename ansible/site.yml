@@ -1,4 +1,10 @@
 ---
+- hosts: all
+  become: true
+
+  roles:
+    - dotfiles_common
+
 - hosts: void
   become: true
 

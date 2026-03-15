@@ -8,6 +8,7 @@ void_packages_base:
   - xorg-fonts
   - elogind
   - NetworkManager
+  - network-manager-applet
   - xdg-desktop-portal
   - xdg-desktop-portal-gtk
   - flatpak
@@ -18,6 +19,7 @@ void_packages_base:
   - seahorse
   - socklog
   - socklog-void
+  - void-repo-nonfree
 
 enabled_services:
   - dbus

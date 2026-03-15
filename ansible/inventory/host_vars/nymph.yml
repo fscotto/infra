@@ -2,10 +2,13 @@
 hostname: nymph
 
 host_packages:
+  - nvidia
+  - mesa-dri
+  - vulkan-loader
+  - mesa-vulkan-intel
+  - intel-video-accel
   - tlp
   - tlp-rdw
-  - blueman
-  - bluez
 
 host_enabled_services:
   - tlp

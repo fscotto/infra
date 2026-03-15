@@ -28,3 +28,6 @@ profile_packages:
   - fastfetch
   - liberation-fonts-ttf
   - terminus-font
+  - blueman
+  - bluez
+  - libspa-bluetooth

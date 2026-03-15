@@ -1,0 +1,218 @@
+# i3 config for nymph
+
+set $mod Mod4
+set $refresh_i3status killall -SIGUSR1 i3status
+
+font pango:Liberation Mono 10
+
+# Start XDG autostart entries (.desktop), useful on Void for pipewire/wireplumber/etc.
+exec --no-startup-id dex --autostart --environment i3
+exec --no-startup-id gnome-keyring-daemon --start --components=secrets
+exec_always --no-startup-id feh --bg-fill ~/.config/i3/wallpapers/gargantua2.png
+exec_always --no-startup-id ~/.config/i3/scripts/setup-gtk-theme.sh
+exec --no-startup-id /usr/libexec/xdg-desktop-portal
+
+# Audio
+exec --no-startup-id pipewire
+exec --no-startup-id pipewire-pulse
+exec --no-startup-id wireplumber
+
+# Tray services
+exec --no-startup-id dunst
+exec --no-startup-id xfce-polkit
+exec --no-startup-id nm-applet
+exec --no-startup-id blueman-applet
+exec --no-startup-id udiskie --tray --automount
+exec --no-startup-id volumeicon
+exec --no-startup-id xfce4-power-manager
+exec --no-startup-id xfce4-clipman
+
+# Lock before suspend
+exec --no-startup-id xss-lock --transfer-sleep-lock -- ~/.config/i3/scripts/lockscreen
+
+# General behavior
+focus_follows_mouse no
+mouse_warping none
+floating_modifier $mod
+tiling_drag modifier titlebar
+
+# Borders
+default_border pixel 2
+default_floating_border pixel 2
+new_window pixel 2
+new_float pixel 2
+hide_edge_borders none
+
+# vim-like directions
+set $left h
+set $down j
+set $up k
+set $right l
+
+# Terminal
+bindsym $mod+Return exec --no-startup-id /usr/bin/alacritty
+
+# Emergency terminal fallback
+bindsym $mod+Shift+Return exec --no-startup-id xterm
+
+# Launcher
+#bindsym $mod+d exec --no-startup-id "rofi -modi drun,run -show drun"
+bindsym $mod+d exec --no-startup-id "rofi -show drun -theme ~/.config/rofi/config.rasi"
+
+# Audio panel control
+bindsym $mod+Shift+v exec --no-startup-id pavucontrol
+
+# File manager
+bindsym $mod+Shift+f exec thunar
+
+# Manual lock screen
+bindsym $mod+Shift+x exec ~/.config/i3/scripts/lockscreen
+
+# Kill focused window
+bindsym $mod+Shift+q kill
+
+# Screenshot
+bindsym Print exec xfce4-screenshooter
+bindsym Shift+Print exec xfce4-screenshooter -r
+bindsym Alt+Print exec xfce4-screenshooter -w
+
+# Focus
+bindsym $mod+$left focus left
+bindsym $mod+$down focus down
+bindsym $mod+$up focus up
+bindsym $mod+$right focus right
+
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+
+# Move windows
+bindsym $mod+Shift+$left move left
+bindsym $mod+Shift+$down move down
+bindsym $mod+Shift+$up move up
+bindsym $mod+Shift+$right move right
+
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+Down move down
+bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Right move right
+
+# Split
+bindsym $mod+b split h
+bindsym $mod+v split v
+
+# Layouts
+bindsym $mod+f fullscreen toggle
+bindsym $mod+s layout stacking
+bindsym $mod+w layout tabbed
+bindsym $mod+e layout toggle split
+
+# Floating / focus mode
+bindsym $mod+Shift+space floating toggle
+bindsym $mod+space focus mode_toggle
+bindsym $mod+a focus parent
+
+# Scratchpad
+bindsym $mod+Shift+minus move scratchpad
+bindsym $mod+minus scratchpad show
+
+# Volume (PipeWire / PulseAudio compatibility)
+bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +5% && $refresh_i3status
+bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ -5% && $refresh_i3status
+bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ toggle && $refresh_i3status
+bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOURCE@ toggle
+
+# Brightness
+bindsym XF86MonBrightnessUp exec --no-startup-id brightnessctl set +10% && pkill -RTMIN+5 i3blocks
+bindsym XF86MonBrightnessDown exec --no-startup-id brightnessctl set 10%- && pkill -RTMIN+5 i3blocks
+
+# Media keys
+bindsym XF86AudioPlay exec --no-startup-id playerctl play-pause
+bindsym XF86AudioNext exec --no-startup-id playerctl next
+bindsym XF86AudioPrev exec --no-startup-id playerctl previous
+
+# Workspaces
+set $ws1 "1"
+set $ws2 "2"
+set $ws3 "3"
+set $ws4 "4"
+set $ws5 "5"
+set $ws6 "6"
+set $ws7 "7"
+set $ws8 "8"
+set $ws9 "9"
+set $ws10 "10"
+
+bindsym $mod+1 workspace number $ws1
+bindsym $mod+2 workspace number $ws2
+bindsym $mod+3 workspace number $ws3
+bindsym $mod+4 workspace number $ws4
+bindsym $mod+5 workspace number $ws5
+bindsym $mod+6 workspace number $ws6
+bindsym $mod+7 workspace number $ws7
+bindsym $mod+8 workspace number $ws8
+bindsym $mod+9 workspace number $ws9
+bindsym $mod+0 workspace number $ws10
+
+bindsym $mod+Shift+1 move container to workspace number $ws1
+bindsym $mod+Shift+2 move container to workspace number $ws2
+bindsym $mod+Shift+3 move container to workspace number $ws3
+bindsym $mod+Shift+4 move container to workspace number $ws4
+bindsym $mod+Shift+5 move container to workspace number $ws5
+bindsym $mod+Shift+6 move container to workspace number $ws6
+bindsym $mod+Shift+7 move container to workspace number $ws7
+bindsym $mod+Shift+8 move container to workspace number $ws8
+bindsym $mod+Shift+9 move container to workspace number $ws9
+bindsym $mod+Shift+0 move container to workspace number $ws10
+
+# Reload / restart / exit
+bindsym $mod+Shift+c reload
+bindsym $mod+Shift+r restart
+bindsym $mod+Shift+BackSpace exec --no-startup-id i3-msg exit
+bindsym $mod+Shift+Escape exec --no-startup-id ~/.config/i3/scripts/powermenu.sh
+
+# Resize mode
+mode "resize" {
+    bindsym $left resize shrink width 10 px or 10 ppt
+    bindsym $down resize grow height 10 px or 10 ppt
+    bindsym $up resize shrink height 10 px or 10 ppt
+    bindsym $right resize grow width 10 px or 10 ppt
+
+    bindsym Left resize shrink width 10 px or 10 ppt
+    bindsym Down resize grow height 10 px or 10 ppt
+    bindsym Up resize shrink height 10 px or 10 ppt
+    bindsym Right resize grow width 10 px or 10 ppt
+
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+    bindsym $mod+r mode "default"
+}
+
+bindsym $mod+r mode "resize"
+
+# i3bar + i3status
+bar {
+    status_command i3blocks
+    position bottom
+    tray_output primary
+    font pango:Liberation Mono 10
+
+    colors {
+        background #1f1f28
+        statusline #d0d0d0
+        separator  #3a3a46
+
+        focused_workspace  #4a90d9 #4a90d9 #ffffff
+        active_workspace   #3a3a46 #2b2b36 #d0d0d0
+        inactive_workspace #1f1f28 #1f1f28 #9a9a9a
+        urgent_workspace   #c7162b #c7162b #ffffff
+    }
+}
+
+client.focused          #4a90d9 #4a90d9 #ffffff #4a90d9 #4a90d9
+client.focused_inactive #3a3a46 #2b2b36 #eeeeee #3a3a46 #3a3a46
+client.unfocused        #2b2b36 #1f1f28 #bcbcbc #2b2b36 #2b2b36
+client.urgent           #c7162b #c7162b #ffffff #c7162b #c7162b
+client.placeholder      #1f1f28 #1f1f28 #bcbcbc #1f1f28 #1f1f28
+client.background       #1f1f28

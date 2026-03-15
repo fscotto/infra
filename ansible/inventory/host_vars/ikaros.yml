@@ -1,1 +1,11 @@
-# ikaros specific variables
+---
+hostname: ikaros
+
+host_packages:
+  - void-repo-nonfree
+  - nvidia
+  - mesa-dri
+  - mesa-vaapi
+  - mesa-vdpau
+
+host_enabled_services: []

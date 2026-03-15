@@ -1,0 +1,17 @@
+#!/bin/sh
+
+state="$(xset q 2>/dev/null)"
+
+caps="$(printf '%s\n' "$state" | grep 'Caps Lock:' | awk '{print $4}')"
+num="$(printf '%s\n' "$state" | grep 'Num Lock:' | awk '{print $8}')"
+
+out=""
+
+[ "$caps" = "on" ] && out="${out} CAPS"
+[ "$num" = "on" ] && out="${out} NUM"
+
+[ -n "$out" ] || exit 0
+
+echo "$out"
+echo "$out"
+echo "#9a9a9a"

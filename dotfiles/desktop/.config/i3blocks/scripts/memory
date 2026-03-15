@@ -1,0 +1,19 @@
+#!/bin/sh
+
+mem=$(free | awk '/^Mem:/ {print $3/$2 * 100.0}')
+mem=${mem%.*}
+
+if [ "$mem" -ge 90 ]; then
+    color="#c7162b"
+elif [ "$mem" -ge 70 ]; then
+    color="#e95420"
+else
+    color="#d0d0d0"
+fi
+
+used=$(free -h | awk '/^Mem:/ {print $3}')
+total=$(free -h | awk '/^Mem:/ {print $2}')
+
+echo "RAM $used/$total"
+echo "RAM $used/$total"
+echo "$color"

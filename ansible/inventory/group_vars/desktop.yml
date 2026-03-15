@@ -1,1 +1,30 @@
-# desktop profile variables
+---
+profile_packages:
+  - i3
+  - i3blocks
+  - i3blocks-blocklets
+  - i3status
+  - i3lock-color
+  - dunst
+  - rofi
+  - alacritty
+  - Thunar
+  - thunar-volman
+  - udiskie
+  - xfce-polkit
+  - xfce4-power-manager
+  - xfce4-clipman-plugin
+  - xfce4-screenshooter
+  - volumeicon
+  - brightnessctl
+  - feh
+  - scrot
+  - xclip
+  - network-manager-applet
+  - chromium
+  - mpv
+  - libreoffice
+  - lm_sensors
+  - fastfetch
+  - liberation-fonts-ttf
+  - terminus-font

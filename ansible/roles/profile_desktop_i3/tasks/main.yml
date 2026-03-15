@@ -1,1 +1,77 @@
-# desktop profile tasks
+---
+- name: Ensure config directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+  loop:
+    - "{{ user_home }}/.config"
+    - "{{ user_home }}/.config/i3"
+    - "{{ user_home }}/.config/i3blocks"
+    - "{{ user_home }}/.config/dunst"
+    - "{{ user_home }}/.config/alacritty"
+    - "{{ user_home }}/.config/Thunar"
+
+- name: Enable gnome-keyring PAM auth hook
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/login
+    insertafter: '^auth\s+include\s+system-local-login$'
+    line: 'auth       optional  pam_gnome_keyring.so'
+    state: present
+
+- name: Enable gnome-keyring PAM session hook
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/login
+    insertafter: '^session\s+include\s+system-local-login$'
+    line: 'session    optional  pam_gnome_keyring.so auto_start'
+    state: present
+
+- name: Copy i3 config
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/.config/i3/"
+    dest: "{{ user_home }}/.config/i3/"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: preserve
+
+- name: Copy i3blocks config
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/.config/i3blocks/"
+    dest: "{{ user_home }}/.config/i3blocks/"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: preserve
+
+- name: Copy dunst config
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/.config/dunst/"
+    dest: "{{ user_home }}/.config/dunst/"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: preserve
+
+- name: Copy alacritty config
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/.config/alacritty/"
+    dest: "{{ user_home }}/.config/alacritty/"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: preserve
+
+- name: Copy Thunar config
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/.config/Thunar/"
+    dest: "{{ user_home }}/.config/Thunar/"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: preserve
+
+- name: Copy .xinitrc
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/.xinitrc"
+    dest: "{{ user_home }}/.xinitrc"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0644"

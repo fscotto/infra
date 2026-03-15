@@ -1,1 +1,15 @@
-# common variables
+---
+ansible_python_interpreter: /usr/bin/python3
+username: fscotto
+user_group: fscotto
+user_home: "/home/{{ username }}"
+user_shell: /bin/bash
+
+common_packages:
+  - bash-completion
+  - git
+  - wget
+  - unzip
+  - zip
+  - vim
+  - fzf

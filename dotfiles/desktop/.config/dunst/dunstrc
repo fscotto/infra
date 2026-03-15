@@ -1,0 +1,54 @@
+[global]
+monitor = 0
+follow = mouse
+gap_size = 10
+
+width = 360
+height = 120
+origin = top-right
+offset = 20x40
+
+font = Liberation Sans 10
+line_height = 2
+
+padding = 12
+horizontal_padding = 12
+text_icon_padding = 8
+
+separator_height = 2
+frame_width = 2
+corner_radius = 8
+
+transparency = 0
+
+background = "#1f1f28"
+foreground = "#eeeeee"
+frame_color = "#4a90d9"
+separator_color = frame
+
+timeout = 5
+
+markup = full
+format = "<b>%s</b>\n%b"
+
+icon_position = left
+min_icon_size = 24
+max_icon_size = 32
+
+[urgency_low]
+background = "#1f1f28"
+foreground = "#bcbcbc"
+frame_color = "#3a3a46"
+timeout = 3
+
+[urgency_normal]
+background = "#1f1f28"
+foreground = "#eeeeee"
+frame_color = "#4a90d9"
+timeout = 5
+
+[urgency_critical]
+background = "#1f1f28"
+foreground = "#ffffff"
+frame_color = "#c7162b"
+timeout = 0

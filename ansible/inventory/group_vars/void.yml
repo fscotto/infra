@@ -1,1 +1,27 @@
-# variables for Void Linux hosts
+---
+void_packages_base:
+  - base-system
+  - xtools
+  - vpm
+  - vsv
+  - xorg-minimal
+  - xorg-fonts
+  - elogind
+  - NetworkManager
+  - xdg-desktop-portal
+  - xdg-desktop-portal-gtk
+  - flatpak
+  - gvfs
+  - pipewire
+  - pavucontrol
+  - gnome-keyring
+  - seahorse
+  - socklog
+  - socklog-void
+
+enabled_services:
+  - dbus
+  - elogind
+  - NetworkManager
+  - socklog-unix
+  - nanoklogd

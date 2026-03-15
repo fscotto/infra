@@ -1,1 +1,11 @@
-# nymph specific variables
+---
+hostname: nymph
+
+host_packages:
+  - tlp
+  - tlp-rdw
+  - blueman
+  - bluez
+
+host_enabled_services:
+  - tlp

@@ -1,1 +1,14 @@
-# enable runit services
+---
+- name: Enable base runit services
+  ansible.builtin.file:
+    src: "/etc/sv/{{ item }}"
+    dest: "/var/service/{{ item }}"
+    state: link
+  loop: "{{ enabled_services | default([]) }}"
+
+- name: Enable host runit services
+  ansible.builtin.file:
+    src: "/etc/sv/{{ item }}"
+    dest: "/var/service/{{ item }}"
+    state: link
+  loop: "{{ host_enabled_services | default([]) }}"

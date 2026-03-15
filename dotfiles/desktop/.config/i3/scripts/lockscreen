@@ -1,0 +1,33 @@
+#!/bin/sh
+
+img=/tmp/lockscreen.png
+
+# screenshot
+scrot "$img"
+
+# blur
+convert "$img" -blur 0x8 "$img"
+
+# lock
+i3lock \
+--image "$img" \
+--clock \
+--indicator \
+--radius 100 \
+--ring-width 8 \
+--color=000000ff \
+--ring-color=2f4058ff \
+--inside-color=1f1f28ff \
+--line-color=00000000 \
+--separator-color=3a3a46ff \
+--keyhl-color=6daeeaff \
+--bshl-color=c7162bff \
+--ringver-color=4a90d9ff \
+--insidever-color=1f1f28ff \
+--ringwrong-color=c7162bff \
+--insidewrong-color=1f1f28ff \
+--time-color=d0d0d0ff \
+--date-color=9a9a9aff \
+--layout-color=d0d0d0ff \
+--verif-color=d0d0d0ff \
+--wrong-color=d0d0d0ff

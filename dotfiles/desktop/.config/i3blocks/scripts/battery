@@ -1,0 +1,47 @@
+#!/bin/sh
+
+total_now=0
+total_full=0
+status=""
+
+for bat in /sys/class/power_supply/BAT*; do
+    [ -d "$bat" ] || continue
+
+    if [ -r "$bat/energy_now" ] && [ -r "$bat/energy_full" ]; then
+        now=$(cat "$bat/energy_now")
+        full=$(cat "$bat/energy_full")
+    elif [ -r "$bat/charge_now" ] && [ -r "$bat/charge_full" ]; then
+        now=$(cat "$bat/charge_now")
+        full=$(cat "$bat/charge_full")
+    else
+        continue
+    fi
+
+    st=$(cat "$bat/status" 2>/dev/null)
+
+    total_now=$((total_now + now))
+    total_full=$((total_full + full))
+
+    case "$st" in
+        Charging) status="⚡" ;;
+        Discharging) [ -z "$status" ] && status="🔋" ;;
+        Full) [ -z "$status" ] && status="✔" ;;
+    esac
+done
+
+[ "$total_full" -gt 0 ] || exit 0
+
+pct=$((100 * total_now / total_full))
+[ -n "$status" ] || status="BAT"
+
+text="$status $pct%"
+
+if [ "$pct" -le 15 ]; then
+    color="#ff5555"
+elif [ "$pct" -le 30 ]; then
+    color="#f1fa8c"
+else
+    color="#9ece6a"
+fi
+
+printf '%s\n%s\n%s\n' "$text" "$text" "$color"

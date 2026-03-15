@@ -1,0 +1,16 @@
+#!/bin/sh
+
+mute=$(pactl get-sink-mute @DEFAULT_SINK@ 2>/dev/null | awk '{print $2}')
+vol=$(pactl get-sink-volume @DEFAULT_SINK@ 2>/dev/null | awk '/Volume:/ {print $5; exit}')
+
+[ -n "$vol" ] || exit 0
+
+if [ "$mute" = "yes" ]; then
+    text="VOL mute"
+    color="#7aa2f7"
+else
+    text="VOL $vol"
+    color="#c0caf5"
+fi
+
+printf '%s\n%s\n%s\n' "$text" "$text" "$color"

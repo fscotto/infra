@@ -1,1 +1,12 @@
-# install packages with xbps
+---
+- name: Install packages on Void Linux
+  community.general.xbps:
+    name: >-
+      {{
+        (common_packages | default([]))
+        + (void_packages_base | default([]))
+        + (profile_packages | default([]))
+        + (host_packages | default([]))
+      }}
+    state: present
+    update_cache: true

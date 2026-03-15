@@ -1,0 +1,44 @@
+[window]
+padding = { x = 8, y = 8 }
+opacity = 1.0
+
+[font]
+normal = { family = "Liberation Mono", style = "Regular" }
+size = 10
+
+[scrolling]
+history = 10000
+multiplier = 3
+
+[cursor]
+style = { shape = "Beam", blinking = "Off" }
+
+[colors.primary]
+background = "#000000"
+foreground = "#c8c8c8"
+
+[colors.normal]
+black   = "#1f1f28"
+red     = "#c7162b"
+green   = "#4caf50"
+yellow  = "#e95420"
+blue    = "#4a90d9"
+magenta = "#7e57c2"
+cyan    = "#6daeea"
+white   = "#eeeeee"
+
+[colors.bright]
+black   = "#3a3a46"
+red     = "#ff5c5c"
+green   = "#7ad97a"
+yellow  = "#ff8f40"
+blue    = "#6daeea"
+magenta = "#9575cd"
+cyan    = "#8bd6ff"
+white   = "#ffffff"
+
+[keyboard]
+bindings = [
+  { key = "V", mods = "Control|Shift", action = "Paste" },
+  { key = "C", mods = "Control|Shift", action = "Copy" }
+]

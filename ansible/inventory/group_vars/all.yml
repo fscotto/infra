@@ -13,3 +13,13 @@ common_packages:
   - zip
   - vim
   - fzf
+
+common_dotfiles:
+  - name: .bashrc
+    src: .bashrc
+    dest: .bashrc
+    mode: "0644"
+  - name: .bash_profile
+    src: .bash_profile
+    dest: .bash_profile
+    mode: "0644"

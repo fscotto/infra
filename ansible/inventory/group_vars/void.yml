@@ -6,7 +6,6 @@ void_packages_base:
   - vsv
   - bat
   - delta
-  - fastfetch
   - xorg-minimal
   - xorg-fonts
   - elogind

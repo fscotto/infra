@@ -31,3 +31,5 @@ profile_packages:
   - blueman
   - bluez
   - libspa-bluetooth
+  - yaru
+  - yaru-plus

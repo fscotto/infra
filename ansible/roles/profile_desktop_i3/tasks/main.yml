@@ -85,6 +85,30 @@
     group: "{{ user_group }}"
     mode: "0644"
 
+- name: Copy .gitconfig
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/.gitconfig"
+    dest: "{{ user_home }}/.gitconfig"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0644"
+
+- name: Copy .gitignore_global
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/.gitignore_global"
+    dest: "{{ user_home }}/.gitignore_global"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0644"
+
+- name: Copy .themes.gitignore
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/.themes.gitignore"
+    dest: "{{ user_home }}/.themes.gitignore"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0644"
+
 - name: Ensure .gnupg directory exists
   ansible.builtin.file:
     path: "{{ user_home }}/.gnupg"

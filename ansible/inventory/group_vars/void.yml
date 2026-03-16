@@ -4,6 +4,9 @@ void_packages_base:
   - xtools
   - vpm
   - vsv
+  - bat
+  - delta
+  - fastfetch
   - xorg-minimal
   - xorg-fonts
   - elogind

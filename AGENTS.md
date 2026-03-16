@@ -1,9 +1,9 @@
 # AGENTS.md
 
-Guide for coding agents in this repository.
-Project type: Ansible infrastructure + managed dotfiles.
+Agent guide for this repository.
+Project type: Ansible infrastructure with managed dotfiles.
 
-## Repository map
+## Scope and layout
 - Entry playbook: `ansible/site.yml`
 - Inventory: `ansible/inventory/hosts.yml`
 - Group vars: `ansible/inventory/group_vars/*.yml`
@@ -12,53 +12,37 @@ Project type: Ansible infrastructure + managed dotfiles.
 - Dotfiles source: `dotfiles/`
 - Ansible config: `ansible.cfg`
 
-`ansible.cfg` defaults in use:
+Current `ansible.cfg` defaults:
 - `inventory = ansible/inventory/hosts.yml`
 - `roles_path = ansible/roles`
 - `host_key_checking = False`
 - `retry_files_enabled = False`
 
-## Cursor / Copilot rules status
-Checked and not found:
+## Cursor and Copilot instructions
+Checked in this repo and not found:
 - `.cursorrules`
 - `.cursor/rules/`
 - `.github/copilot-instructions.md`
 
-If these files are added later, treat them as higher-priority local instructions.
+If any of these are added later, treat them as higher-priority local instructions.
 
-## Dependencies
-Required:
-- Python 3
-- Ansible
-- Access to target hosts (local or SSH, depending on inventory)
-
-Install baseline:
-```bash
-python3 -m pip install ansible
-```
-
-Optional quality tools:
-```bash
-python3 -m pip install ansible-lint yamllint
-```
-
-## Build / lint / test commands
+## Build, lint, and test commands
 There is no compile/build artifact in this repo.
-Use syntax checks, dry-runs, and linting as validation.
+Validation is done with syntax checks, dry-runs, inventory checks, and linting.
 
-Main run:
+Main apply run:
 ```bash
 ansible-playbook ansible/site.yml
-```
-
-Run only one host:
-```bash
-ansible-playbook ansible/site.yml --limit ikaros
 ```
 
 Dry-run with diff:
 ```bash
 ansible-playbook ansible/site.yml --check --diff
+```
+
+Run one host:
+```bash
+ansible-playbook ansible/site.yml --limit ikaros
 ```
 
 Inventory sanity checks:
@@ -75,91 +59,109 @@ yamllint ansible/
 ```
 
 ## Single-test equivalents (important)
-No dedicated test harness (pytest/molecule) exists yet.
-Use these targeted commands as "single test" workflows.
+There is no dedicated test harness (no Molecule/pytest suite).
+Use these as targeted single-test workflows:
 
-Syntax-check one playbook:
+Syntax-check only:
 ```bash
 ansible-playbook ansible/site.yml --syntax-check
 ```
 
-Test one host in dry-run mode:
+Dry-run one host (best single test):
 ```bash
 ansible-playbook ansible/site.yml --limit nymph --check --diff
 ```
 
-Start at one task:
+Start from one known task name:
 ```bash
-ansible-playbook ansible/site.yml --start-at-task "Copy .bashrc" --limit ikaros
+ansible-playbook ansible/site.yml --limit ikaros --start-at-task "Copy .bashrc" --check --diff
 ```
 
-Run one tag subset (requires tagged tasks):
+Run one role by task boundary (practical approximation):
 ```bash
-ansible-playbook ansible/site.yml --tags dotfiles --limit ikaros
+ansible-playbook ansible/site.yml --limit ikaros --start-at-task "Install Void nonfree repository if needed" --check --diff
 ```
+
+List hosts targeted by current inventory:
+```bash
+ansible all --list-hosts
+```
+
+Notes:
+- `--tags` is preferred for targeted runs once tasks are tagged consistently.
+- Today, `site.yml` actively applies `dotfiles_common`, `packages_void`, `services_runit`, and `profile_desktop_i3`.
+- Dependencies: Python 3, Ansible, and host access (local or SSH depending on inventory).
+- Setup: `python3 -m pip install ansible` (plus optional `ansible-lint yamllint`).
 
 ## Code style guidelines
 
-### General principles
-- Keep changes idempotent and declarative.
-- Preserve layering: `common -> OS -> profile -> host`.
-- Avoid unrelated refactors; keep edits minimal and local.
+### Core principles
+- Keep automation idempotent, declarative, and host-safe.
+- Preserve variable layering: `all -> OS -> profile -> host`.
+- Keep edits minimal and local; avoid opportunistic refactors.
+- Prefer readability over compression in YAML/Jinja.
 
-### Ansible modules, imports, and structure
-- Use FQCN module names (`ansible.builtin.copy`, `community.general.xbps`).
-- Prefer modules over raw `shell`/`command`.
-- Use `import_tasks`/`include_tasks` when role task files grow.
-- Keep `site.yml` orchestration-focused; implementation lives in roles.
-- Keep role scope narrow (packages vs services vs dotfiles).
+### Modules, imports, and role structure
+- Use FQCN modules (`ansible.builtin.copy`, `community.general.xbps`).
+- Prefer modules over `ansible.builtin.shell`/`ansible.builtin.command`.
+- If command/shell is necessary, document intent via task name and guards.
+- Keep `ansible/site.yml` orchestration-focused; implementation belongs in roles.
+- Split large role task files with `import_tasks`/`include_tasks`.
+- Keep each role narrow in purpose (packages, services, profile, dotfiles).
 
-### Formatting
+### YAML formatting
 - Start YAML files with `---`.
-- Use 2-space indentation; never tabs in YAML.
-- Quote modes as strings: `"0644"`, `"0755"`, `"0600"`.
-- Keep long Jinja expressions multiline and readable.
-- No trailing whitespace.
+- Use 2-space indentation, never tabs.
+- Keep key ordering stable and meaningful.
+- Quote file modes as strings: `"0644"`, `"0755"`, `"0600"`, `"0700"`.
+- Keep long Jinja expressions multiline.
+- Avoid trailing whitespace.
 
 ### Variables and types
 - Use `snake_case` variable names.
-- Keep names semantically scoped (`common_packages`, `profile_packages`, `host_packages`).
-- Use true YAML types: lists for lists, booleans as `true`/`false`.
-- Use `default([])` / `default({})` for optional vars.
-- Keep paths consistent, usually templated from `{{ user_home }}`.
-- Put global defaults in `group_vars/all.yml`; specialize in group/host vars.
+- Use semantically scoped names (`common_packages`, `void_packages_base`, `host_packages`).
+- Keep booleans as `true`/`false`, not quoted strings.
+- Keep lists and dicts as real YAML collections.
+- Use `default([])` / `default({})` for optional variables.
+- Build paths consistently from `{{ user_home }}` and related vars.
+- Put shared defaults in `group_vars/all.yml`; specialize in group/host vars.
 
 ### Naming conventions
-- Roles: lowercase with underscores.
-- Tasks: imperative, explicit outcome (`Install packages on Void Linux`).
-- Inventory group and var file names must stay aligned.
-- Host var files should match hostnames exactly.
+- Role directories: lowercase with underscores.
+- Task names: imperative and outcome-based (`Enable host runit services`).
+- Inventory group names and matching var filenames should stay aligned.
+- Host var filenames must match hostnames exactly.
 
 ### Error handling and safety
-- Guard OS/profile-specific actions with `when`.
-- For `command`/`shell`, set `changed_when`/`failed_when` where needed.
-- Do not suppress failures without clear justification.
-- Validate risky changes with `--check --diff` before real apply.
-- Avoid destructive user-file operations unless explicitly required.
+- Guard OS/profile-specific steps with `when`.
+- Use explicit `loop` inputs and default guards for optional lists.
+- For `command`/`shell`, define `changed_when` and `failed_when` when needed.
+- Do not suppress failures unless there is a clear operational reason.
+- Validate risky changes with `--check --diff` before full apply.
+- Avoid destructive file operations in user homes unless explicitly required.
+- Avoid touching secrets material; never commit credentials.
 
-### Shell and dotfiles
-- Prefer POSIX `sh` unless Bash features are required.
-- If Bash is required, use `#!/usr/bin/env bash`.
-- Quote expansions (`"$var"`) unless intentional word splitting is required.
-- Keep automation-invoked scripts non-interactive.
+### Dotfiles and shell scripts
+- Prefer POSIX `sh`; use Bash only when required.
+- If Bash is required, use shebang `#!/usr/bin/env bash`.
+- Quote expansions (`"$var"`) unless intentional splitting is required.
+- Keep scripts non-interactive when invoked by automation.
 
-## Agent operating expectations
-- Never commit or expose data from `secrets/`.
+## Agent expectations
 - Do not modify unrelated files.
-- Keep docs (`README.md`, `AGENTS.md`) current when workflows change.
-- If adding new task domains, add tags to improve targeted runs.
+- Never commit or expose data from `secrets/`.
+- Keep `AGENTS.md` and `README.md` in sync with workflow changes.
+- When adding new role domains, add tags to support targeted execution.
 
 ## Pre-merge checklist
+Run before submitting changes:
 ```bash
 ansible-playbook ansible/site.yml --syntax-check
 ansible-playbook ansible/site.yml --check --diff --limit <host>
 ansible-inventory --graph
 ```
 
-If lint tools are installed:
+If lint tooling is installed:
 ```bash
 ansible-lint ansible/site.yml
 yamllint ansible/

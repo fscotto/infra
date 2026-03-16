@@ -18,14 +18,14 @@
   ansible.builtin.lineinfile:
     path: /etc/pam.d/login
     insertafter: '^auth\s+include\s+system-local-login$'
-    line: 'auth       optional  pam_gnome_keyring.so'
+    line: "auth       optional  pam_gnome_keyring.so"
     state: present
 
 - name: Enable gnome-keyring PAM session hook
   ansible.builtin.lineinfile:
     path: /etc/pam.d/login
     insertafter: '^session\s+include\s+system-local-login$'
-    line: 'session    optional  pam_gnome_keyring.so auto_start'
+    line: "session    optional  pam_gnome_keyring.so auto_start"
     state: present
 
 - name: Copy i3 config
@@ -75,3 +75,19 @@
     owner: "{{ username }}"
     group: "{{ user_group }}"
     mode: "0644"
+
+- name: Ensure .gnupg directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.gnupg"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0700"
+
+- name: Copy gpg-agent.conf
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/.gnupg/gpg-agent.conf"
+    dest: "{{ user_home }}/.gnupg/gpg-agent.conf"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0600"

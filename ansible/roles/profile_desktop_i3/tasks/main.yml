@@ -100,3 +100,18 @@
     owner: "{{ username }}"
     group: "{{ user_group }}"
     mode: "0600"
+
+- name: Ensure flathub remote is configured
+  community.general.flatpak_remote:
+    name: "{{ desktop_flatpak_remote_name | default('flathub') }}"
+    state: present
+    flatpakrepo_url: "{{ desktop_flatpak_remote_url | default('https://dl.flathub.org/repo/flathub.flatpakrepo') }}"
+  when: (desktop_flatpak_packages | default([])) | length > 0
+
+- name: Install desktop flatpak applications
+  community.general.flatpak:
+    name: "{{ desktop_flatpak_packages }}"
+    state: present
+    remote: "{{ desktop_flatpak_remote_name | default('flathub') }}"
+    method: system
+  when: (desktop_flatpak_packages | default([])) | length > 0

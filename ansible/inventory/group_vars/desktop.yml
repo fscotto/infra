@@ -33,3 +33,11 @@ profile_packages:
   - libspa-bluetooth
   - yaru
   - yaru-plus
+
+desktop_flatpak_packages:
+  - ch.protonmail.protonmail-bridge
+  - com.calibre_ebook.calibre
+  - com.github.tchx84.Flatseal
+  - com.spotify.Client
+  - io.github.flattool.Warehouse
+  - org.telegram.desktop

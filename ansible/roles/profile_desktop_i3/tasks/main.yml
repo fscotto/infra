@@ -29,85 +29,16 @@
     line: "session    optional  pam_gnome_keyring.so auto_start"
     state: present
 
-- name: Copy i3 config
+- name: Copy desktop dotfiles
   ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../dotfiles/desktop/.config/i3/"
-    dest: "{{ user_home }}/.config/i3/"
+    src: "{{ playbook_dir }}/../dotfiles/desktop/{{ item.src }}"
+    dest: "{{ user_home }}/{{ item.dest }}"
     owner: "{{ username }}"
     group: "{{ user_group }}"
-    mode: preserve
-
-- name: Copy i3blocks config
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../dotfiles/desktop/.config/i3blocks/"
-    dest: "{{ user_home }}/.config/i3blocks/"
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
-    mode: preserve
-
-- name: Copy dunst config
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../dotfiles/desktop/.config/dunst/"
-    dest: "{{ user_home }}/.config/dunst/"
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
-    mode: preserve
-
-- name: Copy alacritty config
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../dotfiles/desktop/.config/alacritty/"
-    dest: "{{ user_home }}/.config/alacritty/"
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
-    mode: preserve
-
-- name: Copy Thunar config
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../dotfiles/desktop/.config/Thunar/"
-    dest: "{{ user_home }}/.config/Thunar/"
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
-    mode: preserve
-
-- name: Copy rofi config
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../dotfiles/desktop/.config/rofi/"
-    dest: "{{ user_home }}/.config/rofi/"
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
-    mode: preserve
-
-- name: Copy .xinitrc
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../dotfiles/desktop/.xinitrc"
-    dest: "{{ user_home }}/.xinitrc"
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
-    mode: "0644"
-
-- name: Copy .gitconfig
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../dotfiles/desktop/.gitconfig"
-    dest: "{{ user_home }}/.gitconfig"
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
-    mode: "0644"
-
-- name: Copy .gitignore_global
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../dotfiles/desktop/.gitignore_global"
-    dest: "{{ user_home }}/.gitignore_global"
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
-    mode: "0644"
-
-- name: Copy .themes.gitignore
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../dotfiles/desktop/.themes.gitignore"
-    dest: "{{ user_home }}/.themes.gitignore"
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
-    mode: "0644"
+    mode: "{{ item.mode }}"
+  loop: "{{ desktop_dotfiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
 
 - name: Ensure .gnupg directory exists
   ansible.builtin.file:

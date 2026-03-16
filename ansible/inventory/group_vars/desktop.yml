@@ -5,6 +5,7 @@ profile_packages:
   - i3blocks-blocklets
   - i3status
   - i3lock-color
+  - dex
   - dunst
   - rofi
   - alacritty
@@ -18,8 +19,11 @@ profile_packages:
   - volumeicon
   - brightnessctl
   - feh
+  - ImageMagick
   - scrot
   - xclip
+  - xss-lock
+  - playerctl
   - network-manager-applet
   - chromium
   - mpv

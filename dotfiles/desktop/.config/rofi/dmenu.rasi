@@ -1,0 +1,14 @@
+window {
+    location: north;
+    anchor: north;
+    width: 100%;
+    border: 0;
+}
+
+listview {
+    lines: 8;
+}
+
+mainbox {
+    children: [ inputbar, listview ];
+}

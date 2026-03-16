@@ -1,4 +1,16 @@
 ---
+- name: Install Void nonfree repository if needed
+  community.general.xbps:
+    name: void-repo-nonfree
+    state: present
+    update_cache: true
+  when: "'void-repo-nonfree' in (host_packages | default([]) + void_packages_base | default([]))"
+
+- name: Refresh XBPS cache after enabling nonfree repository
+  ansible.builtin.command: xbps-install -S
+  changed_when: false
+  when: "'void-repo-nonfree' in (host_packages | default([]) + void_packages_base | default([]))"
+
 - name: Install packages on Void Linux
   community.general.xbps:
     name: >-

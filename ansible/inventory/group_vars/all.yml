@@ -8,6 +8,7 @@ user_shell: /bin/bash
 common_packages:
   - bash-completion
   - bat
+  - tmux
   - git
   - wget
   - unzip
@@ -24,6 +25,14 @@ common_dotfiles:
     src: .bash_profile
     dest: .bash_profile
     mode: "0644"
+  - name: .tmux.conf
+    src: .tmux.conf
+    dest: .tmux.conf
+    mode: "0644"
+  - name: tmux config directory
+    src: .tmux/
+    dest: .tmux/
+    mode: preserve
   - name: bat config
     src: .config/bat/.config/bat/
     dest: .config/bat/

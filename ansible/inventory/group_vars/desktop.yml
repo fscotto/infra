@@ -27,6 +27,15 @@ profile_packages:
   - nerd-fonts-symbols-ttf
   - network-manager-applet
   - chromium
+  - emacs
+  - libtool
+  - libvterm-devel
+  - cmake
+  - gcc
+  - gdb
+  - go
+  - clang
+  - clang-tools-extra
   - mpv
   - yt-dlp
   - libreoffice
@@ -93,6 +102,10 @@ desktop_dotfiles:
     src: .themes.gitignore
     dest: .themes.gitignore
     mode: "0644"
+  - name: Emacs config
+    src: .emacs.d/
+    dest: .emacs.d/
+    mode: preserve
 
 desktop_flatpak_packages:
   - ch.protonmail.protonmail-bridge

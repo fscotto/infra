@@ -1,4 +1,9 @@
 ---
+- name: Ensure bat package is installed
+  ansible.builtin.package:
+    name: bat
+    state: present
+
 - name: Copy common dotfiles
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/../dotfiles/common/{{ item.src }}"
@@ -9,3 +14,11 @@
   loop: "{{ common_dotfiles | default([]) }}"
   loop_control:
     label: "{{ item.dest }}"
+
+- name: Refresh bat cache
+  ansible.builtin.command:
+    cmd: "{{ 'batcat' if ansible_facts.os_family == 'Debian' else 'bat' }} cache --build"
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  changed_when: false

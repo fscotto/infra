@@ -7,6 +7,7 @@ user_shell: /bin/bash
 
 common_packages:
   - bash-completion
+  - bat
   - git
   - wget
   - unzip
@@ -23,3 +24,7 @@ common_dotfiles:
     src: .bash_profile
     dest: .bash_profile
     mode: "0644"
+  - name: bat config
+    src: .config/bat/.config/bat/
+    dest: .config/bat/
+    mode: preserve

@@ -63,6 +63,41 @@
     group: "{{ user_group }}"
     mode: "0600"
 
+- name: Ensure local source directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.local/src"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+
+- name: Clone st repository
+  ansible.builtin.git:
+    repo: https://codeberg.org/fscotto/st
+    dest: "{{ user_home }}/.local/src/st"
+    update: true
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  register: st_repo
+
+- name: Check whether st binary is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/st
+  register: st_binary
+
+- name: Build and install st
+  ansible.builtin.command:
+    cmd: make clean install
+    chdir: "{{ user_home }}/.local/src/st"
+  when: st_repo.changed or not st_binary.stat.exists
+
+- name: Clean st build artifacts
+  ansible.builtin.command:
+    cmd: make clean
+    chdir: "{{ user_home }}/.local/src/st"
+  when: st_repo.changed or not st_binary.stat.exists
+
 - name: Ensure flathub remote is configured
   community.general.flatpak_remote:
     name: "{{ desktop_flatpak_remote_name | default('flathub') }}"
@@ -77,3 +112,129 @@
     remote: "{{ desktop_flatpak_remote_name | default('flathub') }}"
     method: system
   when: (desktop_flatpak_packages | default([])) | length > 0
+
+- name: Set desktop external tool release metadata
+  ansible.builtin.set_fact:
+    desktop_tools_tmp_dir: /tmp/desktop-tools
+    gitmux_version: v0.11.5
+    bw_version: 1.22.1
+    gitmux_arch: >-
+      {{
+        'amd64' if ansible_architecture == 'x86_64'
+        else 'arm64' if ansible_architecture in ['aarch64', 'arm64']
+        else ''
+      }}
+
+- name: Ensure architecture is supported for gitmux binary
+  ansible.builtin.fail:
+    msg: "Unsupported architecture {{ ansible_architecture }} for gitmux release binary"
+  when: gitmux_arch == ''
+
+- name: Ensure architecture is supported for bw binary
+  ansible.builtin.fail:
+    msg: "Unsupported architecture {{ ansible_architecture }} for bw release binary"
+  when: ansible_architecture != 'x86_64'
+
+- name: Ensure temporary directory exists for external tools
+  ansible.builtin.file:
+    path: "{{ desktop_tools_tmp_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Download gitmux checksums
+  ansible.builtin.get_url:
+    url: "https://github.com/arl/gitmux/releases/download/{{ gitmux_version }}/checksums.txt"
+    dest: "{{ desktop_tools_tmp_dir }}/gitmux-checksums-{{ gitmux_version }}.txt"
+    mode: "0644"
+
+- name: Read gitmux checksums file
+  ansible.builtin.slurp:
+    src: "{{ desktop_tools_tmp_dir }}/gitmux-checksums-{{ gitmux_version }}.txt"
+  register: gitmux_checksums_raw
+
+- name: Set gitmux asset metadata
+  ansible.builtin.set_fact:
+    gitmux_asset: "gitmux_{{ gitmux_version }}_linux_{{ gitmux_arch }}.tar.gz"
+    gitmux_checksum: >-
+      {{
+        (gitmux_checksums_raw.content | b64decode)
+        | regex_findall('([a-f0-9]{64})\\s+gitmux_' ~ gitmux_version ~ '_linux_' ~ gitmux_arch ~ '\\.tar\\.gz')
+        | first
+        | default('', true)
+      }}
+
+- name: Fail if gitmux checksum cannot be resolved
+  ansible.builtin.fail:
+    msg: "Unable to resolve gitmux checksum for architecture {{ gitmux_arch }}"
+  when: gitmux_checksum | length == 0
+
+- name: Download gitmux release archive
+  ansible.builtin.get_url:
+    url: "https://github.com/arl/gitmux/releases/download/{{ gitmux_version }}/{{ gitmux_asset }}"
+    dest: "{{ desktop_tools_tmp_dir }}/{{ gitmux_asset }}"
+    checksum: "sha256:{{ gitmux_checksum }}"
+    mode: "0644"
+
+- name: Extract gitmux release archive
+  ansible.builtin.unarchive:
+    src: "{{ desktop_tools_tmp_dir }}/{{ gitmux_asset }}"
+    dest: "{{ desktop_tools_tmp_dir }}"
+    remote_src: true
+
+- name: Install gitmux binary
+  ansible.builtin.copy:
+    src: "{{ desktop_tools_tmp_dir }}/gitmux"
+    dest: /usr/local/bin/gitmux
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Download bw checksums
+  ansible.builtin.get_url:
+    url: "https://github.com/bitwarden/cli/releases/download/v{{ bw_version }}/bw-linux-sha256-{{ bw_version }}.txt"
+    dest: "{{ desktop_tools_tmp_dir }}/bw-sha256-{{ bw_version }}.txt"
+    mode: "0644"
+
+- name: Read bw checksums file
+  ansible.builtin.slurp:
+    src: "{{ desktop_tools_tmp_dir }}/bw-sha256-{{ bw_version }}.txt"
+  register: bw_checksums_raw
+
+- name: Set bw asset metadata
+  ansible.builtin.set_fact:
+    bw_asset: "bw-linux-{{ bw_version }}.zip"
+    bw_checksum: >-
+      {{
+        (bw_checksums_raw.content | b64decode)
+        | regex_findall('([a-f0-9]{64})\\s+bw-linux-' ~ bw_version ~ '\\.zip')
+        | first
+        | default('', true)
+      }}
+
+- name: Fail if bw checksum cannot be resolved
+  ansible.builtin.fail:
+    msg: "Unable to resolve checksum for bw {{ bw_version }}"
+  when: bw_checksum | length == 0
+
+- name: Download bw release archive
+  ansible.builtin.get_url:
+    url: "https://github.com/bitwarden/cli/releases/download/v{{ bw_version }}/{{ bw_asset }}"
+    dest: "{{ desktop_tools_tmp_dir }}/{{ bw_asset }}"
+    checksum: "sha256:{{ bw_checksum }}"
+    mode: "0644"
+
+- name: Extract bw release archive
+  ansible.builtin.unarchive:
+    src: "{{ desktop_tools_tmp_dir }}/{{ bw_asset }}"
+    dest: "{{ desktop_tools_tmp_dir }}"
+    remote_src: true
+
+- name: Install bw binary
+  ansible.builtin.copy:
+    src: "{{ desktop_tools_tmp_dir }}/bw"
+    dest: /usr/local/bin/bw
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0755"

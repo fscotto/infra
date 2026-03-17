@@ -10,6 +10,7 @@ profile_packages:
   - rofi
   - alacritty
   - Thunar
+  - exo
   - thunar-volman
   - udiskie
   - xfce-polkit
@@ -33,11 +34,18 @@ profile_packages:
   - cmake
   - gcc
   - gdb
+  - pkg-config
+  - libX11-devel
+  - libXft-devel
+  - fontconfig-devel
+  - freetype-devel
   - go
   - clang
   - clang-tools-extra
   - mpv
   - yt-dlp
+  - meld
+  - 7zip
   - libreoffice
   - lm_sensors
   - fastfetch

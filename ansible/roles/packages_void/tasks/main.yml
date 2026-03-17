@@ -11,6 +11,11 @@
   changed_when: false
   when: "'void-repo-nonfree' in (host_packages | default([]) + void_packages_base | default([]))"
 
+- name: Synchronize and upgrade Void Linux packages
+  community.general.xbps:
+    update_cache: true
+    upgrade: true
+
 - name: Install packages on Void Linux
   community.general.xbps:
     name: >-
@@ -21,5 +26,4 @@
         + (host_packages | default([]))
       }}
     state: present
-    update_cache: true
-    upgrade: true
+    update_cache: false

@@ -29,6 +29,13 @@
     line: "session    optional  pam_gnome_keyring.so auto_start"
     state: present
 
+- name: Enable gnome-keyring PAM password hook
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/login
+    insertafter: '^password\s+include\s+system-local-login$'
+    line: "password   optional  pam_gnome_keyring.so use_authtok"
+    state: present
+
 - name: Copy desktop dotfiles
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/../dotfiles/desktop/{{ item.src }}"

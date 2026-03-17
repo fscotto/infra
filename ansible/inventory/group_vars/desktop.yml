@@ -63,6 +63,10 @@ desktop_dotfiles:
     src: .config/rofi/
     dest: .config/rofi/
     mode: preserve
+  - name: fastfetch config
+    src: .config/fastfetch/
+    dest: .config/fastfetch/
+    mode: preserve
   - name: .xinitrc
     src: .xinitrc
     dest: .xinitrc

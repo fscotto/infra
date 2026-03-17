@@ -27,6 +27,7 @@ profile_packages:
   - network-manager-applet
   - chromium
   - mpv
+  - yt-dlp
   - libreoffice
   - lm_sensors
   - fastfetch
@@ -66,6 +67,10 @@ desktop_dotfiles:
   - name: fastfetch config
     src: .config/fastfetch/
     dest: .config/fastfetch/
+    mode: preserve
+  - name: yt-dlp config
+    src: .config/yt-dlp/
+    dest: .config/yt-dlp/
     mode: preserve
   - name: .xinitrc
     src: .xinitrc

@@ -43,7 +43,17 @@ profile_packages:
   - clang
   - clang-tools-extra
   - mpv
+  - celluloid
   - yt-dlp
+  - shotwell
+  - ristretto
+  - xournalpp
+  - pdfarranger
+  - remmina
+  - deluge
+  - xarchiver
+  - gufw
+  - ufw
   - meld
   - 7zip
   - libreoffice

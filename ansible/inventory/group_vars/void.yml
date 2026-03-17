@@ -27,6 +27,7 @@ enabled_services:
   - dbus
   - elogind
   - NetworkManager
+  - ufw
   - bluetoothd
   - socklog-unix
   - nanoklogd

@@ -120,20 +120,20 @@
     bw_version: 1.22.1
     gitmux_arch: >-
       {{
-        'amd64' if ansible_architecture == 'x86_64'
-        else 'arm64' if ansible_architecture in ['aarch64', 'arm64']
+        'amd64' if ansible_facts['architecture'] == 'x86_64'
+        else 'arm64' if ansible_facts['architecture'] in ['aarch64', 'arm64']
         else ''
       }}
 
 - name: Ensure architecture is supported for gitmux binary
   ansible.builtin.fail:
-    msg: "Unsupported architecture {{ ansible_architecture }} for gitmux release binary"
+    msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for gitmux release binary"
   when: gitmux_arch == ''
 
 - name: Ensure architecture is supported for bw binary
   ansible.builtin.fail:
-    msg: "Unsupported architecture {{ ansible_architecture }} for bw release binary"
-  when: ansible_architecture != 'x86_64'
+    msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for bw release binary"
+  when: ansible_facts['architecture'] != 'x86_64'
 
 - name: Ensure temporary directory exists for external tools
   ansible.builtin.file:
@@ -141,38 +141,15 @@
     state: directory
     mode: "0755"
 
-- name: Download gitmux checksums
-  ansible.builtin.get_url:
-    url: "https://github.com/arl/gitmux/releases/download/{{ gitmux_version }}/checksums.txt"
-    dest: "{{ desktop_tools_tmp_dir }}/gitmux-checksums-{{ gitmux_version }}.txt"
-    mode: "0644"
-
-- name: Read gitmux checksums file
-  ansible.builtin.slurp:
-    src: "{{ desktop_tools_tmp_dir }}/gitmux-checksums-{{ gitmux_version }}.txt"
-  register: gitmux_checksums_raw
-
 - name: Set gitmux asset metadata
   ansible.builtin.set_fact:
     gitmux_asset: "gitmux_{{ gitmux_version }}_linux_{{ gitmux_arch }}.tar.gz"
-    gitmux_checksum: >-
-      {{
-        (gitmux_checksums_raw.content | b64decode)
-        | regex_findall('([a-f0-9]{64})\\s+gitmux_' ~ gitmux_version ~ '_linux_' ~ gitmux_arch ~ '\\.tar\\.gz')
-        | first
-        | default('', true)
-      }}
-
-- name: Fail if gitmux checksum cannot be resolved
-  ansible.builtin.fail:
-    msg: "Unable to resolve gitmux checksum for architecture {{ gitmux_arch }}"
-  when: gitmux_checksum | length == 0
 
 - name: Download gitmux release archive
   ansible.builtin.get_url:
     url: "https://github.com/arl/gitmux/releases/download/{{ gitmux_version }}/{{ gitmux_asset }}"
     dest: "{{ desktop_tools_tmp_dir }}/{{ gitmux_asset }}"
-    checksum: "sha256:{{ gitmux_checksum }}"
+    checksum: "sha256:https://github.com/arl/gitmux/releases/download/{{ gitmux_version }}/checksums.txt"
     mode: "0644"
 
 - name: Extract gitmux release archive
@@ -190,38 +167,15 @@
     group: root
     mode: "0755"
 
-- name: Download bw checksums
-  ansible.builtin.get_url:
-    url: "https://github.com/bitwarden/cli/releases/download/v{{ bw_version }}/bw-linux-sha256-{{ bw_version }}.txt"
-    dest: "{{ desktop_tools_tmp_dir }}/bw-sha256-{{ bw_version }}.txt"
-    mode: "0644"
-
-- name: Read bw checksums file
-  ansible.builtin.slurp:
-    src: "{{ desktop_tools_tmp_dir }}/bw-sha256-{{ bw_version }}.txt"
-  register: bw_checksums_raw
-
 - name: Set bw asset metadata
   ansible.builtin.set_fact:
     bw_asset: "bw-linux-{{ bw_version }}.zip"
-    bw_checksum: >-
-      {{
-        (bw_checksums_raw.content | b64decode)
-        | regex_findall('([a-f0-9]{64})\\s+bw-linux-' ~ bw_version ~ '\\.zip')
-        | first
-        | default('', true)
-      }}
-
-- name: Fail if bw checksum cannot be resolved
-  ansible.builtin.fail:
-    msg: "Unable to resolve checksum for bw {{ bw_version }}"
-  when: bw_checksum | length == 0
 
 - name: Download bw release archive
   ansible.builtin.get_url:
     url: "https://github.com/bitwarden/cli/releases/download/v{{ bw_version }}/{{ bw_asset }}"
     dest: "{{ desktop_tools_tmp_dir }}/{{ bw_asset }}"
-    checksum: "sha256:{{ bw_checksum }}"
+    checksum: "sha256:https://github.com/bitwarden/cli/releases/download/v{{ bw_version }}/bw-linux-sha256-{{ bw_version }}.txt"
     mode: "0644"
 
 - name: Extract bw release archive

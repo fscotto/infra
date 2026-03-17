@@ -27,7 +27,7 @@ profile_packages:
   - nerd-fonts-symbols-ttf
   - network-manager-applet
   - chromium
-  - emacs
+  - emacs-gtk3
   - libtool
   - libvterm-devel
   - cmake

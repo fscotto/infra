@@ -24,6 +24,7 @@ profile_packages:
   - xclip
   - xss-lock
   - playerctl
+  - nerd-fonts-symbols-ttf
   - network-manager-applet
   - chromium
   - mpv
@@ -67,6 +68,10 @@ desktop_dotfiles:
   - name: fastfetch config
     src: .config/fastfetch/
     dest: .config/fastfetch/
+    mode: preserve
+  - name: fontconfig fallback
+    src: .config/fontconfig/
+    dest: .config/fontconfig/
     mode: preserve
   - name: yt-dlp config
     src: .config/yt-dlp/

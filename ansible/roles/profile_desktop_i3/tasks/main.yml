@@ -40,6 +40,13 @@
   loop_control:
     label: "{{ item.dest }}"
 
+- name: Refresh user font cache
+  ansible.builtin.command: fc-cache -f
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  changed_when: false
+
 - name: Ensure .gnupg directory exists
   ansible.builtin.file:
     path: "{{ user_home }}/.gnupg"

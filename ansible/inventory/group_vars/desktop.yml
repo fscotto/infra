@@ -29,6 +29,10 @@ profile_packages:
   - network-manager-applet
   - chromium
   - emacs-gtk3
+  - mu4e
+  - isync
+  - msmtp
+  - libsecret
   - libtool
   - libvterm-devel
   - cmake
@@ -120,6 +124,14 @@ desktop_dotfiles:
     src: .themes.gitignore
     dest: .themes.gitignore
     mode: "0644"
+  - name: .mbsyncrc
+    src: .mbsyncrc
+    dest: .mbsyncrc
+    mode: "0600"
+  - name: .msmtprc
+    src: .msmtprc
+    dest: .msmtprc
+    mode: "0600"
   - name: Emacs config
     src: .emacs.d/
     dest: .emacs.d/

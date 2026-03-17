@@ -63,6 +63,15 @@
     group: "{{ user_group }}"
     mode: "0600"
 
+- name: Store iCloud mail password in GNOME Keyring
+  ansible.builtin.command:
+    cmd: secret-tool store --label="iCloud Mail" icloud-mail icloud
+    stdin: "{{ vault_icloud_mail_password }}"
+    stdin_add_newline: false
+  become: false
+  no_log: true
+  when: (vault_icloud_mail_password | default('')) | length > 0
+
 - name: Ensure local source directory exists
   ansible.builtin.file:
     path: "{{ user_home }}/.local/src"

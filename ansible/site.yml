@@ -7,6 +7,11 @@
 
 - hosts: void
   become: true
+  pre_tasks:
+    - name: Load local vault variables when available
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../secrets/vault.yml"
+      when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.yml', errors='ignore') != ''
 
   roles:
     - packages_void

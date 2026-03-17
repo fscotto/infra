@@ -64,13 +64,39 @@
     mode: "0600"
 
 - name: Store iCloud mail password in GNOME Keyring
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ username }}"
+
+- name: Set desktop user runtime UID
+  ansible.builtin.set_fact:
+    desktop_user_uid: "{{ ansible_facts.getent_passwd[username][1] }}"
+
+- name: Store iCloud mail password in GNOME Keyring
   ansible.builtin.command:
     cmd: secret-tool store --label="iCloud Mail" icloud-mail icloud
     stdin: "{{ vault_icloud_mail_password }}"
     stdin_add_newline: false
-  become: false
+  become: true
+  become_user: "{{ username }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ desktop_user_uid }}"
+    DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ desktop_user_uid }}/bus"
+  register: icloud_keyring_store
+  failed_when: false
+  changed_when: icloud_keyring_store.rc == 0
   no_log: true
   when: (vault_icloud_mail_password | default('')) | length > 0
+
+- name: Warn when iCloud keyring storage is skipped
+  ansible.builtin.debug:
+    msg: >-
+      Unable to store iCloud password in GNOME Keyring automatically.
+      Ensure a graphical user session is active, then run:
+      secret-tool store --label="iCloud Mail" icloud-mail icloud
+  when:
+    - (vault_icloud_mail_password | default('')) | length > 0
+    - icloud_keyring_store.rc | default(1) != 0
 
 - name: Ensure local source directory exists
   ansible.builtin.file:

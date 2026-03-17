@@ -126,9 +126,12 @@ desktop_dotfiles:
     mode: preserve
 
 desktop_flatpak_packages:
+  - be.alexandervanhee.gradia
   - ch.protonmail.protonmail-bridge
+  - com.discordapp.Discord
   - com.calibre_ebook.calibre
   - com.github.tchx84.Flatseal
   - com.spotify.Client
   - io.github.flattool.Warehouse
   - org.telegram.desktop
+  - sh.loft.devpod

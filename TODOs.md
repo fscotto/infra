@@ -1,0 +1,13 @@
+# TODO:
+- [X] Fargli creare xdg dir
+- [X] fargli creare Maildir dir
+- [X] Deve inizializzare la cartella Maildir con le sottocartelle iCloudAccount, ProtonMailAccount
+- [X] Avvio Polkit non avvia la dialog grafica per l'elevazione dei privilegi
+- [ ] Integrare tema Yaru su Flatpak
+- [ ] installare opencode
+- [ ] installare podman
+- [ ] Scaricare la posta
+- [ ] Init mu per la ricerca
+- [ ] aggiungere chiavi gpg nel vault per ripristino dopo reinstallazione
+- [ ] aggiungere chiavi ssh nel vault per ripristino dopo reinstallazione
+- [ ] installare distrobox

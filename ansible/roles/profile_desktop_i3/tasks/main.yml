@@ -87,6 +87,18 @@
     - path: "{{ user_home }}/.local/src"
       mode: "0755"
 
+- name: Ensure maildir directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0700"
+  loop:
+    - "{{ user_home }}/Maildir"
+    - "{{ user_home }}/Maildir/iCloudAccount"
+    - "{{ user_home }}/Maildir/ProtonMailAccount"
+
 - name: Bootstrap iCloud keyring secret from Ansible vault
   when: desktop_manage_icloud_keyring | default(false)
   block:

@@ -4,7 +4,7 @@ set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
-MBSYNCRC="$REPO_ROOT/dotfiles/desktop/.mbsyncrc"
+MBSYNCRC="$HOME/.mbsyncrc"
 VAULT_FILE="$REPO_ROOT/secrets/vault.yml"
 
 ACCOUNTS_FILE=$(mktemp)

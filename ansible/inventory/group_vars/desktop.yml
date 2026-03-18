@@ -114,10 +114,6 @@ desktop_dotfiles:
     src: .xinitrc
     dest: .xinitrc
     mode: "0644"
-  - name: .gitconfig
-    src: .gitconfig
-    dest: .gitconfig
-    mode: "0644"
   - name: .gitignore_global
     src: .gitignore_global
     dest: .gitignore_global
@@ -126,14 +122,6 @@ desktop_dotfiles:
     src: .themes.gitignore
     dest: .themes.gitignore
     mode: "0644"
-  - name: .mbsyncrc
-    src: .mbsyncrc
-    dest: .mbsyncrc
-    mode: "0600"
-  - name: .msmtprc
-    src: .msmtprc
-    dest: .msmtprc
-    mode: "0600"
   - name: Emacs config
     src: .emacs.d/
     dest: .emacs.d/

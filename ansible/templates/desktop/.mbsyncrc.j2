@@ -1,0 +1,47 @@
+##################### iCloud Account ##################################
+IMAPStore iCloud-remote
+    Host imap.mail.me.com
+    Port 993
+    User {{ vault_icloud_email }}
+    PassCmd "secret-tool lookup icloud-mail icloud"
+    AuthMechs *
+    SSLType IMAPS
+    SSLVersions TLSv1.2 TLSv1.3
+    PipelineDepth 1
+
+MaildirStore iCloud-local
+    Path ~/Maildir/iCloudAccount/
+    Inbox ~/Maildir/iCloudAccount/INBOX
+    SubFolders Verbatim
+
+Channel iCloud
+    Far :iCloud-remote:
+    Near :iCloud-local:
+    Patterns *
+    Create Both
+    Expunge Both
+    SyncState *
+
+##################### Protonmail Account ##################################
+IMAPStore protonmail-remote
+    Host 127.0.0.1
+    Port 1143
+    User {{ vault_protonmail_email }}
+    PassCmd "secret-tool lookup protonmail-bridge protonmail"
+    AuthMechs *
+    SSLType STARTTLS
+    PipelineDepth 1
+    CertificateFile  ~/.config/protonmail/bridge-v3/cert.pem
+
+MaildirStore protonmail-local
+    Path ~/Maildir/ProtonMailAccount/
+    Inbox ~/Maildir/ProtonMailAccount/INBOX
+    SubFolders Verbatim
+
+Channel Protonmail
+    Far :protonmail-remote:
+    Near :protonmail-local:
+    Patterns *
+    Create Both
+    Expunge Both
+    SyncState *

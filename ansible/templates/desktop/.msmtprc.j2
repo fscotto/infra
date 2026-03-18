@@ -1,0 +1,51 @@
+# Set default values for all following accounts.
+defaults
+
+# Always use TLS
+tls            on
+
+# Set a list of trusted CAs for TLS. The default is to use system settings,
+# but you can select your own file.
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+logfile        ~/.cache/msmtp.log
+
+# Account iCloud
+account        icloud
+
+# Host name of the SMTP server
+host           smtp.mail.me.com
+
+# Use the mail submission port 587 instead of the SMTP port 25
+port           587
+
+# Envelop-from address
+from           {{ vault_icloud_email }}
+
+# Authentication. The password is given using one of five methods
+auth           on
+user           {{ vault_icloud_email }}
+passwordeval   "secret-tool lookup icloud-mail icloud"
+
+# Account Protonmail
+account        protonmail
+
+# Hostname of the Protonmail bridge
+host           127.0.0.1
+
+# Port of the Protonmail bridge
+port           1025
+
+# Envelop-from address
+from           {{ vault_protonmail_email }}
+
+# Security
+tls on
+tls_trust_file ~/.config/protonmail/bridge-v3/cert.pem
+
+# Authentication
+auth           on
+user           {{ vault_protonmail_email }}
+passwordeval   "secret-tool lookup protonmail-bridge protonmail"
+
+# Set a default account
+account default : icloud

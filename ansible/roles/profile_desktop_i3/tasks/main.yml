@@ -47,6 +47,29 @@
   loop_control:
     label: "{{ item.dest }}"
 
+- name: Render desktop templates with private values
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ user_home }}/{{ item.dest }}"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - src: desktop/.gitconfig.j2
+      dest: .gitconfig
+      mode: "0644"
+    - src: desktop/.mbsyncrc.j2
+      dest: .mbsyncrc
+      mode: "0600"
+    - src: desktop/.msmtprc.j2
+      dest: .msmtprc
+      mode: "0600"
+    - src: desktop/email.el.j2
+      dest: .emacs.d/lisp/misc/email.el
+      mode: "0644"
+  loop_control:
+    label: "{{ item.dest }}"
+
 - name: Refresh user font cache
   ansible.builtin.command: fc-cache -f
   become_user: "{{ username }}"

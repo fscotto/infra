@@ -19,6 +19,8 @@ void_packages_base:
   - pavucontrol
   - gnome-keyring
   - seahorse
+  - podman
+  - podman-compose
   - socklog
   - socklog-void
   - void-repo-nonfree

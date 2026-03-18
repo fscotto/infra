@@ -70,6 +70,23 @@
     group: "{{ user_group }}"
     mode: "0600"
 
+- name: Ensure local user directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ user_home }}/.local"
+      mode: "0755"
+    - path: "{{ user_home }}/.local/share"
+      mode: "0755"
+    - path: "{{ user_home }}/.local/share/keyrings"
+      mode: "0700"
+    - path: "{{ user_home }}/.local/src"
+      mode: "0755"
+
 - name: Store iCloud mail password in GNOME Keyring
   ansible.builtin.getent:
     database: passwd
@@ -79,6 +96,31 @@
   ansible.builtin.set_fact:
     desktop_user_uid: "{{ ansible_facts.getent_passwd[username][1] }}"
 
+- name: Check whether desktop user session bus exists
+  ansible.builtin.stat:
+    path: "/run/user/{{ desktop_user_uid }}/bus"
+  register: desktop_user_bus
+
+- name: Check whether GNOME Keyring default collection is available
+  ansible.builtin.command:
+    cmd: >-
+      gdbus call --session
+      --dest org.freedesktop.secrets
+      --object-path /org/freedesktop/secrets
+      --method org.freedesktop.Secret.Service.ReadAlias default
+  become: true
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+    XDG_RUNTIME_DIR: "/run/user/{{ desktop_user_uid }}"
+    DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ desktop_user_uid }}/bus"
+  register: icloud_keyring_default_alias
+  failed_when: false
+  changed_when: false
+  when:
+    - (vault_icloud_mail_password | default('')) | length > 0
+    - desktop_user_bus.stat.exists
+
 - name: Store iCloud mail password in GNOME Keyring
   ansible.builtin.command:
     cmd: secret-tool store --label="iCloud Mail" icloud-mail icloud
@@ -87,34 +129,35 @@
   become: true
   become_user: "{{ username }}"
   environment:
+    HOME: "{{ user_home }}"
     XDG_RUNTIME_DIR: "/run/user/{{ desktop_user_uid }}"
     DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ desktop_user_uid }}/bus"
   register: icloud_keyring_store
   failed_when: false
   changed_when: icloud_keyring_store.rc == 0
   no_log: true
-  when: (vault_icloud_mail_password | default('')) | length > 0
+  when:
+    - (vault_icloud_mail_password | default('')) | length > 0
+    - desktop_user_bus.stat.exists
+    - icloud_keyring_default_alias.rc | default(1) == 0
+    - "\"/\" not in (icloud_keyring_default_alias.stdout | default(''))"
 
 - name: Warn when iCloud keyring storage is skipped
   ansible.builtin.debug:
     msg: >-
       Unable to store iCloud password in GNOME Keyring automatically.
-      Ensure a graphical user session is active, then run:
+      {% if not (desktop_user_bus.stat.exists | default(false)) %}
+      No active user session bus was found at /run/user/{{ desktop_user_uid }}/bus.
+      {% elif icloud_keyring_default_alias.rc | default(1) != 0 %}
+      The Secret Service default alias could not be queried for {{ username }}.
+      {% elif '"/"' in (icloud_keyring_default_alias.stdout | default('')) %}
+      The Secret Service default alias is unset, so the login keyring is not initialized.
+      {% endif %}
+      Ensure a graphical user session is active, the login keyring exists and is unlocked, then run:
       secret-tool store --label="iCloud Mail" icloud-mail icloud
   when:
     - (vault_icloud_mail_password | default('')) | length > 0
     - icloud_keyring_store.rc | default(1) != 0
-
-- name: Ensure local user directories exist
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: directory
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
-    mode: "0755"
-  loop:
-    - "{{ user_home }}/.local"
-    - "{{ user_home }}/.local/src"
 
 - name: Clone st repository
   ansible.builtin.git:

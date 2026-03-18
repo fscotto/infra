@@ -273,7 +273,7 @@
     method: system
   when: (desktop_flatpak_packages | default([])) | length > 0
 
-- name: Install Flatpak extensions for active runtimes
+- name: Install Flatpak extensions
   community.general.flatpak:
     name: "{{ item }}"
     state: present

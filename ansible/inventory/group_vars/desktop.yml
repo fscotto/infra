@@ -139,4 +139,4 @@ desktop_flatpak_packages:
   - sh.loft.devpod
 
 desktop_flatpak_extensions:
-  - org.gtk.Gtk3theme.Yaru-Blue-dark
+  - org.gtk.Gtk3theme.Yaru-Blue-dark//stable

@@ -49,7 +49,12 @@ Il repository è diviso in due componenti principali:
 
 # Macchine gestite
 
-Il sistema attualmente gestisce tre tipologie di profilo.
+Il repository modella attualmente tre tipologie di profilo.
+
+Nota sullo stato attuale del playbook principale:
+
+- `ansible/site.yml` applica oggi in automatico il profilo desktop su host Void Linux
+- i profili workstation e server sono gia presenti in inventory e nei ruoli, ma non sono ancora inclusi nel playbook principale
 
 ## Desktop
 
@@ -67,6 +72,14 @@ Macchine:
 - `nymph`
 
 Queste macchine condividono la stessa configurazione base desktop e vengono mantenute allineate tramite Ansible.
+
+Lo stato attuale del profilo desktop include, tra le altre cose:
+
+- dotfiles comuni e desktop
+- sessione i3 e servizi desktop correlati
+- pacchetti Void Linux e servizi runit
+- Flatpak con remoto Flathub
+- GNOME Keyring e bootstrap della posta via script dedicato
 
 ---
 
@@ -86,6 +99,8 @@ Macchina:
 
 Questo profilo è pensato per sviluppo e lavoro.
 
+Il modello e la struttura dei ruoli sono presenti, ma l'orchestrazione automatica tramite `ansible/site.yml` verra completata in una fase successiva.
+
 ---
 
 ## Server
@@ -103,6 +118,8 @@ Macchina:
 - `prometheus`
 
 Profilo minimale orientato a servizi server.
+
+Anche questo profilo e gia rappresentato in inventory e nei ruoli, ma non e ancora agganciato al playbook principale.
 
 ---
 
@@ -151,9 +168,24 @@ I principali ruoli attualmente presenti sono:
 | profile_desktop_i3        | configurazione desktop i3           |
 | profile_workstation_gnome | configurazione workstation GNOME    |
 | profile_server            | configurazione server               |
+| dotfiles_common           | distribuzione dotfiles comuni       |
 | dotfiles                  | distribuzione configurazioni utente |
 
 ---
+
+# Stato attuale del playbook principale
+
+Il playbook `ansible/site.yml` e attualmente composto da due blocchi:
+
+```text
+all  -> dotfiles_common
+void -> packages_void + services_runit + profile_desktop_i3
+```
+
+Questo significa che, allo stato attuale:
+
+- i desktop Void (`ikaros`, `nymph`) sono il target operativo principale
+- inventory, gruppi e ruoli per workstation Ubuntu e server Ubuntu restano nel repository come base per l'estensione futura
 
 # Dotfiles
 
@@ -184,13 +216,21 @@ Per utilizzare il repository sono necessari:
 
 - Python 3
 - Ansible
-- accesso SSH alle macchine target
+- collection `community.general`
+- accesso locale o SSH alle macchine target, in base a come e definito l'inventory
 
-Installazione Ansible:
+Installazione base:
 
 ```bash
 pip install ansible
+ansible-galaxy collection install community.general
 ```
+
+Gestione segreti:
+
+- il repository supporta il caricamento opzionale di `secrets/vault.yml`
+- `secrets/vault.yml.example` funge da template/esempio
+- se `secrets/vault.yml` non e presente, il playbook continua comunque senza caricare variabili locali opzionali
 
 ---
 
@@ -202,12 +242,18 @@ Eseguire il playbook principale:
 ansible-playbook ansible/site.yml
 ```
 
-Questo comando:
+Allo stato attuale questo comando:
 
-- installa i pacchetti richiesti
-- configura i servizi
-- applica il profilo macchina
-- distribuisce i dotfiles
+- distribuisce i dotfiles comuni a tutti gli host
+- per gli host Void applica pacchetti, servizi runit e profilo desktop i3
+- carica `secrets/vault.yml` solo se presente
+
+Per validare prima di applicare:
+
+```bash
+ansible-playbook ansible/site.yml --syntax-check
+ansible-playbook ansible/site.yml --limit ikaros --check --diff
+```
 
 ---
 
@@ -218,10 +264,19 @@ Una nuova macchina può essere inizializzata con i seguenti passaggi:
 ```bash
 git clone <repo>
 cd infra
+ansible-galaxy collection install community.general
 ansible-playbook ansible/site.yml
 ```
 
-Dopo l'esecuzione del playbook la macchina verrà configurata secondo il profilo definito.
+Dopo l'esecuzione del playbook la macchina verra configurata secondo il profilo definito e i ruoli attualmente orchestrati.
+
+Per il flusso mail desktop esiste inoltre uno script dedicato:
+
+```bash
+scripts/bootstrap_mail.sh
+```
+
+Lo script si occupa del bootstrap dei secret nel keyring, del primo sync con `mbsync` e dell'inizializzazione di `mu` usando la configurazione mail generata dai template.
 
 ---
 
@@ -243,7 +298,7 @@ Questo consente di ricreare qualsiasi macchina partendo esclusivamente dal repos
 
 Possibili evoluzioni future:
 
-- gestione segreti con `ansible-vault`
+- completamento dell'orchestrazione per workstation Ubuntu e server Ubuntu
 - hardening sicurezza server
 - configurazione backup
 - testing automatico playbook

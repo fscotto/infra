@@ -87,111 +87,114 @@
     - path: "{{ user_home }}/.local/src"
       mode: "0755"
 
-- name: Store iCloud mail password in GNOME Keyring
-  ansible.builtin.getent:
-    database: passwd
-    key: "{{ username }}"
+- name: Bootstrap iCloud keyring secret from Ansible vault
+  when: desktop_manage_icloud_keyring | default(false)
+  block:
+    - name: Store iCloud mail password in GNOME Keyring
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ username }}"
 
-- name: Set desktop user runtime UID
-  ansible.builtin.set_fact:
-    desktop_user_uid: "{{ ansible_facts.getent_passwd[username][1] }}"
+    - name: Set desktop user runtime UID
+      ansible.builtin.set_fact:
+        desktop_user_uid: "{{ ansible_facts.getent_passwd[username][1] }}"
 
-- name: Check whether desktop user DBus session address file exists
-  ansible.builtin.stat:
-    path: "{{ user_home }}/.dbus-session-bus-address"
-  register: desktop_user_bus_address_file
+    - name: Check whether desktop user DBus session address file exists
+      ansible.builtin.stat:
+        path: "{{ user_home }}/.dbus-session-bus-address"
+      register: desktop_user_bus_address_file
 
-- name: Read desktop user DBus session address
-  ansible.builtin.slurp:
-    src: "{{ user_home }}/.dbus-session-bus-address"
-  register: desktop_user_bus_address_raw
-  when:
-    - (vault_icloud_mail_password | default('')) | length > 0
-    - desktop_user_bus_address_file.stat.exists
+    - name: Read desktop user DBus session address
+      ansible.builtin.slurp:
+        src: "{{ user_home }}/.dbus-session-bus-address"
+      register: desktop_user_bus_address_raw
+      when:
+        - (vault_icloud_mail_password | default('')) | length > 0
+        - desktop_user_bus_address_file.stat.exists
 
-- name: Set desktop user DBus session address
-  ansible.builtin.set_fact:
-    desktop_user_bus_address: >-
-      {{ desktop_user_bus_address_raw.content | b64decode | trim }}
-  when:
-    - (vault_icloud_mail_password | default('')) | length > 0
-    - desktop_user_bus_address_file.stat.exists
+    - name: Set desktop user DBus session address
+      ansible.builtin.set_fact:
+        desktop_user_bus_address: >-
+          {{ desktop_user_bus_address_raw.content | b64decode | trim }}
+      when:
+        - (vault_icloud_mail_password | default('')) | length > 0
+        - desktop_user_bus_address_file.stat.exists
 
-- name: Check whether GNOME Keyring default collection is available
-  ansible.builtin.command:
-    cmd: >-
-      gdbus call --session
-      --dest org.freedesktop.secrets
-      --object-path /org/freedesktop/secrets
-      --method org.freedesktop.Secret.Service.ReadAlias default
-  become: true
-  become_user: "{{ username }}"
-  environment:
-    HOME: "{{ user_home }}"
-    XDG_RUNTIME_DIR: "/run/user/{{ desktop_user_uid }}"
-    DBUS_SESSION_BUS_ADDRESS: "{{ desktop_user_bus_address }}"
-  register: icloud_keyring_default_alias
-  failed_when: false
-  changed_when: false
-  when:
-    - (vault_icloud_mail_password | default('')) | length > 0
-    - desktop_user_bus_address | default('') | length > 0
+    - name: Check whether GNOME Keyring default collection is available
+      ansible.builtin.command:
+        cmd: >-
+          gdbus call --session
+          --dest org.freedesktop.secrets
+          --object-path /org/freedesktop/secrets
+          --method org.freedesktop.Secret.Service.ReadAlias default
+      become: true
+      become_user: "{{ username }}"
+      environment:
+        HOME: "{{ user_home }}"
+        XDG_RUNTIME_DIR: "/run/user/{{ desktop_user_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "{{ desktop_user_bus_address }}"
+      register: icloud_keyring_default_alias
+      failed_when: false
+      changed_when: false
+      when:
+        - (vault_icloud_mail_password | default('')) | length > 0
+        - desktop_user_bus_address | default('') | length > 0
 
-- name: Set GNOME Keyring default collection path
-  ansible.builtin.set_fact:
-    icloud_keyring_default_alias_path: >-
-      {{
-        (
-          icloud_keyring_default_alias.stdout
-          | default('')
-          | regex_findall("objectpath '([^']+)'")
-          | first
-        )
-        | default('')
-      }}
-  when:
-    - (vault_icloud_mail_password | default('')) | length > 0
-    - desktop_user_bus_address | default('') | length > 0
-    - icloud_keyring_default_alias.rc | default(1) == 0
+    - name: Set GNOME Keyring default collection path
+      ansible.builtin.set_fact:
+        icloud_keyring_default_alias_path: >-
+          {{
+            (
+              icloud_keyring_default_alias.stdout
+              | default('')
+              | regex_findall("objectpath '([^']+)'")
+              | first
+            )
+            | default('')
+          }}
+      when:
+        - (vault_icloud_mail_password | default('')) | length > 0
+        - desktop_user_bus_address | default('') | length > 0
+        - icloud_keyring_default_alias.rc | default(1) == 0
 
-- name: Store iCloud mail password in GNOME Keyring
-  ansible.builtin.command:
-    cmd: secret-tool store --label="iCloud Mail" icloud-mail icloud
-    stdin: "{{ vault_icloud_mail_password }}"
-    stdin_add_newline: false
-  become: true
-  become_user: "{{ username }}"
-  environment:
-    HOME: "{{ user_home }}"
-    XDG_RUNTIME_DIR: "/run/user/{{ desktop_user_uid }}"
-    DBUS_SESSION_BUS_ADDRESS: "{{ desktop_user_bus_address }}"
-  register: icloud_keyring_store
-  failed_when: false
-  changed_when: icloud_keyring_store.rc == 0
-  no_log: true
-  when:
-    - (vault_icloud_mail_password | default('')) | length > 0
-    - desktop_user_bus_address | default('') | length > 0
-    - icloud_keyring_default_alias.rc | default(1) == 0
-    - (icloud_keyring_default_alias_path | default('')) | length > 0
-    - (icloud_keyring_default_alias_path | default('')) != '/'
+    - name: Store iCloud mail password in GNOME Keyring
+      ansible.builtin.command:
+        cmd: secret-tool store --label="iCloud Mail" icloud-mail icloud
+        stdin: "{{ vault_icloud_mail_password }}"
+        stdin_add_newline: false
+      become: true
+      become_user: "{{ username }}"
+      environment:
+        HOME: "{{ user_home }}"
+        XDG_RUNTIME_DIR: "/run/user/{{ desktop_user_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "{{ desktop_user_bus_address }}"
+      register: icloud_keyring_store
+      failed_when: false
+      changed_when: icloud_keyring_store.rc == 0
+      no_log: true
+      when:
+        - (vault_icloud_mail_password | default('')) | length > 0
+        - desktop_user_bus_address | default('') | length > 0
+        - icloud_keyring_default_alias.rc | default(1) == 0
+        - (icloud_keyring_default_alias_path | default('')) | length > 0
+        - (icloud_keyring_default_alias_path | default('')) != '/'
 
-- name: Warn when iCloud keyring storage is skipped
-  ansible.builtin.debug:
-    msg: >-
-      Unable to store iCloud password in GNOME Keyring automatically.
-      {% if (desktop_user_bus_address | default('')) | length == 0 %}
-      No saved DBus session address was found in {{ user_home }}/.dbus-session-bus-address.
-      {% elif icloud_keyring_default_alias.rc | default(1) != 0 %}
-      The Secret Service default alias could not be queried for {{ username }}.
-      {% elif (icloud_keyring_default_alias_path | default('')) == '/' %}
-      The Secret Service default alias is unset, so the login keyring is not initialized.
-      {% endif %}
-      Ensure a graphical user session is active, the login keyring exists and is unlocked, then run:
-      secret-tool store --label="iCloud Mail" icloud-mail icloud
-  when:
-    - (vault_icloud_mail_password | default('')) | length > 0
-    - icloud_keyring_store.rc | default(1) != 0
+    - name: Warn when iCloud keyring storage is skipped
+      ansible.builtin.debug:
+        msg: >-
+          Unable to store iCloud password in GNOME Keyring automatically.
+          {% if (desktop_user_bus_address | default('')) | length == 0 %}
+          No saved DBus session address was found in {{ user_home }}/.dbus-session-bus-address.
+          {% elif icloud_keyring_default_alias.rc | default(1) != 0 %}
+          The Secret Service default alias could not be queried for {{ username }}.
+          {% elif (icloud_keyring_default_alias_path | default('')) == '/' %}
+          The Secret Service default alias is unset, so the login keyring is not initialized.
+          {% endif %}
+          Ensure a graphical user session is active, the login keyring exists and is unlocked, then run:
+          secret-tool store --label="iCloud Mail" icloud-mail icloud
+      when:
+        - (vault_icloud_mail_password | default('')) | length > 0
+        - icloud_keyring_store.rc | default(1) != 0
 
 - name: Clone st repository
   ansible.builtin.git:

@@ -1,4 +1,6 @@
 ---
+desktop_manage_icloud_keyring: false
+
 profile_packages:
   - i3
   - i3blocks

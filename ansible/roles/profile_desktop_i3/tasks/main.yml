@@ -290,12 +290,23 @@
     desktop_tools_tmp_dir: /tmp/desktop-tools
     gitmux_version: v0.11.5
     bw_version: 1.22.1
+    opencode_asset_name: >-
+      {{
+        'opencode-linux-x64-baseline.tar.gz' if ansible_facts['architecture'] == 'x86_64'
+        else 'opencode-linux-arm64.tar.gz' if ansible_facts['architecture'] in ['aarch64', 'arm64']
+        else ''
+      }}
     gitmux_arch: >-
       {{
         'amd64' if ansible_facts['architecture'] == 'x86_64'
         else 'arm64' if ansible_facts['architecture'] in ['aarch64', 'arm64']
         else ''
       }}
+
+- name: Ensure architecture is supported for OpenCode binary
+  ansible.builtin.fail:
+    msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for OpenCode release binary"
+  when: opencode_asset_name == ''
 
 - name: Ensure architecture is supported for gitmux binary
   ansible.builtin.fail:
@@ -311,6 +322,53 @@
   ansible.builtin.file:
     path: "{{ desktop_tools_tmp_dir }}"
     state: directory
+    mode: "0755"
+
+- name: Fetch latest OpenCode release metadata
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/anomalyco/opencode/releases/latest
+    headers:
+      Accept: application/vnd.github+json
+    return_content: true
+  register: opencode_latest_release
+  changed_when: false
+
+- name: Set OpenCode release asset metadata
+  ansible.builtin.set_fact:
+    opencode_version: "{{ opencode_latest_release.json.tag_name }}"
+    opencode_asset: >-
+      {{
+        opencode_latest_release.json.assets
+        | selectattr('name', 'equalto', opencode_asset_name)
+        | first
+        | default({})
+      }}
+
+- name: Ensure latest OpenCode asset metadata is available
+  ansible.builtin.fail:
+    msg: "Could not find OpenCode asset {{ opencode_asset_name }} in release {{ opencode_version }}"
+  when: opencode_asset == {}
+
+- name: Download OpenCode release archive
+  ansible.builtin.get_url:
+    url: "{{ opencode_asset.browser_download_url }}"
+    dest: "{{ desktop_tools_tmp_dir }}/{{ opencode_asset.name }}"
+    checksum: "{{ opencode_asset.digest | default(omit) }}"
+    mode: "0644"
+
+- name: Extract OpenCode release archive
+  ansible.builtin.unarchive:
+    src: "{{ desktop_tools_tmp_dir }}/{{ opencode_asset.name }}"
+    dest: "{{ desktop_tools_tmp_dir }}"
+    remote_src: true
+
+- name: Install OpenCode binary
+  ansible.builtin.copy:
+    src: "{{ desktop_tools_tmp_dir }}/opencode"
+    dest: /usr/local/bin/opencode
+    remote_src: true
+    owner: root
+    group: root
     mode: "0755"
 
 - name: Set gitmux asset metadata

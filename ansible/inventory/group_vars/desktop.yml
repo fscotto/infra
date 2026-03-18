@@ -137,3 +137,6 @@ desktop_flatpak_packages:
   - io.github.flattool.Warehouse
   - org.telegram.desktop
   - sh.loft.devpod
+
+desktop_flatpak_extensions:
+  - org.gtk.Gtk3theme.Yaru-Blue-dark

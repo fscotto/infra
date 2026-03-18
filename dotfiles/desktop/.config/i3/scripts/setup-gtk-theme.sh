@@ -35,3 +35,10 @@ EOF
 export GTK_THEME=$THEME
 export XCURSOR_THEME=$CURSOR
 export XCURSOR_SIZE=24
+
+if command -v gsettings >/dev/null 2>&1; then
+  gsettings set org.gnome.desktop.interface gtk-theme "$THEME" >/dev/null 2>&1 || true
+  gsettings set org.gnome.desktop.interface icon-theme "$ICONS" >/dev/null 2>&1 || true
+  gsettings set org.gnome.desktop.interface cursor-theme "$CURSOR" >/dev/null 2>&1 || true
+  gsettings set org.gnome.desktop.interface color-scheme prefer-dark >/dev/null 2>&1 || true
+fi

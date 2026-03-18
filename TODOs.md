@@ -4,7 +4,7 @@
 - [X] Deve inizializzare la cartella Maildir con le sottocartelle iCloudAccount, ProtonMailAccount
 - [X] Avvio Polkit non avvia la dialog grafica per l'elevazione dei privilegi
 - [X] Integrare tema Yaru su Flatpak
-- [ ] installare opencode
+- [X] installare opencode
 - [ ] installare podman
 - [ ] Scaricare la posta
 - [ ] Init mu per la ricerca

@@ -273,37 +273,13 @@
     method: system
   when: (desktop_flatpak_packages | default([])) | length > 0
 
-- name: Gather Flatpak runtime branches for extensions
-  ansible.builtin.shell: >-
-    flatpak list --runtime --columns=application,branch --system
-    | awk '$1 == "org.gnome.Platform" || $1 == "org.freedesktop.Platform" { print $2 }'
-    | sort -u
-  register: desktop_flatpak_runtime_branches
-  changed_when: false
-  when:
-    - (desktop_flatpak_packages | default([])) | length > 0
-    - (desktop_flatpak_extensions | default([])) | length > 0
-
-- name: Build Flatpak extension refs for active runtimes
-  ansible.builtin.set_fact:
-    desktop_flatpak_extension_refs: >-
-      {{
-        (desktop_flatpak_extensions | default([]))
-        | product(desktop_flatpak_runtime_branches.stdout_lines | default([]))
-        | map('join', '//')
-        | list
-      }}
-  when:
-    - (desktop_flatpak_packages | default([])) | length > 0
-    - (desktop_flatpak_extensions | default([])) | length > 0
-
 - name: Install Flatpak extensions for active runtimes
   community.general.flatpak:
     name: "{{ item }}"
     state: present
     remote: "{{ desktop_flatpak_remote_name | default('flathub') }}"
     method: system
-  loop: "{{ desktop_flatpak_extension_refs | default([]) }}"
+  loop: "{{ desktop_flatpak_extensions | default([]) }}"
   when:
     - (desktop_flatpak_packages | default([])) | length > 0
     - (desktop_flatpak_extensions | default([])) | length > 0

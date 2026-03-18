@@ -105,13 +105,16 @@
     - (vault_icloud_mail_password | default('')) | length > 0
     - icloud_keyring_store.rc | default(1) != 0
 
-- name: Ensure local source directory exists
+- name: Ensure local user directories exist
   ansible.builtin.file:
-    path: "{{ user_home }}/.local/src"
+    path: "{{ item }}"
     state: directory
     owner: "{{ username }}"
     group: "{{ user_group }}"
     mode: "0755"
+  loop:
+    - "{{ user_home }}/.local"
+    - "{{ user_home }}/.local/src"
 
 - name: Clone st repository
   ansible.builtin.git:

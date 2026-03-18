@@ -4,6 +4,15 @@
     name: bat
     state: present
 
+- name: Ensure XDG user directories exist
+  ansible.builtin.file:
+    path: "{{ user_home }}/{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+  loop: "{{ xdg_user_directories | default([]) }}"
+
 - name: Copy common dotfiles
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/../dotfiles/common/{{ item.src }}"

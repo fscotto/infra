@@ -5,6 +5,16 @@ user_group: fscotto
 user_home: "/home/{{ username }}"
 user_shell: /bin/bash
 
+xdg_user_directories:
+  - Desktop
+  - Documents
+  - Downloads
+  - Music
+  - Pictures
+  - Public
+  - Templates
+  - Videos
+
 common_packages:
   - bash-completion
   - bat

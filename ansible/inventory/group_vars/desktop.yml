@@ -21,6 +21,7 @@ profile_packages:
   - xfce4-screenshooter
   - volumeicon
   - brightnessctl
+  - autorandr
   - feh
   - ImageMagick
   - scrot

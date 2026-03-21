@@ -12,3 +12,8 @@ host_packages:
 
 host_enabled_services:
   - tlp
+
+host_dotfiles:
+  - src: .config/autorandr/
+    dest: .config/autorandr/
+    mode: preserve

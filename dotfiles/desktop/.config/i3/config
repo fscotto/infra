@@ -17,6 +17,9 @@ exec --no-startup-id pipewire
 exec --no-startup-id pipewire-pulse
 exec --no-startup-id wireplumber
 
+# Monitor configuration
+exec --no-startup-id autorandr --persistent --change
+
 # Tray services
 exec --no-startup-id dunst
 exec --no-startup-id /usr/libexec/xfce-polkit

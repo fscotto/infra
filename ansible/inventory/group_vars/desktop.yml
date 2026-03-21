@@ -46,6 +46,7 @@ profile_packages:
   - fontconfig-devel
   - freetype-devel
   - go
+  - nodejs
   - clang
   - clang-tools-extra
   - mpv

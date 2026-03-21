@@ -1,5 +1,6 @@
 ---
 - name: Ensure config directories exist
+  tags: [dotfiles, dotfiles:desktop]
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -37,6 +38,7 @@
     state: present
 
 - name: Copy desktop dotfiles
+  tags: [dotfiles, dotfiles:desktop]
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/../dotfiles/desktop/{{ item.src }}"
     dest: "{{ user_home }}/{{ item.dest }}"
@@ -48,6 +50,7 @@
     label: "{{ item.dest }}"
 
 - name: Render desktop templates with private values
+  tags: [dotfiles, dotfiles:desktop]
   ansible.builtin.template:
     src: "{{ item.src }}"
     dest: "{{ user_home }}/{{ item.dest }}"
@@ -71,6 +74,7 @@
     label: "{{ item.dest }}"
 
 - name: Refresh user font cache
+  tags: [dotfiles, dotfiles:desktop]
   ansible.builtin.command: fc-cache -f
   become_user: "{{ username }}"
   environment:
@@ -78,6 +82,7 @@
   changed_when: false
 
 - name: Ensure .gnupg directory exists
+  tags: [dotfiles, dotfiles:desktop]
   ansible.builtin.file:
     path: "{{ user_home }}/.gnupg"
     state: directory
@@ -86,6 +91,7 @@
     mode: "0700"
 
 - name: Copy gpg-agent.conf
+  tags: [dotfiles, dotfiles:desktop]
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/../dotfiles/desktop/.gnupg/gpg-agent.conf"
     dest: "{{ user_home }}/.gnupg/gpg-agent.conf"
@@ -94,6 +100,7 @@
     mode: "0600"
 
 - name: Ensure local user directories exist
+  tags: [dotfiles, dotfiles:desktop]
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: directory
@@ -111,6 +118,7 @@
       mode: "0755"
 
 - name: Ensure maildir directories exist
+  tags: [dotfiles, dotfiles:desktop]
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory

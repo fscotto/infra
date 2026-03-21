@@ -8,6 +8,7 @@ font pango:Liberation Mono 10
 # Start XDG autostart entries (.desktop), useful on Void for pipewire/wireplumber/etc.
 exec --no-startup-id dex --autostart --environment i3
 exec --no-startup-id gnome-keyring-daemon --start --components=secrets
+exec_always --no-startup-id setxkbmap -layout us -variant intl
 exec_always --no-startup-id feh --bg-fill ~/.config/i3/wallpapers/gargantua2.png
 exec_always --no-startup-id ~/.config/i3/scripts/setup-gtk-theme.sh
 exec --no-startup-id /usr/libexec/xdg-desktop-portal

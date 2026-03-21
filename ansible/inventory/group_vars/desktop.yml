@@ -26,6 +26,8 @@ profile_packages:
   - ImageMagick
   - scrot
   - xclip
+  - xkbutils
+  - setxkbmap
   - xss-lock
   - playerctl
   - nerd-fonts-symbols-ttf

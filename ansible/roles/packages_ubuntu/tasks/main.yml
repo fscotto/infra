@@ -60,3 +60,15 @@
     groups: docker
     append: true
   when: (ubuntu_docker_packages | default([])) | length > 0
+
+- name: Install workstation snap packages
+  tags: [packages]
+  community.general.snap:
+    name: "{{ item.name }}"
+    classic: "{{ item.classic | default(false) }}"
+    channel: "{{ item.channel | default(omit) }}"
+    state: present
+  loop: "{{ workstation_snap_packages | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: (workstation_snap_packages | default([])) | length > 0

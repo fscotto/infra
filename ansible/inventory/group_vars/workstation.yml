@@ -8,6 +8,20 @@ profile_packages:
   - gnome-tweaks
   - seahorse
 
+workstation_snap_packages:
+  - name: intellij-idea-ultimate
+    classic: true
+    channel: latest/stable
+  - name: postman
+    classic: false
+    channel: latest/stable
+  - name: thunderbird
+    classic: false
+    channel: latest/stable
+  - name: code
+    classic: true
+    channel: latest/stable
+
 workstation_user_directories:
   - path: "{{ user_home }}/.config"
     mode: "0755"

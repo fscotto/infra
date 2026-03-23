@@ -16,6 +16,9 @@ profile_packages:
 
 workstation_manage_google_chrome: true
 
+workstation_removed_snap_packages:
+  - firefox
+
 workstation_snap_packages:
   - name: intellij-idea-ultimate
     classic: true

@@ -102,6 +102,16 @@
     append: true
   when: (ubuntu_docker_packages | default([])) | length > 0
 
+- name: Remove workstation snap packages
+  tags: [packages]
+  community.general.snap:
+    name: "{{ item }}"
+    state: absent
+  loop: "{{ workstation_removed_snap_packages | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  when: (workstation_removed_snap_packages | default([])) | length > 0
+
 - name: Install workstation snap packages
   tags: [packages]
   community.general.snap:

@@ -7,3 +7,15 @@ ubuntu_packages_base:
   - python3-gi
   - python3-gi-cairo
   - software-properties-common
+
+ubuntu_manage_docker_repo: true
+
+ubuntu_docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+enabled_services:
+  - docker

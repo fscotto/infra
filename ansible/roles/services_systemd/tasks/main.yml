@@ -1,6 +1,6 @@
 ---
 - name: Enable base systemd services
-  tags: [services]
+  tags: [services, packages]
   ansible.builtin.systemd:
     name: "{{ item }}"
     enabled: true
@@ -10,7 +10,7 @@
     label: "{{ item }}"
 
 - name: Enable host systemd services
-  tags: [services]
+  tags: [services, packages]
   ansible.builtin.systemd:
     name: "{{ item }}"
     enabled: true

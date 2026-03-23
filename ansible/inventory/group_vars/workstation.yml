@@ -46,6 +46,9 @@ workstation_snap_packages:
   - name: telegram-desktop
     classic: false
     channel: latest/stable
+  - name: dbeaver-ce
+    classic: true
+    channel: latest/stable
 
 workstation_user_directories:
   - path: "{{ user_home }}/.config"

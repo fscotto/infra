@@ -4,9 +4,11 @@ profile_packages:
   - fastfetch
   - build-essential
   - nodejs
+  - git-delta
   - meld
   - gufw
   - libreoffice
+  - network-manager-openconnect-gnome
   - gnome-shell-extension-manager
   - gnome-shell-extensions
   - gnome-tweaks

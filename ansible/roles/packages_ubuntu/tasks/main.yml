@@ -1,4 +1,45 @@
 ---
+- name: Gather installed package facts
+  tags: [packages]
+  ansible.builtin.package_facts:
+    manager: auto
+
+- name: Ensure architecture is supported for Google Chrome
+  tags: [packages]
+  ansible.builtin.fail:
+    msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for Google Chrome stable package"
+  when:
+    - workstation_manage_google_chrome | default(false)
+    - ansible_facts['architecture'] != 'x86_64'
+
+- name: Download Google Chrome Debian package
+  tags: [packages]
+  ansible.builtin.get_url:
+    url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+    dest: /tmp/google-chrome-stable_current_amd64.deb
+    mode: "0644"
+  when:
+    - workstation_manage_google_chrome | default(false)
+    - "'google-chrome-stable' not in (ansible_facts.packages | default({}))"
+
+- name: Install Google Chrome from downloaded Debian package
+  tags: [packages]
+  ansible.builtin.apt:
+    deb: /tmp/google-chrome-stable_current_amd64.deb
+    state: present
+  when:
+    - workstation_manage_google_chrome | default(false)
+    - "'google-chrome-stable' not in (ansible_facts.packages | default({}))"
+
+- name: Remove downloaded Google Chrome Debian package
+  tags: [packages]
+  ansible.builtin.file:
+    path: /tmp/google-chrome-stable_current_amd64.deb
+    state: absent
+  when:
+    - workstation_manage_google_chrome | default(false)
+    - "'google-chrome-stable' not in (ansible_facts.packages | default({}))"
+
 - name: Ensure Docker apt keyrings directory exists
   tags: [packages]
   ansible.builtin.file:

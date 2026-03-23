@@ -14,6 +14,8 @@ profile_packages:
   - podman-compose
   - distrobox
 
+workstation_manage_google_chrome: true
+
 workstation_snap_packages:
   - name: intellij-idea-ultimate
     classic: true

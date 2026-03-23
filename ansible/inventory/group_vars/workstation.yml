@@ -1,12 +1,18 @@
 ---
 profile_packages:
-  - dbus-user-session
-  - gnome-keyring
+  - htop
+  - fastfetch
+  - build-essential
+  - nodejs
+  - meld
+  - gufw
+  - libreoffice
   - gnome-shell-extension-manager
   - gnome-shell-extensions
-  - gnome-terminal
   - gnome-tweaks
-  - seahorse
+  - podman
+  - podman-compose
+  - distrobox
 
 workstation_snap_packages:
   - name: intellij-idea-ultimate
@@ -20,6 +26,18 @@ workstation_snap_packages:
     channel: latest/stable
   - name: code
     classic: true
+    channel: latest/stable
+  - name: xournalpp
+    classic: false
+    channel: latest/stable
+  - name: pdfarranger
+    classic: false
+    channel: latest/stable
+  - name: spotify
+    classic: false
+    channel: latest/stable
+  - name: telegram-desktop
+    classic: false
     channel: latest/stable
 
 workstation_user_directories:

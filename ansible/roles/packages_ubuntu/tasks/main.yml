@@ -1,1 +1,18 @@
-# install packages with apt
+---
+- name: Refresh apt package cache
+  tags: [packages]
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install packages on Ubuntu
+  tags: [packages]
+  ansible.builtin.apt:
+    name: >-
+      {{
+        (common_packages | default([]))
+        + (ubuntu_packages_base | default([]))
+        + (profile_packages | default([]))
+        + (host_packages | default([]))
+      }}
+    state: present

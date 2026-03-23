@@ -18,3 +18,11 @@
     - packages_void
     - services_runit
     - profile_desktop_i3
+
+- hosts: ubuntu_workstation
+  become: true
+
+  roles:
+    - packages_ubuntu
+    - services_systemd
+    - profile_workstation_gnome

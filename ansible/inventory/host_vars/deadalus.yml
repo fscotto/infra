@@ -1,1 +1,5 @@
-# deadalus specific variables
+---
+hostname: deadalus
+
+host_packages: []
+host_enabled_services: []

@@ -8,8 +8,8 @@ Project type: Ansible-based infrastructure plus managed dotfiles.
 - Inventory: `ansible/inventory/hosts.yml`
 - Group vars: `ansible/inventory/group_vars/*.yml`
 - Host vars: `ansible/inventory/host_vars/*.yml`
-- Active roles: `dotfiles_common`, `packages_void`, `services_runit`, `profile_desktop_i3`
-- Roles present but not currently wired into `ansible/site.yml`: `base`, `dotfiles`, `packages_ubuntu`, `services_systemd`, `profile_workstation_gnome`, `profile_server`
+- Active roles: `dotfiles_common`, `packages_void`, `services_runit`, `profile_desktop_i3`, `packages_ubuntu`, `services_systemd`, `profile_workstation_gnome`
+- Roles present but not currently wired into `ansible/site.yml`: `base`, `dotfiles`, `profile_server`
 - Dotfiles source of truth: `dotfiles/`
 - Utility scripts: `scripts/`
 - Sensitive local material/examples: `secrets/`
@@ -33,8 +33,9 @@ If any of these files appear later, treat them as higher-priority local instruct
 `ansible/site.yml` currently applies:
 - `all -> dotfiles_common`
 - `void -> packages_void, services_runit, profile_desktop_i3`
+- `ubuntu_workstation -> packages_ubuntu, services_systemd, profile_workstation_gnome`
 
-Inventory also defines Ubuntu workstation and server hosts, but those paths are not yet orchestrated by the main playbook.
+Ubuntu server inventory and role scaffolding still exist, but the server path is not yet orchestrated by the main playbook.
 
 ## Build, lint, and test commands
 There is no compile/build step. Validation is based on Ansible syntax checks, inventory inspection, dry-runs, and linting.
@@ -52,8 +53,11 @@ ansible-playbook ansible/site.yml --check --diff
 ansible-playbook ansible/site.yml --syntax-check
 ansible-playbook ansible/site.yml --limit ikaros
 ansible-playbook ansible/site.yml --limit nymph
+ansible-playbook ansible/site.yml --limit deadalus
+ansible-playbook ansible/site.yml --limit ubuntu_workstation
 ansible-inventory --graph
 ansible-inventory --host ikaros
+ansible-inventory --host deadalus
 ```
 
 Linting and static checks if available locally:

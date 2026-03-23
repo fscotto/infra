@@ -1,1 +1,17 @@
-# workstation profile variables
+---
+profile_packages:
+  - dbus-user-session
+  - gnome-keyring
+  - gnome-shell-extension-manager
+  - gnome-shell-extensions
+  - gnome-terminal
+  - gnome-tweaks
+  - seahorse
+
+workstation_user_directories:
+  - path: "{{ user_home }}/.config"
+    mode: "0755"
+  - path: "{{ user_home }}/.local"
+    mode: "0755"
+  - path: "{{ user_home }}/.local/bin"
+    mode: "0755"

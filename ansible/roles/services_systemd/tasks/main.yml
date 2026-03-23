@@ -1,1 +1,20 @@
-# enable systemd services
+---
+- name: Enable base systemd services
+  tags: [services]
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop: "{{ enabled_services | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Enable host systemd services
+  tags: [services]
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop: "{{ host_enabled_services | default([]) }}"
+  loop_control:
+    label: "{{ item }}"

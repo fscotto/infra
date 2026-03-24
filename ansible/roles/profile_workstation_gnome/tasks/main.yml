@@ -185,6 +185,10 @@
         )
         | from_yaml
       }}
+
+- name: Build desired workstation GNOME enabled extensions list
+  tags: [gnome]
+  ansible.builtin.set_fact:
     workstation_enabled_gnome_extensions_desired: >-
       {{
         (

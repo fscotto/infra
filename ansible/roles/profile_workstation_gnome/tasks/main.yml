@@ -163,26 +163,63 @@
   loop_control:
     label: "{{ item.uuid }}"
 
-- name: Disable workstation GNOME extensions
+- name: Read current workstation GNOME enabled extensions
   tags: [gnome]
   ansible.builtin.command:
-    cmd: "gnome-extensions disable {{ item }}"
+    cmd: gsettings get org.gnome.shell enabled-extensions
   become_user: "{{ username }}"
   environment: "{{ workstation_gnome_environment }}"
-  loop: "{{ workstation_disabled_gnome_extensions | default([]) }}"
-  loop_control:
-    label: "{{ item }}"
+  register: workstation_enabled_gnome_extensions_current
   changed_when: false
-  when: (workstation_disabled_gnome_extensions | default([])) | length > 0
 
-- name: Enable workstation GNOME extensions
+- name: Compute desired workstation GNOME enabled extensions
+  tags: [gnome]
+  ansible.builtin.set_fact:
+    workstation_enabled_gnome_extensions_desired: >-
+      {{
+        (
+          (
+            workstation_enabled_gnome_extensions_current.stdout
+            | regex_replace('^@as\\s+', '')
+            | from_yaml
+          )
+          + (
+            workstation_gnome_extensions
+            | default([])
+            | selectattr('enabled', 'defined')
+            | selectattr('enabled')
+            | map(attribute='uuid')
+            | list
+          )
+        )
+        | difference(workstation_disabled_gnome_extensions | default([]))
+        | unique
+        | sort
+      }}
+    workstation_enabled_gnome_extensions_desired_gsettings: >-
+      [{{
+        workstation_enabled_gnome_extensions_desired
+        | map('regex_replace', '^(.*)$', "'\\1'")
+        | join(', ')
+      }}]
+
+- name: Apply workstation GNOME enabled extensions list
   tags: [gnome]
   ansible.builtin.command:
-    cmd: "gnome-extensions enable {{ item.uuid }}"
+    argv:
+      - gsettings
+      - set
+      - org.gnome.shell
+      - enabled-extensions
+      - "{{ workstation_enabled_gnome_extensions_desired_gsettings }}"
   become_user: "{{ username }}"
   environment: "{{ workstation_gnome_environment }}"
-  loop: "{{ workstation_gnome_extensions | default([]) }}"
-  loop_control:
-    label: "{{ item.uuid }}"
-  changed_when: false
-  when: item.enabled | default(false)
+  changed_when: >-
+    {{
+      (
+        workstation_enabled_gnome_extensions_current.stdout
+        | regex_replace('^@as\\s+', '')
+        | from_yaml
+        | sort
+      ) != workstation_enabled_gnome_extensions_desired
+    }}

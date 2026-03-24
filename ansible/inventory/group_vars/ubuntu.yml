@@ -1,6 +1,12 @@
 ---
 ubuntu_packages_base:
   - curl
+  - htop
+  - fastfetch
+  - build-essential
+  - nodejs
+  - git-delta
+  - jq
 
 ubuntu_manage_docker_repo: true
 

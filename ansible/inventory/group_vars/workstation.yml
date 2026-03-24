@@ -1,10 +1,5 @@
 ---
 profile_packages:
-  - htop
-  - fastfetch
-  - build-essential
-  - nodejs
-  - git-delta
   - meld
   - gufw
   - libreoffice

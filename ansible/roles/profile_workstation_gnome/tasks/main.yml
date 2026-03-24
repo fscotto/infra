@@ -153,6 +153,15 @@
   loop_control:
     label: "{{ item.uuid }}"
 
+- name: Check installed workstation GNOME extensions
+  tags: [packages, gnome]
+  ansible.builtin.stat:
+    path: "{{ user_home }}/.local/share/gnome-shell/extensions/{{ item.uuid }}/metadata.json"
+  loop: "{{ workstation_gnome_extensions | default([]) }}"
+  loop_control:
+    label: "{{ item.uuid }}"
+  register: workstation_gnome_extension_install_state
+
 - name: Install workstation GNOME extensions from downloaded archives
   tags: [packages, gnome]
   ansible.builtin.command:
@@ -162,6 +171,14 @@
   loop: "{{ workstation_gnome_extensions | default([]) }}"
   loop_control:
     label: "{{ item.uuid }}"
+  when: >-
+    not (
+      workstation_gnome_extension_install_state.results
+      | selectattr('item.uuid', 'equalto', item.uuid)
+      | map(attribute='stat.exists')
+      | first
+      | default(false)
+    )
 
 - name: Read current workstation GNOME enabled extensions
   tags: [gnome]

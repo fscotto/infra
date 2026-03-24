@@ -39,6 +39,10 @@ common_dotfiles:
     src: .tmux.conf
     dest: .tmux.conf
     mode: "0644"
+  - name: .vimrc
+    src: .vimrc
+    dest: .vimrc
+    mode: "0644"
   - name: tmux config directory
     src: .tmux/
     dest: .tmux/

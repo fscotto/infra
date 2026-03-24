@@ -1,11 +1,12 @@
 # TODO:
-- [X] Fargli creare xdg dir
-- [X] fargli creare Maildir dir
-- [X] Deve inizializzare la cartella Maildir con le sottocartelle iCloudAccount, ProtonMailAccount
-- [X] Avvio Polkit non avvia la dialog grafica per l'elevazione dei privilegi
-- [X] Integrare tema Yaru su Flatpak
-- [X] installare opencode
-- [ ] installare podman
+
+- [x] Fargli creare xdg dir
+- [x] fargli creare Maildir dir
+- [x] Deve inizializzare la cartella Maildir con le sottocartelle iCloudAccount, ProtonMailAccount
+- [x] Avvio Polkit non avvia la dialog grafica per l'elevazione dei privilegi
+- [x] Integrare tema Yaru su Flatpak
+- [x] installare opencode
+- [x] installare podman
 - [ ] Scaricare la posta
 - [ ] Init mu per la ricerca
 - [ ] aggiungere chiavi gpg nel vault per ripristino dopo reinstallazione

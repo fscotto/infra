@@ -52,3 +52,16 @@ workstation_user_directories:
     mode: "0755"
   - path: "{{ user_home }}/.local/bin"
     mode: "0755"
+
+workstation_dotfiles:
+  - src: .gitignore_global
+    dest: .gitignore_global
+    mode: "0644"
+  - src: .themes.gitignore
+    dest: .themes.gitignore
+    mode: "0644"
+
+workstation_templates:
+  - src: workstation/.gitconfig.j2
+    dest: .gitconfig
+    mode: "0644"

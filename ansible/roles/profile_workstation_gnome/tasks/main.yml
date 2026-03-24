@@ -10,3 +10,27 @@
   loop: "{{ workstation_user_directories | default([]) }}"
   loop_control:
     label: "{{ item.path }}"
+
+- name: Copy workstation dotfiles
+  tags: [dotfiles, dotfiles:workstation]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/workstation/{{ item.src }}"
+    dest: "{{ user_home }}/{{ item.dest }}"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ workstation_dotfiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+
+- name: Render workstation templates
+  tags: [dotfiles, dotfiles:workstation]
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ user_home }}/{{ item.dest }}"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ workstation_templates | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"

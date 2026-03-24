@@ -217,6 +217,12 @@
         | join(', ')
       }}]
 
+- name: Determine whether workstation GNOME enabled extensions must change
+  tags: [gnome]
+  ansible.builtin.set_fact:
+    workstation_gnome_extensions_state_changed: >-
+      {{ (workstation_enabled_gnome_extensions_current_list | sort) != workstation_enabled_gnome_extensions_desired }}
+
 - name: Apply workstation GNOME enabled extensions list
   tags: [gnome]
   ansible.builtin.command:
@@ -228,7 +234,5 @@
       - "{{ workstation_enabled_gnome_extensions_desired_gsettings }}"
   become_user: "{{ username }}"
   environment: "{{ workstation_gnome_environment }}"
-  changed_when: >-
-    {{
-      (workstation_enabled_gnome_extensions_current_list | sort) != workstation_enabled_gnome_extensions_desired
-    }}
+  changed_when: workstation_gnome_extensions_state_changed
+  when: workstation_gnome_extensions_state_changed

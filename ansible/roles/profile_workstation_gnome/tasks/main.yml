@@ -124,28 +124,40 @@
     - "{{ user_home }}/.cache/gnome-shell/extensions"
     - "{{ user_home }}/.local/share/gnome-shell/extensions"
 
-- name: Install workstation GNOME extensions from website
+- name: Gather workstation user account data
   tags: [packages, gnome]
-  ansible.builtin.file:
-    path: "{{ user_home }}/.local/share/gnome-shell/extensions/{{ item.uuid }}"
-    state: directory
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ username }}"
+
+- name: Set workstation GNOME session environment
+  tags: [packages, gnome]
+  ansible.builtin.set_fact:
+    workstation_user_uid: "{{ ansible_facts.getent_passwd[username][1] }}"
+    workstation_gnome_extension_dir: "{{ user_home }}/.cache/gnome-shell/extensions"
+    workstation_gnome_environment:
+      HOME: "{{ user_home }}"
+      XDG_RUNTIME_DIR: "/run/user/{{ ansible_facts.getent_passwd[username][1] }}"
+
+- name: Download workstation GNOME extension archives
+  tags: [packages, gnome]
+  ansible.builtin.get_url:
+    url: >-
+      https://extensions.gnome.org/download-extension/{{ item.uuid }}.shell-extension.zip?version_tag={{ item.version_tag }}
+    dest: "{{ workstation_gnome_extension_dir }}/{{ item.uuid }}.zip"
     owner: "{{ username }}"
     group: "{{ user_group }}"
-    mode: "0755"
+    mode: "0644"
   loop: "{{ workstation_gnome_extensions | default([]) }}"
   loop_control:
     label: "{{ item.uuid }}"
 
-- name: Extract workstation GNOME extensions from website
+- name: Install workstation GNOME extensions from downloaded archives
   tags: [packages, gnome]
-  ansible.builtin.unarchive:
-    src: >-
-      https://extensions.gnome.org/download-extension/{{ item.uuid }}.shell-extension.zip?version_tag={{ item.version_tag }}
-    dest: "{{ user_home }}/.local/share/gnome-shell/extensions/{{ item.uuid }}"
-    remote_src: true
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
-    mode: "0755"
+  ansible.builtin.command:
+    cmd: "gnome-extensions install --force {{ workstation_gnome_extension_dir }}/{{ item.uuid }}.zip"
+  become_user: "{{ username }}"
+  environment: "{{ workstation_gnome_environment }}"
   loop: "{{ workstation_gnome_extensions | default([]) }}"
   loop_control:
     label: "{{ item.uuid }}"
@@ -155,8 +167,7 @@
   ansible.builtin.command:
     cmd: "gnome-extensions disable {{ item }}"
   become_user: "{{ username }}"
-  environment:
-    HOME: "{{ user_home }}"
+  environment: "{{ workstation_gnome_environment }}"
   loop: "{{ workstation_disabled_gnome_extensions | default([]) }}"
   loop_control:
     label: "{{ item }}"
@@ -168,8 +179,7 @@
   ansible.builtin.command:
     cmd: "gnome-extensions enable {{ item.uuid }}"
   become_user: "{{ username }}"
-  environment:
-    HOME: "{{ user_home }}"
+  environment: "{{ workstation_gnome_environment }}"
   loop: "{{ workstation_gnome_extensions | default([]) }}"
   loop_control:
     label: "{{ item.uuid }}"

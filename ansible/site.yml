@@ -1,18 +1,18 @@
 ---
 - hosts: all
   become: true
-
-  roles:
-    - dotfiles_common
-
-- hosts: void
-  become: true
   pre_tasks:
     - name: Load local vault variables when available
       tags: [always]
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../secrets/vault.yml"
       when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.yml', errors='ignore') != ''
+
+  roles:
+    - dotfiles_common
+
+- hosts: void
+  become: true
 
   roles:
     - packages_void
@@ -21,12 +21,6 @@
 
 - hosts: ubuntu_workstation
   become: true
-  pre_tasks:
-    - name: Load local vault variables when available
-      tags: [always]
-      ansible.builtin.include_vars:
-        file: "{{ playbook_dir }}/../secrets/vault.yml"
-      when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.yml', errors='ignore') != ''
 
   roles:
     - packages_ubuntu

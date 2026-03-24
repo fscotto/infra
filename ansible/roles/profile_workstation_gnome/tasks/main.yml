@@ -34,3 +34,67 @@
   loop: "{{ workstation_templates | default([]) }}"
   loop_control:
     label: "{{ item.dest }}"
+
+- name: Ensure GNOME extension directories exist
+  tags: [packages, gnome]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+  loop:
+    - "{{ user_home }}/.cache/gnome-shell/extensions"
+    - "{{ user_home }}/.local/share/gnome-shell/extensions"
+
+- name: Install workstation GNOME extensions from website
+  tags: [packages, gnome]
+  ansible.builtin.file:
+    path: "{{ user_home }}/.local/share/gnome-shell/extensions/{{ item.uuid }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+  loop: "{{ workstation_gnome_extensions | default([]) }}"
+  loop_control:
+    label: "{{ item.uuid }}"
+
+- name: Extract workstation GNOME extensions from website
+  tags: [packages, gnome]
+  ansible.builtin.unarchive:
+    src: >-
+      https://extensions.gnome.org/download-extension/{{ item.uuid }}.shell-extension.zip?version_tag={{ item.version_tag }}
+    dest: "{{ user_home }}/.local/share/gnome-shell/extensions/{{ item.uuid }}"
+    remote_src: true
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+  loop: "{{ workstation_gnome_extensions | default([]) }}"
+  loop_control:
+    label: "{{ item.uuid }}"
+
+- name: Disable workstation GNOME extensions
+  tags: [gnome]
+  ansible.builtin.command:
+    cmd: "gnome-extensions disable {{ item }}"
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  loop: "{{ workstation_disabled_gnome_extensions | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  changed_when: false
+  when: (workstation_disabled_gnome_extensions | default([])) | length > 0
+
+- name: Enable workstation GNOME extensions
+  tags: [gnome]
+  ansible.builtin.command:
+    cmd: "gnome-extensions enable {{ item.uuid }}"
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  loop: "{{ workstation_gnome_extensions | default([]) }}"
+  loop_control:
+    label: "{{ item.uuid }}"
+  changed_when: false
+  when: item.enabled | default(false)

@@ -65,3 +65,21 @@ workstation_templates:
   - src: workstation/.gitconfig.j2
     dest: .gitconfig
     mode: "0644"
+
+workstation_gnome_extensions:
+  - id: 9308
+    uuid: bluetooth-battery-monitor@v8v88v8v88.com
+    version_tag: 68559
+    enabled: true
+  - id: 1401
+    uuid: bluetooth-quick-connect@bjarosze.gmail.com
+    version_tag: 65323
+    enabled: true
+  - id: 6099
+    uuid: paperwm@paperwm.github.com
+    version_tag: 68525
+    enabled: true
+
+workstation_disabled_gnome_extensions:
+  - tiling-assistant@ubuntu.com
+  - ubuntu-dock@ubuntu.com

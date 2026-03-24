@@ -206,6 +206,10 @@
         | unique
         | sort
       }}
+
+- name: Build workstation GNOME extensions gsettings payload
+  tags: [gnome]
+  ansible.builtin.set_fact:
     workstation_enabled_gnome_extensions_desired_gsettings: >-
       [{{
         workstation_enabled_gnome_extensions_desired

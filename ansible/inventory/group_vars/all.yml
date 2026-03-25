@@ -20,6 +20,7 @@ common_packages:
   - bat
   - tmux
   - git
+  - tree
   - wget
   - unzip
   - zip

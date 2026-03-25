@@ -1,2 +1,12 @@
 ---
-profile_packages: []
+profile_packages:
+  - avahi-daemon
+  - dmidecode
+  - dosfstools
+  - gh
+  - netcat-openbsd
+  - openssh-server
+  - parted
+  - pciutils
+  - ranger
+  - rsync

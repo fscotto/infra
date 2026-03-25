@@ -10,3 +10,8 @@ profile_packages:
   - pciutils
   - ranger
   - rsync
+
+server_dotfiles:
+  - src: duckdns/
+    dest: duckdns/
+    mode: preserve

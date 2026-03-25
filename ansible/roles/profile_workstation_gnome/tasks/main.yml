@@ -228,11 +228,9 @@
   tags: [gnome]
   ansible.builtin.set_fact:
     workstation_enabled_gnome_extensions_desired_gsettings: >-
-      [{{
-        workstation_enabled_gnome_extensions_desired
-        | map('regex_replace', '^(.*)$', "'\\1'")
-        | join(', ')
-      }}]
+      [{% for extension_uuid in workstation_enabled_gnome_extensions_desired -%}
+      '{{ extension_uuid | replace("'", "\\'") }}'{% if not loop.last %}, {% endif %}
+      {%- endfor %}]
 
 - name: Determine whether workstation GNOME enabled extensions must change
   tags: [gnome]

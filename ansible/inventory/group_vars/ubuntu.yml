@@ -1,6 +1,7 @@
 ---
 ubuntu_packages_base:
   - curl
+  - ufw
   - htop
   - fastfetch
   - build-essential
@@ -18,4 +19,5 @@ ubuntu_docker_packages:
   - docker-compose-plugin
 
 enabled_services:
+  - ufw
   - docker

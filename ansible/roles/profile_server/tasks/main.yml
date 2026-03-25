@@ -11,3 +11,19 @@
   loop: "{{ server_dotfiles | default([]) }}"
   loop_control:
     label: "{{ item.dest }}"
+
+- name: Apply server UFW rules
+  tags: [services, packages]
+  community.general.ufw:
+    rule: "{{ item.rule }}"
+    name: "{{ item.name | default(omit) }}"
+    port: "{{ item.port | default(omit) }}"
+    proto: "{{ item.proto | default(omit) }}"
+  loop: "{{ server_ufw_rules | default([]) }}"
+  loop_control:
+    label: "{{ item.name | default(item.port) }}"
+
+- name: Enable UFW firewall on server
+  tags: [services, packages]
+  community.general.ufw:
+    state: enabled

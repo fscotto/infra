@@ -251,3 +251,8 @@
   environment: "{{ workstation_gnome_environment }}"
   changed_when: workstation_gnome_extensions_state_changed
   when: workstation_gnome_extensions_state_changed
+
+- name: Enable UFW firewall on workstation
+  tags: [services, packages]
+  community.general.ufw:
+    state: enabled

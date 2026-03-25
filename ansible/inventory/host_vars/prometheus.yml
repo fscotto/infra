@@ -1,1 +1,5 @@
-# prometheus specific variables
+---
+hostname: prometheus
+
+host_packages: []
+host_enabled_services: []

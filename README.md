@@ -55,7 +55,7 @@ Nota sullo stato attuale del playbook principale:
 
 - `ansible/site.yml` applica oggi in automatico il profilo desktop su host Void Linux
 - `ansible/site.yml` applica anche il profilo `ubuntu_workstation` con un setup minimo basato su apt, systemd e GNOME
-- il profilo server Ubuntu resta presente in inventory e nei ruoli, ma non e ancora incluso nel playbook principale
+- `ansible/site.yml` applica anche il profilo `ubuntu_server` con una baseline minima basata su apt, systemd e profilo server
 
 ## Desktop
 
@@ -126,7 +126,11 @@ Macchina:
 
 Profilo minimale orientato a servizi server.
 
-Anche questo profilo e gia rappresentato in inventory e nei ruoli, ma non e ancora agganciato al playbook principale.
+Lo stato attuale del profilo server include:
+
+- installazione pacchetti base Ubuntu via apt
+- abilitazione dei servizi systemd dichiarati in inventory/group vars
+- esecuzione del profilo server minimale
 
 ---
 
@@ -182,19 +186,20 @@ I principali ruoli attualmente presenti sono:
 
 # Stato attuale del playbook principale
 
-Il playbook `ansible/site.yml` e attualmente composto da tre blocchi:
+Il playbook `ansible/site.yml` e attualmente composto da quattro blocchi:
 
 ```text
 all  -> dotfiles_common
 void -> packages_void + services_runit + profile_desktop_i3
 ubuntu_workstation -> packages_ubuntu + services_systemd + profile_workstation_gnome
+ubuntu_server -> packages_ubuntu + services_systemd + profile_server
 ```
 
 Questo significa che, allo stato attuale:
 
 - i desktop Void (`ikaros`, `nymph`) restano il target operativo piu completo
 - la workstation Ubuntu (`deadalus`) e ora gestita con una prima orchestrazione minima
-- inventory, gruppi e ruoli per il server Ubuntu restano nel repository come base per l'estensione futura
+- il server Ubuntu (`prometheus`) e ora agganciato al playbook principale con una baseline minima
 
 # Dotfiles
 
@@ -256,6 +261,7 @@ Allo stato attuale questo comando:
 - distribuisce i dotfiles comuni a tutti gli host
 - per gli host Void applica pacchetti, servizi runit e profilo desktop i3
 - per gli host `ubuntu_workstation` applica pacchetti Ubuntu, servizi systemd e profilo workstation GNOME minimo
+- per gli host `ubuntu_server` applica pacchetti Ubuntu, servizi systemd e profilo server minimale
 - carica `secrets/vault.yml` solo se presente
 
 Per validare prima di applicare:
@@ -264,6 +270,7 @@ Per validare prima di applicare:
 ansible-playbook ansible/site.yml --syntax-check
 ansible-playbook ansible/site.yml --limit ikaros --check --diff
 ansible-playbook ansible/site.yml --limit deadalus --check --diff
+ansible-playbook ansible/site.yml --limit prometheus --check --diff
 ```
 
 ---

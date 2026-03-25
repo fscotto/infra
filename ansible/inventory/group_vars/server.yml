@@ -30,3 +30,9 @@ server_templates:
 server_ufw_rules:
   - rule: allow
     name: OpenSSH
+
+server_sshd_settings:
+  PermitRootLogin: "no"
+
+server_sshd_allow_users:
+  - "{{ username }}"

@@ -24,6 +24,27 @@
   loop_control:
     label: "{{ item.dest }}"
 
+- name: Disable SSH root login on server
+  tags: [services]
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^\s*PermitRootLogin\s+'
+    line: "PermitRootLogin {{ server_sshd_settings.PermitRootLogin }}"
+    state: present
+    validate: "sshd -t -f %s"
+  notify: Reload SSH service
+
+- name: Restrict SSH login to allowed users on server
+  tags: [services]
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^\s*AllowUsers\s+'
+    line: "AllowUsers {{ server_sshd_allow_users | join(' ') }}"
+    state: present
+    validate: "sshd -t -f %s"
+  notify: Reload SSH service
+  when: (server_sshd_allow_users | default([])) | length > 0
+
 - name: Apply server UFW rules
   tags: [services, packages]
   community.general.ufw:

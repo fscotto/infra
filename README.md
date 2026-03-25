@@ -24,11 +24,13 @@ infra/
 │   │   ├── hosts.yml
 │   │   ├── group_vars/
 │   │   └── host_vars/
+│   ├── templates/
 │   └── roles/
 │
 ├── dotfiles/
 │   ├── common/
 │   ├── desktop/
+│   ├── server/
 │   ├── workstation/
 │   ├── ikaros/
 │   └── nymph/
@@ -54,8 +56,8 @@ Il repository modella attualmente tre tipologie di profilo.
 Nota sullo stato attuale del playbook principale:
 
 - `ansible/site.yml` applica oggi in automatico il profilo desktop su host Void Linux
-- `ansible/site.yml` applica anche il profilo `ubuntu_workstation` con un setup minimo basato su apt, systemd e GNOME
-- `ansible/site.yml` applica anche il profilo `ubuntu_server` con una baseline minima basata su apt, systemd e profilo server
+- `ansible/site.yml` applica anche il profilo `ubuntu_workstation` con setup apt, systemd, dotfiles workstation, firewall UFW e integrazione GNOME
+- `ansible/site.yml` applica anche il profilo `ubuntu_server` con baseline apt, systemd, dotfiles server e firewall UFW
 
 ## Desktop
 
@@ -100,13 +102,16 @@ Macchina:
 
 Questo profilo è pensato per sviluppo e lavoro.
 
-Il profilo workstation Ubuntu e ora agganciato al playbook principale con una prima implementazione minima.
+Il profilo workstation Ubuntu e agganciato al playbook principale e include gia una base operativa per uso desktop e sviluppo.
 
 Lo stato attuale del profilo workstation include:
 
 - installazione pacchetti base Ubuntu via apt
-- abilitazione dei servizi systemd dichiarati in inventory/group vars
-- predisposizione delle directory utente minime per il profilo workstation GNOME
+- installazione e configurazione di Docker dal repository ufficiale
+- gestione dei dotfiles workstation e rendering dei template dedicati
+- installazione di Google Chrome e pacchetti Snap workstation
+- gestione delle estensioni GNOME da website e dello stato desiderato delle estensioni abilitate
+- attivazione del firewall UFW
 
 ---
 
@@ -124,13 +129,15 @@ Macchina:
 
 - `prometheus`
 
-Profilo minimale orientato a servizi server.
+Profilo orientato a servizi server e gestione di dotfiles dedicati.
 
 Lo stato attuale del profilo server include:
 
 - installazione pacchetti base Ubuntu via apt
+- installazione e configurazione di Docker dal repository ufficiale
 - abilitazione dei servizi systemd dichiarati in inventory/group vars
-- esecuzione del profilo server minimale
+- copia dei dotfiles server e rendering dei template server
+- attivazione del firewall UFW con regola SSH esplicita
 
 ---
 
@@ -198,8 +205,8 @@ ubuntu_server -> packages_ubuntu + services_systemd + profile_server
 Questo significa che, allo stato attuale:
 
 - i desktop Void (`ikaros`, `nymph`) restano il target operativo piu completo
-- la workstation Ubuntu (`deadalus`) e ora gestita con una prima orchestrazione minima
-- il server Ubuntu (`prometheus`) e ora agganciato al playbook principale con una baseline minima
+- la workstation Ubuntu (`deadalus`) e gestita con pacchetti, servizi, dotfiles, estensioni GNOME e firewall
+- il server Ubuntu (`prometheus`) e gestito con pacchetti, servizi, dotfiles server e firewall
 
 # Dotfiles
 
@@ -209,6 +216,7 @@ La directory `dotfiles/` contiene le configurazioni utente versionate.
 dotfiles/
 ├── common
 ├── desktop
+├── server
 ├── workstation
 ├── ikaros
 └── nymph
@@ -260,8 +268,8 @@ Allo stato attuale questo comando:
 
 - distribuisce i dotfiles comuni a tutti gli host
 - per gli host Void applica pacchetti, servizi runit e profilo desktop i3
-- per gli host `ubuntu_workstation` applica pacchetti Ubuntu, servizi systemd e profilo workstation GNOME minimo
-- per gli host `ubuntu_server` applica pacchetti Ubuntu, servizi systemd e profilo server minimale
+- per gli host `ubuntu_workstation` applica pacchetti Ubuntu, servizi systemd, profilo workstation GNOME, UFW, dotfiles, Snap e template dedicati
+- per gli host `ubuntu_server` applica pacchetti Ubuntu, servizi systemd, profilo server, UFW, dotfiles e template dedicati
 - carica `secrets/vault.yml` solo se presente
 
 Per validare prima di applicare:
@@ -316,7 +324,6 @@ Questo consente di ricreare qualsiasi macchina partendo esclusivamente dal repos
 
 Possibili evoluzioni future:
 
-- completamento dell'orchestrazione per workstation Ubuntu e server Ubuntu
 - hardening sicurezza server
 - configurazione backup
 - testing automatico playbook

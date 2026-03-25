@@ -1,65 +1,53 @@
 # AGENTS.md
 Guidance for agentic coding tools working in this repository.
-Project type: Ansible-based infrastructure plus managed dotfiles.
+Project type: Ansible-based infrastructure and user dotfiles.
 
 ## Repository snapshot
 - Entry playbook: `ansible/site.yml`
-- Ansible config: `ansible.cfg`
 - Inventory: `ansible/inventory/hosts.yml`
 - Group vars: `ansible/inventory/group_vars/*.yml`
 - Host vars: `ansible/inventory/host_vars/*.yml`
-- Active roles: `dotfiles_common`, `packages_void`, `services_runit`, `profile_desktop_i3`, `packages_ubuntu`, `services_systemd`, `profile_workstation_gnome`, `profile_server`
-- Roles present but not currently wired into `ansible/site.yml`: `base`, `dotfiles`
+- Templates: `ansible/templates/**/*.j2`
 - Dotfiles source of truth: `dotfiles/`
 - Utility scripts: `scripts/`
-- Sensitive local material/examples: `secrets/`
+- Sensitive material/examples: `secrets/`
 
-## Local instruction files
-Checked in this repository when this file was written:
-- `.cursorrules`: not present
-- `.cursor/rules/`: not present
-- `.github/copilot-instructions.md`: not present
-If any of these files appear later, treat them as higher-priority local instructions.
-
-## Working assumptions
-- Favor idempotent, host-safe changes over cleverness.
-- Preserve the intended layering: `all -> OS -> profile -> host`.
-- Validate on one host before broad rollout.
-- Prefer minimal, targeted edits over cleanup refactors.
-- Treat `secrets/` as sensitive and avoid exposing secret values.
-- The repo contains both first-party dotfiles and vendored third-party plugin code.
-
-## Current orchestration model
+## Active orchestration
 `ansible/site.yml` currently applies:
 - `all -> dotfiles_common`
 - `void -> packages_void, services_runit, profile_desktop_i3`
 - `ubuntu_workstation -> packages_ubuntu, services_systemd, profile_workstation_gnome`
 - `ubuntu_server -> packages_ubuntu, services_systemd, profile_server`
 
-## Build, lint, and test commands
-There is no compile/build step. Validation is based on Ansible syntax checks, inventory inspection, dry-runs, and linting.
+Active roles:
+- `dotfiles_common`, `packages_void`, `services_runit`, `profile_desktop_i3`, `packages_ubuntu`, `services_systemd`, `profile_workstation_gnome`, `profile_server`
 
-Install base tooling if needed:
+Roles present but not wired into `ansible/site.yml`:
+- `base`
+- `dotfiles`
+
+## Local instruction files
+Checked in this repository when this file was written:
+- `.cursorrules`: not present
+- `.cursor/rules/`: not present
+- `.github/copilot-instructions.md`: not present
+If any of these appear later, treat them as higher-priority local instructions.
+
+## Working assumptions
+- Favor idempotent, host-safe changes over cleverness.
+- Preserve the layering: `all -> OS -> profile -> host`.
+- Validate on one host before broad rollout.
+- Prefer minimal, targeted edits over cleanup refactors.
+- Treat `secrets/` as sensitive and avoid exposing values.
+- `dotfiles/common/.tmux/plugins/` contains vendored upstream code.
+
+## Build, lint, and test commands
+There is no compile/build step. Validation is based on syntax checks, inventory inspection, dry-runs, and linting.
+
+Install tooling if needed:
 ```bash
 python3 -m pip install ansible
 ansible-galaxy collection install community.general
-```
-
-Core commands:
-```bash
-ansible-playbook ansible/site.yml
-ansible-playbook ansible/site.yml --check --diff
-ansible-playbook ansible/site.yml --syntax-check
-ansible-playbook ansible/site.yml --limit ikaros
-ansible-playbook ansible/site.yml --limit nymph
-ansible-playbook ansible/site.yml --limit deadalus
-ansible-playbook ansible/site.yml --limit ubuntu_workstation
-ansible-playbook ansible/site.yml --limit prometheus
-ansible-playbook ansible/site.yml --limit ubuntu_server
-ansible-inventory --graph
-ansible-inventory --host ikaros
-ansible-inventory --host deadalus
-ansible-inventory --host prometheus
 ```
 
 Linting and static checks if available locally:
@@ -79,33 +67,17 @@ Fastest confidence check:
 ansible-playbook ansible/site.yml --syntax-check
 ```
 
-Best default host-scoped dry-run:
+Best default dry-runs:
 ```bash
 ansible-playbook ansible/site.yml --limit ikaros --check --diff
-```
-
-Validate one host's resolved inventory only:
-```bash
-ansible-inventory --host ikaros
-```
-
-Validate a narrow Ansible change starting from one task:
-```bash
-ansible-playbook ansible/site.yml --limit ikaros --start-at-task "Copy common dotfiles" --check --diff
-ansible-playbook ansible/site.yml --limit ikaros --start-at-task "Install Void nonfree repository if needed" --check --diff
-ansible-playbook ansible/site.yml --limit ikaros --start-at-task "Copy desktop dotfiles" --check --diff
-```
-
-Validate the standalone mail bootstrap script only:
-```bash
-sh -n scripts/bootstrap_mail.sh
-shellcheck scripts/bootstrap_mail.sh
+ansible-playbook ansible/site.yml --limit deadalus --check --diff
+ansible-playbook ansible/site.yml --limit prometheus --check --diff
 ```
 
 Testing notes:
 - Prefer `--limit` aggressively to avoid accidental multi-host rollout.
-- Prefer `--check --diff` before package, service, PAM, bootloader, or session changes.
-- Keep task names stable and unique enough to support `--start-at-task`.
+- Prefer `--check --diff` before package, service, PAM, bootloader, firewall, or session changes.
+- Keep task names stable and unique enough for `--start-at-task`.
 - If you change only vars, inventory inspection may be the quickest useful check.
 
 ## Code style guidelines
@@ -114,65 +86,49 @@ Testing notes:
 - Prefer declarative modules over imperative commands.
 - Avoid unrelated refactors while solving a targeted task.
 - Preserve idempotency and make state transitions explicit.
-- Keep changes readable for humans reviewing YAML and shell.
 
 ### Ansible modules and task structure
-- Use FQCN module names such as `ansible.builtin.copy` and `community.general.xbps`.
+- Use FQCN module names such as `ansible.builtin.copy` and `community.general.ufw`.
 - Prefer purpose-built modules over `ansible.builtin.command` or `ansible.builtin.shell`.
-- Use `command` only when no good module exists.
-- Use `shell` only when shell features are genuinely required.
+- Use `command` only when no good module exists; use `shell` only when shell features are required.
 - When using `command` or `shell`, set `changed_when` and `failed_when` when defaults are misleading.
 - Keep task names imperative, outcome-based, and unique enough for `--start-at-task`.
-- Use `block` when a sequence of tasks shares one condition or operational purpose.
+- Tag every task consistently with its execution flow, typically `packages`, `services`, `dotfiles`, `gnome`, `nvidia`, or `dotfiles:*`.
 - Prefer `loop` with clear `loop_control.label` for user-facing collections.
 
 ### YAML formatting
 - Start YAML files with `---`.
 - Use 2-space indentation and never tabs.
-- Keep keys, lists, and maps in stable, readable order.
+- Keep keys, lists, and maps in stable order.
 - Quote file modes as strings: `"0644"`, `"0755"`, `"0600"`, `"0700"`.
-- Prefer multiline Jinja when a one-line expression becomes hard to read.
 - Avoid formatting-only churn in untouched sections.
 
-### Variables, types, and templating
+### Variables, types, and naming
 - Use `snake_case` consistently for variables and facts.
-- Follow existing naming families such as `common_packages`, `profile_packages`, `host_packages`, and `host_dotfiles`.
+- Follow existing families such as `common_packages`, `profile_packages`, `host_packages`, `common_dotfiles`, `workstation_dotfiles`, `server_dotfiles`, and `host_dotfiles`.
 - Keep booleans as booleans, not quoted strings.
 - Keep structured data as YAML collections, not comma-separated strings.
-- Guard optional collections and maps with `default([])` and `default({})`.
+- Guard optional collections/maps with `default([])` and `default({})`.
 - Guard optional strings with `default('')`.
 - Build user paths from `{{ user_home }}` instead of hardcoding home directories.
-- Prefer explicit derived facts with `set_fact` only when reuse improves clarity.
-
-### Naming conventions
-- Role names stay lowercase with underscores.
-- Inventory groups and matching var files should stay semantically aligned.
 - Host-specific overrides belong in `host_vars`, not shared group files.
-- New variables should fit existing naming patterns instead of introducing one-off aliases.
 
 ### Error handling and safety
 - Guard OS-specific or profile-specific behavior with `when` clauses.
 - Prefer explicit inputs over assumptions about host state.
-- Do not suppress failures without a clear operational reason.
 - Use `failed_when: false` only for intentional probes or best-effort detection.
-- Use `no_log: true` for secrets, tokens, passwords, and sensitive command results.
+- Use `no_log: true` for secrets, passwords, and sensitive command results.
 - Keep tasks non-interactive and automation-safe.
-- Avoid destructive operations in user homes unless the request clearly requires them.
-- Fail early with `ansible.builtin.fail` when prerequisites such as architecture or required metadata are missing.
+- Avoid destructive operations in user homes unless clearly required.
+- Fail early with `ansible.builtin.fail` when prerequisites such as architecture, release metadata, or session bus data are missing.
+- For firewall changes, allow required access before enabling the firewall.
 
-### Shell and script conventions
-- Prefer POSIX `sh` for simple login/session/bootstrap scripts.
-- Use Bash only when Bash features are actually required; then use `#!/usr/bin/env bash`.
+### Shell, scripts, and external code
+- Prefer POSIX `sh` for simple scripts; use Bash only when Bash features are required.
 - Quote variable expansions unless intentional word splitting is required.
-- Keep helper functions small and focused.
-- Exit with clear errors when required commands or files are missing.
 - Preserve executable bits for deployed scripts where appropriate.
-
-### Imports and external code
-- There are no Python import conventions to optimize for here; most changes are YAML, Jinja, and shell.
-- If you add Python later, follow standard-library, third-party, local import grouping and keep modules small.
-- Treat `dotfiles/common/.tmux/plugins/` as vendored upstream code unless the task explicitly targets it.
-- Prefer changing first-party wrapper/config files before patching vendored plugin internals.
+- If you add Python later, follow standard-library, third-party, local import grouping.
+- Treat vendored tmux plugins as upstream code unless the task explicitly targets them.
 
 ## Editing guidance by area
 - `ansible/site.yml`: keep it small and orchestration-focused.
@@ -194,15 +150,6 @@ ansible-playbook ansible/site.yml --syntax-check
 Preferred for role, template, or vars changes:
 ```bash
 ansible-playbook ansible/site.yml --limit <host> --check --diff
-```
-
-Useful supporting checks:
-```bash
-ansible-inventory --graph
-ansible-inventory --host <host>
-ansible-lint ansible/site.yml
-yamllint ansible/
-sh -n scripts/bootstrap_mail.sh
 ```
 
 ## Agent workflow expectations

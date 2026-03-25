@@ -1,5 +1,6 @@
 ---
 - name: Enable base runit services
+  tags: [services, packages]
   ansible.builtin.file:
     src: "/etc/sv/{{ item }}"
     dest: "/var/service/{{ item }}"
@@ -7,6 +8,7 @@
   loop: "{{ enabled_services | default([]) }}"
 
 - name: Enable host runit services
+  tags: [services, packages]
   ansible.builtin.file:
     src: "/etc/sv/{{ item }}"
     dest: "/var/service/{{ item }}"

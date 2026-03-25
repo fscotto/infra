@@ -12,9 +12,20 @@ profile_packages:
   - rsync
 
 server_dotfiles:
+  - src: .gitignore_global
+    dest: .gitignore_global
+    mode: "0644"
+  - src: .themes.gitignore
+    dest: .themes.gitignore
+    mode: "0644"
   - src: duckdns/
     dest: duckdns/
     mode: preserve
+
+server_templates:
+  - src: server/.gitconfig.j2
+    dest: .gitconfig
+    mode: "0644"
 
 server_ufw_rules:
   - rule: allow

@@ -1,10 +1,12 @@
 ---
 - name: Ensure bat package is installed
+  tags: [packages]
   ansible.builtin.package:
     name: bat
     state: present
 
 - name: Ensure XDG user directories exist
+  tags: [dotfiles, dotfiles:common]
   ansible.builtin.file:
     path: "{{ user_home }}/{{ item }}"
     state: directory
@@ -26,6 +28,7 @@
     label: "{{ item.dest }}"
 
 - name: Refresh bat cache
+  tags: [dotfiles, dotfiles:common]
   ansible.builtin.command:
     cmd: "{{ 'batcat' if ansible_facts.os_family == 'Debian' else 'bat' }} cache --build"
   become_user: "{{ username }}"

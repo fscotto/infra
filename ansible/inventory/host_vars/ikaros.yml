@@ -8,4 +8,9 @@ host_packages:
   - mesa-vaapi
   - xf86-video-amdgpu
 
+host_dotfiles:
+  - src: .config/autorandr/
+    dest: .config/autorandr/
+    mode: preserve
+
 host_enabled_services: []

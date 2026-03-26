@@ -40,7 +40,7 @@ from           {{ vault_protonmail_email }}
 
 # Security
 tls on
-tls_trust_file ~/.config/protonmail/bridge-v3/cert.pem
+tls_trust_file {{ desktop_protonmail_bridge_cert_path }}
 
 # Authentication
 auth           on

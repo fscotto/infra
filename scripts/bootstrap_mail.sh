@@ -6,6 +6,8 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 MBSYNCRC="$HOME/.mbsyncrc"
 VAULT_FILE="$REPO_ROOT/secrets/vault.yml"
+PROTON_FLATPAK_CERT="$HOME/.var/app/ch.protonmail.protonmail-bridge/config/protonmail/bridge-v3/cert.pem"
+PROTON_NATIVE_CERT="$HOME/.config/protonmail/bridge-v3/cert.pem"
 
 ACCOUNTS_FILE=$(mktemp)
 
@@ -23,15 +25,17 @@ require_command() {
 }
 
 expand_path() {
-  case "$1" in
-    '~')
+  path_value=$1
+
+  case "$path_value" in
+    "~")
       printf '%s\n' "$HOME"
       ;;
-    '~/'*)
-      printf '%s/%s\n' "$HOME" "${1#~/}"
+    "~/"*)
+      printf '%s/%s\n' "$HOME" "${path_value#\~/}"
       ;;
     *)
-      printf '%s\n' "$1"
+      printf '%s\n' "$path_value"
       ;;
   esac
 }
@@ -172,16 +176,7 @@ parse_mbsyncrc() {
         channel = channel_order[i]
         remote = channel_far[channel]
         local_store = channel_near[channel]
-        printf(
-          "ACCOUNT|%s|%s|%s|%s|%s|%s|%s\n",
-          channel,
-          imap_passcmd[remote],
-          imap_certificate[remote],
-          maildir_path[local_store],
-          imap_user[remote],
-          imap_host[remote],
-          imap_port[remote]
-        )
+        printf "ACCOUNT|%s|%s|%s|%s|%s|%s|%s\n", channel, imap_passcmd[remote], imap_certificate[remote], maildir_path[local_store], imap_user[remote], imap_host[remote], imap_port[remote]
       }
     }
   ' "$MBSYNCRC" >"$ACCOUNTS_FILE"
@@ -199,6 +194,29 @@ parse_secret_lookup_args() {
       return 1
       ;;
   esac
+}
+
+resolve_dbus_session_bus_address() {
+  if [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+    printf '%s\n' "$DBUS_SESSION_BUS_ADDRESS"
+    return 0
+  fi
+
+  if [ -f "$HOME/.dbus-session-bus-address" ]; then
+    saved_bus_address=$(tr -d '\n' <"$HOME/.dbus-session-bus-address")
+
+    if [ -n "$saved_bus_address" ]; then
+      printf '%s\n' "$saved_bus_address"
+      return 0
+    fi
+  fi
+
+  if [ -S "/run/user/$(id -u)/bus" ]; then
+    printf 'unix:path=/run/user/%s/bus\n' "$(id -u)"
+    return 0
+  fi
+
+  return 1
 }
 
 clear_secret() {
@@ -234,10 +252,12 @@ ensure_keyring_ready() {
   require_command gdbus
   require_command secret-tool
 
-  if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
-    printf 'Error: DBUS_SESSION_BUS_ADDRESS is not set. Run this from an active graphical session.\n' >&2
+  if ! DBUS_SESSION_BUS_ADDRESS=$(resolve_dbus_session_bus_address); then
+    printf 'Error: could not determine DBUS_SESSION_BUS_ADDRESS. Run this from an active graphical session.\n' >&2
     exit 1
   fi
+
+  export DBUS_SESSION_BUS_ADDRESS
 
   alias_output=$(gdbus call --session \
     --dest org.freedesktop.secrets \
@@ -247,7 +267,7 @@ ensure_keyring_ready() {
       exit 1
     }
 
-  alias_path=$(printf '%s\n' "$alias_output" | awk "match(\$0, /objectpath '([^']+)'/, parts) { print parts[1]; exit }")
+  alias_path=$(printf '%s\n' "$alias_output" | sed -n "s/.*objectpath '\([^']*\)'.*/\1/p" | sed -n '1p')
 
   if [ -z "$alias_path" ] || [ "$alias_path" = "/" ]; then
     printf 'Error: the default Secret Service collection is unset. Unlock or initialize the login keyring first.\n' >&2
@@ -274,6 +294,42 @@ bridge_cli_command() {
   return 1
 }
 
+resolve_certificate_file() {
+  configured_certificate=$1
+
+  if [ -n "$configured_certificate" ]; then
+    expanded_configured_certificate=$(expand_path "$configured_certificate")
+
+    if [ -f "$expanded_configured_certificate" ]; then
+      printf '%s\n' "$expanded_configured_certificate"
+      return 0
+    fi
+  else
+    expanded_configured_certificate=''
+  fi
+
+  for candidate in "$PROTON_FLATPAK_CERT" "$PROTON_NATIVE_CERT"; do
+    [ -f "$candidate" ] || continue
+
+    if [ -n "$expanded_configured_certificate" ] && [ "$expanded_configured_certificate" != "$candidate" ]; then
+      certificate_dir=$(dirname "$expanded_configured_certificate")
+      mkdir -p "$certificate_dir"
+      ln -sf "$candidate" "$expanded_configured_certificate"
+      printf '%s\n' "$expanded_configured_certificate"
+      return 0
+    fi
+
+    printf '%s\n' "$candidate"
+    return 0
+  done
+
+  if [ -n "$expanded_configured_certificate" ]; then
+    printf '%s\n' "$expanded_configured_certificate"
+  fi
+
+  return 1
+}
+
 ensure_certificate_file() {
   account_name=$1
   certificate_file=$2
@@ -282,9 +338,7 @@ ensure_certificate_file() {
     return 0
   fi
 
-  expanded_certificate_file=$(expand_path "$certificate_file")
-
-  if [ -f "$expanded_certificate_file" ]; then
+  if expanded_certificate_file=$(resolve_certificate_file "$certificate_file"); then
     return 0
   fi
 
@@ -322,6 +376,7 @@ sync_channels() {
 init_mu() {
   mail_root=''
   mu_addresses=''
+  existing_mail_root=''
 
   while IFS='|' read -r record_type channel_name passcmd certificate_file maildir_path email_address host port; do
     [ "$record_type" = 'ACCOUNT' ] || continue
@@ -352,7 +407,15 @@ init_mu() {
     exit 1
   fi
 
-  if ! mu info >/dev/null 2>&1; then
+  if mu_info=$(mu info 2>/dev/null); then
+    existing_mail_root=$(printf '%s\n' "$mu_info" | awk '/^[[:space:]]*maildir[[:space:]]+/ { print $2; exit }')
+
+    if [ -n "$existing_mail_root" ] && [ "$existing_mail_root" != "$mail_root" ]; then
+      printf 'Error: mu is initialized for %s, expected %s. Remove the existing mu database before rerunning bootstrap_mail.sh.\n' \
+        "$existing_mail_root" "$mail_root" >&2
+      exit 1
+    fi
+  else
     set --
     for email_address in $mu_addresses; do
       set -- "$@" --my-address="$email_address"

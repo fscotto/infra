@@ -1,5 +1,6 @@
 ---
 desktop_manage_icloud_keyring: false
+desktop_protonmail_bridge_cert_path: ~/.var/app/ch.protonmail.protonmail-bridge/config/protonmail/bridge-v3/cert.pem
 
 profile_packages:
   - i3

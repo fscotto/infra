@@ -5,8 +5,8 @@ IMAPStore iCloud-remote
     User {{ vault_icloud_email }}
     PassCmd "secret-tool lookup icloud-mail icloud"
     AuthMechs *
-    SSLType IMAPS
-    SSLVersions TLSv1.2 TLSv1.3
+    TLSType IMAPS
+    TLSVersions +1.2 +1.3
     PipelineDepth 1
 
 MaildirStore iCloud-local
@@ -29,9 +29,9 @@ IMAPStore protonmail-remote
     User {{ vault_protonmail_email }}
     PassCmd "secret-tool lookup protonmail-bridge protonmail"
     AuthMechs *
-    SSLType STARTTLS
+    TLSType STARTTLS
     PipelineDepth 1
-    CertificateFile  ~/.config/protonmail/bridge-v3/cert.pem
+    CertificateFile  {{ desktop_protonmail_bridge_cert_path }}
 
 MaildirStore protonmail-local
     Path ~/Maildir/ProtonMailAccount/

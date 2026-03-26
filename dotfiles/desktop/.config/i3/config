@@ -28,11 +28,10 @@ exec --no-startup-id nm-applet
 exec --no-startup-id blueman-applet
 exec --no-startup-id udiskie --tray --automount
 exec --no-startup-id volumeicon
-exec --no-startup-id xfce4-power-manager
 exec --no-startup-id xfce4-clipman
 
-# Lock before suspend
-exec --no-startup-id xss-lock --transfer-sleep-lock -- ~/.config/i3/scripts/lockscreen
+# Lock screen on suspend (handled by elogind)
+exec --no-startup-id xss-lock -- ~/.config/i3/scripts/lockscreen
 
 # General behavior
 focus_follows_mouse no

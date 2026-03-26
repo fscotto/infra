@@ -16,7 +16,6 @@ profile_packages:
   - thunar-volman
   - udiskie
   - xfce-polkit
-  - xfce4-power-manager
   - xfce4-clipman-plugin
   - xfce4-screenshooter
   - volumeicon
@@ -74,6 +73,7 @@ profile_packages:
   - blueman
   - bluez
   - libspa-bluetooth
+  - wireplumber
   - yaru
   - yaru-plus
 
@@ -109,6 +109,10 @@ desktop_dotfiles:
   - name: fontconfig fallback
     src: .config/fontconfig/
     dest: .config/fontconfig/
+    mode: preserve
+  - name: WirePlumber config
+    src: .config/wireplumber/
+    dest: .config/wireplumber/
     mode: preserve
   - name: yt-dlp config
     src: .config/yt-dlp/

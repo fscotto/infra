@@ -1,4 +1,12 @@
 ---
+- name: Configure elogind to suspend on lid close
+  tags: [packages]
+  ansible.builtin.lineinfile:
+    path: /etc/elogind/logind.conf
+    regexp: '^#?HandleLidSwitch='
+    line: 'HandleLidSwitch=suspend'
+    state: present
+
 - name: Ensure config directories exist
   tags: [dotfiles, dotfiles:desktop]
   ansible.builtin.file:

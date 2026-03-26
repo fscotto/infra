@@ -21,6 +21,10 @@ command=~/.config/i3blocks/scripts/wifi
 interval=10
 color=#4a90d9
 
+[battery]
+command=~/.config/i3blocks/scripts/battery
+interval=30
+
 [time]
 command=date '+%Y-%m-%d %H:%M'
 interval=60

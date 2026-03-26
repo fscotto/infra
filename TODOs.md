@@ -7,8 +7,8 @@
 - [x] integrare tema Yaru su Flatpak
 - [x] installare opencode
 - [x] installare podman
-- [ ] scaricare la posta
-- [ ] init mu per la ricerca
+- [x] scaricare la posta
+- [x] init mu per la ricerca
 - [ ] aggiungere chiavi gpg nel vault per ripristino dopo reinstallazione
 - [ ] aggiungere chiavi ssh nel vault per ripristino dopo reinstallazione
 - [ ] configurare GNOME

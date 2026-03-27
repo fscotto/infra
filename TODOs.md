@@ -10,3 +10,6 @@
 - [x] scaricare la posta
 - [x] init mu per la ricerca
 - [ ] configurare GNOME
+- [ ] verificare pacchetti YubiKey/GPG/SSH-FIDO2 sulla workstation Ubuntu
+- [ ] configurare YubiKey per GPG signing sulla workstation
+- [ ] valutare generazione chiave SSH ed25519-sk sulla workstation

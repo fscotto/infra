@@ -33,6 +33,7 @@ __history_sync() {
 # --- shell options
 set -o emacs
 shopt -s cmdhist
+shopt -s cdspell
 
 # --- PATH
 [ -d "$HOME/.local/bin" ] && PATH="$HOME/.local/bin:$PATH"

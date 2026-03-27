@@ -27,6 +27,8 @@ common_packages:
   - vim
   - fzf
   - zoxide
+  - entr
+  - jq
 
 common_dotfiles:
   - name: .bashrc

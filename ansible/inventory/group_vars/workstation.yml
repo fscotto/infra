@@ -1,5 +1,12 @@
 ---
 profile_packages:
+  - gnupg
+  - gpg-agent
+  - pcscd
+  - yubikey-manager
+  - pinentry-gnome3
+  - openssh-client
+  - libfido2-1
   - meld
   - gufw
   - libreoffice
@@ -52,8 +59,13 @@ workstation_user_directories:
     mode: "0755"
   - path: "{{ user_home }}/.local/bin"
     mode: "0755"
+  - path: "{{ user_home }}/.gnupg"
+    mode: "0700"
 
 workstation_dotfiles:
+  - src: .gnupg/gpg-agent.conf
+    dest: .gnupg/gpg-agent.conf
+    mode: "0600"
   - src: .gitignore_global
     dest: .gitignore_global
     mode: "0644"

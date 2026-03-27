@@ -9,6 +9,4 @@
 - [x] installare podman
 - [x] scaricare la posta
 - [x] init mu per la ricerca
-- [ ] aggiungere chiavi gpg nel vault per ripristino dopo reinstallazione
-- [ ] aggiungere chiavi ssh nel vault per ripristino dopo reinstallazione
 - [ ] configurare GNOME

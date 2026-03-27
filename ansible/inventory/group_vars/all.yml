@@ -26,6 +26,7 @@ common_packages:
   - zip
   - vim
   - fzf
+  - zoxide
 
 common_dotfiles:
   - name: .bashrc

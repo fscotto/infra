@@ -33,7 +33,6 @@ __history_sync() {
 # --- shell options
 set -o emacs
 shopt -s cmdhist
-shopt -s cdspell
 
 # --- PATH
 [ -d "$HOME/.local/bin" ] && PATH="$HOME/.local/bin:$PATH"
@@ -271,12 +270,118 @@ do
 done
 
 # =========================
+# zoxide - smarter cd
+# =========================
+
+if command -v zoxide >/dev/null 2>&1; then
+  eval "$(zoxide init bash)"
+fi
+
+# =========================
 # Portable helpers
 # =========================
 
 mkcd() {
   [ $# -eq 1 ] || return 1
   mkdir -p -- "$1" && cd -- "$1" || return
+}
+
+__cd_resolve_case_insensitive() {
+  local target="$1"
+  local base rest component entry name
+  local -a parts matches
+
+  if [[ "$target" == /* ]]; then
+    base="/"
+    rest=${target#/}
+  else
+    base="."
+    rest=$target
+  fi
+
+  IFS='/' read -r -a parts <<< "$rest"
+
+  for component in "${parts[@]}"; do
+    [ -n "$component" ] || continue
+
+    case "$component" in
+      .|..)
+        base="$base/$component"
+        continue
+        ;;
+    esac
+
+    matches=()
+
+    if [[ "$component" == .* ]]; then
+      for entry in "$base"/.*; do
+        [ -d "$entry" ] || continue
+        name=${entry##*/}
+        case "$name" in
+          .|..) continue ;;
+        esac
+        [[ ${name,,} == ${component,,} ]] && matches+=("$entry")
+      done
+    else
+      for entry in "$base"/*; do
+        [ -d "$entry" ] || continue
+        name=${entry##*/}
+        [[ ${name,,} == ${component,,} ]] && matches+=("$entry")
+      done
+    fi
+
+    case ${#matches[@]} in
+      0)
+        return 1
+        ;;
+      1)
+        base=${matches[0]}
+        ;;
+      *)
+        printf 'cd: ambiguous case-insensitive match for %s\n' "$target" >&2
+        printf '%s\n' "${matches[@]}" >&2
+        return 2
+        ;;
+    esac
+  done
+
+  printf '%s\n' "$base"
+}
+
+cd() {
+  local resolved status
+
+  if builtin cd "$@" 2>/dev/null; then
+    return 0
+  fi
+  status=$?
+
+  if [ $# -ne 1 ]; then
+    builtin cd "$@"
+    return $?
+  fi
+
+  case "$1" in
+    ''|-|-*)
+      builtin cd "$@"
+      return $?
+      ;;
+  esac
+
+  resolved=$(__cd_resolve_case_insensitive "$1")
+  status=$?
+
+  case $status in
+    0)
+      builtin cd -- "$resolved"
+      ;;
+    2)
+      return 1
+      ;;
+    *)
+      builtin cd "$@"
+      ;;
+  esac
 }
 
 extract() {

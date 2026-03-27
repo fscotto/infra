@@ -17,6 +17,7 @@
     mode: "0755"
   loop:
     - "{{ user_home }}/.config"
+    - "{{ user_home }}/.config/autostart"
     - "{{ user_home }}/.config/i3"
     - "{{ user_home }}/.config/i3blocks"
     - "{{ user_home }}/.config/dunst"

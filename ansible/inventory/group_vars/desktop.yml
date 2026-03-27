@@ -80,6 +80,10 @@ profile_packages:
   - rsync
 
 desktop_dotfiles:
+  - name: XDG autostart entries
+    src: .config/autostart/
+    dest: .config/autostart/
+    mode: preserve
   - name: i3 config
     src: .config/i3/
     dest: .config/i3/

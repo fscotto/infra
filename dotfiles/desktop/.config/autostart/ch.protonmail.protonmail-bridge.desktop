@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Version=1.1
+Name=Proton Mail Bridge
+GenericName=Proton Mail Bridge for Linux
+Comment=Run Proton Mail Bridge in the background.
+Icon=ch.protonmail.protonmail-bridge
+Exec=/usr/bin/flatpak run --branch=stable --arch=x86_64 --command=protonmail-bridge ch.protonmail.protonmail-bridge
+Terminal=false
+Categories=Office;Email
+StartupWMClass=Proton Mail Bridge
+X-Flatpak=ch.protonmail.protonmail-bridge

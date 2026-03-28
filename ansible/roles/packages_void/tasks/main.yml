@@ -1,22 +1,49 @@
 ---
+- name: Ensure XBPS extra repositories directory exists
+  tags: [packages]
+  ansible.builtin.file:
+    path: /etc/xbps.d
+    state: directory
+    mode: "0755"
+  when: (host_xbps_repositories | default([])) | length > 0
+
+- name: Configure host-specific XBPS repositories
+  tags: [packages]
+  ansible.builtin.copy:
+    dest: "/etc/xbps.d/{{ item.name }}.conf"
+    content: |
+      repository={{ item.url }}
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ host_xbps_repositories | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: host_xbps_repository_configs
+  when: (host_xbps_repositories | default([])) | length > 0
+
 - name: Install Void nonfree repository if needed
   tags: [packages]
   community.general.xbps:
     name: void-repo-nonfree
     state: present
-    update_cache: true
+    update_cache: false
+  register: void_nonfree_repository
   when: "'void-repo-nonfree' in (host_packages | default([]) + void_packages_base | default([]))"
 
-- name: Refresh XBPS cache after enabling nonfree repository
+- name: Refresh XBPS cache after configuring repositories
   tags: [packages]
-  ansible.builtin.command: xbps-install -S
-  changed_when: false
-  when: "'void-repo-nonfree' in (host_packages | default([]) + void_packages_base | default([]))"
+  community.general.xbps:
+    update_cache: true
+    accept_pubkey: true
+  when: >-
+    (host_xbps_repositories | default([])) | length > 0
+    or (void_nonfree_repository is defined and void_nonfree_repository is changed)
 
 - name: Synchronize and upgrade Void Linux packages
   tags: [packages]
   community.general.xbps:
-    update_cache: true
+    update_cache: false
     upgrade: true
 
 - name: Install packages on Void Linux

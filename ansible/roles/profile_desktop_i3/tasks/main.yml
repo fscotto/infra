@@ -126,6 +126,19 @@
     group: root
     mode: "0644"
 
+- name: Install host-specific Wayland sessions for emptty
+  tags: [packages, services, emptty, hyprland]
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/etc/emptty/wayland-sessions/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ host_emptty_wayland_sessions | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  when: (host_emptty_wayland_sessions | default([])) | length > 0
+
 - name: Configure emptty
   tags: [packages, services, emptty]
   ansible.builtin.template:

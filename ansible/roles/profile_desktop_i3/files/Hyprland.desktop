@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Hyprland
+Comment=Hyprland Wayland compositor
+Exec=Hyprland
+TryExec=Hyprland
+Type=Application
+DesktopNames=Hyprland
+Keywords=wayland;wm;windowmanager;window;manager;tiling;compositor;

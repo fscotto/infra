@@ -96,6 +96,46 @@
     line: "password   optional  pam_gnome_keyring.so use_authtok"
     state: present
 
+- name: Ensure emptty log directory exists
+  tags: [packages, services, emptty]
+  ansible.builtin.file:
+    path: /var/log/emptty
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure emptty session directories exist
+  tags: [packages, services, emptty]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /etc/emptty/xsessions
+    - /etc/emptty/wayland-sessions
+
+- name: Install allowed emptty X11 sessions
+  tags: [packages, services, emptty]
+  ansible.builtin.copy:
+    src: i3.desktop
+    dest: /etc/emptty/xsessions/i3.desktop
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Configure emptty
+  tags: [packages, services, emptty]
+  ansible.builtin.template:
+    src: emptty-conf.j2
+    dest: /etc/emptty/conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart emptty
+
 - name: Copy desktop dotfiles
   tags: [dotfiles, dotfiles:desktop]
   ansible.builtin.copy:

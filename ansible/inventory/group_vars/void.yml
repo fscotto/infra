@@ -28,6 +28,7 @@ void_packages_base:
 enabled_services:
   - dbus
   - elogind
+  - emptty
   - NetworkManager
   - ufw
   - bluetoothd

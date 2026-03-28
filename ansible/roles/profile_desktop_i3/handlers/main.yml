@@ -1,0 +1,5 @@
+---
+- name: Restart emptty
+  ansible.builtin.command: sv restart emptty
+  changed_when: true
+  when: not ansible_check_mode

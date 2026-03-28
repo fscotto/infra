@@ -3,6 +3,7 @@ desktop_manage_icloud_keyring: false
 desktop_protonmail_bridge_cert_path: ~/.var/app/ch.protonmail.protonmail-bridge/config/protonmail/bridge-v3/cert.pem
 
 profile_packages:
+  - emptty
   - i3
   - i3blocks
   - i3blocks-blocklets

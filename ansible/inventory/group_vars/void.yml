@@ -1,36 +1,36 @@
 ---
 void_packages_base:
+  - NetworkManager
   - base-system
-  - xtools
-  - vpm
-  - vsv
   - bat
   - delta
-  - xorg-minimal
-  - xorg-fonts
   - elogind
-  - NetworkManager
-  - network-manager-applet
-  - xdg-desktop-portal
-  - xdg-desktop-portal-gtk
   - flatpak
-  - gvfs
-  - pipewire
-  - pavucontrol
   - gnome-keyring
-  - seahorse
+  - gvfs
+  - network-manager-applet
+  - pavucontrol
+  - pipewire
   - podman
   - podman-compose
+  - seahorse
   - socklog
   - socklog-void
   - void-repo-nonfree
+  - vpm
+  - vsv
+  - xdg-desktop-portal
+  - xdg-desktop-portal-gtk
+  - xorg-fonts
+  - xorg-minimal
+  - xtools
 
 enabled_services:
+  - NetworkManager
+  - bluetoothd
   - dbus
   - elogind
   - emptty
-  - NetworkManager
-  - ufw
-  - bluetoothd
-  - socklog-unix
   - nanoklogd
+  - socklog-unix
+  - ufw

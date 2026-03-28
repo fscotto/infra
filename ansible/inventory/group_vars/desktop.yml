@@ -2,84 +2,86 @@
 desktop_manage_icloud_keyring: false
 desktop_protonmail_bridge_cert_path: ~/.var/app/ch.protonmail.protonmail-bridge/config/protonmail/bridge-v3/cert.pem
 
-profile_packages:
+desktop_x11_packages:
+  - arandr
+  - autorandr
+  - brightnessctl
+  - dex
+  - dunst
   - emptty
+  - feh
   - i3
   - i3blocks
   - i3blocks-blocklets
-  - i3status
   - i3lock-color
-  - dex
-  - dunst
+  - i3status
+  - network-manager-applet
   - rofi
-  - alacritty
-  - Thunar
-  - exo
-  - thunar-volman
+  - scrot
+  - setxkbmap
   - udiskie
+  - volumeicon
+  - xclip
   - xfce-polkit
   - xfce4-clipman-plugin
   - xfce4-screenshooter
-  - volumeicon
-  - brightnessctl
-  - autorandr
-  - arandr
-  - feh
-  - ImageMagick
-  - scrot
-  - xclip
   - xkbutils
-  - setxkbmap
   - xss-lock
-  - playerctl
-  - nerd-fonts-symbols-ttf
-  - network-manager-applet
+
+profile_packages:
+  - 7zip
+  - alacritty
+  - bluez
+  - blueman
+  - celluloid
   - chromium
-  - emacs-gtk3
-  - mu4e
-  - isync
-  - msmtp
-  - libsecret
-  - libtool
-  - libvterm-devel
-  - cmake
-  - gcc
-  - gdb
-  - pkg-config
-  - libX11-devel
-  - libXft-devel
-  - fontconfig-devel
-  - freetype-devel
-  - go
-  - nodejs
   - clang
   - clang-tools-extra
-  - mpv
-  - celluloid
-  - yt-dlp
-  - shotwell
-  - ristretto
-  - xournalpp
-  - pdfarranger
-  - remmina
+  - cmake
   - deluge-gtk
-  - xarchiver
-  - gufw
-  - ufw
-  - meld
-  - 7zip
-  - libreoffice
-  - lm_sensors
+  - emacs-gtk3
+  - exo
   - fastfetch
-  - liberation-fonts-ttf
-  - terminus-font
-  - blueman
-  - bluez
+  - fontconfig-devel
+  - freetype-devel
+  - gcc
+  - gdb
+  - go
+  - gufw
+  - ImageMagick
+  - isync
+  - libsecret
   - libspa-bluetooth
+  - libreoffice
+  - liberation-fonts-ttf
+  - libtool
+  - libvterm-devel
+  - libX11-devel
+  - libXft-devel
+  - lm_sensors
+  - meld
+  - mpv
+  - msmtp
+  - mu4e
+  - nerd-fonts-symbols-ttf
+  - nodejs
+  - pdfarranger
+  - pkg-config
+  - playerctl
+  - remmina
+  - ristretto
+  - rsync
+  - shotwell
+  - terminus-font
+  - Thunar
+  - thunar-volman
+  - ufw
   - wireplumber
+  - xarchiver
+  - xournalpp
   - yaru
   - yaru-plus
-  - rsync
+  - yt-dlp
 
 desktop_dotfiles:
   - name: XDG autostart entries

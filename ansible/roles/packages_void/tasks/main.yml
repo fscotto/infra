@@ -27,6 +27,7 @@
         (common_packages | default([]))
         + (void_packages_base | default([]))
         + (profile_packages | default([]))
+        + (desktop_x11_packages | default([]))
         + (host_packages | default([]))
       }}
     state: present

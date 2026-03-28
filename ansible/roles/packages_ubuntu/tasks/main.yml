@@ -90,6 +90,7 @@
         + (ubuntu_packages_base | default([]))
         + (ubuntu_docker_packages | default([]))
         + (profile_packages | default([]))
+        + (desktop_x11_packages | default([]))
         + (host_packages | default([]))
       }}
     state: present

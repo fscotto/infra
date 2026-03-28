@@ -18,17 +18,17 @@ xdg_user_directories:
 common_packages:
   - bash-completion
   - bat
-  - tmux
-  - git
-  - tree
-  - wget
-  - unzip
-  - zip
-  - vim
-  - fzf
-  - zoxide
   - entr
+  - fzf
+  - git
   - jq
+  - tmux
+  - tree
+  - unzip
+  - vim
+  - wget
+  - zip
+  - zoxide
 
 common_dotfiles:
   - name: .bashrc

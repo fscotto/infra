@@ -19,10 +19,6 @@ void_packages_base:
   - void-repo-nonfree
   - vpm
   - vsv
-  - xdg-desktop-portal
-  - xdg-desktop-portal-gtk
-  - xorg-fonts
-  - xorg-minimal
   - xtools
 
 enabled_services:

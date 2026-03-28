@@ -26,6 +26,10 @@ desktop_x11_packages:
   - xfce4-clipman-plugin
   - xfce4-screenshooter
   - xkbutils
+  - xdg-desktop-portal
+  - xdg-desktop-portal-gtk
+  - xorg-fonts
+  - xorg-minimal
   - xss-lock
 
 profile_packages:

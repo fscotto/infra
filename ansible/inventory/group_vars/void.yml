@@ -1,25 +1,44 @@
 ---
 void_packages_base:
+  - 7zip
   - NetworkManager
   - base-system
   - bat
+  - clang
+  - clang-tools-extra
+  - cmake
   - delta
   - elogind
+  - fastfetch
   - flatpak
+  - gcc
+  - gdb
   - gnome-keyring
+  - go
   - gvfs
+  - ImageMagick
+  - isync
+  - libsecret
+  - libtool
+  - lm_sensors
+  - msmtp
+  - mu4e
   - network-manager-applet
+  - nodejs
   - pavucontrol
   - pipewire
+  - pkg-config
   - podman
   - podman-compose
   - seahorse
   - socklog
   - socklog-void
+  - ufw
   - void-repo-nonfree
   - vpm
   - vsv
   - xtools
+  - yt-dlp
 
 enabled_services:
   - NetworkManager

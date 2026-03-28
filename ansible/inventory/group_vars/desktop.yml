@@ -33,44 +33,27 @@ desktop_x11_packages:
   - xss-lock
 
 profile_packages:
-  - 7zip
   - alacritty
   - bluez
   - blueman
   - celluloid
   - chromium
-  - clang
-  - clang-tools-extra
-  - cmake
   - deluge-gtk
   - emacs-gtk3
   - exo
-  - fastfetch
   - fontconfig-devel
   - freetype-devel
-  - gcc
-  - gdb
-  - go
   - gufw
-  - ImageMagick
-  - isync
-  - libsecret
   - libspa-bluetooth
   - libreoffice
   - liberation-fonts-ttf
-  - libtool
   - libvterm-devel
   - libX11-devel
   - libXft-devel
-  - lm_sensors
   - meld
   - mpv
-  - msmtp
-  - mu4e
   - nerd-fonts-symbols-ttf
-  - nodejs
   - pdfarranger
-  - pkg-config
   - playerctl
   - remmina
   - ristretto
@@ -79,13 +62,11 @@ profile_packages:
   - terminus-font
   - Thunar
   - thunar-volman
-  - ufw
   - wireplumber
   - xarchiver
   - xournalpp
   - yaru
   - yaru-plus
-  - yt-dlp
 
 desktop_dotfiles:
   - name: XDG autostart entries

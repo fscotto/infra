@@ -19,7 +19,7 @@ host_packages:
   - hyprland
   - hyprpaper
   - xdg-desktop-portal-hyprland
-  - waybar
+  - Waybar
   - wlogout
 
 host_enabled_services:

@@ -38,17 +38,6 @@ server_templates:
     dest: "{{ server_container_stack_dir }}/docker-compose.yml"
     owner: root
     group: root
-    mode: "0644"
-  - src: server/navidrome_db_password.txt.j2
-    dest: "{{ server_container_stack_dir }}/navidrome_db_password.txt"
-    owner: root
-    group: root
-    mode: "0600"
-    no_log: true
-  - src: server/postgres_root_password.txt.j2
-    dest: "{{ server_container_stack_dir }}/postgres_root_password.txt"
-    owner: root
-    group: root
     mode: "0600"
     no_log: true
 

@@ -3,7 +3,6 @@ ubuntu_packages_base:
   - curl
   - ufw
   - htop
-  - fastfetch
   - build-essential
   - nodejs
   - git-delta

@@ -59,10 +59,6 @@ server_directories:
     owner: root
     group: root
     mode: "0755"
-  - path: /home/git/.ssh
-    owner: git
-    group: git
-    mode: "0700"
 
 server_ufw_rules:
   - rule: allow

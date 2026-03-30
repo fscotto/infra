@@ -1,0 +1,87 @@
+---
+version: "3.8"
+
+services:
+  navidrome:
+    image: deluan/navidrome:latest
+    container_name: navidrome
+    restart: unless-stopped
+    expose:
+      - "4533"
+    environment:
+      ND_DATABASE_URL: "postgres://navidrome:$(cat /run/secrets/navidrome_db_password)@navidromedb:5432/navidrome_db?sslmode=disable"
+      ND_SESSIONTIMEOUT: 24h
+      ND_ENABLETRANSCODING: "true"
+
+    volumes:
+      - "/opt/navidrome/data:/data"
+      - "/opt/music:/music:ro"
+    user: "1000:1000"
+    networks:
+      - web
+    depends_on:
+      - navidromedb
+    secrets:
+      - navidrome_db_password
+
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx-proxy-manager
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "81:81"
+    volumes:
+      - "/opt/npm/data:/data"
+      - "/opt/npm/letsencrypt:/etc/letsencrypt"
+    networks:
+      - web
+      - gitea
+
+  navidromedb:
+    image: postgres:13
+    container_name: navidromedb
+    restart: unless-stopped
+    mem_limit: 2048m
+    environment:
+      POSTGRES_DB: "navidrome_db"
+      POSTGRES_USER: "navidrome"
+      POSTGRES_PASSWORD_FILE: "/run/secrets/postgres_root_password"
+
+    volumes:
+      - "/opt/postgres/data:/var/lib/postgresql/data"
+    networks:
+      - web
+    secrets:
+      - postgres_root_password
+
+  gitea:
+    image: docker.gitea.com/gitea:1.25.2
+    container_name: gitea
+    environment:
+      - USER_UID=1100
+      - USER_GID=1100
+    restart: always
+    networks:
+      - gitea
+    volumes:
+      - /opt/gitea/data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /home/git/.ssh:/data/git/.ssh
+    ports:
+      - "3000:3000"
+      - "127.0.0.1:222:22"
+
+secrets:
+  navidrome_db_password:
+    file: "{{ server_container_stack_dir }}/navidrome_db_password.txt"
+  postgres_root_password:
+    file: "{{ server_container_stack_dir }}/postgres_root_password.txt"
+
+networks:
+  web:
+    external: false
+  gitea:
+    external: false

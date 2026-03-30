@@ -12,17 +12,15 @@
   loop_control:
     label: "{{ item.dest }}"
 
-- name: Render server templates
-  tags: [dotfiles, dotfiles:server]
-  ansible.builtin.template:
-    src: "{{ item.src }}"
-    dest: "{{ server_user_home }}/{{ item.dest }}"
-    owner: "{{ server_username }}"
-    group: "{{ server_user_group }}"
-    mode: "{{ item.mode }}"
-  loop: "{{ server_templates | default([]) }}"
-  loop_control:
-    label: "{{ item.dest }}"
+- name: Require server container secret variables
+  tags: [dotfiles, dotfiles:server, services]
+  ansible.builtin.assert:
+    that:
+      - (vault_navidrome_db_password | default('')) | length > 0
+      - (vault_postgres_root_password | default('')) | length > 0
+    fail_msg: >-
+      Server container secrets are missing. Define vault_navidrome_db_password and
+      vault_postgres_root_password in secrets/vault.yml or another vars source.
 
 - name: Ensure server directories exist
   tags: [dotfiles, services]
@@ -35,6 +33,19 @@
   loop: "{{ server_directories | default([]) }}"
   loop_control:
     label: "{{ item.path }}"
+
+- name: Render server templates
+  tags: [dotfiles, dotfiles:server]
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest if item.dest.startswith('/') else server_user_home ~ '/' ~ item.dest }}"
+    owner: "{{ item.owner | default(server_username) }}"
+    group: "{{ item.group | default(server_user_group) }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ server_templates | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+  no_log: "{{ item.no_log | default(false) }}"
 
 - name: Disable SSH root login on server
   tags: [services]

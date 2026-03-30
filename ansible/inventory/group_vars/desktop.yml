@@ -46,6 +46,8 @@ desktop_hyprland_packages:
   - grim
   - hypridle
   - hyprland
+  - xorg-server-xwayland
+  - hyprland-qtutils
   - hyprlock
   - hyprpaper
   - slurp

@@ -243,13 +243,16 @@ Per utilizzare il repository sono necessari:
 
 - Python 3
 - Ansible
+- `ansible-lint`
+- `yamllint`
+- `shellcheck`
 - collection `community.general`
 - accesso locale o SSH alle macchine target, in base a come e definito l'inventory
 
 Installazione base:
 
 ```bash
-pip install ansible
+python3 -m pip install ansible ansible-lint yamllint shellcheck-py
 ansible-galaxy collection install community.general
 ```
 
@@ -286,6 +289,18 @@ ansible-playbook ansible/site.yml --limit ikaros --check --diff
 ansible-playbook ansible/site.yml --limit nymph --check --diff
 ansible-playbook ansible/site.yml --limit deadalus --check --diff
 ansible-playbook ansible/site.yml --limit prometheus --check --diff
+ansible-lint ansible/site.yml
+ansible-lint ansible/roles
+yamllint ansible/
+```
+
+Per validazioni piu mirate:
+
+```bash
+ansible-playbook ansible/site.yml --limit <host> --tags <tag1>,<tag2> --check --diff
+ansible-playbook ansible/site.yml --limit <host> --start-at-task "<task name>" --check --diff
+ansible-lint ansible/roles/<role>
+yamllint ansible/path/to/file.yml
 ```
 
 ---
@@ -296,7 +311,7 @@ Una nuova macchina può essere inizializzata con i seguenti passaggi:
 
 ```bash
 git clone <repo>
-cd infra
+cd <repo-dir>
 ansible-galaxy collection install community.general
 ansible-playbook ansible/site.yml
 ```
@@ -310,6 +325,13 @@ scripts/bootstrap_mail.sh
 ```
 
 Lo script si occupa del bootstrap dei secret nel keyring, del primo sync con `mbsync` e dell'inizializzazione di `mu` usando la configurazione mail generata dai template.
+
+Se modifichi questo script, valida almeno con:
+
+```bash
+sh -n scripts/bootstrap_mail.sh
+shellcheck scripts/bootstrap_mail.sh
+```
 
 ---
 

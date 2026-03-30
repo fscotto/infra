@@ -34,6 +34,36 @@ server_templates:
     dest: .gitconfig
     mode: "0644"
 
+server_directories:
+  - path: /opt/navidrome/data
+    owner: "{{ server_username }}"
+    group: "{{ server_user_group }}"
+    mode: "0755"
+  - path: /opt/music
+    owner: "{{ server_username }}"
+    group: "{{ server_user_group }}"
+    mode: "0755"
+  - path: /opt/npm/data
+    owner: root
+    group: root
+    mode: "0755"
+  - path: /opt/npm/letsencrypt
+    owner: root
+    group: root
+    mode: "0755"
+  - path: /opt/postgres/data
+    owner: root
+    group: root
+    mode: "0755"
+  - path: /opt/gitea/data
+    owner: root
+    group: root
+    mode: "0755"
+  - path: /home/git/.ssh
+    owner: git
+    group: git
+    mode: "0700"
+
 server_ufw_rules:
   - rule: allow
     name: OpenSSH

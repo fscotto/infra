@@ -65,9 +65,10 @@ Sistema operativo:
 
 - Void Linux
 
-Window manager:
+Sessioni desktop:
 
-- i3
+- `ikaros`: i3
+- `nymph`: i3 + Hyprland con scelta sessione a login
 
 Macchine:
 
@@ -79,7 +80,8 @@ Queste macchine condividono la stessa configurazione base desktop e vengono mant
 Lo stato attuale del profilo desktop include, tra le altre cose:
 
 - dotfiles comuni e desktop
-- sessione i3 e servizi desktop correlati
+- sessione i3 su tutti i desktop Void e sessione Hyprland opzionale su `nymph`
+- `emptty` con scelta sessione a login su `nymph` e default host-specific sugli altri desktop
 - pacchetti Void Linux e servizi runit
 - Flatpak con remoto Flathub
 - GNOME Keyring e bootstrap della posta via script dedicato
@@ -183,7 +185,10 @@ I principali ruoli attualmente presenti sono:
 | packages_ubuntu           | installazione pacchetti su Ubuntu   |
 | services_runit            | gestione servizi runit              |
 | services_systemd          | gestione servizi systemd            |
-| profile_desktop_i3        | configurazione desktop i3           |
+| profile_desktop_common    | bootstrap desktop Void condiviso    |
+| profile_desktop_i3        | sessione desktop i3                 |
+| profile_desktop_hyprland  | sessione desktop Hyprland           |
+| profile_desktop_host      | override desktop specifici per host |
 | profile_workstation_gnome | configurazione workstation GNOME    |
 | profile_server            | configurazione server               |
 | dotfiles_common           | distribuzione dotfiles comuni       |
@@ -197,7 +202,7 @@ Il playbook `ansible/site.yml` e attualmente composto da quattro blocchi:
 
 ```text
 all  -> dotfiles_common
-void -> packages_void + services_runit + profile_desktop_i3
+void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_hyprland + profile_desktop_host
 ubuntu_workstation -> packages_ubuntu + services_systemd + profile_workstation_gnome
 ubuntu_server -> packages_ubuntu + services_systemd + profile_server
 ```
@@ -267,9 +272,10 @@ ansible-playbook ansible/site.yml
 Allo stato attuale questo comando:
 
 - distribuisce i dotfiles comuni a tutti gli host
-- per gli host Void applica pacchetti, servizi runit e profilo desktop i3
+- per gli host Void applica bootstrap desktop condiviso, sessioni i3/Hyprland e override specifici per host
 - per gli host `ubuntu_workstation` applica pacchetti Ubuntu, servizi systemd, profilo workstation GNOME, UFW, dotfiles, Snap e template dedicati
 - per gli host `ubuntu_server` applica pacchetti Ubuntu, servizi systemd, profilo server, UFW, dotfiles e template dedicati
+- non riavvia automaticamente `emptty`; le modifiche al display manager vanno applicate manualmente da SSH o da una TTY separata
 - carica `secrets/vault.yml` solo se presente
 
 Per validare prima di applicare:
@@ -277,6 +283,7 @@ Per validare prima di applicare:
 ```bash
 ansible-playbook ansible/site.yml --syntax-check
 ansible-playbook ansible/site.yml --limit ikaros --check --diff
+ansible-playbook ansible/site.yml --limit nymph --check --diff
 ansible-playbook ansible/site.yml --limit deadalus --check --diff
 ansible-playbook ansible/site.yml --limit prometheus --check --diff
 ```

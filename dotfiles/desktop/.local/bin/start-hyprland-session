@@ -1,0 +1,22 @@
+#!/bin/sh
+
+[ $# -gt 0 ] || set -- Hyprland
+
+[ -r /etc/profile ] && . /etc/profile
+[ -r "$HOME/.profile" ] && . "$HOME/.profile"
+
+set -e
+
+session_name=${1##*/}
+
+export XDG_CURRENT_DESKTOP="$session_name"
+export XDG_SESSION_DESKTOP="$session_name"
+export XDG_SESSION_TYPE=wayland
+
+exec dbus-run-session sh -eu -c '
+  umask 077
+  printf "%s\n" "$DBUS_SESSION_BUS_ADDRESS" > "$HOME/.dbus-session-bus-address"
+  eval "$(ssh-agent -s)" >/dev/null
+  gpgconf --launch gpg-agent
+  exec "$@"
+' sh "$@"

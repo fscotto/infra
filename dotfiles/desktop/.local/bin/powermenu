@@ -1,0 +1,42 @@
+#!/bin/sh
+
+set -eu
+
+choice="$(printf 'Shutdown\nReboot\nLogout\nLock\nSuspend' \
+| rofi -dmenu \
+  -i \
+  -p 'Power' \
+  -theme ~/.config/rofi/config.rasi \
+  -theme-str 'window { width: 20%; location: center; anchor: center; } listview { columns: 1; spacing: 6px; }')"
+
+[ -n "$choice" ] || exit 0
+
+case "$choice" in
+  Lock)
+    "$HOME/.local/bin/lock-session"
+    ;;
+  Logout)
+    case "${XDG_CURRENT_DESKTOP:-}" in
+      *Hyprland*|*hyprland*)
+        hyprctl dispatch exit
+        ;;
+      *i3*|*I3*)
+        i3-msg exit
+        ;;
+      *)
+        printf '%s\n' 'Unsupported desktop session for logout.' >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  Suspend)
+    "$HOME/.local/bin/lock-session" || true
+    loginctl suspend
+    ;;
+  Reboot)
+    loginctl reboot
+    ;;
+  Shutdown)
+    loginctl poweroff
+    ;;
+esac

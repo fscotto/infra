@@ -1,6 +1,12 @@
 ---
 hostname: ikaros
 
+desktop_sessions_enabled:
+  - i3
+
+desktop_default_session: i3
+desktop_default_session_env: xorg
+
 host_packages:
   - mesa-dri
   - vulkan-loader
@@ -8,7 +14,7 @@ host_packages:
   - mesa-vaapi
   - xf86-video-amdgpu
 
-host_dotfiles:
+host_i3_dotfiles:
   - src: .config/autorandr/
     dest: .config/autorandr/
     mode: preserve

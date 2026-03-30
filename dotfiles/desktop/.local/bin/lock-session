@@ -1,0 +1,23 @@
+#!/bin/sh
+
+set -eu
+
+case "${XDG_CURRENT_DESKTOP:-}" in
+  *Hyprland*|*hyprland*)
+    exec hyprlock
+    ;;
+  *i3*|*I3*)
+    exec "$HOME/.config/i3/scripts/lockscreen"
+    ;;
+esac
+
+if command -v hyprlock >/dev/null 2>&1; then
+  exec hyprlock
+fi
+
+if [ -x "$HOME/.config/i3/scripts/lockscreen" ]; then
+  exec "$HOME/.config/i3/scripts/lockscreen"
+fi
+
+printf '%s\n' 'No supported lock command found.' >&2
+exit 1

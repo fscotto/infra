@@ -20,7 +20,7 @@ Project type: Ansible-driven infrastructure, workstation/server provisioning, an
 - Ubuntu server: `prometheus`
 - Most hosts use `ansible_connection: local`
 - `all -> dotfiles_common`
-- `void -> packages_void, services_runit, profile_desktop_i3`
+- `void -> packages_void, services_runit, profile_desktop_common, profile_desktop_i3, profile_desktop_hyprland, profile_desktop_host`
 - `ubuntu_workstation -> packages_ubuntu, services_systemd, profile_workstation_gnome`
 - `ubuntu_server -> packages_ubuntu, services_systemd, profile_server`
 - Present but unwired roles: `base`, `dotfiles`
@@ -107,7 +107,7 @@ There is no pytest, Molecule, or unit-test suite. Use the narrowest command matc
 
 ### Variables, Types, And Naming
 - Use `snake_case` for vars, facts, and registered values
-- Follow existing families such as `common_packages`, `profile_packages`, `host_packages`, `desktop_dotfiles`, `host_dotfiles`, `enabled_services`, and `host_enabled_services`
+- Follow existing families such as `common_packages`, `profile_packages`, `host_packages`, `desktop_common_packages`, `desktop_i3_packages`, `desktop_hyprland_packages`, `desktop_common_dotfiles`, `desktop_i3_dotfiles`, `desktop_hyprland_dotfiles`, `host_i3_dotfiles`, `host_hyprland_dotfiles`, `enabled_services`, and `host_enabled_services`
 - Keep booleans as booleans, not quoted strings
 - Keep structured values as YAML lists/maps, not comma-separated strings
 - Guard optional lists with `default([])`, mappings with `default({})`, and strings with `default('')`
@@ -134,8 +134,10 @@ There is no pytest, Molecule, or unit-test suite. Use the narrowest command matc
 - Be careful with display-manager/session changes on desktop hosts; validate on one host first
 
 ## Area-Specific Notes
-- `profile_desktop_i3` now manages `emptty` on Void desktops; keep session changes coordinated with `.xinitrc`
+- `profile_desktop_common` manages `emptty` and the shared Void desktop bootstrap; `profile_desktop_i3` adds the X11/i3 session; `profile_desktop_hyprland` adds the optional Wayland session on hosts that enable it; `profile_desktop_host` carries host-specific desktop overrides such as NVIDIA or host session dotfiles
+- Do not auto-restart `emptty` during playbook runs on active desktop hosts; prefer a manual restart from SSH or another TTY after the run
 - `dotfiles/desktop/.xinitrc` is part of the X11 session bootstrap path; changes there affect login behavior
+- `dotfiles/desktop/.local/bin/start-hyprland-session` is the Wayland session bootstrap path; keep it aligned with DBus and keyring expectations
 - `nymph` has special NVIDIA/PRIME handling; keep host-specific logic guarded by hostname or host vars
 - `ikaros` is treated as the more stable personal desktop; prefer validating risky desktop changes elsewhere first
 

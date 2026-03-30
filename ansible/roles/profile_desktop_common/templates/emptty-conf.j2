@@ -1,0 +1,18 @@
+TTY_NUMBER=7
+SWITCH_TTY=true
+DEFAULT_ENV={{ desktop_default_session_env | default('xorg') }}
+{% if not (desktop_prompt_for_session | default(false)) and (desktop_default_session | default('')) | length > 0 %}
+DEFAULT_SESSION={{ desktop_default_session | default('') }}
+{% if (desktop_default_session_env | default('')) | length > 0 %}
+DEFAULT_SESSION_ENV={{ desktop_default_session_env | default('') }}
+{% endif %}
+{% endif %}
+DBUS_LAUNCH=false
+XINITRC_LAUNCH=true
+XORG_SESSIONS_PATH=/etc/emptty/xsessions
+WAYLAND_SESSIONS_PATH=/etc/emptty/wayland-sessions
+VERTICAL_SELECTION=true
+IDENTIFY_ENVS=true
+SELECT_LAST_USER=global
+LOGGING=rotate
+SESSION_ERROR_LOGGING={{ desktop_emptty_session_error_logging | default('disabled') }}

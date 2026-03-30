@@ -1,0 +1,19 @@
+---
+- name: Restart emptty service
+  listen: Restart emptty
+  ansible.builtin.command: sv restart emptty
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - desktop_restart_emptty_automatically | default(false)
+
+- name: Report manual emptty restart requirement
+  listen: Restart emptty
+  ansible.builtin.debug:
+    msg: >-
+      Emptty configuration changed but automatic restart is disabled.
+      Restart it manually from SSH or another TTY with `sudo sv restart emptty`
+      to avoid dropping the active graphical session.
+  when:
+    - not ansible_check_mode
+    - not (desktop_restart_emptty_automatically | default(false))

@@ -2,35 +2,56 @@
 desktop_manage_icloud_keyring: false
 desktop_protonmail_bridge_cert_path: ~/.var/app/ch.protonmail.protonmail-bridge/config/protonmail/bridge-v3/cert.pem
 
-desktop_x11_packages:
-  - arandr
-  - autorandr
+desktop_sessions_enabled:
+  - i3
+
+desktop_default_session: i3
+desktop_default_session_env: xorg
+desktop_restart_emptty_automatically: false
+desktop_emptty_session_error_logging: disabled
+
+desktop_common_packages:
   - brightnessctl
   - dex
   - dunst
   - emptty
+  - network-manager-applet
+  - rofi
+  - udiskie
+  - xfce-polkit
+  - xdg-desktop-portal
+  - xdg-desktop-portal-gtk
+
+desktop_i3_packages:
+  - arandr
+  - autorandr
   - feh
   - i3
   - i3blocks
   - i3blocks-blocklets
   - i3lock-color
   - i3status
-  - network-manager-applet
-  - rofi
   - scrot
   - setxkbmap
-  - udiskie
   - volumeicon
   - xclip
-  - xfce-polkit
   - xfce4-clipman-plugin
   - xfce4-screenshooter
   - xkbutils
-  - xdg-desktop-portal
-  - xdg-desktop-portal-gtk
   - xorg-fonts
   - xorg-minimal
   - xss-lock
+
+desktop_hyprland_packages:
+  - grim
+  - hypridle
+  - hyprland
+  - hyprlock
+  - hyprpaper
+  - slurp
+  - Waybar
+  - wl-clipboard
+  - xdg-desktop-portal-hyprland
 
 profile_packages:
   - alacritty
@@ -68,18 +89,10 @@ profile_packages:
   - yaru
   - yaru-plus
 
-desktop_dotfiles:
+desktop_common_dotfiles:
   - name: XDG autostart entries
     src: .config/autostart/
     dest: .config/autostart/
-    mode: preserve
-  - name: i3 config
-    src: .config/i3/
-    dest: .config/i3/
-    mode: preserve
-  - name: i3blocks config
-    src: .config/i3blocks/
-    dest: .config/i3blocks/
     mode: preserve
   - name: dunst config
     src: .config/dunst/
@@ -113,10 +126,6 @@ desktop_dotfiles:
     src: .config/yt-dlp/
     dest: .config/yt-dlp/
     mode: preserve
-  - name: .xinitrc
-    src: .xinitrc
-    dest: .xinitrc
-    mode: "0644"
   - name: .gitignore_global
     src: .gitignore_global
     dest: .gitignore_global
@@ -129,6 +138,50 @@ desktop_dotfiles:
     src: .emacs.d/
     dest: .emacs.d/
     mode: preserve
+  - name: GTK theme setup script
+    src: .local/bin/setup-gtk-theme
+    dest: .local/bin/setup-gtk-theme
+    mode: "0755"
+  - name: Lock session script
+    src: .local/bin/lock-session
+    dest: .local/bin/lock-session
+    mode: "0755"
+  - name: Powermenu script
+    src: .local/bin/powermenu
+    dest: .local/bin/powermenu
+    mode: "0755"
+
+desktop_i3_dotfiles:
+  - name: i3 config
+    src: .config/i3/
+    dest: .config/i3/
+    mode: preserve
+  - name: i3blocks config
+    src: .config/i3blocks/
+    dest: .config/i3blocks/
+    mode: preserve
+  - name: .xinitrc
+    src: .xinitrc
+    dest: .xinitrc
+    mode: "0644"
+
+desktop_hyprland_dotfiles:
+  - name: Hyprland config
+    src: .config/hypr/
+    dest: .config/hypr/
+    mode: preserve
+  - name: Waybar config
+    src: .config/waybar/
+    dest: .config/waybar/
+    mode: preserve
+  - name: Hyprland session wrapper
+    src: .local/bin/start-hyprland-session
+    dest: .local/bin/start-hyprland-session
+    mode: "0755"
+  - name: Wayland screenshot script
+    src: .local/bin/screenshot-wayland
+    dest: .local/bin/screenshot-wayland
+    mode: "0755"
 
 desktop_flatpak_packages:
   - be.alexandervanhee.gradia

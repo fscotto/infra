@@ -1,0 +1,41 @@
+---
+- name: Configure GRUB kernel parameters for NVIDIA hybrid graphics
+  tags: [packages, nvidia]
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX='
+    line: 'GRUB_CMDLINE_LINUX="rd.luks.uuid=1e15d159-5d05-4a1f-9639-ac200dff9f9c rootflags=subvol=@ apparmor=1 security=apparmor nouveau.modeset=0 nvidia-drm.modeset=1"'
+    state: present
+
+- name: Regenerate GRUB configuration
+  tags: [packages, nvidia]
+  ansible.builtin.command: grub-mkconfig -o /boot/grub/grub.cfg
+  changed_when: true
+
+- name: Configure NVIDIA power management for hybrid graphics
+  tags: [packages, nvidia]
+  ansible.builtin.copy:
+    dest: /etc/modprobe.d/nvidia-power-management.conf
+    content: |
+      options nvidia "NVreg_DynamicPowerManagement=0x02"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install prime-run wrapper script for NVIDIA PRIME offload
+  tags: [nvidia, dotfiles, dotfiles:host]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/nymph/.local/bin/prime-run"
+    dest: "{{ user_home }}/.local/bin/prime-run"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+    force: false
+
+- name: Wrap alacritty with prime-run for NVIDIA PRIME offload
+  tags: [nvidia, dotfiles, dotfiles:desktop, dotfiles:host]
+  ansible.builtin.lineinfile:
+    path: "{{ user_home }}/.config/i3/config"
+    regexp: '^bindsym \$mod\+Return exec --no-startup-id /usr/bin/alacritty'
+    line: 'bindsym $mod+Return exec --no-startup-id ~/.local/bin/prime-run /usr/bin/alacritty'
+  when: "'i3' in (desktop_sessions_enabled | default([]))"

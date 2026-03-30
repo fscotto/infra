@@ -1,12 +1,16 @@
 ---
 hostname: nymph
 
+desktop_sessions_enabled:
+  - i3
+  - hyprland
+
+desktop_prompt_for_session: true
+desktop_emptty_session_error_logging: rotate
+
 host_xbps_repositories:
   - name: hyprland-void
     url: "https://raw.githubusercontent.com/Makrennel/hyprland-void/repository-x86_64-glibc"
-
-host_emptty_wayland_sessions:
-  - Hyprland.desktop
 
 host_packages:
   - nvidia
@@ -16,22 +20,16 @@ host_packages:
   - intel-video-accel
   - tlp
   - tlp-rdw
-  - hyprland
-  - hyprpaper
-  - xdg-desktop-portal-hyprland
-  - Waybar
-  - wlogout
 
 host_enabled_services:
   - tlp
 
-host_dotfiles:
+host_i3_dotfiles:
   - src: .config/autorandr/
     dest: .config/autorandr/
     mode: preserve
-  - src: .config/hypr/
-    dest: .config/hypr/
-    mode: preserve
-  - src: .config/waybar/
-    dest: .config/waybar/
-    mode: preserve
+
+host_hyprland_dotfiles:
+  - src: .config/hypr/host.conf
+    dest: .config/hypr/host.conf
+    mode: "0644"

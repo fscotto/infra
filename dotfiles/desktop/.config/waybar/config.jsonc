@@ -1,0 +1,111 @@
+{
+  "layer": "top",
+  "position": "bottom",
+  "height": 28,
+  "spacing": 4,
+
+  "modules-left": [
+    "hyprland/workspaces"
+  ],
+
+  "modules-right": [
+    "pulseaudio",
+    "backlight",
+    "network",
+    "bluetooth",
+    "battery",
+    "temperature",
+    "memory",
+    "clock",
+    "custom/powermenu",
+    "tray"
+  ],
+
+  "hyprland/workspaces": {
+    "disable-scroll": true,
+    "all-outputs": true,
+    "format": "{name}",
+    "on-click": "activate",
+    "sort-by-number": true
+  },
+
+  "pulseaudio": {
+    "scroll-step": 1,
+    "format": "VOL {volume}%",
+    "format-muted": "MUTE",
+    "on-click": "pavucontrol",
+    "tooltip": false
+  },
+
+  "backlight": {
+    "device": "intel_backlight",
+    "on-scroll-up": "brightnessctl set +5%",
+    "on-scroll-down": "brightnessctl set 5%-",
+    "format": "BL {percent}%"
+  },
+
+  "network": {
+    "interval": 1,
+    "tooltip": true,
+    "format-wifi": "WIFI",
+    "format-ethernet": "ETH",
+    "format-linked": "LINK",
+    "format-disconnected": "OFF",
+    "tooltip-format": "{ifname}",
+    "tooltip-format-wifi": "{essid} ({signalStrength}%)",
+    "tooltip-format-ethernet": "{ifname}",
+    "tooltip-format-disconnected": "Disconnected",
+    "on-click": "nm-connection-editor"
+  },
+
+  "bluetooth": {
+    "format": "BT",
+    "format-connected": "BT {device_alias}",
+    "format-off": "BT OFF",
+    "on-click": "blueman-manager"
+  },
+
+  "battery": {
+    "interval": 10,
+    "states": {
+      "warning": 20,
+      "critical": 10
+    },
+    "format": "BAT {capacity}%",
+    "format-charging": "BAT {capacity}% AC",
+    "format-plugged": "BAT {capacity}% AC",
+    "format-alt": "{time}"
+  },
+
+  "temperature": {
+    "critical-threshold": 80,
+    "format": "TMP {temperatureC}C",
+    "tooltip": false
+  },
+
+  "memory": {
+    "interval": 5,
+    "format": "MEM {percentage}%",
+    "states": {
+      "warning": 85
+    }
+  },
+
+  "clock": {
+    "interval": 60,
+    "timezone": "Europe/Rome",
+    "format": "{:%Y-%m-%d %H:%M}",
+    "format-alt": "{:%A %d/%m/%Y}"
+  },
+
+  "custom/powermenu": {
+    "format": "POWER",
+    "on-click": "~/.local/bin/powermenu",
+    "tooltip": false
+  },
+
+  "tray": {
+    "icon-size": 15,
+    "spacing": 6
+  }
+}

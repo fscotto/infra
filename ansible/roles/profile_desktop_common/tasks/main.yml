@@ -1,0 +1,509 @@
+---
+- name: Configure elogind to suspend on lid close
+  tags: [packages]
+  ansible.builtin.lineinfile:
+    path: /etc/elogind/logind.conf
+    regexp: '^#?HandleLidSwitch='
+    line: 'HandleLidSwitch=suspend'
+    state: present
+
+- name: Ensure common config directories exist
+  tags: [dotfiles, dotfiles:desktop]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+  loop:
+    - "{{ user_home }}/.config"
+    - "{{ user_home }}/.config/autostart"
+    - "{{ user_home }}/.config/dunst"
+    - "{{ user_home }}/.config/alacritty"
+    - "{{ user_home }}/.config/Thunar"
+    - "{{ user_home }}/.config/rofi"
+
+- name: Ensure user local bin directory exists
+  tags: [dotfiles, dotfiles:desktop, dotfiles:host]
+  ansible.builtin.file:
+    path: "{{ user_home }}/.local/bin"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+
+- name: Enable gnome-keyring PAM auth hook
+  tags: [packages, gnome]
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/login
+    insertafter: '^auth\s+include\s+system-local-login$'
+    line: "auth       optional  pam_gnome_keyring.so"
+    state: present
+
+- name: Enable gnome-keyring PAM session hook
+  tags: [packages, gnome]
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/login
+    insertafter: '^session\s+include\s+system-local-login$'
+    line: "session    optional  pam_gnome_keyring.so auto_start"
+    state: present
+
+- name: Enable gnome-keyring PAM password hook
+  tags: [packages, gnome]
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/login
+    insertafter: '^password\s+include\s+system-local-login$'
+    line: "password   optional  pam_gnome_keyring.so use_authtok"
+    state: present
+
+- name: Ensure emptty log directory exists
+  tags: [packages, services, emptty]
+  ansible.builtin.file:
+    path: /var/log/emptty
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure emptty session directories exist
+  tags: [packages, services, emptty]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /etc/emptty/xsessions
+    - /etc/emptty/wayland-sessions
+
+- name: Configure emptty
+  tags: [packages, services, emptty]
+  ansible.builtin.template:
+    src: emptty-conf.j2
+    dest: /etc/emptty/conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart emptty
+
+- name: Copy common desktop dotfiles
+  tags: [dotfiles, dotfiles:desktop]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/{{ item.src }}"
+    dest: "{{ user_home }}/{{ item.dest }}"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ desktop_common_dotfiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+
+- name: Render desktop templates with private values
+  tags: [dotfiles, dotfiles:desktop]
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ user_home }}/{{ item.dest }}"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - src: desktop/.gitconfig.j2
+      dest: .gitconfig
+      mode: "0644"
+    - src: desktop/.mbsyncrc.j2
+      dest: .mbsyncrc
+      mode: "0600"
+    - src: desktop/.msmtprc.j2
+      dest: .msmtprc
+      mode: "0600"
+    - src: desktop/email.el.j2
+      dest: .emacs.d/lisp/misc/email.el
+      mode: "0644"
+  loop_control:
+    label: "{{ item.dest }}"
+
+- name: Refresh user font cache
+  tags: [dotfiles, dotfiles:desktop]
+  ansible.builtin.command: fc-cache -f
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  changed_when: false
+
+- name: Ensure .gnupg directory exists
+  tags: [dotfiles, dotfiles:desktop]
+  ansible.builtin.file:
+    path: "{{ user_home }}/.gnupg"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0700"
+
+- name: Copy gpg-agent.conf
+  tags: [dotfiles, dotfiles:desktop]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/.gnupg/gpg-agent.conf"
+    dest: "{{ user_home }}/.gnupg/gpg-agent.conf"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0600"
+
+- name: Ensure local user directories exist
+  tags: [dotfiles, dotfiles:desktop]
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ user_home }}/.local"
+      mode: "0755"
+    - path: "{{ user_home }}/.local/share"
+      mode: "0755"
+    - path: "{{ user_home }}/.local/share/keyrings"
+      mode: "0700"
+    - path: "{{ user_home }}/.local/src"
+      mode: "0755"
+
+- name: Ensure maildir directories exist
+  tags: [dotfiles, dotfiles:desktop]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0700"
+  loop:
+    - "{{ user_home }}/Maildir"
+    - "{{ user_home }}/Maildir/iCloudAccount"
+    - "{{ user_home }}/Maildir/ProtonMailAccount"
+
+- name: Bootstrap iCloud keyring secret from Ansible vault
+  tags: [dotfiles, dotfiles:desktop, gnome]
+  when: desktop_manage_icloud_keyring | default(false)
+  block:
+    - name: Store iCloud mail password in GNOME Keyring
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ username }}"
+
+    - name: Set desktop user runtime UID
+      ansible.builtin.set_fact:
+        desktop_user_uid: "{{ ansible_facts.getent_passwd[username][1] }}"
+
+    - name: Check whether desktop user DBus session address file exists
+      ansible.builtin.stat:
+        path: "{{ user_home }}/.dbus-session-bus-address"
+      register: desktop_user_bus_address_file
+
+    - name: Read desktop user DBus session address
+      ansible.builtin.slurp:
+        src: "{{ user_home }}/.dbus-session-bus-address"
+      register: desktop_user_bus_address_raw
+      when:
+        - (vault_icloud_mail_password | default('')) | length > 0
+        - desktop_user_bus_address_file.stat.exists
+
+    - name: Set desktop user DBus session address
+      ansible.builtin.set_fact:
+        desktop_user_bus_address: >-
+          {{ desktop_user_bus_address_raw.content | b64decode | trim }}
+      when:
+        - (vault_icloud_mail_password | default('')) | length > 0
+        - desktop_user_bus_address_file.stat.exists
+
+    - name: Check whether GNOME Keyring default collection is available
+      ansible.builtin.command:
+        cmd: >-
+          gdbus call --session
+          --dest org.freedesktop.secrets
+          --object-path /org/freedesktop/secrets
+          --method org.freedesktop.Secret.Service.ReadAlias default
+      become: true
+      become_user: "{{ username }}"
+      environment:
+        HOME: "{{ user_home }}"
+        XDG_RUNTIME_DIR: "/run/user/{{ desktop_user_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "{{ desktop_user_bus_address }}"
+      register: icloud_keyring_default_alias
+      failed_when: false
+      changed_when: false
+      when:
+        - (vault_icloud_mail_password | default('')) | length > 0
+        - desktop_user_bus_address | default('') | length > 0
+
+    - name: Set GNOME Keyring default collection path
+      ansible.builtin.set_fact:
+        icloud_keyring_default_alias_path: >-
+          {{
+            (
+              icloud_keyring_default_alias.stdout
+              | default('')
+              | regex_findall("objectpath '([^']+)'")
+              | first
+            )
+            | default('')
+          }}
+      when:
+        - (vault_icloud_mail_password | default('')) | length > 0
+        - desktop_user_bus_address | default('') | length > 0
+        - icloud_keyring_default_alias.rc | default(1) == 0
+
+    - name: Store iCloud mail password in GNOME Keyring
+      ansible.builtin.command:
+        cmd: secret-tool store --label="iCloud Mail" icloud-mail icloud
+        stdin: "{{ vault_icloud_mail_password }}"
+        stdin_add_newline: false
+      become: true
+      become_user: "{{ username }}"
+      environment:
+        HOME: "{{ user_home }}"
+        XDG_RUNTIME_DIR: "/run/user/{{ desktop_user_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "{{ desktop_user_bus_address }}"
+      register: icloud_keyring_store
+      failed_when: false
+      changed_when: icloud_keyring_store.rc == 0
+      no_log: true
+      when:
+        - (vault_icloud_mail_password | default('')) | length > 0
+        - desktop_user_bus_address | default('') | length > 0
+        - icloud_keyring_default_alias.rc | default(1) == 0
+        - (icloud_keyring_default_alias_path | default('')) | length > 0
+        - (icloud_keyring_default_alias_path | default('')) != '/'
+
+    - name: Warn when iCloud keyring storage is skipped
+      ansible.builtin.debug:
+        msg: >-
+          Unable to store iCloud password in GNOME Keyring automatically.
+          {% if (desktop_user_bus_address | default('')) | length == 0 %}
+          No saved DBus session address was found in {{ user_home }}/.dbus-session-bus-address.
+          {% elif icloud_keyring_default_alias.rc | default(1) != 0 %}
+          The Secret Service default alias could not be queried for {{ username }}.
+          {% elif (icloud_keyring_default_alias_path | default('')) == '/' %}
+          The Secret Service default alias is unset, so the login keyring is not initialized.
+          {% endif %}
+          Ensure a graphical user session is active, the login keyring exists and is unlocked, then run:
+          secret-tool store --label="iCloud Mail" icloud-mail icloud
+      when:
+        - (vault_icloud_mail_password | default('')) | length > 0
+        - icloud_keyring_store.rc | default(1) != 0
+
+- name: Clone st repository
+  tags: [packages]
+  ansible.builtin.git:
+    repo: https://codeberg.org/fscotto/st
+    dest: "{{ user_home }}/.local/src/st"
+    update: true
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  register: st_repo
+
+- name: Check whether st binary is installed
+  tags: [packages]
+  ansible.builtin.stat:
+    path: /usr/local/bin/st
+  register: st_binary
+
+- name: Build and install st
+  tags: [packages]
+  ansible.builtin.command:
+    cmd: make clean install
+    chdir: "{{ user_home }}/.local/src/st"
+  when: st_repo.changed or not st_binary.stat.exists
+
+- name: Clean st build artifacts
+  tags: [packages]
+  ansible.builtin.command:
+    cmd: make clean
+    chdir: "{{ user_home }}/.local/src/st"
+  when: st_repo.changed or not st_binary.stat.exists
+
+- name: Ensure flathub remote is configured
+  tags: [packages]
+  community.general.flatpak_remote:
+    name: "{{ desktop_flatpak_remote_name | default('flathub') }}"
+    state: present
+    flatpakrepo_url: "{{ desktop_flatpak_remote_url | default('https://dl.flathub.org/repo/flathub.flatpakrepo') }}"
+  when: (desktop_flatpak_packages | default([])) | length > 0
+
+- name: Install desktop flatpak applications
+  tags: [packages]
+  community.general.flatpak:
+    name: "{{ desktop_flatpak_packages }}"
+    state: present
+    remote: "{{ desktop_flatpak_remote_name | default('flathub') }}"
+    method: system
+  when: (desktop_flatpak_packages | default([])) | length > 0
+
+- name: Install Flatpak extensions
+  tags: [packages]
+  community.general.flatpak:
+    name: "{{ item }}"
+    state: present
+    remote: "{{ desktop_flatpak_remote_name | default('flathub') }}"
+    method: system
+  loop: "{{ desktop_flatpak_extensions | default([]) }}"
+  when:
+    - (desktop_flatpak_packages | default([])) | length > 0
+    - (desktop_flatpak_extensions | default([])) | length > 0
+    - item | length > 0
+
+- name: Set desktop external tool release metadata
+  tags: [packages]
+  ansible.builtin.set_fact:
+    desktop_tools_tmp_dir: /tmp/desktop-tools
+    gitmux_version: v0.11.5
+    bw_version: 1.22.1
+    opencode_asset_name: >-
+      {{
+        'opencode-linux-x64-baseline.tar.gz' if ansible_facts['architecture'] == 'x86_64'
+        else 'opencode-linux-arm64.tar.gz' if ansible_facts['architecture'] in ['aarch64', 'arm64']
+        else ''
+      }}
+    gitmux_arch: >-
+      {{
+        'amd64' if ansible_facts['architecture'] == 'x86_64'
+        else 'arm64' if ansible_facts['architecture'] in ['aarch64', 'arm64']
+        else ''
+      }}
+
+- name: Ensure architecture is supported for OpenCode binary
+  tags: [packages]
+  ansible.builtin.fail:
+    msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for OpenCode release binary"
+  when: opencode_asset_name == ''
+
+- name: Ensure architecture is supported for gitmux binary
+  tags: [packages]
+  ansible.builtin.fail:
+    msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for gitmux release binary"
+  when: gitmux_arch == ''
+
+- name: Ensure architecture is supported for bw binary
+  tags: [packages]
+  ansible.builtin.fail:
+    msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for bw release binary"
+  when: ansible_facts['architecture'] != 'x86_64'
+
+- name: Ensure temporary directory exists for external tools
+  tags: [packages]
+  ansible.builtin.file:
+    path: "{{ desktop_tools_tmp_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Fetch latest OpenCode release metadata
+  tags: [packages]
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/anomalyco/opencode/releases/latest
+    headers:
+      Accept: application/vnd.github+json
+    return_content: true
+  register: opencode_latest_release
+  changed_when: false
+
+- name: Set OpenCode release asset metadata
+  tags: [packages]
+  ansible.builtin.set_fact:
+    opencode_version: "{{ opencode_latest_release.json.tag_name }}"
+    opencode_asset: >-
+      {{
+        opencode_latest_release.json.assets
+        | selectattr('name', 'equalto', opencode_asset_name)
+        | first
+        | default({})
+      }}
+
+- name: Ensure latest OpenCode asset metadata is available
+  tags: [packages]
+  ansible.builtin.fail:
+    msg: "Could not find OpenCode asset {{ opencode_asset_name }} in release {{ opencode_version }}"
+  when: opencode_asset == {}
+
+- name: Download OpenCode release archive
+  tags: [packages]
+  ansible.builtin.get_url:
+    url: "{{ opencode_asset.browser_download_url }}"
+    dest: "{{ desktop_tools_tmp_dir }}/{{ opencode_asset.name }}"
+    checksum: "{{ opencode_asset.digest | default(omit) }}"
+    mode: "0644"
+
+- name: Extract OpenCode release archive
+  tags: [packages]
+  ansible.builtin.unarchive:
+    src: "{{ desktop_tools_tmp_dir }}/{{ opencode_asset.name }}"
+    dest: "{{ desktop_tools_tmp_dir }}"
+    remote_src: true
+
+- name: Install OpenCode binary
+  tags: [packages]
+  ansible.builtin.copy:
+    src: "{{ desktop_tools_tmp_dir }}/opencode"
+    dest: /usr/local/bin/opencode
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Set gitmux asset metadata
+  tags: [packages]
+  ansible.builtin.set_fact:
+    gitmux_asset: "gitmux_{{ gitmux_version }}_linux_{{ gitmux_arch }}.tar.gz"
+
+- name: Download gitmux release archive
+  tags: [packages]
+  ansible.builtin.get_url:
+    url: "https://github.com/arl/gitmux/releases/download/{{ gitmux_version }}/{{ gitmux_asset }}"
+    dest: "{{ desktop_tools_tmp_dir }}/{{ gitmux_asset }}"
+    checksum: "sha256:https://github.com/arl/gitmux/releases/download/{{ gitmux_version }}/checksums.txt"
+    mode: "0644"
+
+- name: Extract gitmux release archive
+  tags: [packages]
+  ansible.builtin.unarchive:
+    src: "{{ desktop_tools_tmp_dir }}/{{ gitmux_asset }}"
+    dest: "{{ desktop_tools_tmp_dir }}"
+    remote_src: true
+
+- name: Install gitmux binary
+  tags: [packages]
+  ansible.builtin.copy:
+    src: "{{ desktop_tools_tmp_dir }}/gitmux"
+    dest: /usr/local/bin/gitmux
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Set bw asset metadata
+  tags: [packages]
+  ansible.builtin.set_fact:
+    bw_asset: "bw-linux-{{ bw_version }}.zip"
+
+- name: Download bw release archive
+  tags: [packages]
+  ansible.builtin.get_url:
+    url: "https://github.com/bitwarden/cli/releases/download/v{{ bw_version }}/{{ bw_asset }}"
+    dest: "{{ desktop_tools_tmp_dir }}/{{ bw_asset }}"
+    checksum: "sha256:https://github.com/bitwarden/cli/releases/download/v{{ bw_version }}/bw-linux-sha256-{{ bw_version }}.txt"
+    mode: "0644"
+
+- name: Extract bw release archive
+  tags: [packages]
+  ansible.builtin.unarchive:
+    src: "{{ desktop_tools_tmp_dir }}/{{ bw_asset }}"
+    dest: "{{ desktop_tools_tmp_dir }}"
+    remote_src: true
+
+- name: Install bw binary
+  tags: [packages]
+  ansible.builtin.copy:
+    src: "{{ desktop_tools_tmp_dir }}/bw"
+    dest: /usr/local/bin/bw
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0755"

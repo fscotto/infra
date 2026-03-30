@@ -202,7 +202,7 @@
 - name: Add user to docker group
   tags: [packages]
   ansible.builtin.user:
-    name: "{{ username }}"
+    name: "{{ effective_username }}"
     groups: docker
     append: true
   when: (ubuntu_docker_packages | default([])) | length > 0

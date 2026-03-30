@@ -4,9 +4,9 @@
   tags: [dotfiles, dotfiles:server]
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/../dotfiles/server/{{ item.src }}"
-    dest: "{{ user_home }}/{{ item.dest }}"
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
+    dest: "{{ server_user_home }}/{{ item.dest }}"
+    owner: "{{ server_username }}"
+    group: "{{ server_user_group }}"
     mode: "{{ item.mode }}"
   loop: "{{ server_dotfiles | default([]) }}"
   loop_control:
@@ -16,9 +16,9 @@
   tags: [dotfiles, dotfiles:server]
   ansible.builtin.template:
     src: "{{ item.src }}"
-    dest: "{{ user_home }}/{{ item.dest }}"
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
+    dest: "{{ server_user_home }}/{{ item.dest }}"
+    owner: "{{ server_username }}"
+    group: "{{ server_user_group }}"
     mode: "{{ item.mode }}"
   loop: "{{ server_templates | default([]) }}"
   loop_control:

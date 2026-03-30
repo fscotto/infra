@@ -141,6 +141,22 @@ Lo stato attuale del profilo server include:
 - copia dei dotfiles server e rendering dei template server
 - attivazione del firewall UFW con regola SSH esplicita
 
+Utente del profilo server:
+
+- il profilo usa `server_username`, `server_user_group` e `server_user_home` definiti in `ansible/inventory/group_vars/server.yml`
+- per default `server_username` eredita `username`, ma puo essere sovrascritto per tutti gli host server via inventory oppure a runtime con extra vars
+- esempio override da CLI:
+
+```bash
+ansible-playbook ansible/site.yml --limit prometheus -e server_username=myuser
+```
+
+- se necessario puoi passare anche:
+
+```bash
+ansible-playbook ansible/site.yml --limit prometheus -e server_username=myuser -e server_user_group=mygroup -e server_user_home=/srv/myuser
+```
+
 ---
 
 # Composizione della configurazione
@@ -292,6 +308,12 @@ ansible-playbook ansible/site.yml --limit prometheus --check --diff
 ansible-lint ansible/site.yml
 ansible-lint ansible/roles
 yamllint ansible/
+```
+
+Per testare un override dell'utente server senza modificare l'inventory:
+
+```bash
+ansible-playbook ansible/site.yml --limit prometheus --check --diff -e server_username=myuser
 ```
 
 Per validazioni piu mirate:

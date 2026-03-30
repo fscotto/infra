@@ -8,10 +8,10 @@
 - name: Ensure XDG user directories exist
   tags: [dotfiles, dotfiles:common]
   ansible.builtin.file:
-    path: "{{ user_home }}/{{ item }}"
+    path: "{{ effective_user_home }}/{{ item }}"
     state: directory
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
+    owner: "{{ effective_username }}"
+    group: "{{ effective_user_group }}"
     mode: "0755"
   loop: "{{ xdg_user_directories | default([]) }}"
 
@@ -19,9 +19,9 @@
   tags: [dotfiles, dotfiles:common]
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/../dotfiles/common/{{ item.src }}"
-    dest: "{{ user_home }}/{{ item.dest }}"
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
+    dest: "{{ effective_user_home }}/{{ item.dest }}"
+    owner: "{{ effective_username }}"
+    group: "{{ effective_user_group }}"
     mode: "{{ item.mode }}"
   loop: "{{ common_dotfiles | default([]) }}"
   loop_control:
@@ -31,7 +31,7 @@
   tags: [dotfiles, dotfiles:common]
   ansible.builtin.command:
     cmd: "{{ 'batcat' if ansible_facts.os_family == 'Debian' else 'bat' }} cache --build"
-  become_user: "{{ username }}"
+  become_user: "{{ effective_username }}"
   environment:
-    HOME: "{{ user_home }}"
+    HOME: "{{ effective_user_home }}"
   changed_when: false

@@ -1,4 +1,11 @@
 ---
+server_username: "{{ username }}"
+server_user_group: "{{ server_username }}"
+server_user_home: "/home/{{ server_username }}"
+effective_username: "{{ server_username }}"
+effective_user_group: "{{ server_user_group }}"
+effective_user_home: "{{ server_user_home }}"
+
 profile_packages:
   - avahi-daemon
   - dmidecode
@@ -35,4 +42,4 @@ server_sshd_settings:
   PermitRootLogin: "no"
 
 server_sshd_allow_users:
-  - "{{ username }}"
+  - "{{ server_username }}"

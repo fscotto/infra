@@ -4,6 +4,9 @@ username: fscotto
 user_group: fscotto
 user_home: "/home/{{ username }}"
 user_shell: /bin/bash
+effective_username: "{{ username }}"
+effective_user_group: "{{ user_group }}"
+effective_user_home: "{{ user_home }}"
 
 xdg_user_directories:
   - Desktop

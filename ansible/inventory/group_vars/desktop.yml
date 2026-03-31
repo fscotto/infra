@@ -75,14 +75,17 @@ profile_packages:
   - alacritty
   - bluez
   - blueman
+  - bridge-utils
   - celluloid
   - chromium
   - deluge-gtk
+  - dnsmasq
   - emacs-gtk3
   - exo
   - fontconfig-devel
   - freetype-devel
   - gufw
+  - libvirt
   - libspa-bluetooth
   - libreoffice
   - liberation-fonts-ttf
@@ -94,6 +97,10 @@ profile_packages:
   - nerd-fonts-symbols-ttf
   - pdfarranger
   - playerctl
+  - qemu
+  - qemu-firmware
+  - qemu-img
+  - qemu-tools
   - remmina
   - ristretto
   - rsync
@@ -101,6 +108,8 @@ profile_packages:
   - terminus-font
   - Thunar
   - thunar-volman
+  - virt-manager
+  - virt-manager-tools
   - wireplumber
   - xarchiver
   - xournalpp

@@ -56,6 +56,51 @@
     line: "password   optional  pam_gnome_keyring.so use_authtok"
     state: present
 
+- name: Check whether libvirt service directory exists
+  tags: [packages, services]
+  ansible.builtin.stat:
+    path: /etc/sv/libvirtd
+  register: libvirtd_service_dir
+
+- name: Enable libvirt daemon service
+  tags: [packages, services]
+  ansible.builtin.file:
+    src: /etc/sv/libvirtd
+    dest: /var/service/libvirtd
+    state: link
+  when: libvirtd_service_dir.stat.exists
+
+- name: Check virtualization group availability
+  tags: [packages]
+  ansible.builtin.getent:
+    database: group
+    key: "{{ item }}"
+  loop:
+    - kvm
+    - libvirt
+  loop_control:
+    label: "{{ item }}"
+  register: desktop_virtualization_group_state
+  failed_when: false
+
+- name: Add desktop user to virtualization groups
+  tags: [packages]
+  ansible.builtin.user:
+    name: "{{ username }}"
+    groups: "{{ item }}"
+    append: true
+  loop: >-
+    {{
+      desktop_virtualization_group_state.results
+      | default([])
+      | selectattr('failed', 'equalto', false)
+      | selectattr('ansible_facts.getent_group', 'defined')
+      | map(attribute='item')
+      | list
+    }}
+  loop_control:
+    label: "{{ item }}"
+
 - name: Ensure emptty log directory exists
   tags: [packages, services, emptty]
   ansible.builtin.file:

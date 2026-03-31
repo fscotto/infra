@@ -68,7 +68,7 @@ Sistema operativo:
 Sessioni desktop:
 
 - `ikaros`: i3
-- `nymph`: i3 + Hyprland con scelta sessione a login
+- `nymph`: i3 + Sway + Hyprland con scelta sessione a login
 
 Macchine:
 
@@ -80,11 +80,13 @@ Queste macchine condividono la stessa configurazione base desktop e vengono mant
 Lo stato attuale del profilo desktop include, tra le altre cose:
 
 - dotfiles comuni e desktop
-- sessione i3 su tutti i desktop Void e sessione Hyprland opzionale su `nymph`
+- sessione i3 su tutti i desktop Void e sessioni Sway/Hyprland opzionali su `nymph`
 - `emptty` con scelta sessione a login su `nymph` e default host-specific sugli altri desktop
 - pacchetti Void Linux e servizi runit
 - Flatpak con remoto Flathub
 - GNOME Keyring e bootstrap della posta via script dedicato
+- `Waybar` separata per compositor (`config-sway.jsonc` e `config-hyprland.jsonc`) con `style.css` condiviso
+- `kanshi` su `nymph` per il profilo monitor Wayland, con workspace Sway deterministici: in dual monitor `1` resta su `eDP-1` e `2-10` vanno su `DP-1`, mentre in laptop-only tutti tornano su `eDP-1`
 
 ---
 
@@ -203,6 +205,7 @@ I principali ruoli attualmente presenti sono:
 | services_systemd          | gestione servizi systemd            |
 | profile_desktop_common    | bootstrap desktop Void condiviso    |
 | profile_desktop_i3        | sessione desktop i3                 |
+| profile_desktop_sway      | sessione desktop Sway               |
 | profile_desktop_hyprland  | sessione desktop Hyprland           |
 | profile_desktop_host      | override desktop specifici per host |
 | profile_workstation_gnome | configurazione workstation GNOME    |
@@ -218,7 +221,7 @@ Il playbook `ansible/site.yml` e attualmente composto da quattro blocchi:
 
 ```text
 all  -> dotfiles_common
-void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_hyprland + profile_desktop_host
+void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_host
 ubuntu_workstation -> packages_ubuntu + services_systemd + profile_workstation_gnome
 ubuntu_server -> packages_ubuntu + services_systemd + profile_server
 ```
@@ -291,7 +294,7 @@ ansible-playbook ansible/site.yml
 Allo stato attuale questo comando:
 
 - distribuisce i dotfiles comuni a tutti gli host
-- per gli host Void applica bootstrap desktop condiviso, sessioni i3/Hyprland e override specifici per host
+- per gli host Void applica bootstrap desktop condiviso, sessioni i3/Sway/Hyprland e override specifici per host
 - per gli host `ubuntu_workstation` applica pacchetti Ubuntu, servizi systemd, profilo workstation GNOME, UFW, dotfiles, Snap e template dedicati
 - per gli host `ubuntu_server` applica pacchetti Ubuntu, servizi systemd, profilo server, UFW, dotfiles e template dedicati
 - non riavvia automaticamente `emptty`; le modifiche al display manager vanno applicate manualmente da SSH o da una TTY separata
@@ -323,6 +326,13 @@ ansible-playbook ansible/site.yml --limit <host> --tags <tag1>,<tag2> --check --
 ansible-playbook ansible/site.yml --limit <host> --start-at-task "<task name>" --check --diff
 ansible-lint ansible/roles/<role>
 yamllint ansible/path/to/file.yml
+```
+
+Se tocchi `Waybar`, valida anche i config JSONC con:
+
+```bash
+python3 -m json.tool dotfiles/desktop/.config/waybar/config-sway.jsonc >/dev/null
+python3 -m json.tool dotfiles/desktop/.config/waybar/config-hyprland.jsonc >/dev/null
 ```
 
 ---

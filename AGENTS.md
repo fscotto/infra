@@ -19,7 +19,7 @@ Project type: Ansible-driven infrastructure, workstation/server provisioning, an
 - Ubuntu workstation: `deadalus`
 - Ubuntu server: `prometheus`
 - Most hosts use `ansible_connection: local`
-- Current playbook layering: `all -> dotfiles_common`, `void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_hyprland + profile_desktop_host`, `ubuntu_workstation -> packages_ubuntu + services_systemd + profile_workstation_gnome`, `ubuntu_server -> packages_ubuntu + services_systemd + profile_server`
+- Current playbook layering: `all -> dotfiles_common`, `void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_host`, `ubuntu_workstation -> packages_ubuntu + services_systemd + profile_workstation_gnome`, `ubuntu_server -> packages_ubuntu + services_systemd + profile_server`
 - Present but currently unwired roles: `base`, `dotfiles`
 
 ## Local Instruction Files
@@ -78,6 +78,7 @@ There is no pytest, Molecule, or unit-test suite. Use the narrowest command matc
 - Single task restart point: `ansible-playbook ansible/site.yml --limit <host> --start-at-task "<task name>" --check --diff`
 - Single role lint: `ansible-lint ansible/roles/<role>`
 - Single YAML file lint: `yamllint ansible/path/to/file.yml`
+- Waybar config validation: `python3 -m json.tool dotfiles/desktop/.config/waybar/config-sway.jsonc >/dev/null` and `python3 -m json.tool dotfiles/desktop/.config/waybar/config-hyprland.jsonc >/dev/null`
 - Script syntax/lint: `sh -n scripts/bootstrap_mail.sh` and `shellcheck scripts/bootstrap_mail.sh`
 - For shell changes outside vendored tmux plugins, prefer validating the touched file with `sh -n` and `shellcheck`
 - Prefer one limited-host dry run for vars, templates, dotfiles, packages, services, PAM, display manager, and firewall changes
@@ -110,7 +111,7 @@ There is no pytest, Molecule, or unit-test suite. Use the narrowest command matc
 
 ### Variables, Types, And Naming
 - Use `snake_case` for vars, facts, registered values, and custom facts
-- Follow existing families such as `common_packages`, `profile_packages`, `host_packages`, `desktop_common_packages`, `desktop_i3_packages`, `desktop_hyprland_packages`, `desktop_common_dotfiles`, `desktop_i3_dotfiles`, `desktop_hyprland_dotfiles`, `host_i3_dotfiles`, `host_hyprland_dotfiles`, `enabled_services`, and `host_enabled_services`
+- Follow existing families such as `common_packages`, `profile_packages`, `host_packages`, `desktop_common_packages`, `desktop_i3_packages`, `desktop_sway_packages`, `desktop_hyprland_packages`, `desktop_common_dotfiles`, `desktop_i3_dotfiles`, `desktop_sway_dotfiles`, `desktop_hyprland_dotfiles`, `host_i3_dotfiles`, `host_sway_dotfiles`, `host_hyprland_dotfiles`, `enabled_services`, and `host_enabled_services`
 - Keep booleans as booleans, not quoted strings
 - Keep structured values as YAML lists/maps, not comma-separated strings
 - Guard optional lists with `default([])`, mappings with `default({})`, and strings with `default('')`
@@ -122,6 +123,7 @@ There is no pytest, Molecule, or unit-test suite. Use the narrowest command matc
 - Prefer role `templates/` for variable-driven config and role `files/` for static payloads
 - Preserve destination paths and permissions unless the task requires a change
 - Dotfiles should stay deployable on real machines; avoid repo-only hacks in `dotfiles/`
+- Keep `dotfiles/desktop/.config/waybar/config-*.jsonc` effectively valid JSON even though the format is JSONC, so simple `python3 -m json.tool` validation continues to work
 - Prefer POSIX `sh` for simple scripts; use Bash only when needed
 - Use `set -eu` in POSIX shell scripts unless there is a clear reason not to
 - Quote variable expansions unless intentional splitting is required
@@ -141,12 +143,16 @@ There is no pytest, Molecule, or unit-test suite. Use the narrowest command matc
 ## Area-Specific Notes
 - `profile_desktop_common` manages shared Void desktop bootstrap, `emptty`, PAM hooks, dotfiles, mail bootstrap, and shared desktop tooling
 - `profile_desktop_i3` contains the X11/i3 session pieces
+- `profile_desktop_sway` contains the wlroots/Sway session pieces and deploys shared Sway + Waybar dotfiles
 - `profile_desktop_hyprland` contains the optional Hyprland/Wayland session pieces
 - `profile_desktop_host` carries host-specific desktop overrides such as NVIDIA, PRIME wrappers, and host-only WirePlumber config
 - Do not auto-restart `emptty` during playbook runs on active desktop hosts; prefer a manual restart from SSH or another TTY after the run
 - `dotfiles/desktop/.xinitrc` is part of the X11 session bootstrap path; changes there affect login behavior
+- `dotfiles/desktop/.local/bin/start-sway-session` is the Sway session bootstrap path; keep it aligned with DBus, keyring, and host-specific environment overrides
 - `dotfiles/desktop/.local/bin/start-hyprland-session` is the Wayland session bootstrap path; keep it aligned with DBus and keyring expectations
-- `nymph` has special NVIDIA/PRIME handling and a host-specific WirePlumber camera override; keep host logic guarded by hostname or host vars
+- Waybar is split by compositor: `dotfiles/desktop/.config/waybar/config-sway.jsonc` for Sway, `config-hyprland.jsonc` for Hyprland, and `style.css` is shared; do not mix `sway/*` and `hyprland/*` modules in the same config
+- `nymph` has special NVIDIA/PRIME handling, a host-specific WirePlumber camera override, host-specific Sway environment overrides, and host-specific `kanshi` monitor policy; keep host logic guarded by hostname or host vars
+- On `nymph`, Sway workspace placement is intentionally deterministic: in dual-monitor mode workspace `1` belongs to `eDP-1` and workspaces `2-10` belong to `DP-1`; in laptop-only mode all workspaces collapse back to `eDP-1` via `kanshi` `exec` hooks
 
 ## Validation Expectations Before Finishing
 Default minimum:
@@ -154,6 +160,11 @@ Default minimum:
 ansible-playbook ansible/site.yml --syntax-check
 ```
 Run a host-limited dry run whenever the change affects a real host profile, package set, service set, session, PAM stack, templates, or dotfiles.
+If you touched Sway or Hyprland Waybar config, also run:
+```bash
+python3 -m json.tool dotfiles/desktop/.config/waybar/config-sway.jsonc >/dev/null
+python3 -m json.tool dotfiles/desktop/.config/waybar/config-hyprland.jsonc >/dev/null
+```
 If you touched `scripts/bootstrap_mail.sh`, also run:
 ```bash
 sh -n scripts/bootstrap_mail.sh

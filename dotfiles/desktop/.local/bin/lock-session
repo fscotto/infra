@@ -3,6 +3,25 @@
 set -eu
 
 case "${XDG_CURRENT_DESKTOP:-}" in
+  *sway*|*Sway*)
+    exec swaylock -f \
+      --color 000000ff \
+      --inside-color 1f1f28ff \
+      --ring-color 2f4058ff \
+      --separator-color 3a3a46ff \
+      --line-color 00000000 \
+      --key-hl-color 6daeeaff \
+      --bs-hl-color c7162bff \
+      --inside-ver-color 1f1f28ff \
+      --inside-wrong-color 1f1f28ff \
+      --ring-ver-color 4a90d9ff \
+      --ring-wrong-color c7162bff \
+      --text-color d0d0d0ff \
+      --text-ver-color d0d0d0ff \
+      --text-wrong-color d0d0d0ff \
+      --indicator \
+      --clock
+    ;;
   *Hyprland*|*hyprland*)
     exec hyprlock
     ;;
@@ -13,6 +32,10 @@ esac
 
 if command -v hyprlock >/dev/null 2>&1; then
   exec hyprlock
+fi
+
+if command -v swaylock >/dev/null 2>&1; then
+  exec swaylock -f
 fi
 
 if [ -x "$HOME/.config/i3/scripts/lockscreen" ]; then

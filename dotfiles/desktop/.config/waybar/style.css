@@ -4,14 +4,19 @@
   min-height: 0;
   padding: 0;
   margin: 0;
-  font-family: "Liberation Mono", monospace;
-  font-size: 12px;
 }
 
 window#waybar {
   background: #1f1f28;
   color: #d0d0d0;
   border-top: 2px solid #3a3a46;
+  font-family: "Liberation Mono", "Symbols Nerd Font", monospace;
+  font-size: 12px;
+}
+
+window#waybar * {
+  font-family: inherit;
+  font-size: inherit;
 }
 
 #workspaces,
@@ -46,9 +51,11 @@ window#waybar {
   background: transparent;
 }
 
-#workspaces button.active {
+#workspaces button.active,
+#workspaces button.focused {
+  background: #4a90d9;
   color: #ffffff;
-  border-top: 2px solid #4a90d9;
+  border-top: 2px solid #6daeea;
 }
 
 #workspaces button.urgent {
@@ -80,7 +87,13 @@ window#waybar {
 }
 
 #tray {
-  padding-right: 12px;
+  padding: 0 8px;
+}
+
+menu,
+menuitem {
+  font-family: "Liberation Sans", sans-serif;
+  font-size: 11px;
 }
 
 tooltip {

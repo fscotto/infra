@@ -66,6 +66,11 @@
             if 'hyprland' in (desktop_sessions_enabled | default([]))
             else []
           )
+        + (
+            (desktop_sway_packages | default([]))
+            if 'sway' in (desktop_sessions_enabled | default([]))
+            else []
+          )
         + (host_packages | default([]))
         ) | unique
       }}

@@ -1,0 +1,4 @@
+export LIBVA_DRIVER_NAME=iHD
+export SWAY_UNSUPPORTED_GPU=1
+export WLR_DRM_DEVICES=/dev/dri/card0:/dev/dri/card1
+export WLR_NO_HARDWARE_CURSORS=1

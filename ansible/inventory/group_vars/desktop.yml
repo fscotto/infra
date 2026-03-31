@@ -57,6 +57,20 @@ desktop_hyprland_packages:
   - wl-clipboard
   - xdg-desktop-portal-hyprland
 
+desktop_sway_packages:
+  - grim
+  - kanshi
+  - slurp
+  - SwayOSD
+  - sway
+  - swayidle
+  - swaylock
+  - Waybar
+  - wl-clipboard
+  - xfce4-clipman-plugin
+  - xfce4-screenshooter
+  - xdg-desktop-portal-wlr
+
 profile_packages:
   - alacritty
   - bluez
@@ -181,6 +195,28 @@ desktop_hyprland_dotfiles:
   - name: Hyprland session wrapper
     src: .local/bin/start-hyprland-session
     dest: .local/bin/start-hyprland-session
+    mode: "0755"
+  - name: Wayland screenshot script
+    src: .local/bin/screenshot-wayland
+    dest: .local/bin/screenshot-wayland
+    mode: "0755"
+
+desktop_sway_dotfiles:
+  - name: Sway config
+    src: .config/sway/
+    dest: .config/sway/
+    mode: preserve
+  - name: Waybar config
+    src: .config/waybar/
+    dest: .config/waybar/
+    mode: preserve
+  - name: Sway wallpaper assets
+    src: .config/i3/wallpapers/
+    dest: .config/sway/wallpapers/
+    mode: preserve
+  - name: Sway session wrapper
+    src: .local/bin/start-sway-session
+    dest: .local/bin/start-sway-session
     mode: "0755"
   - name: Wayland screenshot script
     src: .local/bin/screenshot-wayland

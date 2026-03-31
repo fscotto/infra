@@ -1,0 +1,106 @@
+{
+  "layer": "top",
+  "position": "bottom",
+  "height": 28,
+  "spacing": 4,
+
+  "modules-left": [
+    "hyprland/workspaces"
+  ],
+
+  "modules-right": [
+    "pulseaudio",
+    "backlight",
+    "network",
+    "battery",
+    "temperature",
+    "memory",
+    "clock",
+    "tray",
+    "custom/powermenu"
+  ],
+
+  "hyprland/workspaces": {
+    "disable-scroll": true,
+    "all-outputs": true,
+    "format": "{name}",
+    "on-click": "activate",
+    "sort-by-number": true
+  },
+
+  "pulseaudio": {
+    "scroll-step": 1,
+    "format": "󰕾 {volume}%",
+    "format-bluetooth": "󰂯 {volume}%",
+    "format-muted": "󰖁",
+    "on-click": "pavucontrol",
+    "tooltip": false
+  },
+
+  "backlight": {
+    "device": "intel_backlight",
+    "on-scroll-up": "brightnessctl set +5%",
+    "on-scroll-down": "brightnessctl set 5%-",
+    "format": "󰃠 {percent}%"
+  },
+
+  "network": {
+    "interval": 1,
+    "tooltip": true,
+    "format-wifi": "󰖩",
+    "format-ethernet": "󰈀",
+    "format-linked": "󰈀",
+    "format-disconnected": "󰖪",
+    "tooltip-format": "{ifname}",
+    "tooltip-format-wifi": "{essid} ({signalStrength}%)",
+    "tooltip-format-ethernet": "{ifname}",
+    "tooltip-format-disconnected": "Disconnected",
+    "on-click": "nm-connection-editor"
+  },
+
+  "battery": {
+    "interval": 10,
+    "states": {
+      "warning": 20,
+      "critical": 10
+    },
+    "format": "{icon} {capacity}%",
+    "format-charging": "󰂄 {capacity}%",
+    "format-plugged": "󰂄 {capacity}%",
+    "format-alt": "{time}"
+    ,"format-icons": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"]
+  },
+
+  "temperature": {
+    "critical-threshold": 80,
+    "format": "󰔏 {temperatureC}C",
+    "tooltip": false
+  },
+
+  "memory": {
+    "interval": 5,
+    "format": "󰍛 {percentage}%",
+    "states": {
+      "warning": 85
+    }
+  },
+
+  "clock": {
+    "interval": 60,
+    "timezone": "Europe/Rome",
+    "format": "󰥔 {:%Y-%m-%d %H:%M}",
+    "format-alt": "{:%A %d/%m/%Y}",
+    "tooltip-format": "{:%A %d %B %Y\n%H:%M:%S %Z}"
+  },
+
+  "custom/powermenu": {
+    "format": "⏻",
+    "on-click": "~/.local/bin/powermenu",
+    "tooltip": false
+  },
+
+  "tray": {
+    "icon-size": 15,
+    "spacing": 4
+  }
+}

@@ -3,6 +3,7 @@ hostname: nymph
 
 desktop_sessions_enabled:
   - i3
+  - sway
   - hyprland
 
 desktop_prompt_for_session: true
@@ -32,4 +33,15 @@ host_i3_dotfiles:
 host_hyprland_dotfiles:
   - src: .config/hypr/host.conf
     dest: .config/hypr/host.conf
+    mode: "0644"
+
+host_sway_dotfiles:
+  - src: .config/sway/host.conf
+    dest: .config/sway/host.conf
+    mode: "0644"
+  - src: .config/sway/session-env
+    dest: .config/sway/session-env
+    mode: "0644"
+  - src: .config/kanshi/config
+    dest: .config/kanshi/config
     mode: "0644"

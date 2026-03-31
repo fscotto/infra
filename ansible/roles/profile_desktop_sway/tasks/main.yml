@@ -1,0 +1,37 @@
+---
+- name: Ensure Sway config directories exist
+  tags: [dotfiles, dotfiles:desktop, sway]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+  loop:
+    - "{{ user_home }}/.config/sway"
+    - "{{ user_home }}/.config/waybar"
+    - "{{ user_home }}/.config/kanshi"
+  when: "'sway' in (desktop_sessions_enabled | default([]))"
+
+- name: Install Sway emptty session entry
+  tags: [packages, services, emptty, sway]
+  ansible.builtin.template:
+    src: Sway.desktop.j2
+    dest: /etc/emptty/wayland-sessions/Sway.desktop
+    owner: root
+    group: root
+    mode: "0644"
+  when: "'sway' in (desktop_sessions_enabled | default([]))"
+
+- name: Copy Sway desktop dotfiles
+  tags: [dotfiles, dotfiles:desktop, sway]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/{{ item.src }}"
+    dest: "{{ user_home }}/{{ item.dest }}"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ desktop_sway_dotfiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+  when: "'sway' in (desktop_sessions_enabled | default([]))"

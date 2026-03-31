@@ -17,6 +17,9 @@ case "$choice" in
     ;;
   Logout)
     case "${XDG_CURRENT_DESKTOP:-}" in
+      *sway*|*Sway*)
+        swaymsg exit
+        ;;
       *Hyprland*|*hyprland*)
         hyprctl dispatch exit
         ;;

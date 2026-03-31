@@ -22,7 +22,6 @@
 
   "sway/workspaces": {
     "disable-scroll": true,
-    "all-outputs": true,
     "format": "{name}",
     "sort-by-number": true
   },

@@ -50,6 +50,8 @@ desktop_hyprland_packages:
   - hyprland-qtutils
   - hyprlock
   - hyprpaper
+  - qt5-wayland
+  - qt6-wayland
   - slurp
   - Waybar
   - wl-clipboard

@@ -35,7 +35,7 @@ If any of these files appear later, treat them as higher-priority repo-local ins
 - Preserve idempotency and reproducibility
 - Validate on one limited host before broad rollout
 - Treat `secrets/` as sensitive; never print secret values
-- Avoid editing vendored code under `dotfiles/common/.tmux/plugins/` unless explicitly asked
+- Avoid editing vendored code under `dotfiles/desktop/.tmux/plugins/` unless explicitly asked
 - Keep `ansible/site.yml` small; orchestration belongs there, implementation belongs in roles
 - Read the relevant inventory, vars, role tasks, templates, files, handlers, and dotfiles before editing
 

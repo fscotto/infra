@@ -152,6 +152,14 @@ desktop_common_dotfiles:
     src: .themes.gitignore
     dest: .themes.gitignore
     mode: "0644"
+  - name: .tmux.conf
+    src: .tmux.conf
+    dest: .tmux.conf
+    mode: "0644"
+  - name: tmux config directory
+    src: .tmux/
+    dest: .tmux/
+    mode: preserve
   - name: Emacs config
     src: .emacs.d/
     dest: .emacs.d/

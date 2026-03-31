@@ -33,6 +33,7 @@ void_packages_base:
   - seahorse
   - socklog
   - socklog-void
+  - tmux
   - ufw
   - void-repo-nonfree
   - vpm

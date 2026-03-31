@@ -25,7 +25,6 @@ common_packages:
   - fzf
   - git
   - jq
-  - tmux
   - tree
   - unzip
   - vim
@@ -42,18 +41,10 @@ common_dotfiles:
     src: .bash_profile
     dest: .bash_profile
     mode: "0644"
-  - name: .tmux.conf
-    src: .tmux.conf
-    dest: .tmux.conf
-    mode: "0644"
   - name: .vimrc
     src: .vimrc
     dest: .vimrc
     mode: "0644"
-  - name: tmux config directory
-    src: .tmux/
-    dest: .tmux/
-    mode: preserve
   - name: bat config
     src: .config/bat/.config/bat/
     dest: .config/bat/

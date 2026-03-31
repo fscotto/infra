@@ -14,6 +14,7 @@
     group: "{{ effective_user_group }}"
     mode: "0755"
   loop: "{{ xdg_user_directories | default([]) }}"
+  when: "'void' in group_names"
 
 - name: Copy common dotfiles
   tags: [dotfiles, dotfiles:common]

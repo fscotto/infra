@@ -1,0 +1,20 @@
+---
+ansible_connection: psrp
+ansible_psrp_auth: negotiate
+ansible_psrp_cert_validation: ignore
+ansible_psrp_protocol: http
+ansible_port: 5985
+ansible_shell_type: powershell
+
+windows_winget_packages:
+  - id: Microsoft.VisualStudioCode
+    name: Visual Studio Code
+  - id: Microsoft.WindowsTerminal
+    name: Windows Terminal
+
+windows_vscode_extensions:
+  - ms-vscode-remote.remote-containers
+  - ms-vscode-remote.remote-ssh
+  - ms-vscode-remote.remote-wsl
+
+windows_wsl_distribution_name: Ubuntu

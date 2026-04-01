@@ -18,8 +18,10 @@ Project type: Ansible-driven infrastructure, workstation/server provisioning, an
 - Void desktops: `ikaros`, `nymph`
 - Ubuntu workstation: `deadalus`
 - Ubuntu server: `prometheus`
+- Workstation topology now supports Linux host + Ubuntu dev and Windows host + Ubuntu WSL dev as separate layers
+- The WSL dev environment is intended to be managed by running Ansible locally from inside the distro, while the Windows host is managed remotely via PSRP
 - Most hosts use `ansible_connection: local`
-- Current playbook layering: `all -> dotfiles_common`, `void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_host`, `ubuntu_workstation -> packages_ubuntu + services_systemd + profile_workstation_gnome`, `ubuntu_server -> packages_ubuntu + services_systemd + profile_server`
+- Current playbook layering: `all:!workstation_host_windows -> dotfiles_common`, `void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_host`, `workstation_dev_ubuntu -> packages_ubuntu + services_systemd + profile_workstation_dev_common`, `workstation_host_linux -> profile_workstation_gnome`, `workstation_dev_wsl -> packages_ubuntu + services_systemd + profile_workstation_dev_common + profile_workstation_dev_wsl`, `workstation_host_windows -> profile_workstation_host_windows`, `ubuntu_server -> packages_ubuntu + services_systemd + profile_server`
 - Present but currently unwired roles: `base`, `dotfiles`
 
 ## Local Instruction Files
@@ -45,7 +47,7 @@ There is no compile/build pipeline. Confidence comes from syntax checks, dry run
 Install tooling if needed:
 ```bash
 python3 -m pip install ansible ansible-lint yamllint shellcheck-py
-ansible-galaxy collection install community.general
+ansible-galaxy collection install -r ansible/collections/requirements.yml
 ```
 
 Core validation from the repo root:
@@ -54,6 +56,7 @@ ansible-playbook ansible/site.yml --syntax-check
 ansible-playbook ansible/site.yml --limit ikaros --check --diff
 ansible-playbook ansible/site.yml --limit nymph --check --diff
 ansible-playbook ansible/site.yml --limit deadalus --check --diff
+ansible-playbook ansible/site.yml --limit deadalus-wsl --check --diff
 ansible-playbook ansible/site.yml --limit prometheus --check --diff
 ansible-lint ansible/site.yml
 ansible-lint ansible/roles
@@ -66,8 +69,10 @@ ansible-playbook ansible/site.yml
 ansible-playbook ansible/site.yml --limit ikaros
 ansible-playbook ansible/site.yml --limit nymph
 ansible-playbook ansible/site.yml --limit deadalus
+ansible-playbook ansible/site.yml --limit deadalus-wsl
 ansible-playbook ansible/site.yml --limit prometheus
 scripts/bootstrap_mail.sh
+pwsh -File scripts/bootstrap_windows_workstation.ps1
 ```
 
 ## Single-Test Equivalents
@@ -80,6 +85,7 @@ There is no pytest, Molecule, or unit-test suite. Use the narrowest command matc
 - Single YAML file lint: `yamllint ansible/path/to/file.yml`
 - Waybar config validation: `python3 -m json.tool dotfiles/desktop/.config/waybar/config-sway.jsonc >/dev/null` and `python3 -m json.tool dotfiles/desktop/.config/waybar/config-hyprland.jsonc >/dev/null`
 - Script syntax/lint: `sh -n scripts/bootstrap_mail.sh` and `shellcheck scripts/bootstrap_mail.sh`
+- Windows bootstrap script parse check: `pwsh -NoProfile -Command "[void][System.Management.Automation.Language.Parser]::ParseFile('scripts/bootstrap_windows_workstation.ps1', [ref]$null, [ref]$null)"`
 - For shell changes outside vendored tmux plugins, prefer validating the touched file with `sh -n` and `shellcheck`
 - Prefer one limited-host dry run for vars, templates, dotfiles, packages, services, PAM, display manager, and firewall changes
 
@@ -146,6 +152,11 @@ There is no pytest, Molecule, or unit-test suite. Use the narrowest command matc
 - `profile_desktop_sway` contains the wlroots/Sway session pieces and deploys shared Sway + Waybar dotfiles
 - `profile_desktop_hyprland` contains the optional Hyprland/Wayland session pieces
 - `profile_desktop_host` carries host-specific desktop overrides such as NVIDIA, PRIME wrappers, and host-only WirePlumber config
+- `profile_workstation_dev_common` carries the Ubuntu dev layer shared by native workstation and WSL Ubuntu
+- `profile_workstation_gnome` now carries Linux host-only GNOME setup, extensions, and UFW
+- `profile_workstation_dev_wsl` carries WSL-specific Ubuntu tweaks such as `systemd`
+- `profile_workstation_host_windows` manages the Windows host via PSRP and installs host applications via `winget` called from `win_powershell`
+- `deadalus-wsl` is modeled as a local inventory target intended to be run from inside the Ubuntu WSL distro
 - Do not auto-restart `emptty` during playbook runs on active desktop hosts; prefer a manual restart from SSH or another TTY after the run
 - `dotfiles/desktop/.xinitrc` is part of the X11 session bootstrap path; changes there affect login behavior
 - `dotfiles/desktop/.local/bin/start-sway-session` is the Sway session bootstrap path; keep it aligned with DBus, keyring, and host-specific environment overrides
@@ -169,6 +180,10 @@ If you touched `scripts/bootstrap_mail.sh`, also run:
 ```bash
 sh -n scripts/bootstrap_mail.sh
 shellcheck scripts/bootstrap_mail.sh
+```
+If you touched `scripts/bootstrap_windows_workstation.ps1`, also run:
+```bash
+pwsh -NoProfile -Command "[void][System.Management.Automation.Language.Parser]::ParseFile('scripts/bootstrap_windows_workstation.ps1', [ref]$null, [ref]$null)"
 ```
 
 ## Agent Workflow Expectations

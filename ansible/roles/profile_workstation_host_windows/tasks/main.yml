@@ -1,0 +1,108 @@
+---
+- name: Enable required Windows features for WSL
+  tags: [packages, services, wsl]
+  ansible.windows.win_optional_feature:
+    name:
+      - Microsoft-Windows-Subsystem-Linux
+      - VirtualMachinePlatform
+    state: present
+    include_parent: true
+
+- name: Ensure winget is available on Windows host
+  tags: [packages]
+  ansible.windows.win_powershell:
+    script: |
+      $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
+      if ($null -eq $winget) {
+          throw 'winget.exe is not available on the Windows host. Install App Installer or rerun the bootstrap script.'
+      }
+      $Ansible.Changed = $false
+
+- name: Ensure WSL 2 is the default backend
+  tags: [packages, services, wsl]
+  ansible.windows.win_powershell:
+    script: |
+      $status = & wsl --status 2>$null
+      if ($LASTEXITCODE -eq 0 -and $status -match 'Default Version:\s*2') {
+          $Ansible.Changed = $false
+          return
+      }
+
+      & wsl --set-default-version 2
+      if ($LASTEXITCODE -ne 0) {
+          throw 'Failed to set WSL default version to 2.'
+      }
+
+      $Ansible.Changed = $true
+
+- name: Check whether target WSL distribution exists
+  tags: [packages, services, wsl]
+  ansible.windows.win_powershell:
+    script: |
+      $distributions = @(wsl --list --quiet) | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
+      $ubuntuDistribution = $distributions | Where-Object { $_ -like '{{ windows_wsl_distribution_name }}*' } | Select-Object -First 1
+      if ($null -ne $ubuntuDistribution) {
+          $Ansible.Result = @{ exists = $true; distribution = $ubuntuDistribution }
+          $Ansible.Changed = $false
+          return
+      }
+
+      $Ansible.Result = @{ exists = $false; distribution = $null }
+      $Ansible.Changed = $false
+  register: windows_wsl_distribution_state
+
+- name: Fail when target WSL distribution is missing
+  tags: [packages, services, wsl]
+  ansible.builtin.fail:
+    msg: >-
+      No WSL Ubuntu distribution matching {{ windows_wsl_distribution_name }}* is installed on the Windows host.
+      Run scripts/bootstrap_windows_workstation.ps1 first and launch the distro once before applying the Windows play.
+  when: not (windows_wsl_distribution_state.result.exists | default(false))
+
+- name: Install Windows workstation applications with winget
+  tags: [packages]
+  ansible.windows.win_powershell:
+    script: |
+      $packageId = '{{ item.id }}'
+      $packageName = '{{ item.name | default(item.id) }}'
+      $installed = & winget list --id $packageId --exact --accept-source-agreements --disable-interactivity 2>$null
+      if ($LASTEXITCODE -eq 0 -and $installed -match [regex]::Escape($packageId)) {
+          $Ansible.Changed = $false
+          return
+      }
+
+      & winget install --id $packageId --exact --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
+      if ($LASTEXITCODE -ne 0) {
+          throw "Failed to install $packageName with winget"
+      }
+
+      $Ansible.Changed = $true
+  loop: "{{ windows_winget_packages | default([]) }}"
+  loop_control:
+    label: "{{ item.id }}"
+
+- name: Install VS Code WSL extensions on Windows host
+  tags: [packages, vscode]
+  ansible.windows.win_powershell:
+    script: |
+      $extensionId = '{{ item }}'
+      $code = Get-Command code.cmd -ErrorAction SilentlyContinue
+      if ($null -eq $code) {
+          throw 'code.cmd is not available. Ensure Visual Studio Code is installed before managing extensions.'
+      }
+
+      $installedExtensions = & $code.Source --list-extensions
+      if ($installedExtensions -contains $extensionId) {
+          $Ansible.Changed = $false
+          return
+      }
+
+      & $code.Source --install-extension $extensionId --force
+      if ($LASTEXITCODE -ne 0) {
+          throw "Failed to install VS Code extension $extensionId"
+      }
+
+      $Ansible.Changed = $true
+  loop: "{{ windows_vscode_extensions | default([]) }}"
+  loop_control:
+    label: "{{ item }}"

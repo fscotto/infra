@@ -91,6 +91,17 @@
         + (ubuntu_packages_base | default([]))
         + (ubuntu_docker_packages | default([]))
         + (profile_packages | default([]))
+        + (workstation_dev_packages | default([]))
+        + (
+            (workstation_host_linux_packages | default([]))
+            if 'workstation_host_linux' in group_names
+            else []
+          )
+        + (
+            (workstation_dev_wsl_packages | default([]))
+            if 'workstation_dev_wsl' in group_names
+            else []
+          )
         + (desktop_common_packages | default([]))
         + (
             (desktop_i3_packages | default([]))
@@ -103,7 +114,13 @@
             else []
           )
         + (host_packages | default([]))
-        ) | unique
+        )
+        | difference(
+            (workstation_dev_wsl_excluded_packages | default([]))
+            if 'workstation_dev_wsl' in group_names
+            else []
+          )
+        | unique
       }}
     state: present
 

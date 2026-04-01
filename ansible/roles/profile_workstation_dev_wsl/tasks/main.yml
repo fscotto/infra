@@ -1,0 +1,30 @@
+---
+- name: Ensure WSL boot configuration file exists
+  tags: [packages, services]
+  ansible.builtin.file:
+    path: /etc/wsl.conf
+    state: touch
+    owner: root
+    group: root
+    mode: "0644"
+  when: workstation_wsl_systemd_enabled | default(false)
+
+- name: Enable systemd in WSL
+  tags: [packages, services]
+  community.general.ini_file:
+    path: /etc/wsl.conf
+    section: boot
+    option: systemd
+    value: 'true'
+    mode: "0644"
+  register: workstation_wsl_systemd_config
+  when: workstation_wsl_systemd_enabled | default(false)
+
+- name: Note when WSL must be restarted
+  tags: [packages, services]
+  ansible.builtin.debug:
+    msg: "Restart the WSL distro with 'wsl --shutdown' from Windows to apply /etc/wsl.conf changes."
+  changed_when: false
+  when:
+    - workstation_wsl_systemd_enabled | default(false)
+    - workstation_wsl_systemd_config is changed

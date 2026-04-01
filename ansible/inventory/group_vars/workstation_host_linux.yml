@@ -1,0 +1,66 @@
+---
+workstation_host_linux_packages:
+  - gnome-shell-extension-manager
+  - gnome-shell-extensions
+  - gnome-tweaks
+  - gufw
+  - libreoffice
+  - meld
+  - network-manager-openconnect-gnome
+  - pcscd
+  - pinentry-gnome3
+  - podman
+  - podman-compose
+  - yubikey-manager
+
+workstation_manage_google_chrome: true
+
+workstation_removed_snap_packages:
+  - firefox
+
+workstation_snap_packages:
+  - name: intellij-idea-ultimate
+    classic: true
+    channel: latest/stable
+  - name: postman
+    classic: false
+    channel: latest/stable
+  - name: thunderbird
+    classic: false
+    channel: latest/stable
+  - name: code
+    classic: true
+    channel: latest/stable
+  - name: xournalpp
+    classic: false
+    channel: latest/stable
+  - name: pdfarranger
+    classic: false
+    channel: latest/stable
+  - name: spotify
+    classic: false
+    channel: latest/stable
+  - name: telegram-desktop
+    classic: false
+    channel: latest/stable
+  - name: dbeaver-ce
+    classic: true
+    channel: latest/stable
+
+workstation_gnome_extensions:
+  - id: 9308
+    uuid: bluetooth-battery-monitor@v8v88v8v88.com
+    version_tag: 68559
+    enabled: true
+  - id: 1401
+    uuid: bluetooth-quick-connect@bjarosze.gmail.com
+    version_tag: 65323
+    enabled: true
+  - id: 6099
+    uuid: paperwm@paperwm.github.com
+    version_tag: 68525
+    enabled: true
+
+workstation_disabled_gnome_extensions:
+  - tiling-assistant@ubuntu.com
+  - ubuntu-dock@ubuntu.com

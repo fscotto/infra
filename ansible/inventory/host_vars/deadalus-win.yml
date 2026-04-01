@@ -1,0 +1,4 @@
+---
+hostname: deadalus-win
+ansible_host: windows-host.example.invalid
+ansible_user: your-windows-user

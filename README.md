@@ -51,12 +51,13 @@ Il repository è diviso in due componenti principali:
 
 # Macchine gestite
 
-Il repository modella attualmente tre tipologie di profilo.
+Il repository modella attualmente tre tipologie di profilo e prepara due filoni workstation: Linux nativa e Windows + WSL.
 
 Nota sullo stato attuale del playbook principale:
 
 - `ansible/site.yml` applica oggi in automatico il profilo desktop su host Void Linux
-- `ansible/site.yml` applica anche il profilo `ubuntu_workstation` con setup apt, systemd, dotfiles workstation, firewall UFW e integrazione GNOME
+- `ansible/site.yml` applica la workstation Linux nativa separando il layer dev comune dal layer host GNOME
+- `ansible/site.yml` prepara anche il ramo `windows_workstation_host` + `workstation_dev_wsl` per il modello Windows + WSL
 - `ansible/site.yml` applica anche il profilo `ubuntu_server` con baseline apt, systemd, dotfiles server e firewall UFW
 
 ## Desktop
@@ -92,30 +93,48 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 
 ## Workstation
 
-Sistema operativo:
+Sistemi operativi supportati:
 
-- Ubuntu LTS
+- Ubuntu LTS nativa
+- Windows host + Ubuntu WSL
 
-Desktop environment:
+Desktop environment host Linux:
 
 - GNOME
 
-Macchina:
+Macchine attuali:
 
-- `deadalus`
+- `deadalus` come workstation Ubuntu nativa
+- supporto strutturale preparato per futuri host Windows + WSL
 
-Questo profilo è pensato per sviluppo e lavoro.
+Questo profilo è pensato per sviluppo e lavoro, con separazione tra layer host e layer dev.
 
-Il profilo workstation Ubuntu e agganciato al playbook principale e include gia una base operativa per uso desktop e sviluppo.
+Il profilo workstation e agganciato al playbook principale e ora distingue:
+
+- layer dev Ubuntu condiviso tra workstation Linux nativa e Ubuntu in WSL
+- layer host Linux GNOME
+- layer host Windows con bootstrap WSL, gestione app via `winget` e VS Code lato Windows
+- layer WSL dedicato per sviluppo con `systemd`
 
 Lo stato attuale del profilo workstation include:
 
 - installazione pacchetti base Ubuntu via apt
 - installazione e configurazione di Docker dal repository ufficiale
-- gestione dei dotfiles workstation e rendering dei template dedicati
-- installazione di Google Chrome e pacchetti Snap workstation
-- gestione delle estensioni GNOME da website e dello stato desiderato delle estensioni abilitate
-- attivazione del firewall UFW
+- gestione dei dotfiles workstation e rendering dei template dev condivisi
+- installazione di Google Chrome, pacchetti Snap workstation e estensioni GNOME sul solo host Linux nativo
+- preparazione del ramo Windows host con app installate dal playbook via `winget`
+- preparazione del ramo WSL Ubuntu con `systemd` per il toolchain di sviluppo
+- attivazione del firewall UFW sul solo host Linux nativo
+
+Workflow Windows + WSL previsto:
+
+1. eseguire `scripts/bootstrap_windows_workstation.ps1` su Windows come amministratore
+2. riavviare Windows se richiesto dalle feature WSL
+3. avviare Ubuntu WSL almeno una volta e completare la creazione dell'utente Linux
+4. installare Ansible dentro WSL Ubuntu
+5. lanciare il playbook da WSL su `deadalus-wsl` per configurare l'ambiente dev locale
+6. lanciare da WSL anche il playbook su `deadalus-win` via `psrp` per configurare l'host Windows
+7. usare VS Code con le estensioni Remote (`WSL`, `SSH`, `Dev Containers`) dal lato Windows
 
 ---
 
@@ -208,7 +227,10 @@ I principali ruoli attualmente presenti sono:
 | profile_desktop_sway      | sessione desktop Sway               |
 | profile_desktop_hyprland  | sessione desktop Hyprland           |
 | profile_desktop_host      | override desktop specifici per host |
-| profile_workstation_gnome | configurazione workstation GNOME    |
+| profile_workstation_dev_common | configurazione dev Ubuntu condivisa |
+| profile_workstation_gnome | configurazione host workstation GNOME |
+| profile_workstation_dev_wsl | configurazione WSL Ubuntu per sviluppo |
+| profile_workstation_host_windows | configurazione host Windows workstation |
 | profile_server            | configurazione server               |
 | dotfiles_common           | distribuzione dotfiles comuni       |
 | dotfiles                  | distribuzione configurazioni utente |
@@ -217,19 +239,23 @@ I principali ruoli attualmente presenti sono:
 
 # Stato attuale del playbook principale
 
-Il playbook `ansible/site.yml` e attualmente composto da quattro blocchi:
+Il playbook `ansible/site.yml` e attualmente composto da sei blocchi:
 
 ```text
-all  -> dotfiles_common
+all:!workstation_host_windows -> dotfiles_common
 void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_host
-ubuntu_workstation -> packages_ubuntu + services_systemd + profile_workstation_gnome
+workstation_dev_ubuntu -> packages_ubuntu + services_systemd + profile_workstation_dev_common
+workstation_host_linux -> profile_workstation_gnome
+workstation_dev_wsl -> packages_ubuntu + services_systemd + profile_workstation_dev_common + profile_workstation_dev_wsl
+workstation_host_windows -> profile_workstation_host_windows
 ubuntu_server -> packages_ubuntu + services_systemd + profile_server
 ```
 
 Questo significa che, allo stato attuale:
 
 - i desktop Void (`ikaros`, `nymph`) restano il target operativo piu completo
-- la workstation Ubuntu (`deadalus`) e gestita con pacchetti, servizi, dotfiles, estensioni GNOME e firewall
+- la workstation Ubuntu (`deadalus`) e gestita separando ambiente dev e layer host GNOME
+- il ramo Windows + WSL e predisposto con bootstrap PowerShell e play Windows/WSL dedicati
 - il server Ubuntu (`prometheus`) e gestito con pacchetti, servizi, dotfiles server e firewall
 
 # Dotfiles

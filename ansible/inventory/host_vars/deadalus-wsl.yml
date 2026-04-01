@@ -1,0 +1,5 @@
+---
+hostname: deadalus-wsl
+
+host_packages: []
+host_enabled_services: []

@@ -20,6 +20,14 @@
   register: workstation_wsl_systemd_config
   when: workstation_wsl_systemd_enabled | default(false)
 
+- name: Install WSL Python packages for Windows remoting
+  tags: [packages]
+  ansible.builtin.pip:
+    name: "{{ workstation_dev_wsl_python_packages | default([]) }}"
+    executable: pip3
+    state: present
+  when: (workstation_dev_wsl_python_packages | default([])) | length > 0
+
 - name: Note when WSL must be restarted
   tags: [packages, services]
   ansible.builtin.debug:

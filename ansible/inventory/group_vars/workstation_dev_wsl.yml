@@ -2,7 +2,8 @@
 enabled_services:
   - docker
 
-workstation_dev_wsl_packages: []
+workstation_dev_wsl_packages:
+  - python3-pip
 workstation_dev_wsl_excluded_packages:
   - pcscd
   - pinentry-gnome3
@@ -14,4 +15,7 @@ workstation_is_wsl: true
 workstation_manage_google_chrome: false
 workstation_removed_snap_packages: []
 workstation_snap_packages: []
+workstation_dev_wsl_python_packages:
+  - pypsrp
+  - pyspnego
 workstation_wsl_systemd_enabled: true

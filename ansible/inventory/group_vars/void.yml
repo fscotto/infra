@@ -47,6 +47,9 @@ enabled_services:
   - dbus
   - elogind
   - emptty
+  - libvirtd
   - nanoklogd
   - socklog-unix
   - ufw
+  - virtlockd
+  - virtlogd

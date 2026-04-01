@@ -25,6 +25,7 @@
   ansible.builtin.pip:
     name: "{{ workstation_dev_wsl_python_packages | default([]) }}"
     executable: pip3
+    break_system_packages: true
     state: present
   when: (workstation_dev_wsl_python_packages | default([])) | length > 0
 

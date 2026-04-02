@@ -36,15 +36,30 @@ function Ensure-WinRMHttpsListener {
 
     $listener = Get-ChildItem -Path WSMan:\localhost\Listener |
         Where-Object {
-            $_.Keys -match 'Transport=HTTPS' -and $_.Keys -match "Hostname=$($env:COMPUTERNAME)"
+            $_.Keys -match 'Transport=HTTPS'
         } |
         Select-Object -First 1
 
     if ($null -eq $listener) {
-        New-WSManInstance -ResourceURI winrm/config/Listener `
-            -SelectorSet @{ Transport = 'HTTPS'; Address = '*' } `
-            -ValueSet @{ Hostname = $env:COMPUTERNAME; CertificateThumbprint = $CertificateThumbprint } | Out-Null
-        return $true
+        try {
+            New-WSManInstance -ResourceURI winrm/config/Listener `
+                -SelectorSet @{ Transport = 'HTTPS'; Address = '*' } `
+                -ValueSet @{ Hostname = $env:COMPUTERNAME; CertificateThumbprint = $CertificateThumbprint } | Out-Null
+            return $true
+        }
+        catch {
+            $existingHttpsListener = Get-ChildItem -Path WSMan:\localhost\Listener |
+                Where-Object {
+                    $_.Keys -match 'Transport=HTTPS'
+                } |
+                Select-Object -First 1
+
+            if ($null -ne $existingHttpsListener) {
+                return $false
+            }
+
+            throw
+        }
     }
 
     return $false

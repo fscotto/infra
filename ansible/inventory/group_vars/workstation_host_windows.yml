@@ -7,10 +7,14 @@ ansible_port: 5986
 ansible_shell_type: powershell
 
 windows_winget_packages:
+  - id: DBeaver.DBeaver.Community
+    name: DBeaver Community
   - id: Microsoft.VisualStudioCode
     name: Visual Studio Code
   - id: Microsoft.WindowsTerminal
     name: Windows Terminal
+  - id: Postman.Postman
+    name: Postman
 
 windows_vscode_extensions:
   - ms-vscode-remote.remote-containers

@@ -156,7 +156,7 @@ Use the narrowest command matching the changed area.
 - `profile_workstation_dev_common` carries the Ubuntu dev layer shared by native workstation and WSL Ubuntu
 - `profile_workstation_gnome` carries Linux host-only GNOME setup, extensions, and UFW
 - `profile_workstation_dev_wsl` carries WSL-specific Ubuntu tweaks such as `systemd` and PSRP Python dependencies
-- `profile_workstation_host_windows` manages the Windows 11 host via PSRP over HTTPS using `negotiate` by default and installs host applications via `winget`
+- `profile_workstation_host_windows` manages the Windows 11 host via PSRP over HTTPS using `negotiate` by default, installs host applications via `winget`, applies Windows shell tweaks, and sets Windows Terminal's default profile to Ubuntu
 - `deadalus-wsl` is modeled as a local inventory target intended to be run from inside the Ubuntu WSL distro
 - Future Windows taskbar pinning work should be done from a real Windows session after discovering installed app identifiers on that host, then applied via a Windows 11 taskbar layout policy with `PinListPlacement="Replace"`
 - Do not auto-restart `emptty` during playbook runs on active desktop hosts; prefer a manual restart from SSH or another TTY after the run
@@ -171,6 +171,12 @@ ansible-playbook ansible/site.yml --syntax-check
 ```
 
 Run a host-limited dry run whenever the change affects a real host profile, package set, service set, session, PAM stack, templates, or dotfiles.
+
+For workstation changes, prefer:
+```bash
+ansible-playbook ansible/site.yml --limit deadalus --check --diff
+ansible-playbook ansible/site.yml --limit deadalus-wsl --check --diff
+```
 
 If you touched `scripts/bootstrap_mail.sh`, also run:
 ```bash

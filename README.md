@@ -57,7 +57,7 @@ Nota sullo stato attuale del playbook principale:
 
 - `ansible/site.yml` applica oggi in automatico il profilo desktop su host Void Linux
 - `ansible/site.yml` applica la workstation Linux nativa separando il layer dev comune dal layer host GNOME
-- `ansible/site.yml` prepara anche il ramo `windows_workstation_host` + `workstation_dev_wsl` per il modello Windows + WSL
+- `ansible/site.yml` applica anche il ramo `workstation_host_windows` + `workstation_dev_wsl` per il modello Windows 11 + WSL
 - `ansible/site.yml` applica anche il profilo `ubuntu_server` con baseline apt, systemd, dotfiles server e firewall UFW
 
 ## Desktop
@@ -105,7 +105,7 @@ Desktop environment host Linux:
 Macchine attuali:
 
 - `deadalus` come workstation Ubuntu nativa
-- supporto strutturale preparato per futuri host Windows + WSL
+- supporto attivo per host Windows 11 + WSL tramite `deadalus-win` e `deadalus-wsl`
 
 Questo profilo è pensato per sviluppo e lavoro, con separazione tra layer host e layer dev.
 
@@ -122,7 +122,7 @@ Lo stato attuale del profilo workstation include:
 - installazione e configurazione di Docker dal repository ufficiale
 - gestione dei dotfiles workstation e rendering dei template dev condivisi
 - installazione di Google Chrome, pacchetti Snap workstation e estensioni GNOME sul solo host Linux nativo
-- preparazione del ramo Windows host con app installate dal playbook via `winget`
+- configurazione del ramo Windows 11 host con app installate dal playbook via `winget`, tema scuro, taskbar ripulita e profilo predefinito di Windows Terminal impostato su `Ubuntu`
 - preparazione del ramo WSL Ubuntu con `systemd` per il toolchain di sviluppo
 - attivazione del firewall UFW sul solo host Linux nativo
 
@@ -250,7 +250,7 @@ I principali ruoli attualmente presenti sono:
 | profile_workstation_dev_common | configurazione dev Ubuntu condivisa |
 | profile_workstation_gnome | configurazione host workstation GNOME |
 | profile_workstation_dev_wsl | configurazione WSL Ubuntu per sviluppo |
-| profile_workstation_host_windows | configurazione host Windows workstation |
+| profile_workstation_host_windows | configurazione host Windows 11 workstation |
 | profile_server            | configurazione server               |
 | dotfiles_common           | distribuzione dotfiles comuni       |
 | dotfiles                  | distribuzione configurazioni utente |
@@ -311,14 +311,14 @@ Per utilizzare il repository sono necessari:
 - `ansible-lint`
 - `yamllint`
 - `shellcheck`
-- collection `community.general`
+- collection definite in `ansible/collections/requirements.yml`
 - accesso locale o SSH alle macchine target, in base a come e definito l'inventory
 
 Installazione base:
 
 ```bash
 python3 -m pip install ansible ansible-lint yamllint shellcheck-py
-ansible-galaxy collection install community.general
+ansible-galaxy collection install -r ansible/collections/requirements.yml
 ```
 
 Gestione segreti:
@@ -343,7 +343,10 @@ Allo stato attuale questo comando:
 
 - distribuisce i dotfiles comuni a tutti gli host
 - per gli host Void applica bootstrap desktop condiviso, sessioni i3/Sway/Hyprland e override specifici per host
-- per gli host `ubuntu_workstation` applica pacchetti Ubuntu, servizi systemd, profilo workstation GNOME, UFW, dotfiles, Snap e template dedicati
+- per `workstation_dev_ubuntu` applica pacchetti Ubuntu, servizi systemd e profilo dev comune
+- per `workstation_host_linux` applica il layer host Linux GNOME
+- per `workstation_dev_wsl` applica pacchetti Ubuntu, servizi systemd, profilo dev comune e tweak WSL dedicati
+- per `workstation_host_windows` applica il layer host Windows 11 via PSRP
 - per gli host `ubuntu_server` applica pacchetti Ubuntu, servizi systemd, profilo server, UFW, dotfiles e template dedicati
 - non riavvia automaticamente `emptty`; le modifiche al display manager vanno applicate manualmente da SSH o da una TTY separata
 - carica `secrets/vault.yml` solo se presente
@@ -356,6 +359,7 @@ ansible-playbook ansible/site.yml --syntax-check
 ansible-playbook ansible/site.yml --limit ikaros --check --diff
 ansible-playbook ansible/site.yml --limit nymph --check --diff
 ansible-playbook ansible/site.yml --limit deadalus --check --diff
+ansible-playbook ansible/site.yml --limit deadalus-wsl --check --diff
 ansible-playbook ansible/site.yml --limit prometheus --check --diff
 ansible-lint ansible/site.yml
 ansible-lint ansible/roles
@@ -393,7 +397,7 @@ Una nuova macchina può essere inizializzata con i seguenti passaggi:
 ```bash
 git clone <repo>
 cd <repo-dir>
-ansible-galaxy collection install community.general
+ansible-galaxy collection install -r ansible/collections/requirements.yml
 ansible-playbook ansible/site.yml
 ```
 

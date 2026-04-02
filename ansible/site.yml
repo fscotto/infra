@@ -6,13 +6,13 @@
       tags: [always]
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../secrets/vault.yml"
-      when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.yml', errors='ignore') != ''
+      when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.yml', errors='ignore', wantlist=True) | length > 0
 
     - name: Load machine-local vault variables when available
       tags: [always]
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../secrets/vault.local.yml"
-      when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.local.yml', errors='ignore') != ''
+      when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.local.yml', errors='ignore', wantlist=True) | length > 0
 
   roles:
     - dotfiles_common
@@ -60,13 +60,13 @@
       tags: [always]
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../secrets/vault.yml"
-      when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.yml', errors='ignore') != ''
+      when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.yml', errors='ignore', wantlist=True) | length > 0
 
     - name: Load machine-local vault variables when available
       tags: [always]
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../secrets/vault.local.yml"
-      when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.local.yml', errors='ignore') != ''
+      when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.local.yml', errors='ignore', wantlist=True) | length > 0
 
     - name: Ensure Windows PSRP connection settings are defined
       tags: [always]

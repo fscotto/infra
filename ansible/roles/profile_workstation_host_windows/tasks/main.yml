@@ -192,3 +192,34 @@
   loop: "{{ windows_vscode_extensions | default([]) }}"
   loop_control:
     label: "{{ item }}"
+
+- name: Set Windows Terminal default profile to Ubuntu
+  tags: [packages, wsl]
+  ansible.windows.win_powershell:
+    script: |
+      $terminalSettingsPath = Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json'
+      if (-not (Test-Path $terminalSettingsPath)) {
+          throw 'Windows Terminal settings.json was not found. Launch Windows Terminal once before applying the default profile configuration.'
+      }
+
+      $settings = Get-Content -Path $terminalSettingsPath -Raw | ConvertFrom-Json
+      if ($null -eq $settings.profiles -or $null -eq $settings.profiles.list) {
+          throw 'Windows Terminal settings.json does not contain a profiles.list section.'
+      }
+
+      $targetProfile = $settings.profiles.list |
+          Where-Object { $_.name -eq '{{ windows_terminal_default_profile_name }}' } |
+          Select-Object -First 1
+
+      if ($null -eq $targetProfile) {
+          throw "Windows Terminal profile '{{ windows_terminal_default_profile_name }}' was not found. Ensure the Ubuntu WSL profile exists in Windows Terminal first."
+      }
+
+      if ($settings.defaultProfile -eq $targetProfile.guid) {
+          $Ansible.Changed = $false
+          return
+      }
+
+      $settings.defaultProfile = $targetProfile.guid
+      $settings | ConvertTo-Json -Depth 100 | Set-Content -Path $terminalSettingsPath -Encoding utf8
+      $Ansible.Changed = $true

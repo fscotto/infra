@@ -8,6 +8,89 @@
     state: present
     include_parent: true
 
+- name: Gather Windows host version details
+  tags: [packages]
+  ansible.windows.win_powershell:
+    script: |
+      $os = Get-ComputerInfo
+      $Ansible.Result = @{
+          product_name = $os.WindowsProductName
+          version = $os.WindowsVersion
+          build_number = [int]$os.OsBuildNumber
+          is_windows_11 = $os.WindowsProductName -like 'Windows 11*'
+          is_windows_10 = $os.WindowsProductName -like 'Windows 10*'
+      }
+      $Ansible.Changed = $false
+  register: windows_host_version_state
+
+- name: Enable dark mode for Windows apps
+  tags: [packages]
+  ansible.windows.win_regedit:
+    path: HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize
+    name: AppsUseLightTheme
+    data: 0
+    type: dword
+  register: windows_apps_dark_mode_state
+  when: windows_enable_dark_theme | default(false)
+
+- name: Enable dark mode for Windows system surfaces
+  tags: [packages]
+  ansible.windows.win_regedit:
+    path: HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize
+    name: SystemUsesLightTheme
+    data: 0
+    type: dword
+  register: windows_system_dark_mode_state
+  when: windows_enable_dark_theme | default(false)
+
+- name: Hide Windows taskbar search box
+  tags: [packages]
+  ansible.windows.win_regedit:
+    path: HKCU:\Software\Microsoft\Windows\CurrentVersion\Search
+    name: SearchboxTaskbarMode
+    data: 0
+    type: dword
+  register: windows_taskbar_search_state
+  when: windows_hide_taskbar_search | default(false)
+
+- name: Hide Windows 11 taskbar widgets
+  tags: [packages]
+  ansible.windows.win_regedit:
+    path: HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+    name: TaskbarDa
+    data: 0
+    type: dword
+  register: windows_11_widgets_state
+  when:
+    - windows_hide_taskbar_widgets | default(false)
+    - windows_host_version_state.result.is_windows_11 | default(false)
+
+- name: Hide Windows 10 news and interests taskbar widget
+  tags: [packages]
+  ansible.windows.win_regedit:
+    path: HKCU:\Software\Microsoft\Windows\CurrentVersion\Feeds
+    name: ShellFeedsTaskbarViewMode
+    data: 2
+    type: dword
+  register: windows_10_widgets_state
+  when:
+    - windows_hide_taskbar_widgets | default(false)
+    - windows_host_version_state.result.is_windows_10 | default(false)
+
+- name: Note when Windows shell settings may require sign out
+  tags: [packages]
+  ansible.builtin.debug:
+    msg: >-
+      Windows shell appearance settings changed. Sign out and back in, or restart explorer.exe,
+      if taskbar or theme updates do not appear immediately.
+  changed_when: false
+  when: >-
+    (windows_apps_dark_mode_state is changed)
+    or (windows_system_dark_mode_state is changed)
+    or (windows_taskbar_search_state is changed)
+    or (windows_11_widgets_state is changed)
+    or (windows_10_widgets_state is changed)
+
 - name: Ensure winget is available on Windows host
   tags: [packages]
   ansible.windows.win_powershell:

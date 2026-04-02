@@ -6,6 +6,10 @@ ansible_psrp_protocol: https
 ansible_port: 5986
 ansible_shell_type: powershell
 
+windows_enable_dark_theme: true
+windows_hide_taskbar_search: true
+windows_hide_taskbar_widgets: true
+
 windows_winget_packages:
   - id: DBeaver.DBeaver.Community
     name: DBeaver Community

@@ -31,6 +31,9 @@ windows_winget_packages:
     name: Postman
   - id: Telegram.TelegramDesktop
     name: Telegram Desktop
+  - id: 9NKSQGP7F2NH
+    name: WhatsApp
+    source: msstore
 
 windows_vscode_extensions:
   - ms-vscode-remote.remote-containers

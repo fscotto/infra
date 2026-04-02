@@ -128,13 +128,36 @@
     script: |
       $packageId = '{{ item.id }}'
       $packageName = '{{ item.name | default(item.id) }}'
-      $installed = & winget list --id $packageId --exact --accept-source-agreements --disable-interactivity 2>$null
+      $packageSource = '{{ item.source | default('') }}'
+      $listArgs = @(
+          'list'
+          '--id', $packageId
+          '--exact'
+          '--accept-source-agreements'
+          '--disable-interactivity'
+      )
+      $installArgs = @(
+          'install'
+          '--id', $packageId
+          '--exact'
+          '--silent'
+          '--accept-package-agreements'
+          '--accept-source-agreements'
+          '--disable-interactivity'
+      )
+
+      if (-not [string]::IsNullOrWhiteSpace($packageSource)) {
+          $listArgs += @('--source', $packageSource)
+          $installArgs += @('--source', $packageSource)
+      }
+
+      $installed = & winget @listArgs 2>$null
       if ($LASTEXITCODE -eq 0 -and $installed -match [regex]::Escape($packageId)) {
           $Ansible.Changed = $false
           return
       }
 
-      & winget install --id $packageId --exact --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
+      & winget @installArgs
       if ($LASTEXITCODE -ne 0) {
           throw "Failed to install $packageName with winget"
       }

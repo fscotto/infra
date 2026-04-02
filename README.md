@@ -154,7 +154,7 @@ Unblock-File .\scripts\bootstrap_windows_workstation.ps1
 6. lanciare da WSL anche il playbook su `deadalus-win` via `psrp` per configurare l'host Windows
 7. usare VS Code con le estensioni Remote (`WSL`, `SSH`, `Dev Containers`) dal lato Windows
 
-Per il remoting Windows il repository usa di default `PSRP` con `NTLM` su `HTTPS/5986`. L'utente di default puo essere un `MicrosoftAccount\...`, con host, utente e password forniti via vault o extra vars.
+Per il remoting Windows il repository usa di default `PSRP` con `Negotiate` su `HTTPS/5986`. L'utente di default puo essere un `MicrosoftAccount\...`, con host, utente e password forniti via vault o extra vars.
 
 ---
 

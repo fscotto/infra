@@ -1,6 +1,6 @@
 ---
 ansible_connection: psrp
-ansible_psrp_auth: ntlm
+ansible_psrp_auth: negotiate
 ansible_psrp_cert_validation: ignore
 ansible_psrp_protocol: https
 ansible_port: 5986

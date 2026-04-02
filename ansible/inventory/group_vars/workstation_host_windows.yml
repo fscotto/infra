@@ -11,14 +11,28 @@ windows_hide_taskbar_search: true
 windows_hide_taskbar_widgets: true
 
 windows_winget_packages:
+  - id: 7zip.7zip
+    name: 7-Zip
+  - id: Adobe.Acrobat.Reader.64-bit
+    name: Adobe Acrobat Reader
   - id: DBeaver.DBeaver.Community
     name: DBeaver Community
+  - id: Google.Chrome
+    name: Google Chrome
+  - id: JetBrains.IntelliJIDEA.Ultimate
+    name: IntelliJ IDEA Ultimate
+  - id: Logitech.OptionsPlus
+    name: Logitech Options+
   - id: Microsoft.VisualStudioCode
     name: Visual Studio Code
   - id: Microsoft.WindowsTerminal
     name: Windows Terminal
   - id: Postman.Postman
     name: Postman
+  - id: Spotify.Spotify
+    name: Spotify
+  - id: Telegram.TelegramDesktop
+    name: Telegram Desktop
 
 windows_vscode_extensions:
   - ms-vscode-remote.remote-containers

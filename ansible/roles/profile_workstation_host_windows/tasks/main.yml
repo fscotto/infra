@@ -65,6 +65,18 @@
     - windows_hide_taskbar_widgets | default(false)
     - windows_host_version_state.result.is_windows_11 | default(false)
 
+- name: Disable Windows 11 widgets via policy
+  tags: [packages]
+  ansible.windows.win_regedit:
+    path: HKLM:\SOFTWARE\Policies\Microsoft\Dsh
+    name: AllowNewsAndInterests
+    data: 0
+    type: dword
+  register: windows_11_widgets_policy_state
+  when:
+    - windows_hide_taskbar_widgets | default(false)
+    - windows_host_version_state.result.is_windows_11 | default(false)
+
 - name: Hide Windows 10 news and interests taskbar widget
   tags: [packages]
   ansible.windows.win_regedit:
@@ -82,13 +94,15 @@
   ansible.builtin.debug:
     msg: >-
       Windows shell appearance settings changed. Sign out and back in, or restart explorer.exe,
-      if taskbar or theme updates do not appear immediately.
+      if taskbar or theme updates do not appear immediately. Windows 11 widget policy changes can require
+      signing out before the widget button disappears from the taskbar.
   changed_when: false
   when: >-
     (windows_apps_dark_mode_state is changed)
     or (windows_system_dark_mode_state is changed)
     or (windows_taskbar_search_state is changed)
     or (windows_11_widgets_state is changed)
+    or (windows_11_widgets_policy_state is changed)
     or (windows_10_widgets_state is changed)
 
 - name: Ensure winget is available on Windows host

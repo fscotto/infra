@@ -8,6 +8,12 @@
         file: "{{ playbook_dir }}/../secrets/vault.yml"
       when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.yml', errors='ignore') != ''
 
+    - name: Load machine-local vault variables when available
+      tags: [always]
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../secrets/vault.local.yml"
+      when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.local.yml', errors='ignore') != ''
+
   roles:
     - dotfiles_common
 
@@ -56,6 +62,12 @@
         file: "{{ playbook_dir }}/../secrets/vault.yml"
       when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.yml', errors='ignore') != ''
 
+    - name: Load machine-local vault variables when available
+      tags: [always]
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../secrets/vault.local.yml"
+      when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.local.yml', errors='ignore') != ''
+
     - name: Ensure Windows PSRP connection settings are defined
       tags: [always]
       ansible.builtin.assert:
@@ -63,7 +75,8 @@
           - (ansible_host | default('') | length) > 0
           - (ansible_user | default('') | length) > 0
         fail_msg: >-
-          Define windows_psrp_host and windows_psrp_user via extra vars or secrets/vault.yml
+          Define windows_psrp_host and windows_psrp_user via extra vars, secrets/vault.yml,
+          or secrets/vault.local.yml
           before running the workstation_host_windows play.
 
   roles:

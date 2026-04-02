@@ -113,7 +113,7 @@ Il profilo workstation e agganciato al playbook principale e ora distingue:
 
 - layer dev Ubuntu condiviso tra workstation Linux nativa e Ubuntu in WSL
 - layer host Linux GNOME
-- layer host Windows con bootstrap WSL, gestione app via `winget` e VS Code lato Windows
+- layer host Windows con bootstrap WSL, remoting `PSRP` su `HTTPS/5986`, gestione app via `winget` e VS Code lato Windows
 - layer WSL dedicato per sviluppo con `systemd`
 
 Lo stato attuale del profilo workstation include:
@@ -135,6 +135,8 @@ Workflow Windows + WSL previsto:
 5. lanciare il playbook da WSL su `deadalus-wsl` per configurare l'ambiente dev locale
 6. lanciare da WSL anche il playbook su `deadalus-win` via `psrp` per configurare l'host Windows
 7. usare VS Code con le estensioni Remote (`WSL`, `SSH`, `Dev Containers`) dal lato Windows
+
+Per il remoting Windows il repository usa di default `PSRP` con `NTLM` su `HTTPS/5986`. L'utente di default puo essere un `MicrosoftAccount\...`, con host, utente e password forniti via vault o extra vars.
 
 ---
 
@@ -304,8 +306,10 @@ ansible-galaxy collection install community.general
 Gestione segreti:
 
 - il repository supporta il caricamento opzionale di `secrets/vault.yml`
+- il repository supporta anche `secrets/vault.local.yml` per override locali non versionati
 - `secrets/vault.yml.example` funge da template/esempio
 - se `secrets/vault.yml` non e presente, il playbook continua comunque senza caricare variabili locali opzionali
+- se `secrets/.vault_pass` esiste viene usato automaticamente per sbloccare i vault; altrimenti Ansible richiede la password in modo interattivo
 
 ---
 
@@ -325,6 +329,7 @@ Allo stato attuale questo comando:
 - per gli host `ubuntu_server` applica pacchetti Ubuntu, servizi systemd, profilo server, UFW, dotfiles e template dedicati
 - non riavvia automaticamente `emptty`; le modifiche al display manager vanno applicate manualmente da SSH o da una TTY separata
 - carica `secrets/vault.yml` solo se presente
+- carica `secrets/vault.local.yml` solo se presente, dopo `vault.yml`, cosi gli override locali hanno precedenza
 
 Per validare prima di applicare:
 

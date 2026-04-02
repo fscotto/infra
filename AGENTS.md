@@ -50,6 +50,11 @@ python3 -m pip install ansible ansible-lint yamllint shellcheck-py
 ansible-galaxy collection install -r ansible/collections/requirements.yml
 ```
 
+Vault handling:
+- `secrets/vault.yml` is the shared encrypted vars file
+- `secrets/vault.local.yml` is an optional machine-local encrypted override file and should stay untracked
+- `secrets/.vault_pass` is an optional local password file; if absent, Ansible falls back to an interactive prompt via `scripts/vault_password_client.sh`
+
 Core validation from the repo root:
 ```bash
 ansible-playbook ansible/site.yml --syntax-check
@@ -155,7 +160,7 @@ There is no pytest, Molecule, or unit-test suite. Use the narrowest command matc
 - `profile_workstation_dev_common` carries the Ubuntu dev layer shared by native workstation and WSL Ubuntu
 - `profile_workstation_gnome` now carries Linux host-only GNOME setup, extensions, and UFW
 - `profile_workstation_dev_wsl` carries WSL-specific Ubuntu tweaks such as `systemd`
-- `profile_workstation_host_windows` manages the Windows host via PSRP and installs host applications via `winget` called from `win_powershell`
+- `profile_workstation_host_windows` manages the Windows host via PSRP over HTTPS and installs host applications via `winget` called from `win_powershell`
 - `deadalus-wsl` is modeled as a local inventory target intended to be run from inside the Ubuntu WSL distro
 - Do not auto-restart `emptty` during playbook runs on active desktop hosts; prefer a manual restart from SSH or another TTY after the run
 - `dotfiles/desktop/.xinitrc` is part of the X11 session bootstrap path; changes there affect login behavior

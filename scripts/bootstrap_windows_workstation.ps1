@@ -50,6 +50,16 @@ function Ensure-WinRMHttpsListener {
     return $false
 }
 
+function Test-WinRMHttpsListener {
+    $listener = Get-ChildItem -Path WSMan:\localhost\Listener |
+        Where-Object {
+            $_.Keys -match 'Transport=HTTPS'
+        } |
+        Select-Object -First 1
+
+    return $null -ne $listener
+}
+
 function Ensure-LocalAccountTokenFilterPolicy {
     $registryPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System'
     $propertyName = 'LocalAccountTokenFilterPolicy'
@@ -113,11 +123,13 @@ $httpsListenerChanged = Ensure-WinRMHttpsListener -CertificateThumbprint $winrmC
 $rebootRequired = (Ensure-LocalAccountTokenFilterPolicy) -or $rebootRequired
 $remoteManagementGroupState = Ensure-CurrentUserInRemoteManagementGroup
 
-Set-Item -Path WSMan:\localhost\Service\AllowUnencrypted -Value $false
-
 $httpsFirewallRule = Get-NetFirewallRule -DisplayName 'WinRM HTTPS (5986)' -ErrorAction SilentlyContinue
 if ($null -eq $httpsFirewallRule) {
     New-NetFirewallRule -DisplayName 'WinRM HTTPS (5986)' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 5986 | Out-Null
+}
+
+if (-not (Test-WinRMHttpsListener)) {
+    throw 'WinRM HTTPS listener was not created successfully. Verify certificate creation and WSMan listener configuration.'
 }
 
 Write-Host ''

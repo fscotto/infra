@@ -208,11 +208,13 @@
       }
 
       $targetProfile = $settings.profiles.list |
-          Where-Object { $_.name -eq '{{ windows_terminal_default_profile_name }}' } |
+          Where-Object {
+              $_.name -eq '{{ windows_terminal_default_profile_name }}' -and -not ($_.PSObject.Properties.Name -contains 'hidden' -and $_.hidden)
+          } |
           Select-Object -First 1
 
       if ($null -eq $targetProfile) {
-          throw "Windows Terminal profile '{{ windows_terminal_default_profile_name }}' was not found. Ensure the Ubuntu WSL profile exists in Windows Terminal first."
+          throw "Windows Terminal visible profile '{{ windows_terminal_default_profile_name }}' was not found. Ensure the Ubuntu WSL profile exists and is not hidden in Windows Terminal first."
       }
 
       if ($settings.defaultProfile -eq $targetProfile.guid) {

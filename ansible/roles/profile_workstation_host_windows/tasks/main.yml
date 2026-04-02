@@ -35,30 +35,6 @@
 
       $Ansible.Changed = $true
 
-- name: Check whether target WSL distribution exists
-  tags: [packages, services, wsl]
-  ansible.windows.win_powershell:
-    script: |
-      $distributions = @(wsl --list --quiet) | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
-      $ubuntuDistribution = $distributions | Where-Object { $_ -like '{{ windows_wsl_distribution_name }}*' } | Select-Object -First 1
-      if ($null -ne $ubuntuDistribution) {
-          $Ansible.Result = @{ exists = $true; distribution = $ubuntuDistribution }
-          $Ansible.Changed = $false
-          return
-      }
-
-      $Ansible.Result = @{ exists = $false; distribution = $null }
-      $Ansible.Changed = $false
-  register: windows_wsl_distribution_state
-
-- name: Fail when target WSL distribution is missing
-  tags: [packages, services, wsl]
-  ansible.builtin.fail:
-    msg: >-
-      No WSL Ubuntu distribution matching {{ windows_wsl_distribution_name }}* is installed on the Windows host.
-      Run scripts/bootstrap_windows_workstation.ps1 first and launch the distro once before applying the Windows play.
-  when: not (windows_wsl_distribution_state.result.exists | default(false))
-
 - name: Install Windows workstation applications with winget
   tags: [packages]
   ansible.windows.win_powershell:

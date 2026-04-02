@@ -31,6 +31,7 @@ windows_winget_packages:
     name: Postman
   - id: Spotify.Spotify
     name: Spotify
+    scope: user
   - id: Telegram.TelegramDesktop
     name: Telegram Desktop
 

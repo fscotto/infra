@@ -5,6 +5,8 @@ workstation_dev_packages:
   - gpg-agent
   - libfido2-1
   - openssh-client
+  - pandoc
+  - shellcheck
 
 workstation_user_directories:
   - path: "{{ user_home }}/.config"

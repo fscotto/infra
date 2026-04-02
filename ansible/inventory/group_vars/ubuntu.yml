@@ -7,6 +7,7 @@ ubuntu_packages_base:
   - nodejs
   - git-delta
   - jq
+  - ripgrep
 
 ubuntu_manage_docker_repo: true
 

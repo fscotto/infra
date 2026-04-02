@@ -145,9 +145,60 @@
           return
       }
 
-      & winget @installArgs
-      if ($LASTEXITCODE -ne 0) {
-          throw "Failed to install $packageName with winget"
+      if ($packageScope -eq 'user') {
+          $interactiveUser = (Get-CimInstance Win32_ComputerSystem).UserName
+          if ([string]::IsNullOrWhiteSpace($interactiveUser)) {
+              throw "Failed to install $packageName with winget: no interactive Windows user session is available for a user-scoped install."
+          }
+
+          $taskName = "AnsibleWinget-$($packageId -replace '[^A-Za-z0-9.-]', '-')"
+          $taskScriptPath = Join-Path $env:TEMP "$taskName.ps1"
+          $stdoutPath = Join-Path $env:TEMP "$taskName.stdout.log"
+          $stderrPath = Join-Path $env:TEMP "$taskName.stderr.log"
+          $quotedArgs = ($installArgs | ForEach-Object { '"' + ($_ -replace '"', '""') + '"' }) -join ', '
+          $taskScript = @(
+              "`$installArgs = @($quotedArgs)",
+              "`$process = Start-Process -FilePath 'winget.exe' -ArgumentList `$installArgs -Wait -PassThru -NoNewWindow -RedirectStandardOutput '$stdoutPath' -RedirectStandardError '$stderrPath'",
+              "exit `$process.ExitCode"
+          ) -join [Environment]::NewLine
+
+          Set-Content -Path $taskScriptPath -Value $taskScript -Encoding Ascii
+
+          try {
+              $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$taskScriptPath`""
+              $principal = New-ScheduledTaskPrincipal -UserId $interactiveUser -LogonType InteractiveToken -RunLevel Limited
+              $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -StartWhenAvailable
+
+              Register-ScheduledTask -TaskName $taskName -Action $action -Principal $principal -Settings $settings -Force | Out-Null
+              Start-ScheduledTask -TaskName $taskName
+
+              $deadline = (Get-Date).AddMinutes(10)
+              do {
+                  Start-Sleep -Seconds 2
+                  $task = Get-ScheduledTask -TaskName $taskName
+                  $taskInfo = Get-ScheduledTaskInfo -TaskName $taskName
+              } while ((Get-Date) -lt $deadline -and ($task.State -ne 'Ready' -or $taskInfo.LastRunTime -eq [datetime]::MinValue))
+
+              if ($task.State -ne 'Ready' -or $taskInfo.LastRunTime -eq [datetime]::MinValue) {
+                  throw "Failed to install $packageName with winget: timed out waiting for the user-scoped scheduled task to finish."
+              }
+
+              if ($taskInfo.LastTaskResult -ne 0) {
+                  $stderr = if (Test-Path $stderrPath) { Get-Content -Path $stderrPath -Raw } else { '' }
+                  $stdout = if (Test-Path $stdoutPath) { Get-Content -Path $stdoutPath -Raw } else { '' }
+                  throw "Failed to install $packageName with winget. Exit code: $($taskInfo.LastTaskResult). Stdout: $stdout Stderr: $stderr"
+              }
+          }
+          finally {
+              Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+              Remove-Item -Path $taskScriptPath, $stdoutPath, $stderrPath -Force -ErrorAction SilentlyContinue
+          }
+      }
+      else {
+          & winget @installArgs
+          if ($LASTEXITCODE -ne 0) {
+              throw "Failed to install $packageName with winget"
+          }
       }
 
       $Ansible.Changed = $true

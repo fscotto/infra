@@ -81,7 +81,7 @@ pwsh -File scripts/bootstrap_windows_workstation.ps1
 ```
 
 ## Single-Test Equivalents
-There is no pytest, Molecule, or unit-test suite. Use the narrowest command matching the changed area.
+Use the narrowest command matching the changed area.
 - Playbook syntax only: `ansible-playbook ansible/site.yml --syntax-check`
 - Single host dry run: `ansible-playbook ansible/site.yml --limit <host> --check --diff`
 - Single host, selected tags: `ansible-playbook ansible/site.yml --limit <host> --tags <tag1>,<tag2> --check --diff`
@@ -91,8 +91,6 @@ There is no pytest, Molecule, or unit-test suite. Use the narrowest command matc
 - Waybar config validation: `python3 -m json.tool dotfiles/desktop/.config/waybar/config-sway.jsonc >/dev/null` and `python3 -m json.tool dotfiles/desktop/.config/waybar/config-hyprland.jsonc >/dev/null`
 - Script syntax/lint: `sh -n scripts/bootstrap_mail.sh` and `shellcheck scripts/bootstrap_mail.sh`
 - Windows bootstrap script parse check: `pwsh -NoProfile -Command "[void][System.Management.Automation.Language.Parser]::ParseFile('scripts/bootstrap_windows_workstation.ps1', [ref]$null, [ref]$null)"`
-- For shell changes outside vendored tmux plugins, prefer validating the touched file with `sh -n` and `shellcheck`
-- Prefer one limited-host dry run for vars, templates, dotfiles, packages, services, PAM, display manager, and firewall changes
 
 ## Code Style Guidelines
 ### General
@@ -110,19 +108,19 @@ There is no pytest, Molecule, or unit-test suite. Use the narrowest command matc
 - Avoid formatting-only churn in untouched sections
 
 ### Modules, Imports, And Task Structure
-- Use FQCN module names such as `ansible.builtin.copy`, `ansible.builtin.template`, and `community.general.xbps`
+- Use FQCN module names such as `ansible.builtin.copy`, `ansible.builtin.template`, `ansible.windows.win_powershell`, and `community.general.xbps`
 - Prefer dedicated modules over `ansible.builtin.command` or `ansible.builtin.shell`
 - Use `command` only when no module fits; use `shell` only when shell features are required
 - When using `command` or `shell`, set `changed_when` and `failed_when` when defaults are misleading
 - Prefer `ansible.builtin.import_tasks` for static task composition and `include_tasks` only for dynamic or conditional includes
 - Keep task names imperative, descriptive, and stable enough for `--start-at-task`
-- Tag tasks consistently with existing families such as `packages`, `services`, `dotfiles`, `gnome`, `nvidia`, `emptty`, and `dotfiles:*`
+- Tag tasks consistently with existing families such as `packages`, `services`, `dotfiles`, `gnome`, `wsl`, `vscode`, `nvidia`, and `dotfiles:*`
 - Prefer `loop` with `loop_control.label` for multi-item tasks
 - Use handlers for service restarts when configuration changes should trigger them
 
 ### Variables, Types, And Naming
 - Use `snake_case` for vars, facts, registered values, and custom facts
-- Follow existing families such as `common_packages`, `profile_packages`, `host_packages`, `desktop_common_packages`, `desktop_i3_packages`, `desktop_sway_packages`, `desktop_hyprland_packages`, `desktop_common_dotfiles`, `desktop_i3_dotfiles`, `desktop_sway_dotfiles`, `desktop_hyprland_dotfiles`, `host_i3_dotfiles`, `host_sway_dotfiles`, `host_hyprland_dotfiles`, `enabled_services`, and `host_enabled_services`
+- Follow existing families such as `common_packages`, `profile_packages`, `host_packages`, `desktop_common_packages`, `enabled_services`, `host_enabled_services`, `windows_winget_packages`, and `windows_vscode_extensions`
 - Keep booleans as booleans, not quoted strings
 - Keep structured values as YAML lists/maps, not comma-separated strings
 - Guard optional lists with `default([])`, mappings with `default({})`, and strings with `default('')`
@@ -134,21 +132,19 @@ There is no pytest, Molecule, or unit-test suite. Use the narrowest command matc
 - Prefer role `templates/` for variable-driven config and role `files/` for static payloads
 - Preserve destination paths and permissions unless the task requires a change
 - Dotfiles should stay deployable on real machines; avoid repo-only hacks in `dotfiles/`
-- Keep `dotfiles/desktop/.config/waybar/config-*.jsonc` effectively valid JSON even though the format is JSONC, so simple `python3 -m json.tool` validation continues to work
+- Keep `dotfiles/desktop/.config/waybar/config-*.jsonc` effectively valid JSON
 - Prefer POSIX `sh` for simple scripts; use Bash only when needed
 - Use `set -eu` in POSIX shell scripts unless there is a clear reason not to
 - Quote variable expansions unless intentional splitting is required
-- Do not modernize vendored shell code under tmux plugins unless explicitly asked
 
 ### Error Handling, Safety, And Idempotency
 - Fail early with `ansible.builtin.fail` when prerequisites are missing
-- Guard OS-specific, DE-specific, and host-specific behavior with `when`
+- Guard OS-specific, DE-specific, version-specific, and host-specific behavior with `when`
 - Use `no_log: true` for passwords, tokens, private keys, and secret-bearing command results
 - Use `failed_when: false` only for intentional probes
 - Keep tasks non-interactive unless explicitly user-driven
 - Avoid destructive changes in user homes unless clearly required
 - For firewall changes, allow required access before enabling the firewall
-- Be careful with display-manager and session changes on desktop hosts; validate on one host first
 - When running commands as the desktop user, set `become_user` and the required `HOME` or session environment explicitly
 
 ## Area-Specific Notes
@@ -158,34 +154,30 @@ There is no pytest, Molecule, or unit-test suite. Use the narrowest command matc
 - `profile_desktop_hyprland` contains the optional Hyprland/Wayland session pieces
 - `profile_desktop_host` carries host-specific desktop overrides such as NVIDIA, PRIME wrappers, and host-only WirePlumber config
 - `profile_workstation_dev_common` carries the Ubuntu dev layer shared by native workstation and WSL Ubuntu
-- `profile_workstation_gnome` now carries Linux host-only GNOME setup, extensions, and UFW
-- `profile_workstation_dev_wsl` carries WSL-specific Ubuntu tweaks such as `systemd`
-- `profile_workstation_host_windows` manages the Windows host via PSRP over HTTPS using `negotiate` by default and installs host applications via `winget` called from `win_powershell`
+- `profile_workstation_gnome` carries Linux host-only GNOME setup, extensions, and UFW
+- `profile_workstation_dev_wsl` carries WSL-specific Ubuntu tweaks such as `systemd` and PSRP Python dependencies
+- `profile_workstation_host_windows` manages the Windows host via PSRP over HTTPS using `negotiate` by default and installs host applications via `winget`
 - `deadalus-wsl` is modeled as a local inventory target intended to be run from inside the Ubuntu WSL distro
+- Future Windows taskbar pinning work should be done from a real Windows session after discovering installed app identifiers on that host, then applied via a Windows 11 taskbar layout policy with `PinListPlacement="Replace"`
 - Do not auto-restart `emptty` during playbook runs on active desktop hosts; prefer a manual restart from SSH or another TTY after the run
-- `dotfiles/desktop/.xinitrc` is part of the X11 session bootstrap path; changes there affect login behavior
-- `dotfiles/desktop/.local/bin/start-sway-session` is the Sway session bootstrap path; keep it aligned with DBus, keyring, and host-specific environment overrides
-- `dotfiles/desktop/.local/bin/start-hyprland-session` is the Wayland session bootstrap path; keep it aligned with DBus and keyring expectations
-- Waybar is split by compositor: `dotfiles/desktop/.config/waybar/config-sway.jsonc` for Sway, `config-hyprland.jsonc` for Hyprland, and `style.css` is shared; do not mix `sway/*` and `hyprland/*` modules in the same config
-- `nymph` has special NVIDIA/PRIME handling, a host-specific WirePlumber camera override, host-specific Sway environment overrides, and host-specific `kanshi` monitor policy; keep host logic guarded by hostname or host vars
-- On `nymph`, Sway workspace placement is intentionally deterministic: in dual-monitor mode workspace `1` belongs to `eDP-1` and workspaces `2-10` belong to `DP-1`; in laptop-only mode all workspaces collapse back to `eDP-1` via `kanshi` `exec` hooks
+- `dotfiles/desktop/.xinitrc` affects X11 login behavior
+- `dotfiles/desktop/.local/bin/start-sway-session` and `start-hyprland-session` are critical session bootstrap paths
+- `nymph` has special NVIDIA/PRIME handling, host-specific WirePlumber camera config, host-specific Sway overrides, and deterministic workspace placement via `kanshi`
 
 ## Validation Expectations Before Finishing
 Default minimum:
 ```bash
 ansible-playbook ansible/site.yml --syntax-check
 ```
+
 Run a host-limited dry run whenever the change affects a real host profile, package set, service set, session, PAM stack, templates, or dotfiles.
-If you touched Sway or Hyprland Waybar config, also run:
-```bash
-python3 -m json.tool dotfiles/desktop/.config/waybar/config-sway.jsonc >/dev/null
-python3 -m json.tool dotfiles/desktop/.config/waybar/config-hyprland.jsonc >/dev/null
-```
+
 If you touched `scripts/bootstrap_mail.sh`, also run:
 ```bash
 sh -n scripts/bootstrap_mail.sh
 shellcheck scripts/bootstrap_mail.sh
 ```
+
 If you touched `scripts/bootstrap_windows_workstation.ps1`, also run:
 ```bash
 pwsh -NoProfile -Command "[void][System.Management.Automation.Language.Parser]::ParseFile('scripts/bootstrap_windows_workstation.ps1', [ref]$null, [ref]$null)"

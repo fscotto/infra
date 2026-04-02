@@ -128,6 +128,24 @@ Lo stato attuale del profilo workstation include:
 
 Workflow Windows + WSL previsto:
 
+Prima di eseguire il bootstrap Windows, apri PowerShell come amministratore e verifica la policy di esecuzione:
+
+```powershell
+Get-ExecutionPolicy -List
+```
+
+Se necessario, abilita l'esecuzione degli script per l'utente corrente:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+Se Windows ha bloccato il file di bootstrap, sbloccalo esplicitamente:
+
+```powershell
+Unblock-File .\scripts\bootstrap_windows_workstation.ps1
+```
+
 1. eseguire `scripts/bootstrap_windows_workstation.ps1` su Windows come amministratore
 2. riavviare Windows se richiesto dalle feature WSL
 3. avviare Ubuntu WSL almeno una volta e completare la creazione dell'utente Linux

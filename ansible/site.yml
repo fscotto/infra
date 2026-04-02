@@ -68,6 +68,13 @@
         file: "{{ playbook_dir }}/../secrets/vault.local.yml"
       when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.local.yml', errors='ignore', wantlist=True) | length > 0
 
+    - name: Resolve Windows PSRP connection settings
+      tags: [always]
+      ansible.builtin.set_fact:
+        ansible_host: "{{ windows_psrp_host | default(vault_windows_psrp_host | default('')) }}"
+        ansible_user: "{{ windows_psrp_user | default(vault_windows_psrp_user | default('')) }}"
+        ansible_password: "{{ windows_psrp_password | default(vault_windows_psrp_password | default('')) }}"
+
     - name: Ensure Windows PSRP connection settings are defined
       tags: [always]
       ansible.builtin.assert:

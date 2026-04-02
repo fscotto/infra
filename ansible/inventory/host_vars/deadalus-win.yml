@@ -1,5 +1,2 @@
 ---
 hostname: deadalus-win
-ansible_host: "{{ windows_psrp_host | default(vault_windows_psrp_host | default('')) }}"
-ansible_user: "{{ windows_psrp_user | default(vault_windows_psrp_user | default('')) }}"
-ansible_password: "{{ windows_psrp_password | default(vault_windows_psrp_password | default('')) }}"

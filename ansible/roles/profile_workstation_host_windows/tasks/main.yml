@@ -95,15 +95,94 @@
     or (windows_11_widgets_state is changed)
     or (windows_11_widgets_policy_state is changed)
 
-- name: Ensure winget is available on Windows host
+- name: Ensure winget is executable on Windows host through PSRP
   tags: [packages]
+  when: windows_package_backend == 'winget_psrp'
   ansible.windows.win_powershell:
     script: |
       $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
       if ($null -eq $winget) {
           throw 'winget.exe is not available on the Windows host. Install App Installer or rerun the bootstrap script.'
       }
+
+      & $winget.Source --info *> $null
+      if ($LASTEXITCODE -ne 0) {
+          throw 'winget.exe is not executable through the current PSRP session. Set windows_package_backend to winget_wsl_local on WSL-managed hosts.'
+      }
+
       $Ansible.Changed = $false
+
+- name: Ensure winget is executable through local Windows PowerShell from WSL
+  tags: [packages]
+  when: windows_package_backend == 'winget_wsl_local'
+  block:
+    - name: Ensure winget_wsl_local backend is running inside WSL
+      ansible.builtin.assert:
+        that:
+          - lookup('ansible.builtin.env', 'WSL_DISTRO_NAME') | length > 0
+        fail_msg: >-
+          winget_wsl_local requires running the playbook from inside the
+          target machine's WSL environment.
+
+    - name: Get local Windows host name through WSL interop
+      ansible.builtin.shell: |
+        powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command '$env:COMPUTERNAME'
+      args:
+        executable: /bin/bash
+      delegate_to: localhost
+      register: local_windows_host_name_state
+      changed_when: false
+
+    - name: Get local Windows host IP addresses through WSL interop
+      ansible.builtin.shell: |
+        powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command '
+          Get-NetIPAddress -AddressFamily IPv4, IPv6 -ErrorAction SilentlyContinue |
+            Where-Object {
+              $_.IPAddress -notin @("127.0.0.1", "::1") -and
+              $_.IPAddress -notlike "169.254.*" -and
+              $_.IPAddress -notlike "fe80:*"
+            } |
+            Select-Object -ExpandProperty IPAddress
+        '
+      args:
+        executable: /bin/bash
+      delegate_to: localhost
+      register: local_windows_host_ip_state
+      changed_when: false
+
+    - name: Ensure winget_wsl_local backend targets the local Windows host
+      ansible.builtin.assert:
+        that:
+          - >-
+            (ansible_host | lower) in ['localhost', '127.0.0.1', '::1']
+            or (local_windows_host_name_state.stdout | trim | upper)
+            == ((ansible_host | regex_replace('\\..*$', '')) | upper)
+            or (ansible_host | lower)
+            in (local_windows_host_ip_state.stdout_lines | map('trim') | map('lower') | list)
+        fail_msg: >-
+          winget_wsl_local can only target the local Windows host reached
+          through WSL interop. Local Windows host '{{ local_windows_host_name_state.stdout | trim }}'
+          with addresses {{ local_windows_host_ip_state.stdout_lines | map('trim') | list }}
+          does not match ansible_host '{{ ansible_host }}'.
+
+    - name: Ensure winget is executable through local Windows PowerShell
+      ansible.builtin.shell: |
+        powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command '
+          $ErrorActionPreference = "Stop"
+          $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
+          if ($null -eq $winget) {
+              throw "winget.exe is not available on the local Windows host. Install App Installer or rerun the bootstrap script."
+          }
+
+          & $winget.Source --info *> $null
+          if ($LASTEXITCODE -ne 0) {
+              throw "winget.exe is not executable through local Windows PowerShell interop."
+          }
+        '
+      args:
+        executable: /bin/bash
+      delegate_to: localhost
+      changed_when: false
 
 - name: Ensure WSL 2 is the default backend
   tags: [packages, services, wsl]
@@ -122,8 +201,9 @@
 
       $Ansible.Changed = $true
 
-- name: Install Windows workstation applications with winget
+- name: Install Windows workstation applications with winget through PSRP
   tags: [packages]
+  when: windows_package_backend == 'winget_psrp'
   ansible.windows.win_powershell:
     script: |
       $packageId = '{{ item.id }}'
@@ -166,6 +246,110 @@
   loop: "{{ windows_winget_packages | default([]) }}"
   loop_control:
     label: "{{ item.id }}"
+
+- name: Install Windows workstation applications with winget through WSL local backend
+  tags: [packages]
+  when: windows_package_backend == 'winget_wsl_local'
+  ansible.builtin.shell: |
+    powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command '
+      $ErrorActionPreference = "Stop"
+      $packageId = "{{ item.id }}"
+      $packageName = "{{ item.name | default(item.id) }}"
+      $packageSource = "{{ item.source | default('') }}"
+      $winget = Get-Command winget.exe -ErrorAction Stop
+      $listArgs = @(
+          "list"
+          "--id", $packageId
+          "--exact"
+          "--accept-source-agreements"
+          "--disable-interactivity"
+      )
+      $installArgs = @(
+          "install"
+          "--id", $packageId
+          "--exact"
+          "--silent"
+          "--accept-package-agreements"
+          "--accept-source-agreements"
+          "--disable-interactivity"
+      )
+
+      if (-not [string]::IsNullOrWhiteSpace($packageSource)) {
+          $listArgs += @("--source", $packageSource)
+          $installArgs += @("--source", $packageSource)
+      }
+
+      $installed = & $winget.Source @listArgs 2>$null
+      if ($LASTEXITCODE -eq 0 -and $installed -match [regex]::Escape($packageId)) {
+          [Console]::Out.WriteLine("changed=false")
+          exit 0
+      }
+
+      & $winget.Source @installArgs
+      if ($LASTEXITCODE -ne 0) {
+          throw "Failed to install $packageName with winget"
+      }
+
+      [Console]::Out.WriteLine("changed=true")
+    '
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  register: windows_wsl_local_winget_install_state
+  changed_when: "'changed=true' in windows_wsl_local_winget_install_state.stdout"
+  loop: "{{ windows_winget_packages | default([]) }}"
+  loop_control:
+    label: "{{ item.id }}"
+
+- name: Configure Windows taskbar pin layout
+  tags: [packages]
+  when: (windows_taskbar_pins | default([])) | length > 0
+  block:
+    - name: Ensure Windows taskbar layout directory exists
+      ansible.windows.win_file:
+        path: "{{ windows_taskbar_layout_directory }}"
+        state: directory
+
+    - name: Render Windows taskbar layout policy file
+      ansible.windows.win_template:
+        src: taskbar-layout.xml.j2
+        dest: "{{ windows_taskbar_layout_path }}"
+      register: windows_taskbar_layout_file_state
+
+    - name: Enable Windows taskbar layout policy
+      ansible.windows.win_regedit:
+        path: HKCU:\Software\Policies\Microsoft\Windows\Explorer
+        name: LockedStartLayout
+        data: 1
+        type: dword
+      register: windows_taskbar_layout_policy_state
+
+    - name: Set Windows taskbar layout policy file path
+      ansible.windows.win_regedit:
+        path: HKCU:\Software\Policies\Microsoft\Windows\Explorer
+        name: StartLayoutFile
+        data: "{{ windows_taskbar_layout_path }}"
+        type: expandstring
+      register: windows_taskbar_layout_policy_path_state
+
+    - name: Set Windows taskbar layout policy refresh behavior
+      ansible.windows.win_regedit:
+        path: HKCU:\Software\Policies\Microsoft\Windows\Explorer
+        name: ReapplyStartLayoutEveryLogon
+        data: "{{ (windows_taskbar_reapply_every_logon | default(false)) | ternary(1, 0) }}"
+        type: dword
+      register: windows_taskbar_layout_policy_reapply_state
+
+    - name: Note when Windows taskbar pin layout may require sign out
+      ansible.builtin.debug:
+        msg: >-
+          Windows taskbar pin policy changed. Sign out and back in if the updated pin order does not appear immediately.
+      changed_when: false
+      when: >-
+        (windows_taskbar_layout_file_state is changed)
+        or (windows_taskbar_layout_policy_state is changed)
+        or (windows_taskbar_layout_policy_path_state is changed)
+        or (windows_taskbar_layout_policy_reapply_state is changed)
 
 - name: Install VS Code WSL extensions on Windows host
   tags: [packages, vscode]

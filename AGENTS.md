@@ -19,7 +19,7 @@ Project type: Ansible-driven infrastructure, workstation/server provisioning, an
 - Ubuntu workstation: `deadalus`
 - Ubuntu server: `prometheus`
 - Workstation topology now supports Linux host + Ubuntu dev and Windows 11 host + Ubuntu WSL dev as separate layers
-- The WSL dev environment is intended to be managed by running Ansible locally from inside the distro, while the Windows host is managed remotely via PSRP
+- The WSL dev environment is intended to be managed by running Ansible locally from inside the distro, while the Windows host is managed remotely via PSRP and Windows package installs default to `winget_psrp`
 - Most hosts use `ansible_connection: local`
 - Current playbook layering: `all:!workstation_host_windows -> dotfiles_common`, `void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_host`, `workstation_dev_ubuntu -> packages_ubuntu + services_systemd + profile_workstation_dev_common`, `workstation_host_linux -> profile_workstation_gnome`, `workstation_dev_wsl -> packages_ubuntu + services_systemd + profile_workstation_dev_common + profile_workstation_dev_wsl`, `workstation_host_windows -> profile_workstation_host_windows`, `ubuntu_server -> packages_ubuntu + services_systemd + profile_server`
 - Present but currently unwired roles: `base`, `dotfiles`
@@ -156,9 +156,9 @@ Use the narrowest command matching the changed area.
 - `profile_workstation_dev_common` carries the Ubuntu dev layer shared by native workstation and WSL Ubuntu
 - `profile_workstation_gnome` carries Linux host-only GNOME setup, extensions, and UFW
 - `profile_workstation_dev_wsl` carries WSL-specific Ubuntu tweaks such as `systemd` and PSRP Python dependencies
-- `profile_workstation_host_windows` manages the Windows 11 host via PSRP over HTTPS using `negotiate` by default, installs host applications via `winget`, applies Windows shell tweaks, and sets Windows Terminal's default profile to Ubuntu
+- `profile_workstation_host_windows` manages the Windows 11 host via PSRP over HTTPS using `negotiate` by default, installs host applications via `winget` with a configurable `windows_package_backend` defaulting to `winget_psrp`, applies Windows shell tweaks, manages taskbar pins through a local Start layout policy with `PinListPlacement="Replace"`, and sets Windows Terminal's default profile to Ubuntu
 - `deadalus-wsl` is modeled as a local inventory target intended to be run from inside the Ubuntu WSL distro
-- Future Windows taskbar pinning work should be done from a real Windows session after discovering installed app identifiers on that host, then applied via a Windows 11 taskbar layout policy with `PinListPlacement="Replace"`
+- Windows taskbar pinning is driven by the ordered `windows_taskbar_pins` list in `ansible/inventory/group_vars/workstation_host_windows.yml`; validate identifiers from a real Windows session before changing that list
 - Do not auto-restart `emptty` during playbook runs on active desktop hosts; prefer a manual restart from SSH or another TTY after the run
 - `dotfiles/desktop/.xinitrc` affects X11 login behavior
 - `dotfiles/desktop/.local/bin/start-sway-session` and `start-hyprland-session` are critical session bootstrap paths

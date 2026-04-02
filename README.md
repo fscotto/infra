@@ -113,7 +113,7 @@ Il profilo workstation e agganciato al playbook principale e ora distingue:
 
 - layer dev Ubuntu condiviso tra workstation Linux nativa e Ubuntu in WSL
 - layer host Linux GNOME
-- layer host Windows 11 con bootstrap WSL, remoting `PSRP` su `HTTPS/5986`, gestione app via `winget` e VS Code lato Windows
+- layer host Windows 11 con bootstrap WSL, remoting `PSRP` su `HTTPS/5986`, gestione app via `winget` con backend configurabile e VS Code lato Windows
 - layer WSL dedicato per sviluppo con `systemd`
 
 Lo stato attuale del profilo workstation include:
@@ -122,7 +122,7 @@ Lo stato attuale del profilo workstation include:
 - installazione e configurazione di Docker dal repository ufficiale
 - gestione dei dotfiles workstation e rendering dei template dev condivisi
 - installazione di Google Chrome, pacchetti Snap workstation e estensioni GNOME sul solo host Linux nativo
-- configurazione del ramo Windows 11 host con app installate dal playbook via `winget`, tema scuro, taskbar ripulita e profilo predefinito di Windows Terminal impostato su `Ubuntu`
+- configurazione del ramo Windows 11 host con app installate dal playbook via `winget`, con backend predefinito `winget_psrp`, tema scuro, pin della taskbar gestiti via policy locale e profilo predefinito di Windows Terminal impostato su `Ubuntu`
 - preparazione del ramo WSL Ubuntu con `systemd` per il toolchain di sviluppo
 - attivazione del firewall UFW sul solo host Linux nativo
 
@@ -151,10 +151,10 @@ Unblock-File .\scripts\bootstrap_windows_workstation.ps1
 3. avviare Ubuntu WSL almeno una volta e completare la creazione dell'utente Linux
 4. installare Ansible dentro WSL Ubuntu
 5. lanciare il playbook da WSL su `deadalus-wsl` per configurare l'ambiente dev locale
-6. lanciare da WSL anche il playbook su `deadalus-win` via `psrp` per configurare l'host Windows
+6. lanciare da WSL anche il playbook su `deadalus-win` via `psrp` per configurare l'host Windows; per default il backend pacchetti Windows e `winget_psrp`
 7. usare VS Code con le estensioni Remote (`WSL`, `SSH`, `Dev Containers`) dal lato Windows
 
-Per il remoting Windows il repository usa di default `PSRP` con `Negotiate` su `HTTPS/5986`. L'utente di default puo essere un `MicrosoftAccount\...`, con host, utente e password forniti via vault o extra vars.
+Per il remoting Windows il repository usa di default `PSRP` con `Negotiate` su `HTTPS/5986`. L'utente di default puo essere un `MicrosoftAccount\...`, con host, utente e password forniti via vault o extra vars. Il backend pacchetti Windows e configurabile con `windows_package_backend` oppure `vault_windows_package_backend`; il default e `winget_psrp`.
 
 ---
 
@@ -328,6 +328,7 @@ Gestione segreti:
 - `secrets/vault.yml.example` funge da template/esempio
 - se `secrets/vault.yml` non e presente, il playbook continua comunque senza caricare variabili locali opzionali
 - se `secrets/.vault_pass` esiste viene usato automaticamente per sbloccare i vault; altrimenti Ansible richiede la password in modo interattivo
+- per il ramo Windows puoi anche definire `vault_windows_package_backend`, con valori supportati `winget_psrp` e `winget_wsl_local`; il default e `winget_psrp`
 
 ---
 
@@ -346,7 +347,7 @@ Allo stato attuale questo comando:
 - per `workstation_dev_ubuntu` applica pacchetti Ubuntu, servizi systemd e profilo dev comune
 - per `workstation_host_linux` applica il layer host Linux GNOME
 - per `workstation_dev_wsl` applica pacchetti Ubuntu, servizi systemd, profilo dev comune e tweak WSL dedicati
-- per `workstation_host_windows` applica il layer host Windows 11 via PSRP
+- per `workstation_host_windows` applica il layer host Windows 11 via PSRP, con installazione pacchetti Windows eseguita di default tramite `winget_psrp`
 - per gli host `ubuntu_server` applica pacchetti Ubuntu, servizi systemd, profilo server, UFW, dotfiles e template dedicati
 - non riavvia automaticamente `emptty`; le modifiche al display manager vanno applicate manualmente da SSH o da una TTY separata
 - carica `secrets/vault.yml` solo se presente

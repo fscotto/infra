@@ -153,7 +153,7 @@ Write-Host 'Passi successivi:'
 Write-Host '1. Riavvia Windows se richiesto dalle feature WSL.'
 Write-Host '2. Avvia la distro Ubuntu almeno una volta e completa la creazione dell''utente Linux.'
 Write-Host '3. Installa Ansible dentro WSL Ubuntu e lancia il playbook da li.'
-Write-Host '4. Le applicazioni Windows saranno installate dal playbook Ansible via winget, non da questo bootstrap.'
+Write-Host '4. Le applicazioni Windows saranno installate dal playbook Ansible; il backend predefinito e winget_psrp.'
 Write-Host ''
 Write-Host ('WSL distro Ubuntu rilevata: {0}' -f $(if ($null -ne $installedUbuntuDistribution) { $installedUbuntuDistribution } else { 'nessuna, verra installata ' + $Distribution }))
 Write-Host ('PSRP transport consigliato: https://{0}:5986/wsman' -f $env:COMPUTERNAME)

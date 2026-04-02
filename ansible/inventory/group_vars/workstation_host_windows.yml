@@ -1,9 +1,9 @@
 ---
 ansible_connection: psrp
-ansible_psrp_auth: negotiate
+ansible_psrp_auth: ntlm
 ansible_psrp_cert_validation: ignore
-ansible_psrp_protocol: http
-ansible_port: 5985
+ansible_psrp_protocol: https
+ansible_port: 5986
 ansible_shell_type: powershell
 
 windows_winget_packages:

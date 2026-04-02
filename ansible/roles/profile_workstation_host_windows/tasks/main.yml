@@ -13,12 +13,13 @@
   ansible.windows.win_powershell:
     script: |
       $os = Get-ComputerInfo
+      $buildNumber = [int]$os.OsBuildNumber
       $Ansible.Result = @{
           product_name = $os.WindowsProductName
           version = $os.WindowsVersion
-          build_number = [int]$os.OsBuildNumber
-          is_windows_11 = $os.WindowsProductName -like 'Windows 11*'
-          is_windows_10 = $os.WindowsProductName -like 'Windows 10*'
+          build_number = $buildNumber
+          is_windows_11 = ($os.WindowsProductName -like 'Windows 11*') -or ($buildNumber -ge 22000)
+          is_windows_10 = ($os.WindowsProductName -like 'Windows 10*') -and ($buildNumber -lt 22000)
       }
       $Ansible.Changed = $false
   register: windows_host_version_state

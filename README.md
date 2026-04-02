@@ -96,7 +96,7 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 Sistemi operativi supportati:
 
 - Ubuntu LTS nativa
-- Windows host + Ubuntu WSL
+- Windows 11 host + Ubuntu WSL
 
 Desktop environment host Linux:
 
@@ -113,7 +113,7 @@ Il profilo workstation e agganciato al playbook principale e ora distingue:
 
 - layer dev Ubuntu condiviso tra workstation Linux nativa e Ubuntu in WSL
 - layer host Linux GNOME
-- layer host Windows con bootstrap WSL, remoting `PSRP` su `HTTPS/5986`, gestione app via `winget` e VS Code lato Windows
+- layer host Windows 11 con bootstrap WSL, remoting `PSRP` su `HTTPS/5986`, gestione app via `winget` e VS Code lato Windows
 - layer WSL dedicato per sviluppo con `systemd`
 
 Lo stato attuale del profilo workstation include:

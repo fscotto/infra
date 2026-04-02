@@ -18,7 +18,7 @@ Project type: Ansible-driven infrastructure, workstation/server provisioning, an
 - Void desktops: `ikaros`, `nymph`
 - Ubuntu workstation: `deadalus`
 - Ubuntu server: `prometheus`
-- Workstation topology now supports Linux host + Ubuntu dev and Windows host + Ubuntu WSL dev as separate layers
+- Workstation topology now supports Linux host + Ubuntu dev and Windows 11 host + Ubuntu WSL dev as separate layers
 - The WSL dev environment is intended to be managed by running Ansible locally from inside the distro, while the Windows host is managed remotely via PSRP
 - Most hosts use `ansible_connection: local`
 - Current playbook layering: `all:!workstation_host_windows -> dotfiles_common`, `void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_host`, `workstation_dev_ubuntu -> packages_ubuntu + services_systemd + profile_workstation_dev_common`, `workstation_host_linux -> profile_workstation_gnome`, `workstation_dev_wsl -> packages_ubuntu + services_systemd + profile_workstation_dev_common + profile_workstation_dev_wsl`, `workstation_host_windows -> profile_workstation_host_windows`, `ubuntu_server -> packages_ubuntu + services_systemd + profile_server`
@@ -156,7 +156,7 @@ Use the narrowest command matching the changed area.
 - `profile_workstation_dev_common` carries the Ubuntu dev layer shared by native workstation and WSL Ubuntu
 - `profile_workstation_gnome` carries Linux host-only GNOME setup, extensions, and UFW
 - `profile_workstation_dev_wsl` carries WSL-specific Ubuntu tweaks such as `systemd` and PSRP Python dependencies
-- `profile_workstation_host_windows` manages the Windows host via PSRP over HTTPS using `negotiate` by default and installs host applications via `winget`
+- `profile_workstation_host_windows` manages the Windows 11 host via PSRP over HTTPS using `negotiate` by default and installs host applications via `winget`
 - `deadalus-wsl` is modeled as a local inventory target intended to be run from inside the Ubuntu WSL distro
 - Future Windows taskbar pinning work should be done from a real Windows session after discovering installed app identifiers on that host, then applied via a Windows 11 taskbar layout policy with `PinListPlacement="Replace"`
 - Do not auto-restart `emptty` during playbook runs on active desktop hosts; prefer a manual restart from SSH or another TTY after the run

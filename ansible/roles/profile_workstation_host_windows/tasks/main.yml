@@ -16,13 +16,19 @@
       $buildNumber = [int]$os.OsBuildNumber
       $Ansible.Result = @{
           product_name = $os.WindowsProductName
-          version = $os.WindowsVersion
           build_number = $buildNumber
-          is_windows_11 = ($os.WindowsProductName -like 'Windows 11*') -or ($buildNumber -ge 22000)
-          is_windows_10 = ($os.WindowsProductName -like 'Windows 10*') -and ($buildNumber -lt 22000)
+          is_windows_11 = $buildNumber -ge 22000
       }
       $Ansible.Changed = $false
   register: windows_host_version_state
+
+- name: Fail when Windows host is not Windows 11
+  tags: [packages]
+  ansible.builtin.fail:
+    msg: >-
+      workstation_host_windows is supported only on Windows 11. Detected {{ windows_host_version_state.result.product_name }}
+      build {{ windows_host_version_state.result.build_number }}.
+  when: not (windows_host_version_state.result.is_windows_11 | default(false))
 
 - name: Enable dark mode for Windows apps
   tags: [packages]
@@ -62,9 +68,7 @@
     data: 0
     type: dword
   register: windows_11_widgets_state
-  when:
-    - windows_hide_taskbar_widgets | default(false)
-    - windows_host_version_state.result.is_windows_11 | default(false)
+  when: windows_hide_taskbar_widgets | default(false)
 
 - name: Disable Windows 11 widgets via policy
   tags: [packages]
@@ -74,21 +78,7 @@
     data: 0
     type: dword
   register: windows_11_widgets_policy_state
-  when:
-    - windows_hide_taskbar_widgets | default(false)
-    - windows_host_version_state.result.is_windows_11 | default(false)
-
-- name: Hide Windows 10 news and interests taskbar widget
-  tags: [packages]
-  ansible.windows.win_regedit:
-    path: HKCU:\Software\Microsoft\Windows\CurrentVersion\Feeds
-    name: ShellFeedsTaskbarViewMode
-    data: 2
-    type: dword
-  register: windows_10_widgets_state
-  when:
-    - windows_hide_taskbar_widgets | default(false)
-    - windows_host_version_state.result.is_windows_10 | default(false)
+  when: windows_hide_taskbar_widgets | default(false)
 
 - name: Note when Windows shell settings may require sign out
   tags: [packages]
@@ -104,7 +94,6 @@
     or (windows_taskbar_search_state is changed)
     or (windows_11_widgets_state is changed)
     or (windows_11_widgets_policy_state is changed)
-    or (windows_10_widgets_state is changed)
 
 - name: Ensure winget is available on Windows host
   tags: [packages]
@@ -140,6 +129,7 @@
       $packageId = '{{ item.id }}'
       $packageName = '{{ item.name | default(item.id) }}'
       $packageScope = '{{ item.scope | default('' ) }}'
+      $packageIdRegex = [regex]::Escape($packageId)
       $installArgs = @(
           'install'
           '--id', $packageId
@@ -154,10 +144,12 @@
           $installArgs += @('--scope', $packageScope)
       }
 
-      $installed = & winget list --id $packageId --exact --accept-source-agreements --disable-interactivity 2>$null
-      if ($LASTEXITCODE -eq 0 -and $installed -match [regex]::Escape($packageId)) {
-          $Ansible.Changed = $false
-          return
+      if ($packageScope -ne 'user') {
+          $installed = & winget list --id $packageId --exact --accept-source-agreements --disable-interactivity 2>$null
+          if ($LASTEXITCODE -eq 0 -and $installed -match $packageIdRegex) {
+              $Ansible.Changed = $false
+              return
+          }
       }
 
       if ($packageScope -eq 'user') {
@@ -170,11 +162,31 @@
           $taskScriptPath = Join-Path $env:TEMP "$taskName.ps1"
           $stdoutPath = Join-Path $env:TEMP "$taskName.stdout.log"
           $stderrPath = Join-Path $env:TEMP "$taskName.stderr.log"
+          $resultPath = Join-Path $env:TEMP "$taskName.result.json"
           $quotedArgs = ($installArgs | ForEach-Object { '"' + ($_ -replace '"', '""') + '"' }) -join ', '
           $taskScript = @(
+              "`$ErrorActionPreference = 'Stop'",
+              "function Test-PackageInstalled {",
+              "  `$installed = & winget.exe list --id '$packageId' --exact --accept-source-agreements --disable-interactivity 2>`$null",
+              "  return (`$LASTEXITCODE -eq 0 -and `$installed -match '$packageIdRegex')",
+              "}",
+              "`$result = @{ changed = `$false; installed = `$false }",
+              "if (-not (Test-PackageInstalled)) {",
               "`$installArgs = @($quotedArgs)",
               "`$process = Start-Process -FilePath 'winget.exe' -ArgumentList `$installArgs -Wait -PassThru -NoNewWindow -RedirectStandardOutput '$stdoutPath' -RedirectStandardError '$stderrPath'",
-              "exit `$process.ExitCode"
+              "  if (`$process.ExitCode -ne 0) { exit `$process.ExitCode }",
+              "  `$deadline = (Get-Date).AddMinutes(2)",
+              "  do {",
+              "    Start-Sleep -Seconds 2",
+              "    `$result.installed = Test-PackageInstalled",
+              "  } while ((Get-Date) -lt `$deadline -and -not `$result.installed)",
+              "  if (-not `$result.installed) { throw 'Package was not detected after the user-scoped install completed.' }",
+              "  `$result.changed = `$true",
+              "}",
+              "else {",
+              "  `$result.installed = `$true",
+              "}",
+              "`$result | ConvertTo-Json -Compress | Set-Content -Path '$resultPath' -Encoding Ascii"
           ) -join [Environment]::NewLine
 
           Set-Content -Path $taskScriptPath -Value $taskScript -Encoding Ascii
@@ -203,10 +215,22 @@
                   $stdout = if (Test-Path $stdoutPath) { Get-Content -Path $stdoutPath -Raw } else { '' }
                   throw "Failed to install $packageName with winget. Exit code: $($taskInfo.LastTaskResult). Stdout: $stdout Stderr: $stderr"
               }
+
+              if (-not (Test-Path $resultPath)) {
+                  throw "Failed to install $packageName with winget: no result file was produced by the user-scoped scheduled task."
+              }
+
+              $result = Get-Content -Path $resultPath -Raw | ConvertFrom-Json
+              if (-not $result.installed) {
+                  throw "Failed to install $packageName with winget: the package is still not detected after the user-scoped install task finished."
+              }
+
+              $Ansible.Changed = [bool]$result.changed
+              return
           }
           finally {
               Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
-              Remove-Item -Path $taskScriptPath, $stdoutPath, $stderrPath -Force -ErrorAction SilentlyContinue
+              Remove-Item -Path $taskScriptPath, $stdoutPath, $stderrPath, $resultPath -Force -ErrorAction SilentlyContinue
           }
       }
       else {

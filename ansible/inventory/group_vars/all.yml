@@ -41,6 +41,10 @@ common_dotfiles:
     src: .bash_profile
     dest: .bash_profile
     mode: "0644"
+  - name: .bashrc.aliases
+    src: .bashrc.aliases
+    dest: .bashrc.aliases
+    mode: "0644"
   - name: .vimrc
     src: .vimrc
     dest: .vimrc

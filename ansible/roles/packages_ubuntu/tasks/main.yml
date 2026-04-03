@@ -4,6 +4,18 @@
   ansible.builtin.package_facts:
     manager: auto
 
+- name: Copy Ubuntu dotfiles
+  tags: [dotfiles, dotfiles:common]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/ubuntu/{{ item.src }}"
+    dest: "{{ effective_user_home }}/{{ item.dest }}"
+    owner: "{{ effective_username }}"
+    group: "{{ effective_user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ ubuntu_dotfiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+
 - name: Ensure architecture is supported for Google Chrome
   tags: [packages]
   ansible.builtin.fail:

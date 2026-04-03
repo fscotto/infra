@@ -157,6 +157,10 @@ desktop_common_dotfiles:
     src: .config/opencode/
     dest: .config/opencode/
     mode: preserve
+  - name: Bash profile fragments
+    src: .bashrc.d/
+    dest: .bashrc.d/
+    mode: preserve
   - name: .gitignore_global
     src: .gitignore_global
     dest: .gitignore_global

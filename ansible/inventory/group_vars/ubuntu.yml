@@ -22,3 +22,8 @@ ubuntu_docker_packages:
 enabled_services:
   - ufw
   - docker
+
+ubuntu_dotfiles:
+  - src: .bashrc.d/
+    dest: .bashrc.d/
+    mode: preserve

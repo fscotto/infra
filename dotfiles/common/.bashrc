@@ -39,6 +39,13 @@ shopt -s cmdhist
 [ -d "$HOME/bin" ] && PATH="$HOME/bin:$PATH"
 export PATH
 
+if [ -d "$HOME/.bashrc.d" ]; then
+  for bashrc_file in "$HOME"/.bashrc.d/*.sh; do
+    [ -r "$bashrc_file" ] || continue
+    . "$bashrc_file"
+  done
+fi
+
 # =========================
 # Aliases (portable)
 # =========================
@@ -420,3 +427,5 @@ elif [ "$PLATFORM" = "linux" ]; then
   alias df='df -h'
   alias du='du -h'
 fi
+
+[ -r "$HOME/.bashrc.aliases" ] && . "$HOME/.bashrc.aliases"

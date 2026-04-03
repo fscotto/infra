@@ -16,6 +16,8 @@ desktop_common_packages:
   - dunst
   - emptty
   - network-manager-applet
+  - pinentry-emacs
+  - pinentry-gtk
   - rofi
   - udiskie
   - xfce-polkit

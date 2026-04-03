@@ -153,6 +153,10 @@ desktop_common_dotfiles:
     src: .config/yt-dlp/
     dest: .config/yt-dlp/
     mode: preserve
+  - name: OpenCode config
+    src: .config/opencode/
+    dest: .config/opencode/
+    mode: preserve
   - name: .gitignore_global
     src: .gitignore_global
     dest: .gitignore_global

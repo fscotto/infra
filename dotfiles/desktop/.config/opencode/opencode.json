@@ -1,0 +1,9 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "~/.config/opencode/bootstrap.md",
+    "~/.config/opencode/infra.md",
+    "~/.config/opencode/philosophy.md",
+    "~/.config/opencode/workflow.md"
+  ]
+}

@@ -164,6 +164,88 @@ Use the narrowest command matching the changed area.
 - `dotfiles/desktop/.local/bin/start-sway-session` and `start-hyprland-session` are critical session bootstrap paths
 - `nymph` has special NVIDIA/PRIME handling, host-specific WirePlumber camera config, host-specific Sway overrides, and deterministic workspace placement via `kanshi`
 
+## Planned Windows Backend Expansion
+This section captures agreed future design decisions for adding a third explicit Windows package backend using Chocolatey. It is planning context only and does not describe current repository behavior beyond what is already implemented.
+
+### Agreed Design Decisions
+- Add `chocolatey` as a third explicit `windows_package_backend` alongside `winget_psrp` and `winget_wsl_local`
+- Keep backend selection explicit per host; do not implement Chocolatey as an automatic fallback from winget
+- Keep `winget_psrp` as the default backend unless overridden through inventory, extra vars, or vault
+- Use an internal or proxy Chocolatey feed, not the public community feed directly
+- Allow automatic Chocolatey bootstrap if `choco.exe` is missing
+- Fail fast when the selected backend does not have a package mapping for a requested Windows package
+
+### Planned Data Model
+- Replace the current `windows_winget_packages`-only model with a backend-neutral catalog such as `windows_packages`
+- Recommended shape:
+
+```yaml
+windows_packages:
+  - key: sevenzip
+    name: 7-Zip
+    winget:
+      id: 7zip.7zip
+    chocolatey:
+      name: 7zip
+
+  - key: whatsapp
+    name: WhatsApp
+    winget:
+      id: 9NKSQGP7F2NH
+      source: msstore
+```
+
+- The selected backend should consume only its own nested mapping
+- If `windows_package_backend == 'chocolatey'` and a package lacks a `chocolatey` mapping, fail before installation starts
+- Keep backend-specific fields nested under backend keys rather than mixing them at top level
+
+### Planned Variables
+- Extend `windows_package_backend` to accept `chocolatey`
+- Add `windows_chocolatey_source_name`
+- Add `windows_chocolatey_source_url`
+- Add optional vault-backed Chocolatey source credentials if the internal or proxy feed requires authentication
+
+### Planned Implementation Areas
+- `ansible/site.yml`: extend backend validation to support `chocolatey`
+- `ansible/roles/profile_workstation_host_windows/tasks/main.yml`: add an explicit Chocolatey code path, bootstrap Chocolatey when missing, configure the internal or proxy source, validate package mappings, and install packages with `chocolatey.chocolatey.win_chocolatey`
+- `ansible/inventory/group_vars/workstation_host_windows.yml`: migrate package data from `windows_winget_packages` to a backend-neutral catalog and add non-secret Chocolatey source settings if appropriate
+- `ansible/collections/requirements.yml`: add the `chocolatey.chocolatey` collection
+- `README.md`, `AGENTS.md`, and `secrets/vault.yml.example`: document backend selection and Chocolatey source variables
+
+### Package Coverage Notes For First Iteration
+- Likely good first Chocolatey candidates: `7zip`, `adobereader`, `dbeaver`, `googlechrome`, `intellijidea-ultimate`, `logioptionsplus`, `vscode`, `postman`, and `telegram`
+- Treat `WhatsApp` as not covered until a valid non-deprecated Chocolatey package is confirmed
+- Treat `Windows Terminal` as not covered until a stable Chocolatey package mapping is confirmed
+- Because the agreed behavior is fail-fast on missing mappings, `windows_package_backend=chocolatey` should fail if unsupported packages remain requested without a valid Chocolatey mapping
+
+### Source Strategy
+- First implementation should target an internal or proxy Chocolatey feed rather than fully internalized packages
+- This is acceptable as a faster first phase, but it is less deterministic long term than full internalization
+
+### Validation Expectations For This Future Work
+Minimum:
+
+```bash
+ansible-playbook ansible/site.yml --syntax-check
+```
+
+Backend-specific dry runs:
+
+```bash
+ansible-playbook ansible/site.yml --limit deadalus-win --check --diff -e windows_package_backend=winget_psrp
+ansible-playbook ansible/site.yml --limit deadalus-win --check --diff -e windows_package_backend=winget_wsl_local
+ansible-playbook ansible/site.yml --limit deadalus-win --check --diff -e windows_package_backend=chocolatey
+```
+
+Targeted non-check validation once feed details exist:
+
+```bash
+ansible-playbook ansible/site.yml --limit deadalus-win --tags packages -e windows_package_backend=chocolatey
+```
+
+### Remaining Open Detail
+- The concrete internal or proxy repository product and source details still need to be supplied when this work is implemented, for example Nexus, Artifactory, ProGet, or another NuGet-compatible proxy
+
 ## Validation Expectations Before Finishing
 Default minimum:
 ```bash

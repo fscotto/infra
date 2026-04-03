@@ -327,7 +327,7 @@ Gestione segreti:
 - il repository supporta anche `secrets/vault.local.yml` per override locali non versionati
 - `secrets/vault.yml.example` funge da template/esempio
 - se `secrets/vault.yml` non e presente, il playbook continua comunque senza caricare variabili locali opzionali
-- se `secrets/.vault_pass` esiste viene usato automaticamente per sbloccare i vault; altrimenti Ansible richiede la password in modo interattivo
+- se `secrets/.vault_pass.gpg` esiste viene usato automaticamente per sbloccare i vault tramite `gpg`; in alternativa resta supportato `secrets/.vault_pass` come fallback legacy locale; se nessuno dei due file esiste Ansible richiede la password in modo interattivo
 - per il ramo Windows puoi anche definire `vault_windows_package_backend`, con valori supportati `winget_psrp` e `winget_wsl_local`; il default e `winget_psrp`
 
 ---

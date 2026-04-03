@@ -53,7 +53,9 @@ ansible-galaxy collection install -r ansible/collections/requirements.yml
 Vault handling:
 - `secrets/vault.yml` is the shared encrypted vars file
 - `secrets/vault.local.yml` is an optional machine-local encrypted override file and should stay untracked
-- `secrets/.vault_pass` is an optional local password file; if absent, Ansible falls back to an interactive prompt via `scripts/vault_password_client.sh`
+- `secrets/.vault_pass.gpg` is the preferred optional local vault password file; `scripts/vault_password_client.sh` decrypts it with `gpg`
+- `secrets/.vault_pass` remains supported as a legacy local fallback if `.vault_pass.gpg` is absent
+- if neither local file exists, Ansible falls back to an interactive prompt via `scripts/vault_password_client.sh`
 
 Core validation from the repo root:
 ```bash

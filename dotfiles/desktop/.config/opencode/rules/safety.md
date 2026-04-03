@@ -1,0 +1,8 @@
+# Safety Rules
+
+Never break an existing host.
+
+- Identify host, layer, risk
+- Always test with --limit
+- Use dry-run (--check --diff)
+- Avoid destructive changes

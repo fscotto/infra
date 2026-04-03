@@ -25,6 +25,6 @@ common → OS → profile → host
 
 ## Agent Behavior
 - make minimal changes
-- avoid refactors
+- avoid unnecessary refactors
 - preserve architecture
 - never break existing systems

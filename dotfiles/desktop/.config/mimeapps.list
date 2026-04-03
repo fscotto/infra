@@ -1,0 +1,11 @@
+[Default Applications]
+text/html=io.gitlab.librewolf-community.desktop
+x-scheme-handler/http=io.gitlab.librewolf-community.desktop
+x-scheme-handler/https=io.gitlab.librewolf-community.desktop
+x-scheme-handler/about=io.gitlab.librewolf-community.desktop
+x-scheme-handler/unknown=io.gitlab.librewolf-community.desktop
+application/pdf=com.github.xournalpp.xournalpp.desktop
+
+[Added Associations]
+text/plain=emacs.desktop;
+application/pdf=com.github.xournalpp.xournalpp.desktop;

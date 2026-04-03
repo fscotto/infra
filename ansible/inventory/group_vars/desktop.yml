@@ -139,6 +139,10 @@ desktop_common_dotfiles:
     src: .config/rofi/
     dest: .config/rofi/
     mode: preserve
+  - name: MIME application defaults
+    src: .config/mimeapps.list
+    dest: .config/mimeapps.list
+    mode: "0644"
   - name: fastfetch config
     src: .config/fastfetch/
     dest: .config/fastfetch/
@@ -257,6 +261,7 @@ desktop_flatpak_packages:
   - com.calibre_ebook.calibre
   - com.github.tchx84.Flatseal
   - com.spotify.Client
+  - io.gitlab.librewolf-community
   - io.github.flattool.Warehouse
   - org.telegram.desktop
   - sh.loft.devpod

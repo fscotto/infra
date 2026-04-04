@@ -108,6 +108,7 @@ profile_packages:
   - qemu-img
   - qemu-tools
   - remmina
+  - ripgrep
   - ristretto
   - rsync
   - shotwell

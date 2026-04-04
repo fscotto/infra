@@ -202,6 +202,10 @@ set foldnestmax=3
 
 set tags=./tags;,tags;
 
+if filereadable(expand('~/.tags'))
+  set tags+=~/.tags
+endif
+
 nnoremap <silent> <leader>t  :tag <C-R><C-W><CR>
 nnoremap <silent> <leader>pt :ptag <C-R><C-W><CR>
 nnoremap <silent> <leader>po :popen<CR>

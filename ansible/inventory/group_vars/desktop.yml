@@ -79,6 +79,7 @@ profile_packages:
   - blueman
   - bridge-utils
   - celluloid
+  - ctags
   - chromium
   - deluge-gtk
   - dnsmasq
@@ -86,6 +87,9 @@ profile_packages:
   - exo
   - fontconfig-devel
   - freetype-devel
+  - gvfs-cdda
+  - gvfs-mtp
+  - gvfs-smb
   - gufw
   - libvirt
   - libspa-bluetooth
@@ -109,6 +113,7 @@ profile_packages:
   - shotwell
   - terminus-font
   - Thunar
+  - thunar-archive-plugin
   - thunar-volman
   - virt-manager
   - virt-manager-tools

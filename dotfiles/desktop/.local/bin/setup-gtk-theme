@@ -8,6 +8,15 @@ FONT_UI="Liberation Sans 10"
 mkdir -p "$HOME/.config/gtk-3.0"
 mkdir -p "$HOME/.config/gtk-4.0"
 
+cat > "$HOME/.gtkrc-2.0" <<EOF
+gtk-theme-name="$THEME"
+gtk-icon-theme-name="$ICONS"
+gtk-cursor-theme-name="$CURSOR"
+gtk-font-name="$FONT_UI"
+gtk-button-images=1
+gtk-menu-images=1
+EOF
+
 cat > "$HOME/.config/gtk-3.0/settings.ini" <<EOF
 [Settings]
 gtk-theme-name=$THEME

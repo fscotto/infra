@@ -4,6 +4,13 @@ hostname: deadalus
 host_packages: []
 host_enabled_services: []
 
+deadalus_vscode_extensions:
+  - ms-vscode-remote.remote-containers
+  - ms-vscode-remote.remote-ssh
+  - ms-azuretools.vscode-docker
+  - redhat.vscode-yaml
+  - redhat.ansible
+
 workstation_gnome_managed_settings:
   - schema: org.gnome.shell
     key: favorite-apps

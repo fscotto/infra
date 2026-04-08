@@ -39,6 +39,41 @@
       XDG_RUNTIME_DIR: "/run/user/{{ ansible_facts.getent_passwd[username][1] }}"
       DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ ansible_facts.getent_passwd[username][1] }}/bus"
 
+- name: Read current workstation GNOME managed settings
+  tags: [gnome]
+  ansible.builtin.command:
+    argv:
+      - gsettings
+      - get
+      - "{{ item.schema }}{{ ':' ~ item.path if item.path is defined else '' }}"
+      - "{{ item.key }}"
+  become_user: "{{ username }}"
+  environment: "{{ workstation_gnome_environment }}"
+  loop: "{{ workstation_gnome_managed_settings | default([]) }}"
+  loop_control:
+    label: >-
+      {{ item.schema }}{{ ':' ~ item.path if item.path is defined else '' }} {{ item.key }}
+  register: workstation_gnome_managed_settings_current
+  changed_when: false
+
+- name: Apply workstation GNOME managed settings
+  tags: [gnome]
+  ansible.builtin.command:
+    argv:
+      - gsettings
+      - set
+      - "{{ item.item.schema }}{{ ':' ~ item.item.path if item.item.path is defined else '' }}"
+      - "{{ item.item.key }}"
+      - "{{ item.item.value }}"
+  become_user: "{{ username }}"
+  environment: "{{ workstation_gnome_environment }}"
+  loop: "{{ workstation_gnome_managed_settings_current.results | default([]) }}"
+  loop_control:
+    label: >-
+      {{ item.item.schema }}{{ ':' ~ item.item.path if item.item.path is defined else '' }} {{ item.item.key }}
+  changed_when: true
+  when: item.stdout | trim != item.item.value
+
 - name: Download workstation GNOME extension archives
   tags: [packages, gnome]
   ansible.builtin.get_url:

@@ -3,3 +3,310 @@ hostname: deadalus
 
 host_packages: []
 host_enabled_services: []
+
+workstation_gnome_managed_settings:
+  - schema: org.gnome.shell
+    key: favorite-apps
+    value: "['google-chrome.desktop', 'org.gnome.Nautilus.desktop', 'spotify_spotify.desktop', 'thunderbird_thunderbird.desktop', 'telegram-desktop_telegram-desktop.desktop', 'code_code.desktop', 'intellij-idea-ultimate_intellij-idea-ultimate.desktop', 'dbeaver-ce_dbeaver-ce.desktop', 'postman_postman.desktop', 'org.gnome.Ptyxis.desktop']"
+  - schema: org.gnome.shell
+    key: app-picker-layout
+    value: "[{'Utilities': <{'position': <0>}>, 'System': <{'position': <1>}>, 'a3b499f3-e2cc-40ac-9145-7db9c827dff2': <{'position': <2>}>, 'org.gnome.Calculator.desktop': <{'position': <3>}>, 'com.mattjakeman.ExtensionManager.desktop': <{'position': <4>}>, 'org.gnome.clocks.desktop': <{'position': <5>}>, 'htop.desktop': <{'position': <6>}>, 'org.gnome.Characters.desktop': <{'position': <7>}>, 'gnome-language-selector.desktop': <{'position': <8>}>, 'org.gnome.Meld.desktop': <{'position': <9>}>, 'net.nokyan.Resources.desktop': <{'position': <10>}>, 'org.gnome.TextEditor.desktop': <{'position': <11>}>, 'org.gnome.tweaks.desktop': <{'position': <12>}>, 'vim.desktop': <{'position': <13>}>, 'snap-store_snap-store.desktop': <{'position': <14>}>, 'org.gnome.Yelp.desktop': <{'position': <15>}>}]"
+  - schema: org.gnome.desktop.app-folders
+    key: folder-children
+    value: "['System', 'Utilities', 'YaST', 'Pardus', 'a3b499f3-e2cc-40ac-9145-7db9c827dff2']"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/System/
+    key: name
+    value: "'X-GNOME-Shell-System.directory'"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/System/
+    key: translate
+    value: "true"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/System/
+    key: categories
+    value: "@as []"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/System/
+    key: apps
+    value: "['nm-connection-editor.desktop', 'org.gnome.baobab.desktop', 'org.gnome.DiskUtility.desktop', 'im-config.desktop', 'org.gnome.Logs.desktop', 'org.gnome.Sysprof.desktop', 'gufw.desktop', 'firmware-updater_firmware-updater.desktop', 'org.gnome.Settings.desktop', 'update-manager.desktop', 'desktop-security-center_desktop-security-center.desktop']"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/Utilities/
+    key: name
+    value: "'X-GNOME-Shell-Utilities.directory'"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/Utilities/
+    key: translate
+    value: "true"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/Utilities/
+    key: categories
+    value: "@as []"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/Utilities/
+    key: apps
+    value: "['org.gnome.Papers.desktop', 'org.gnome.font-viewer.desktop', 'org.gnome.Loupe.desktop', 'org.gnome.seahorse.Application.desktop']"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/YaST/
+    key: name
+    value: "'suse-yast.directory'"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/YaST/
+    key: translate
+    value: "true"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/YaST/
+    key: categories
+    value: "['X-SuSE-YaST']"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/YaST/
+    key: apps
+    value: "@as []"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/Pardus/
+    key: name
+    value: "'X-Pardus-Apps.directory'"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/Pardus/
+    key: translate
+    value: "true"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/Pardus/
+    key: categories
+    value: "['X-Pardus-Apps']"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/Pardus/
+    key: apps
+    value: "@as []"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/a3b499f3-e2cc-40ac-9145-7db9c827dff2/
+    key: name
+    value: "'Office'"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/a3b499f3-e2cc-40ac-9145-7db9c827dff2/
+    key: translate
+    value: "false"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/a3b499f3-e2cc-40ac-9145-7db9c827dff2/
+    key: categories
+    value: "@as []"
+  - schema: org.gnome.desktop.app-folders.folder
+    path: /org/gnome/desktop/app-folders/folders/a3b499f3-e2cc-40ac-9145-7db9c827dff2/
+    key: apps
+    value: "['libreoffice-calc.desktop', 'libreoffice-base.desktop', 'libreoffice-draw.desktop', 'libreoffice-impress.desktop', 'libreoffice-math.desktop', 'libreoffice-writer.desktop', 'xournalpp_xournalpp.desktop', 'libreoffice-startcenter.desktop', 'pdfarranger_pdfarranger.desktop']"
+  - schema: org.gnome.desktop.input-sources
+    key: sources
+    value: "[('xkb', 'us')]"
+  - schema: org.gnome.desktop.interface
+    key: accent-color
+    value: "'orange'"
+  - schema: org.gnome.desktop.interface
+    key: clock-format
+    value: "'24h'"
+  - schema: org.gnome.desktop.interface
+    key: clock-show-date
+    value: "true"
+  - schema: org.gnome.desktop.interface
+    key: color-scheme
+    value: "'prefer-dark'"
+  - schema: org.gnome.desktop.interface
+    key: cursor-theme
+    value: "'Adwaita'"
+  - schema: org.gnome.desktop.interface
+    key: document-font-name
+    value: "'Adwaita Sans 12'"
+  - schema: org.gnome.desktop.interface
+    key: font-name
+    value: "'Adwaita Sans 11'"
+  - schema: org.gnome.desktop.interface
+    key: gtk-theme
+    value: "'Yaru-dark'"
+  - schema: org.gnome.desktop.interface
+    key: icon-theme
+    value: "'Yaru-dark'"
+  - schema: org.gnome.desktop.interface
+    key: monospace-font-name
+    value: "'Ubuntu Sans Mono 11'"
+  - schema: org.gnome.desktop.interface
+    key: show-battery-percentage
+    value: "false"
+  - schema: org.gnome.desktop.interface
+    key: text-scaling-factor
+    value: "1.0"
+  - schema: org.gnome.desktop.privacy
+    key: report-technical-problems
+    value: "false"
+  - schema: org.gnome.desktop.wm.preferences
+    key: button-layout
+    value: "'appmenu:close'"
+  - schema: org.gnome.desktop.wm.preferences
+    key: focus-mode
+    value: "'click'"
+  - schema: org.gnome.desktop.wm.preferences
+    key: focus-new-windows
+    value: "'smart'"
+  - schema: org.gnome.desktop.wm.preferences
+    key: num-workspaces
+    value: "4"
+  - schema: org.gnome.nautilus.preferences
+    key: click-policy
+    value: "'double'"
+  - schema: org.gnome.nautilus.preferences
+    key: date-time-format
+    value: "'simple'"
+  - schema: org.gnome.nautilus.preferences
+    key: default-folder-viewer
+    value: "'icon-view'"
+  - schema: org.gnome.nautilus.preferences
+    key: default-sort-order
+    value: "'name'"
+  - schema: org.gnome.nautilus.preferences
+    key: recursive-search
+    value: "'local-only'"
+  - schema: org.gnome.nautilus.preferences
+    key: show-create-link
+    value: "true"
+  - schema: org.gnome.nautilus.preferences
+    key: show-delete-permanently
+    value: "true"
+  - schema: org.gnome.nautilus.preferences
+    key: show-directory-item-counts
+    value: "'local-only'"
+  - schema: org.gnome.nautilus.preferences
+    key: show-hidden-files
+    value: "false"
+  - schema: org.gnome.nautilus.preferences
+    key: show-image-thumbnails
+    value: "'local-only'"
+  - schema: org.gnome.nautilus.preferences
+    key: thumbnail-limit
+    value: "uint64 50"
+  - schema: org.gnome.nautilus.icon-view
+    key: captions
+    value: "['none', 'none', 'none']"
+  - schema: org.gnome.nautilus.icon-view
+    key: default-zoom-level
+    value: "'medium'"
+  - schema: org.gtk.gtk4.Settings.FileChooser
+    key: clock-format
+    value: "'24h'"
+  - schema: org.gtk.gtk4.Settings.FileChooser
+    key: date-format
+    value: "'regular'"
+  - schema: org.gtk.gtk4.Settings.FileChooser
+    key: location-mode
+    value: "'path-bar'"
+  - schema: org.gtk.gtk4.Settings.FileChooser
+    key: show-hidden
+    value: "false"
+  - schema: org.gtk.gtk4.Settings.FileChooser
+    key: show-size-column
+    value: "true"
+  - schema: org.gtk.gtk4.Settings.FileChooser
+    key: show-type-column
+    value: "true"
+  - schema: org.gtk.gtk4.Settings.FileChooser
+    key: sort-column
+    value: "'name'"
+  - schema: org.gtk.gtk4.Settings.FileChooser
+    key: sort-directories-first
+    value: "true"
+  - schema: org.gtk.gtk4.Settings.FileChooser
+    key: sort-order
+    value: "'ascending'"
+  - schema: org.gtk.gtk4.Settings.FileChooser
+    key: startup-mode
+    value: "'recent'"
+  - schema: org.gtk.gtk4.Settings.FileChooser
+    key: type-format
+    value: "'category'"
+  - schema: org.gtk.gtk4.Settings.FileChooser
+    key: view-type
+    value: "'list'"
+  - schema: org.gnome.settings-daemon.plugins.color
+    key: night-light-schedule-automatic
+    value: "false"
+  - schema: org.gnome.settings-daemon.plugins.power
+    key: sleep-inactive-ac-timeout
+    value: "3600"
+  - schema: org.gnome.settings-daemon.plugins.power
+    key: sleep-inactive-ac-type
+    value: "'nothing'"
+  - schema: org.gnome.system.location
+    key: enabled
+    value: "false"
+  - schema: org.gnome.TextEditor
+    key: auto-indent
+    value: "true"
+  - schema: org.gnome.TextEditor
+    key: auto-save-delay
+    value: "uint32 3"
+  - schema: org.gnome.TextEditor
+    key: custom-font
+    value: "'Monospace 11'"
+  - schema: org.gnome.TextEditor
+    key: discover-settings
+    value: "true"
+  - schema: org.gnome.TextEditor
+    key: draw-spaces
+    value: "@as []"
+  - schema: org.gnome.TextEditor
+    key: enable-snippets
+    value: "false"
+  - schema: org.gnome.TextEditor
+    key: highlight-current-line
+    value: "false"
+  - schema: org.gnome.TextEditor
+    key: highlight-matching-brackets
+    value: "true"
+  - schema: org.gnome.TextEditor
+    key: indent-style
+    value: "'tab'"
+  - schema: org.gnome.TextEditor
+    key: indent-width
+    value: "-1"
+  - schema: org.gnome.TextEditor
+    key: keybindings
+    value: "'default'"
+  - schema: org.gnome.TextEditor
+    key: line-height
+    value: "1.2"
+  - schema: org.gnome.TextEditor
+    key: recolor-window
+    value: "true"
+  - schema: org.gnome.TextEditor
+    key: restore-session
+    value: "true"
+  - schema: org.gnome.TextEditor
+    key: right-margin-position
+    value: "uint32 80"
+  - schema: org.gnome.TextEditor
+    key: show-grid
+    value: "false"
+  - schema: org.gnome.TextEditor
+    key: show-line-numbers
+    value: "false"
+  - schema: org.gnome.TextEditor
+    key: show-map
+    value: "false"
+  - schema: org.gnome.TextEditor
+    key: show-right-margin
+    value: "false"
+  - schema: org.gnome.TextEditor
+    key: spellcheck
+    value: "true"
+  - schema: org.gnome.TextEditor
+    key: style-scheme
+    value: "'Adwaita'"
+  - schema: org.gnome.TextEditor
+    key: style-variant
+    value: "'follow'"
+  - schema: org.gnome.TextEditor
+    key: tab-width
+    value: "uint32 8"
+  - schema: org.gnome.TextEditor
+    key: use-system-font
+    value: "true"
+  - schema: org.gnome.TextEditor
+    key: wrap-text
+    value: "true"

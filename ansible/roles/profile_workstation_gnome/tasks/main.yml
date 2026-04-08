@@ -86,14 +86,14 @@
   register: workstation_vscode_cli
   changed_when: false
   failed_when: false
-  when: (deadalus_vscode_extensions | default([])) | length > 0
+  when: (workstation_host_vscode_extensions | default([])) | length > 0
 
 - name: Ensure VS Code CLI is available before managing extensions
   tags: [packages, vscode]
   ansible.builtin.fail:
-    msg: Ensure Visual Studio Code is installed before managing VS Code extensions on deadalus.
+    msg: Ensure Visual Studio Code is installed before managing workstation VS Code extensions.
   when:
-    - (deadalus_vscode_extensions | default([])) | length > 0
+    - (workstation_host_vscode_extensions | default([])) | length > 0
     - workstation_vscode_cli.rc != 0
 
 - name: Read installed VS Code extensions on workstation host
@@ -108,7 +108,7 @@
   register: workstation_vscode_extensions_current
   changed_when: false
   when:
-    - (deadalus_vscode_extensions | default([])) | length > 0
+    - (workstation_host_vscode_extensions | default([])) | length > 0
     - workstation_vscode_cli.rc == 0
 
 - name: Install VS Code extensions on workstation host
@@ -122,7 +122,7 @@
   become_user: "{{ username }}"
   environment:
     HOME: "{{ user_home }}"
-  loop: "{{ deadalus_vscode_extensions | default([]) }}"
+  loop: "{{ workstation_host_vscode_extensions | default([]) }}"
   loop_control:
     label: "{{ item }}"
   when:
@@ -245,3 +245,4 @@
   tags: [services, packages]
   community.general.ufw:
     state: enabled
+  when: workstation_firewall_backend | default('ufw') == 'ufw'

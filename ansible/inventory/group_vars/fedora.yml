@@ -1,0 +1,64 @@
+---
+fedora_packages_base:
+  - curl
+  - flatpak
+  - gcc
+  - gcc-c++
+  - git-delta
+  - htop
+  - jq
+  - make
+  - nodejs
+  - ripgrep
+
+fedora_manage_docker_repo: true
+fedora_manage_google_chrome_repo: true
+fedora_manage_intellij_repo: true
+fedora_manage_vscode_repo: true
+fedora_intellij_copr_owner: coder966
+fedora_intellij_copr_project: intellij-idea-ultimate
+fedora_intellij_package_name: intellij-idea-ultimate
+
+fedora_docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+enabled_services:
+  - docker
+  - firewalld
+
+fedora_dotfiles:
+  - src: .bashrc.d/
+    dest: .bashrc.d/
+    mode: preserve
+
+workstation_firewall_backend: firewalld
+
+workstation_host_linux_packages_fedora:
+  - code
+  - firewall-config
+  - gnome-shell-extensions
+  - gnome-shell-extension-manager
+  - gnome-tweaks
+  - libreoffice
+  - meld
+  - NetworkManager-openconnect-gnome
+  - pcsc-lite
+  - pinentry-gnome3
+  - podman
+  - podman-compose
+  - yubikey-manager
+
+workstation_flatpak_remote_name: flathub
+workstation_flatpak_remote_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+workstation_flatpak_packages:
+  - com.getpostman.Postman
+  - com.spotify.Client
+  - com.github.jeromerobert.pdfarranger
+  - io.dbeaver.DBeaverCommunity
+  - org.mozilla.Thunderbird
+  - org.telegram.desktop
+  - org.xournalpp.xournalpp

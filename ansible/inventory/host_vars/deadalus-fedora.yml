@@ -1,0 +1,35 @@
+---
+hostname: deadalus-fedora
+
+host_packages: []
+host_enabled_services: []
+
+workstation_host_vscode_extensions:
+  - ms-vscode-remote.remote-containers
+  - ms-vscode-remote.remote-ssh
+  - ms-azuretools.vscode-docker
+  - redhat.vscode-yaml
+  - redhat.ansible
+
+workstation_gnome_managed_settings:
+  - schema: org.gnome.shell
+    key: favorite-apps
+    value: "['google-chrome.desktop', 'org.gnome.Nautilus.desktop', 'com.spotify.Client.desktop', 'org.mozilla.Thunderbird.desktop', 'org.telegram.desktop.desktop', 'code.desktop', 'intellij-idea-ultimate.desktop', 'io.dbeaver.DBeaverCommunity.desktop', 'com.getpostman.Postman.desktop']"
+  - schema: org.gnome.desktop.input-sources
+    key: sources
+    value: "[('xkb', 'us')]"
+  - schema: org.gnome.desktop.interface
+    key: clock-format
+    value: "'24h'"
+  - schema: org.gnome.desktop.interface
+    key: clock-show-date
+    value: "true"
+  - schema: org.gnome.desktop.interface
+    key: color-scheme
+    value: "'prefer-dark'"
+  - schema: org.gnome.desktop.wm.preferences
+    key: button-layout
+    value: "'appmenu:close'"
+  - schema: org.gnome.desktop.wm.preferences
+    key: num-workspaces
+    value: "4"

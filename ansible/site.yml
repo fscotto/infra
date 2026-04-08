@@ -37,6 +37,14 @@
     - services_systemd
     - profile_workstation_dev_common
 
+- hosts: workstation_dev_fedora
+  become: true
+
+  roles:
+    - packages_fedora
+    - services_systemd
+    - profile_workstation_dev_common
+
 - hosts: workstation_host_linux
   become: true
 

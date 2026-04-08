@@ -1,10 +1,10 @@
 ---
-hostname: deadalus
+hostname: deadalus-ubuntu
 
 host_packages: []
 host_enabled_services: []
 
-deadalus_vscode_extensions:
+workstation_host_vscode_extensions:
   - ms-vscode-remote.remote-containers
   - ms-vscode-remote.remote-ssh
   - ms-azuretools.vscode-docker

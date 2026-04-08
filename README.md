@@ -96,6 +96,7 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 Sistemi operativi supportati:
 
 - Ubuntu LTS nativa
+- Fedora Workstation nativa
 - Windows 11 host + Ubuntu WSL
 
 Desktop environment host Linux:
@@ -104,27 +105,34 @@ Desktop environment host Linux:
 
 Macchine attuali:
 
-- `deadalus` come workstation Ubuntu nativa
+- `deadalus-ubuntu` come workstation Ubuntu nativa
+- `deadalus-fedora` come workstation Fedora nativa
 - supporto attivo per host Windows 11 + WSL tramite `deadalus-win` e `deadalus-wsl`
 
 Questo profilo è pensato per sviluppo e lavoro, con separazione tra layer host e layer dev.
 
+Nel modello Ansible usato qui, un singolo inventory host puo appartenere intenzionalmente a piu gruppi e quindi ricevere piu play nello stesso run: l'associazione non e `1 host = 1 play`, ma `host + gruppi = layering finale`.
+
 Il profilo workstation e agganciato al playbook principale e ora distingue:
 
 - layer dev Ubuntu condiviso tra workstation Linux nativa e Ubuntu in WSL
+- layer dev Fedora nativo parallelo a Ubuntu
 - layer host Linux GNOME
 - layer host Windows 11 con bootstrap WSL, remoting `PSRP` su `HTTPS/5986`, gestione app via `winget` con backend configurabile e VS Code lato Windows
 - layer WSL dedicato per sviluppo con `systemd`
 
+Per esempio, lo stesso host Linux puo stare in `workstation_host_linux` e in `workstation_dev_fedora` oppure `workstation_dev_ubuntu`, a seconda del layering che vuoi comporre.
+
 Lo stato attuale del profilo workstation include:
 
 - installazione pacchetti base Ubuntu via apt
+- installazione pacchetti base Fedora via dnf per il ramo workstation nativo
 - installazione e configurazione di Docker dal repository ufficiale
 - gestione dei dotfiles workstation e rendering dei template dev condivisi
-- installazione di Google Chrome, pacchetti Snap workstation e estensioni GNOME sul solo host Linux nativo
+- installazione di Google Chrome, applicazioni workstation via Snap su Ubuntu nativa e via Flatpak su Fedora nativa, oltre alle estensioni GNOME sul solo host Linux nativo
 - configurazione del ramo Windows 11 host con app installate dal playbook via `winget`, con backend predefinito `winget_psrp`, tema scuro, pin della taskbar gestiti via policy locale e profilo predefinito di Windows Terminal impostato su `Ubuntu`
 - preparazione del ramo WSL Ubuntu con `systemd` per il toolchain di sviluppo
-- attivazione del firewall UFW sul solo host Linux nativo
+- attivazione del firewall UFW su Ubuntu nativa e `firewalld` su Fedora nativa
 
 Workflow Windows + WSL previsto:
 
@@ -240,6 +248,7 @@ I principali ruoli attualmente presenti sono:
 | base                      | configurazione base comune          |
 | packages_void             | installazione pacchetti su Void     |
 | packages_ubuntu           | installazione pacchetti su Ubuntu   |
+| packages_fedora           | installazione pacchetti su Fedora   |
 | services_runit            | gestione servizi runit              |
 | services_systemd          | gestione servizi systemd            |
 | profile_desktop_common    | bootstrap desktop Void condiviso    |
@@ -247,7 +256,7 @@ I principali ruoli attualmente presenti sono:
 | profile_desktop_sway      | sessione desktop Sway               |
 | profile_desktop_hyprland  | sessione desktop Hyprland           |
 | profile_desktop_host      | override desktop specifici per host |
-| profile_workstation_dev_common | configurazione dev Ubuntu condivisa |
+| profile_workstation_dev_common | configurazione dev workstation condivisa |
 | profile_workstation_gnome | configurazione host workstation GNOME |
 | profile_workstation_dev_wsl | configurazione WSL Ubuntu per sviluppo |
 | profile_workstation_host_windows | configurazione host Windows 11 workstation |
@@ -259,12 +268,13 @@ I principali ruoli attualmente presenti sono:
 
 # Stato attuale del playbook principale
 
-Il playbook `ansible/site.yml` e attualmente composto da sei blocchi:
+Il playbook `ansible/site.yml` e attualmente composto da sette blocchi:
 
 ```text
 all:!workstation_host_windows -> dotfiles_common
 void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_host
 workstation_dev_ubuntu -> packages_ubuntu + services_systemd + profile_workstation_dev_common
+workstation_dev_fedora -> packages_fedora + services_systemd + profile_workstation_dev_common
 workstation_host_linux -> profile_workstation_gnome
 workstation_dev_wsl -> packages_ubuntu + services_systemd + profile_workstation_dev_common + profile_workstation_dev_wsl
 workstation_host_windows -> profile_workstation_host_windows
@@ -274,7 +284,8 @@ ubuntu_server -> packages_ubuntu + services_systemd + profile_server
 Questo significa che, allo stato attuale:
 
 - i desktop Void (`ikaros`, `nymph`) restano il target operativo piu completo
-- la workstation Ubuntu (`deadalus`) e gestita separando ambiente dev e layer host GNOME
+- la workstation Ubuntu (`deadalus-ubuntu`) e gestita separando ambiente dev e layer host GNOME
+- la workstation Fedora (`deadalus-fedora`) usa lo stesso principio di composizione a gruppi con il ramo Fedora dedicato
 - il ramo Windows + WSL e predisposto con bootstrap PowerShell e play Windows/WSL dedicati
 - il server Ubuntu (`prometheus`) e gestito con pacchetti, servizi, dotfiles server e firewall
 
@@ -287,6 +298,7 @@ dotfiles/
 ├── common
 ├── desktop
 ├── server
+├── fedora
 ├── workstation
 ├── ikaros
 └── nymph
@@ -345,6 +357,7 @@ Allo stato attuale questo comando:
 - distribuisce i dotfiles comuni a tutti gli host
 - per gli host Void applica bootstrap desktop condiviso, sessioni i3/Sway/Hyprland e override specifici per host
 - per `workstation_dev_ubuntu` applica pacchetti Ubuntu, servizi systemd e profilo dev comune
+- per `workstation_dev_fedora` applica pacchetti Fedora, servizi systemd e profilo dev comune
 - per `workstation_host_linux` applica il layer host Linux GNOME
 - per `workstation_dev_wsl` applica pacchetti Ubuntu, servizi systemd, profilo dev comune e tweak WSL dedicati
 - per `workstation_host_windows` applica il layer host Windows 11 via PSRP, con installazione pacchetti Windows eseguita di default tramite `winget_psrp`
@@ -359,7 +372,8 @@ Per validare prima di applicare:
 ansible-playbook ansible/site.yml --syntax-check
 ansible-playbook ansible/site.yml --limit ikaros --check --diff
 ansible-playbook ansible/site.yml --limit nymph --check --diff
-ansible-playbook ansible/site.yml --limit deadalus --check --diff
+ansible-playbook ansible/site.yml --limit deadalus-ubuntu --check --diff
+ansible-playbook ansible/site.yml --limit deadalus-fedora --check --diff
 ansible-playbook ansible/site.yml --limit deadalus-wsl --check --diff
 ansible-playbook ansible/site.yml --limit prometheus --check --diff
 ansible-lint ansible/site.yml

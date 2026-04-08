@@ -1,0 +1,139 @@
+---
+- name: Gather installed package facts
+  tags: [packages]
+  ansible.builtin.package_facts:
+    manager: auto
+
+- name: Copy Fedora dotfiles
+  tags: [dotfiles, dotfiles:common]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/fedora/{{ item.src }}"
+    dest: "{{ effective_user_home }}/{{ item.dest }}"
+    owner: "{{ effective_username }}"
+    group: "{{ effective_user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ fedora_dotfiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+
+- name: Configure Docker repository on Fedora
+  tags: [packages]
+  ansible.builtin.yum_repository:
+    name: docker-ce-stable
+    description: Docker CE Stable - $basearch
+    baseurl: "https://download.docker.com/linux/fedora/$releasever/$basearch/stable"
+    enabled: true
+    gpgcheck: true
+    gpgkey: https://download.docker.com/linux/fedora/gpg
+    state: present
+  when: fedora_manage_docker_repo | default(false)
+
+- name: Configure Google Chrome repository on Fedora
+  tags: [packages]
+  ansible.builtin.yum_repository:
+    name: google-chrome
+    description: Google Chrome
+    baseurl: "https://dl.google.com/linux/chrome/rpm/stable/$basearch"
+    enabled: true
+    gpgcheck: true
+    gpgkey: https://dl.google.com/linux/linux_signing_key.pub
+    state: present
+  when:
+    - workstation_manage_google_chrome | default(false)
+    - fedora_manage_google_chrome_repo | default(false)
+
+- name: Configure Visual Studio Code repository on Fedora
+  tags: [packages, vscode]
+  ansible.builtin.yum_repository:
+    name: vscode
+    description: Visual Studio Code
+    baseurl: https://packages.microsoft.com/yumrepos/vscode
+    enabled: true
+    gpgcheck: true
+    gpgkey: https://packages.microsoft.com/keys/microsoft.asc
+    state: present
+  when:
+    - "'workstation_host_linux' in group_names"
+    - fedora_manage_vscode_repo | default(false)
+
+- name: Configure IntelliJ IDEA COPR repository on Fedora
+  tags: [packages]
+  ansible.builtin.get_url:
+    url: >-
+      https://copr.fedorainfracloud.org/coprs/{{ fedora_intellij_copr_owner }}/{{ fedora_intellij_copr_project }}/repo/fedora-{{ ansible_facts['distribution_major_version'] }}/{{ fedora_intellij_copr_owner }}-{{ fedora_intellij_copr_project }}-fedora-{{ ansible_facts['distribution_major_version'] }}.repo
+    dest: /etc/yum.repos.d/{{ fedora_intellij_copr_owner }}-{{ fedora_intellij_copr_project }}-fedora-{{ ansible_facts['distribution_major_version'] }}.repo
+    owner: root
+    group: root
+    mode: "0644"
+  when:
+    - "'workstation_host_linux' in group_names"
+    - fedora_manage_intellij_repo | default(false)
+
+- name: Refresh dnf package metadata
+  tags: [packages]
+  ansible.builtin.dnf:
+    update_cache: true
+
+- name: Install packages on Fedora
+  tags: [packages]
+  ansible.builtin.dnf:
+    name: >-
+      {{
+        (
+          (common_packages | default([]))
+        + (fedora_packages_base | default([]))
+        + (fedora_docker_packages | default([]))
+        + (
+            ['google-chrome-stable']
+            if workstation_manage_google_chrome | default(false)
+            else []
+          )
+        + (profile_packages | default([]))
+        + (workstation_dev_packages | default([]))
+        + (
+            (workstation_host_linux_packages_fedora | default(workstation_host_linux_packages | default([])))
+            if 'workstation_host_linux' in group_names
+            else []
+          )
+        + (
+            [fedora_intellij_package_name]
+            if (
+              'workstation_host_linux' in group_names
+              and fedora_manage_intellij_repo | default(false)
+            )
+            else []
+          )
+        + (host_packages | default([]))
+        )
+        | unique
+      }}
+    state: present
+
+- name: Add user to docker group
+  tags: [packages]
+  ansible.builtin.user:
+    name: "{{ effective_username }}"
+    groups: docker
+    append: true
+  when: (fedora_docker_packages | default([])) | length > 0
+
+- name: Ensure Flathub remote is configured for Fedora workstation
+  tags: [packages]
+  community.general.flatpak_remote:
+    name: "{{ workstation_flatpak_remote_name | default('flathub') }}"
+    state: present
+    flatpakrepo_url: "{{ workstation_flatpak_remote_url | default('https://dl.flathub.org/repo/flathub.flatpakrepo') }}"
+  when:
+    - "'workstation_host_linux' in group_names"
+    - (workstation_flatpak_packages | default([])) | length > 0
+
+- name: Install Fedora workstation Flatpak applications
+  tags: [packages]
+  community.general.flatpak:
+    name: "{{ workstation_flatpak_packages }}"
+    state: present
+    remote: "{{ workstation_flatpak_remote_name | default('flathub') }}"
+    method: system
+  when:
+    - "'workstation_host_linux' in group_names"
+    - (workstation_flatpak_packages | default([])) | length > 0

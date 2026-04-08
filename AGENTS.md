@@ -16,12 +16,14 @@ Project type: Ansible-driven infrastructure, workstation/server provisioning, an
 
 ## Topology And Orchestration
 - Void desktops: `ikaros`, `nymph`
-- Ubuntu workstation: `deadalus`
+- Ubuntu workstation: `deadalus-ubuntu`
+- Fedora workstation: `deadalus-fedora`
 - Ubuntu server: `prometheus`
 - Workstation topology now supports Linux host + Ubuntu dev and Windows 11 host + Ubuntu WSL dev as separate layers
+- A single inventory host can intentionally participate in multiple plays by belonging to multiple groups; host identity and play layering are not 1:1
 - The WSL dev environment is intended to be managed by running Ansible locally from inside the distro, while the Windows host is managed remotely via PSRP and Windows package installs default to `winget_psrp`
 - Most hosts use `ansible_connection: local`
-- Current playbook layering: `all:!workstation_host_windows -> dotfiles_common`, `void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_host`, `workstation_dev_ubuntu -> packages_ubuntu + services_systemd + profile_workstation_dev_common`, `workstation_host_linux -> profile_workstation_gnome`, `workstation_dev_wsl -> packages_ubuntu + services_systemd + profile_workstation_dev_common + profile_workstation_dev_wsl`, `workstation_host_windows -> profile_workstation_host_windows`, `ubuntu_server -> packages_ubuntu + services_systemd + profile_server`
+- Current playbook layering: `all:!workstation_host_windows -> dotfiles_common`, `void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_host`, `workstation_dev_ubuntu -> packages_ubuntu + services_systemd + profile_workstation_dev_common`, `workstation_dev_fedora -> packages_fedora + services_systemd + profile_workstation_dev_common`, `workstation_host_linux -> profile_workstation_gnome`, `workstation_dev_wsl -> packages_ubuntu + services_systemd + profile_workstation_dev_common + profile_workstation_dev_wsl`, `workstation_host_windows -> profile_workstation_host_windows`, `ubuntu_server -> packages_ubuntu + services_systemd + profile_server`
 - Present but currently unwired roles: `base`, `dotfiles`
 
 ## Local Instruction Files
@@ -62,7 +64,8 @@ Core validation from the repo root:
 ansible-playbook ansible/site.yml --syntax-check
 ansible-playbook ansible/site.yml --limit ikaros --check --diff
 ansible-playbook ansible/site.yml --limit nymph --check --diff
-ansible-playbook ansible/site.yml --limit deadalus --check --diff
+ansible-playbook ansible/site.yml --limit deadalus-ubuntu --check --diff
+ansible-playbook ansible/site.yml --limit deadalus-fedora --check --diff
 ansible-playbook ansible/site.yml --limit deadalus-wsl --check --diff
 ansible-playbook ansible/site.yml --limit prometheus --check --diff
 ansible-lint ansible/site.yml
@@ -75,7 +78,8 @@ Useful execution commands:
 ansible-playbook ansible/site.yml
 ansible-playbook ansible/site.yml --limit ikaros
 ansible-playbook ansible/site.yml --limit nymph
-ansible-playbook ansible/site.yml --limit deadalus
+ansible-playbook ansible/site.yml --limit deadalus-ubuntu
+ansible-playbook ansible/site.yml --limit deadalus-fedora
 ansible-playbook ansible/site.yml --limit deadalus-wsl
 ansible-playbook ansible/site.yml --limit prometheus
 scripts/bootstrap_mail.sh
@@ -155,8 +159,9 @@ Use the narrowest command matching the changed area.
 - `profile_desktop_sway` contains the wlroots/Sway session pieces and deploys shared Sway + Waybar dotfiles
 - `profile_desktop_hyprland` contains the optional Hyprland/Wayland session pieces
 - `profile_desktop_host` carries host-specific desktop overrides such as NVIDIA, PRIME wrappers, and host-only WirePlumber config
-- `profile_workstation_dev_common` carries the Ubuntu dev layer shared by native workstation and WSL Ubuntu
-- `profile_workstation_gnome` carries Linux host-only GNOME setup, extensions, and UFW
+- `profile_workstation_dev_common` carries the shared dev layer for native Linux workstation profiles plus Ubuntu WSL
+- `profile_workstation_gnome` carries Linux host-only GNOME setup, extensions, and firewall enablement
+- Native Linux workstation plays can be combined on the same inventory host when that host is placed in both the relevant OS/dev group and `workstation_host_linux`
 - `profile_workstation_dev_wsl` carries WSL-specific Ubuntu tweaks such as `systemd` and PSRP Python dependencies
 - `profile_workstation_host_windows` manages the Windows 11 host via PSRP over HTTPS using `negotiate` by default, installs host applications via `winget` with a configurable `windows_package_backend` defaulting to `winget_psrp`, applies Windows shell tweaks, manages taskbar pins through a local Start layout policy with `PinListPlacement="Replace"`, and sets Windows Terminal's default profile to Ubuntu
 - `deadalus-wsl` is modeled as a local inventory target intended to be run from inside the Ubuntu WSL distro
@@ -258,7 +263,8 @@ Run a host-limited dry run whenever the change affects a real host profile, pack
 
 For workstation changes, prefer:
 ```bash
-ansible-playbook ansible/site.yml --limit deadalus --check --diff
+ansible-playbook ansible/site.yml --limit deadalus-ubuntu --check --diff
+ansible-playbook ansible/site.yml --limit deadalus-fedora --check --diff
 ansible-playbook ansible/site.yml --limit deadalus-wsl --check --diff
 ```
 
@@ -277,5 +283,5 @@ pwsh -NoProfile -Command "[void][System.Management.Automation.Language.Parser]::
 - Do not revert unrelated worktree changes made by the user
 - Keep `README.md` and `AGENTS.md` aligned when workflows materially change
 - If you add a new operational area, also add the validation command agents should run
-- Prefer host-limited validation first: `ikaros` or `nymph` for Void desktop work, `deadalus` for Ubuntu workstation work, and `prometheus` for server work
+- Prefer host-limited validation first: `ikaros` or `nymph` for Void desktop work, `deadalus-ubuntu` for Ubuntu workstation work, `deadalus-fedora` for Fedora workstation work, and `prometheus` for server work
 - Call out checks you could not run and any follow-up verification needed

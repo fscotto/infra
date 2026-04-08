@@ -18,6 +18,7 @@ workstation_host_linux_dotfiles:
     dest: .gnupg/gpg-agent.conf
     mode: "0600"
 
+workstation_firewall_backend: ufw
 workstation_manage_google_chrome: true
 
 workstation_removed_snap_packages:

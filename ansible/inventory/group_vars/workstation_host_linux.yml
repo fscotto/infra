@@ -13,6 +13,11 @@ workstation_host_linux_packages:
   - podman-compose
   - yubikey-manager
 
+workstation_host_linux_dotfiles:
+  - src: .gnupg/gpg-agent.conf
+    dest: .gnupg/gpg-agent.conf
+    mode: "0600"
+
 workstation_manage_google_chrome: true
 
 workstation_removed_snap_packages:

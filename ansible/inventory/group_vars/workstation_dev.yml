@@ -19,9 +19,6 @@ workstation_user_directories:
     mode: "0700"
 
 workstation_dotfiles:
-  - src: .gnupg/gpg-agent.conf
-    dest: .gnupg/gpg-agent.conf
-    mode: "0600"
   - src: .gitignore_global
     dest: .gitignore_global
     mode: "0644"

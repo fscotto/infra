@@ -1,4 +1,16 @@
 ---
+- name: Copy workstation host Linux dotfiles
+  tags: [dotfiles, dotfiles:workstation, gnome]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/workstation_host_linux/{{ item.src }}"
+    dest: "{{ user_home }}/{{ item.dest }}"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ workstation_host_linux_dotfiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+
 - name: Ensure GNOME extension directories exist
   tags: [packages, gnome]
   ansible.builtin.file:

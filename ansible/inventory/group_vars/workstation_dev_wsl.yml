@@ -3,6 +3,7 @@ enabled_services:
   - docker
 
 workstation_dev_wsl_packages:
+  - pinentry-curses
   - python3-pip
 workstation_dev_wsl_excluded_packages:
   - pcscd
@@ -19,3 +20,7 @@ workstation_dev_wsl_python_packages:
   - pypsrp
   - pyspnego
 workstation_wsl_systemd_enabled: true
+workstation_dev_wsl_dotfiles:
+  - src: .gnupg/gpg-agent.conf
+    dest: .gnupg/gpg-agent.conf
+    mode: "0600"

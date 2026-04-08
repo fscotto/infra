@@ -16,7 +16,6 @@ ubuntu_docker_packages:
   - docker-ce-cli
   - containerd.io
   - docker-buildx-plugin
-  - docker-compose
   - docker-compose-plugin
 
 enabled_services:

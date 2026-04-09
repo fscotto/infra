@@ -37,11 +37,19 @@ fedora_dotfiles:
 
 workstation_firewall_backend: firewalld
 
+fedora_workstation_dev_packages:
+  - distrobox
+  - gnupg
+  - gnupg2-gpg-agent
+  - libfido2
+  - openssh-clients
+  - pandoc
+  - shellcheck
+
 workstation_host_linux_packages_fedora:
   - code
   - firewall-config
-  - gnome-shell-extensions
-  - gnome-shell-extension-manager
+  - gnome-extensions-app
   - gnome-tweaks
   - libreoffice
   - meld

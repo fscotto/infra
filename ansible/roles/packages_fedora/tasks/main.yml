@@ -89,7 +89,7 @@
             else []
           )
         + (profile_packages | default([]))
-        + (workstation_dev_packages | default([]))
+        + (fedora_workstation_dev_packages | default(workstation_dev_packages | default([])))
         + (
             (workstation_host_linux_packages_fedora | default(workstation_host_linux_packages | default([])))
             if 'workstation_host_linux' in group_names

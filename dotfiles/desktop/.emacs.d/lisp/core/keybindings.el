@@ -57,6 +57,10 @@
 (autoload 'elfeed "elfeed" nil t)
 (define-key fscotto/open (kbd "f") #'elfeed)
 
+;; -------- gptel --------
+(autoload 'gptel "gptel" nil t)
+(define-key fscotto/open (kbd "l") #'gptel)
+
 ;;;; Elfeed mode maps
 (with-eval-after-load 'elfeed
   (define-key elfeed-search-mode-map (kbd "w") #'elfeed-search-yank)

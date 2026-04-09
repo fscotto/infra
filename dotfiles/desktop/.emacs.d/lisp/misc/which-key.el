@@ -31,6 +31,7 @@
   ;; --------------------------------------------------------------------------
   (which-key-add-key-based-replacements
     "C-c o f" "RSS (Elfeed)"
+    "C-c o l" "LLM chat (gptel)"
     "C-c o m" "mu4e (Email Client)"
     "C-c o T" "Terminal (vterm)")
 

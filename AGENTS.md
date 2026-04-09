@@ -19,7 +19,7 @@ Project type: Ansible-driven infrastructure, workstation/server provisioning, an
 - Ubuntu workstation: `deadalus-ubuntu`
 - Fedora workstation: `deadalus-fedora`
 - Ubuntu server: `prometheus`
-- Workstation topology now supports Linux host + Ubuntu dev and Windows 11 host + Ubuntu WSL dev as separate layers
+- Workstation topology now supports explicit native Linux workstation targets for Ubuntu and Fedora, plus Windows 11 host + Ubuntu WSL dev as separate layers
 - A single inventory host can intentionally participate in multiple plays by belonging to multiple groups; host identity and play layering are not 1:1
 - The WSL dev environment is intended to be managed by running Ansible locally from inside the distro, while the Windows host is managed remotely via PSRP and Windows package installs default to `winget_psrp`
 - Most hosts use `ansible_connection: local`
@@ -160,8 +160,10 @@ Use the narrowest command matching the changed area.
 - `profile_desktop_hyprland` contains the optional Hyprland/Wayland session pieces
 - `profile_desktop_host` carries host-specific desktop overrides such as NVIDIA, PRIME wrappers, and host-only WirePlumber config
 - `profile_workstation_dev_common` carries the shared dev layer for native Linux workstation profiles plus Ubuntu WSL
-- `profile_workstation_gnome` carries Linux host-only GNOME setup, extensions, and firewall enablement
+- `packages_fedora` manages the Fedora workstation package catalog, including Docker and Google Chrome repos, VS Code via the Microsoft RPM repo, IntelliJ IDEA Ultimate via COPR, and the remaining workstation GUI apps via Flatpak
+- `profile_workstation_gnome` carries Linux host-only GNOME setup, extensions, firewall enablement, and host-managed `gsettings`
 - Native Linux workstation plays can be combined on the same inventory host when that host is placed in both the relevant OS/dev group and `workstation_host_linux`
+- `deadalus-fedora` keeps Fedora-specific `workstation_gnome_managed_settings` in `ansible/inventory/host_vars/deadalus-fedora.yml`, derived from the real host state and intentionally separate from Ubuntu
 - `profile_workstation_dev_wsl` carries WSL-specific Ubuntu tweaks such as `systemd` and PSRP Python dependencies
 - `profile_workstation_host_windows` manages the Windows 11 host via PSRP over HTTPS using `negotiate` by default, installs host applications via `winget` with a configurable `windows_package_backend` defaulting to `winget_psrp`, applies Windows shell tweaks, manages taskbar pins through a local Start layout policy with `PinListPlacement="Replace"`, and sets Windows Terminal's default profile to Ubuntu
 - `deadalus-wsl` is modeled as a local inventory target intended to be run from inside the Ubuntu WSL distro

@@ -30,6 +30,7 @@ infra/
 ├── dotfiles/
 │   ├── common/
 │   ├── desktop/
+│   ├── fedora/
 │   ├── server/
 │   ├── workstation/
 │   ├── ikaros/
@@ -129,10 +130,12 @@ Lo stato attuale del profilo workstation include:
 - installazione pacchetti base Fedora via dnf per il ramo workstation nativo
 - installazione e configurazione di Docker dal repository ufficiale
 - gestione dei dotfiles workstation e rendering dei template dev condivisi
-- installazione di Google Chrome, applicazioni workstation via Snap su Ubuntu nativa e via Flatpak su Fedora nativa, oltre alle estensioni GNOME sul solo host Linux nativo
+- installazione di Google Chrome su Ubuntu e Fedora, `VS Code` su Fedora via repository RPM Microsoft, `IntelliJ IDEA Ultimate` su Fedora via COPR RPM, e applicazioni workstation residue su Fedora via Flatpak
+- installazione di applicazioni workstation su Ubuntu nativa via Snap, oltre alle estensioni GNOME sul solo host Linux nativo
 - configurazione del ramo Windows 11 host con app installate dal playbook via `winget`, con backend predefinito `winget_psrp`, tema scuro, pin della taskbar gestiti via policy locale e profilo predefinito di Windows Terminal impostato su `Ubuntu`
 - preparazione del ramo WSL Ubuntu con `systemd` per il toolchain di sviluppo
 - attivazione del firewall UFW su Ubuntu nativa e `firewalld` su Fedora nativa
+- gestione di `gsettings` GNOME host-specifici su `deadalus-fedora`, inclusi shell, Files/Nautilus, file chooser GTK e GNOME Text Editor, allineati allo stato reale della macchina
 
 Workflow Windows + WSL previsto:
 
@@ -285,7 +288,7 @@ Questo significa che, allo stato attuale:
 
 - i desktop Void (`ikaros`, `nymph`) restano il target operativo piu completo
 - la workstation Ubuntu (`deadalus-ubuntu`) e gestita separando ambiente dev e layer host GNOME
-- la workstation Fedora (`deadalus-fedora`) usa lo stesso principio di composizione a gruppi con il ramo Fedora dedicato
+- la workstation Fedora (`deadalus-fedora`) usa lo stesso principio di composizione a gruppi con il ramo Fedora dedicato e con `gsettings` host-specifici dichiarati in inventory
 - il ramo Windows + WSL e predisposto con bootstrap PowerShell e play Windows/WSL dedicati
 - il server Ubuntu (`prometheus`) e gestito con pacchetti, servizi, dotfiles server e firewall
 

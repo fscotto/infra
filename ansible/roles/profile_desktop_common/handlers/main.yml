@@ -17,3 +17,9 @@
   when:
     - not ansible_check_mode
     - not (desktop_restart_emptty_automatically | default(false))
+
+- name: Reload SSH service
+  listen: Reload SSH service
+  ansible.builtin.command: sv reload sshd
+  changed_when: true
+  when: not ansible_check_mode

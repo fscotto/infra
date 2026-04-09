@@ -8,15 +8,33 @@ desktop_default_session: i3
 desktop_default_session_env: xorg
 
 host_packages:
+  - openssh
   - mesa-dri
   - vulkan-loader
   - mesa-vulkan-radeon
   - mesa-vaapi
   - xf86-video-amdgpu
 
+host_ufw_rules:
+  - rule: allow
+    port: "22"
+    proto: tcp
+
+host_sshd_settings:
+  PermitRootLogin: "no"
+  PubkeyAuthentication: "yes"
+  PasswordAuthentication: "no"
+  KbdInteractiveAuthentication: "no"
+
+host_sshd_allow_users:
+  - "{{ username }}"
+
+host_authorized_ssh_keys: "{{ vault_ikaros_authorized_ssh_keys | default([]) }}"
+
 host_i3_dotfiles:
   - src: .config/autorandr/
     dest: .config/autorandr/
     mode: preserve
 
-host_enabled_services: []
+host_enabled_services:
+  - sshd

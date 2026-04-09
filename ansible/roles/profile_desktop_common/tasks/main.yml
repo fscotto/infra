@@ -56,6 +56,109 @@
     line: "password   optional  pam_gnome_keyring.so use_authtok"
     state: present
 
+- name: Check whether SSH host ed25519 key exists
+  tags: [services]
+  ansible.builtin.stat:
+    path: /etc/ssh/ssh_host_ed25519_key
+  register: desktop_ssh_host_ed25519_key
+  when:
+    - (host_sshd_settings | default({})) | length > 0
+      or (host_sshd_allow_users | default([])) | length > 0
+
+- name: Generate missing SSH host keys on desktop host
+  tags: [services]
+  ansible.builtin.command: ssh-keygen -A
+  changed_when: true
+  when:
+    - (host_sshd_settings | default({})) | length > 0
+      or (host_sshd_allow_users | default([])) | length > 0
+    - not desktop_ssh_host_ed25519_key.stat.exists
+
+- name: Require authorized SSH keys before disabling password authentication on desktop host
+  tags: [services]
+  ansible.builtin.assert:
+    that:
+      - (host_authorized_ssh_keys | default([])) | length > 0
+    fail_msg: >-
+      SSH password authentication is disabled for this host, but no authorized SSH
+      keys are defined. Set vault_ikaros_authorized_ssh_keys in secrets/vault.yml
+      or secrets/vault.local.yml before applying this configuration.
+  when:
+    - "'sshd' in (host_enabled_services | default([]))"
+    - (host_sshd_settings | default({})).PasswordAuthentication | default('yes') == 'no'
+
+- name: Ensure desktop user SSH directory exists
+  tags: [services, dotfiles]
+  ansible.builtin.file:
+    path: "{{ user_home }}/.ssh"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0700"
+  when: (host_authorized_ssh_keys | default([])) | length > 0
+
+- name: Ensure desktop user authorized_keys file exists
+  tags: [services, dotfiles]
+  ansible.builtin.file:
+    path: "{{ user_home }}/.ssh/authorized_keys"
+    state: touch
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0600"
+  when: (host_authorized_ssh_keys | default([])) | length > 0
+
+- name: Manage desktop user authorized SSH keys exclusively
+  tags: [services, dotfiles]
+  ansible.posix.authorized_key:
+    user: "{{ username }}"
+    key: "{{ host_authorized_ssh_keys | join('\n') }}"
+    state: present
+    exclusive: true
+    manage_dir: false
+  when: (host_authorized_ssh_keys | default([])) | length > 0
+
+- name: Apply SSH daemon settings on desktop host
+  tags: [services]
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^\s*{{ item.key }}\s+'
+    line: "{{ item.key }} {{ item.value }}"
+    state: present
+    validate: "sshd -t -f %s"
+  notify: Reload SSH service
+  loop: "{{ host_sshd_settings | default({}) | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when: (host_sshd_settings | default({})) | length > 0
+
+- name: Restrict SSH login to allowed desktop users
+  tags: [services]
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^\s*AllowUsers\s+'
+    line: "AllowUsers {{ host_sshd_allow_users | join(' ') }}"
+    state: present
+    validate: "sshd -t -f %s"
+  notify: Reload SSH service
+  when: (host_sshd_allow_users | default([])) | length > 0
+
+- name: Apply host UFW rules on desktop
+  tags: [services, packages]
+  community.general.ufw:
+    rule: "{{ item.rule }}"
+    name: "{{ item.name | default(omit) }}"
+    port: "{{ item.port | default(omit) }}"
+    proto: "{{ item.proto | default(omit) }}"
+  loop: "{{ host_ufw_rules | default([]) }}"
+  loop_control:
+    label: "{{ item.name | default(item.port) }}"
+
+- name: Enable UFW firewall on desktop when host rules are defined
+  tags: [services, packages]
+  community.general.ufw:
+    state: enabled
+  when: (host_ufw_rules | default([])) | length > 0
+
 - name: Check whether libvirt service directory exists
   tags: [packages, services]
   ansible.builtin.stat:

@@ -66,7 +66,7 @@ workstation_flatpak_packages:
   - com.getpostman.Postman
   - com.spotify.Client
   - com.github.jeromerobert.pdfarranger
+  - com.github.xournalpp.xournalpp
   - io.dbeaver.DBeaverCommunity
   - org.mozilla.Thunderbird
   - org.telegram.desktop
-  - org.xournalpp.xournalpp

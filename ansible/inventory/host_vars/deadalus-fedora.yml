@@ -15,22 +15,19 @@ workstation_host_vscode_extensions:
 workstation_gnome_managed_settings:
   - schema: org.gnome.shell
     key: favorite-apps
-    value: "['google-chrome.desktop', 'org.gnome.Nautilus.desktop', 'com.spotify.Client.desktop', 'org.mozilla.Thunderbird.desktop', 'org.telegram.desktop.desktop', 'code.desktop', 'intellij-idea-ultimate.desktop', 'io.dbeaver.DBeaverCommunity.desktop', 'com.getpostman.Postman.desktop']"
+    value: "['google-chrome.desktop', 'org.gnome.Nautilus.desktop', 'com.spotify.Client.desktop', 'org.mozilla.Thunderbird.desktop', 'org.telegram.desktop.desktop', 'code.desktop', 'intellij-idea-ultimate.desktop', 'io.dbeaver.DBeaverCommunity.desktop', 'com.getpostman.Postman.desktop', 'org.gnome.Ptyxis.desktop']"
+  - schema: org.gnome.shell
+    key: app-picker-layout
+    value: "[{'6f4bfcaf-700e-4fe3-8fd2-4a3e6fc46bcf': <{'position': <0>}>, 'System': <{'position': <1>}>, 'Utilities': <{'position': <2>}>, 'org.gnome.Contacts.desktop': <{'position': <3>}>, 'org.gnome.Weather.desktop': <{'position': <4>}>, 'org.gnome.clocks.desktop': <{'position': <5>}>, 'org.gnome.Maps.desktop': <{'position': <6>}>, 'org.gnome.SimpleScan.desktop': <{'position': <7>}>, 'org.gnome.Settings.desktop': <{'position': <8>}>, 'org.gnome.Boxes.desktop': <{'position': <9>}>, 'org.gnome.Showtime.desktop': <{'position': <10>}>, 'org.gnome.Snapshot.desktop': <{'position': <11>}>, 'org.gnome.Characters.desktop': <{'position': <12>}>, 'org.gnome.Calculator.desktop': <{'position': <13>}>, 'org.gnome.Calendar.desktop': <{'position': <14>}>, 'org.gnome.TextEditor.desktop': <{'position': <15>}>, 'org.gnome.Meld.desktop': <{'position': <16>}>, 'org.gnome.tweaks.desktop': <{'position': <17>}>, 'org.gnome.Software.desktop': <{'position': <18>}>}]"
   - schema: org.gnome.desktop.input-sources
     key: sources
     value: "[('xkb', 'us')]"
   - schema: org.gnome.desktop.interface
-    key: clock-format
-    value: "'24h'"
-  - schema: org.gnome.desktop.interface
-    key: clock-show-date
-    value: "true"
-  - schema: org.gnome.desktop.interface
     key: color-scheme
     value: "'prefer-dark'"
+  - schema: org.gnome.desktop.privacy
+    key: report-technical-problems
+    value: "false"
   - schema: org.gnome.desktop.wm.preferences
     key: button-layout
-    value: "'appmenu:close'"
-  - schema: org.gnome.desktop.wm.preferences
-    key: num-workspaces
-    value: "4"
+    value: "'appmenu:minimize,maximize,close'"

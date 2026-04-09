@@ -3,6 +3,7 @@ hostname: deadalus-fedora
 
 host_packages: []
 host_enabled_services: []
+workstation_firewall_backend: firewalld
 
 workstation_host_vscode_extensions:
   - ms-vscode-remote.remote-containers

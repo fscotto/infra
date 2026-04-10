@@ -15,6 +15,19 @@
     state: link
   loop: "{{ host_enabled_services | default([]) }}"
 
+- name: Define per-user runit services
+  tags: [services, packages]
+  ansible.builtin.set_fact:
+    per_user_runit_services:
+      - name: ollama
+        template: ollama.run.j2
+        state_dirs: []
+      - name: ssh-agent
+        template: ssh-agent.run.j2
+        state_dirs:
+          - path: "{{ user_home }}/.local/state/ssh-agent"
+            mode: "0700"
+
 - name: Ensure per-user runit directories exist
   tags: [services, packages]
   ansible.builtin.file:
@@ -30,50 +43,56 @@
       mode: "0755"
     - path: "{{ user_home }}/.local/runit/sv"
       mode: "0755"
-    - path: "{{ user_home }}/.local/runit/sv/ollama"
-      mode: "0755"
-    - path: "{{ user_home }}/.local/runit/sv/ssh-agent"
-      mode: "0755"
     - path: "{{ user_home }}/.local/state"
       mode: "0755"
-    - path: "{{ user_home }}/.local/state/ssh-agent"
-      mode: "0700"
 
-- name: Render per-user ssh-agent runit service
+- name: Ensure per-user runit service directories exist
   tags: [services, packages]
-  ansible.builtin.template:
-    src: ssh-agent.run.j2
-    dest: "{{ user_home }}/.local/runit/sv/ssh-agent/run"
+  ansible.builtin.file:
+    path: "{{ user_home }}/.local/runit/sv/{{ item.name }}"
+    state: directory
     owner: "{{ username }}"
     group: "{{ user_group }}"
     mode: "0755"
+  loop: "{{ per_user_runit_services }}"
+  loop_control:
+    label: "{{ item.name }}"
 
-- name: Render per-user ollama runit service
+- name: Ensure per-user runit service state directories exist
+  tags: [services, packages]
+  ansible.builtin.file:
+    path: "{{ item.1.path }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.1.mode }}"
+  loop: "{{ per_user_runit_services | subelements('state_dirs', skip_missing=True) }}"
+  loop_control:
+    label: "{{ item.1.path }}"
+
+- name: Render per-user runit services
   tags: [services, packages]
   ansible.builtin.template:
-    src: ollama.run.j2
-    dest: "{{ user_home }}/.local/runit/sv/ollama/run"
+    src: "{{ item.template }}"
+    dest: "{{ user_home }}/.local/runit/sv/{{ item.name }}/run"
     owner: "{{ username }}"
     group: "{{ user_group }}"
     mode: "0755"
+  loop: "{{ per_user_runit_services }}"
+  loop_control:
+    label: "{{ item.name }}"
 
-- name: Enable per-user ollama runit service
+- name: Enable per-user runit services
   tags: [services, packages]
   ansible.builtin.file:
-    src: "../sv/ollama"
-    dest: "{{ user_home }}/.local/runit/current/ollama"
+    src: "../sv/{{ item.name }}"
+    dest: "{{ user_home }}/.local/runit/current/{{ item.name }}"
     state: link
     owner: "{{ username }}"
     group: "{{ user_group }}"
-
-- name: Enable per-user ssh-agent runit service
-  tags: [services, packages]
-  ansible.builtin.file:
-    src: "../sv/ssh-agent"
-    dest: "{{ user_home }}/.local/runit/current/ssh-agent"
-    state: link
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
+  loop: "{{ per_user_runit_services }}"
+  loop_control:
+    label: "{{ item.name }}"
 
 - name: Ensure per-user runsvdir service directory exists
   tags: [services, packages]

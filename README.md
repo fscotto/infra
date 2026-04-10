@@ -85,6 +85,8 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 - sessione i3 su tutti i desktop Void e sessioni Sway/Hyprland opzionali su `nymph`
 - `emptty` con scelta sessione a login su `nymph` e default host-specific sugli altri desktop
 - pacchetti Void Linux e servizi runit
+- `turnstile` per servizi utente agganciati alla sessione, incluso `emacs` come server per `emacsclient`
+- `ssh-agent` come servizio runit utente always-on con socket stabile condiviso tra shell, SSH ed Emacs
 - Flatpak con remoto Flathub
 - GNOME Keyring e bootstrap della posta via script dedicato
 - `Waybar` separata per compositor (`config-sway.jsonc` e `config-hyprland.jsonc`) con `style.css` condiviso

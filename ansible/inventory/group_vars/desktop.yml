@@ -19,6 +19,7 @@ desktop_common_packages:
   - pinentry-emacs
   - pinentry-gtk
   - rofi
+  - turnstile
   - udiskie
   - xfce-polkit
   - xdg-desktop-portal
@@ -169,6 +170,10 @@ desktop_common_dotfiles:
     src: .config/opencode/
     dest: .config/opencode/
     mode: preserve
+  - name: Turnstile user services
+    src: .config/service/
+    dest: .config/service/
+    mode: preserve
   - name: Bash profile fragments
     src: .bashrc.d/
     dest: .bashrc.d/
@@ -204,6 +209,10 @@ desktop_common_dotfiles:
   - name: Powermenu script
     src: .local/bin/powermenu
     dest: .local/bin/powermenu
+    mode: "0755"
+  - name: Turnstile environment update script
+    src: .local/bin/update-turnstile-env
+    dest: .local/bin/update-turnstile-env
     mode: "0755"
 
 desktop_i3_dotfiles:

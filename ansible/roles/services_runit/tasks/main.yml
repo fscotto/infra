@@ -14,3 +14,68 @@
     dest: "/var/service/{{ item }}"
     state: link
   loop: "{{ host_enabled_services | default([]) }}"
+
+- name: Ensure per-user runit directories exist
+  tags: [services, packages]
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ user_home }}/.local/runit"
+      mode: "0755"
+    - path: "{{ user_home }}/.local/runit/current"
+      mode: "0755"
+    - path: "{{ user_home }}/.local/runit/sv"
+      mode: "0755"
+    - path: "{{ user_home }}/.local/runit/sv/ssh-agent"
+      mode: "0755"
+    - path: "{{ user_home }}/.local/state"
+      mode: "0755"
+    - path: "{{ user_home }}/.local/state/ssh-agent"
+      mode: "0700"
+
+- name: Render per-user ssh-agent runit service
+  tags: [services, packages]
+  ansible.builtin.template:
+    src: ssh-agent.run.j2
+    dest: "{{ user_home }}/.local/runit/sv/ssh-agent/run"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+
+- name: Enable per-user ssh-agent runit service
+  tags: [services, packages]
+  ansible.builtin.file:
+    src: "../sv/ssh-agent"
+    dest: "{{ user_home }}/.local/runit/current/ssh-agent"
+    state: link
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+
+- name: Ensure per-user runsvdir service directory exists
+  tags: [services, packages]
+  ansible.builtin.file:
+    path: "/etc/sv/runsvdir-{{ username }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Render per-user runsvdir system service
+  tags: [services, packages]
+  ansible.builtin.template:
+    src: runsvdir-user.run.j2
+    dest: "/etc/sv/runsvdir-{{ username }}/run"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Enable per-user runsvdir system service
+  tags: [services, packages]
+  ansible.builtin.file:
+    src: "/etc/sv/runsvdir-{{ username }}"
+    dest: "/var/service/runsvdir-{{ username }}"
+    state: link

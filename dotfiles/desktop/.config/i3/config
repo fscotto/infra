@@ -58,6 +58,9 @@ bindsym $mod+Return exec --no-startup-id /usr/bin/alacritty
 # Emergency terminal fallback
 bindsym $mod+Shift+Return exec --no-startup-id st
 
+# Emacs client
+bindsym $mod+Shift+e exec --no-startup-id emacsclient -c -n
+
 # Launcher
 #bindsym $mod+d exec --no-startup-id "rofi -modi drun,run -show drun"
 bindsym $mod+d exec --no-startup-id "rofi -show drun -theme ~/.config/rofi/config.rasi"

@@ -50,6 +50,7 @@ enabled_services:
   - libvirtd
   - nanoklogd
   - socklog-unix
+  - turnstiled
   - ufw
   - virtlockd
   - virtlogd

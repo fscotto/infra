@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -eu
+
+sockdir="{{ user_home }}/.local/state/ssh-agent"
+sockpath="$sockdir/socket"
+
+mkdir -p "$sockdir"
+rm -f "$sockpath"
+
+exec ssh-agent -D -a "$sockpath"

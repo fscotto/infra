@@ -311,6 +311,10 @@
   loop:
     - path: "{{ user_home }}/.local"
       mode: "0755"
+    - path: "{{ user_home }}/.local/state"
+      mode: "0755"
+    - path: "{{ user_home }}/.local/state/ssh-agent"
+      mode: "0700"
     - path: "{{ user_home }}/.local/share"
       mode: "0755"
     - path: "{{ user_home }}/.local/share/keyrings"

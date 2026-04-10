@@ -14,6 +14,7 @@ font pango:Liberation Mono 10
 # Session bootstrap
 exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE XCURSOR_THEME XCURSOR_SIZE
 exec systemctl --user import-environment WAYLAND_DISPLAY DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE XCURSOR_THEME XCURSOR_SIZE
+exec ~/.local/bin/update-turnstile-env
 exec dex --autostart --environment sway
 exec gnome-keyring-daemon --start --components=secrets
 exec ~/.local/bin/setup-gtk-theme
@@ -71,6 +72,7 @@ set $right l
 # App launchers and window actions
 bindsym $mod+Return exec $terminal
 bindsym $mod+Shift+Return exec $fallback_terminal
+bindsym $mod+Shift+e exec emacsclient -c -n
 bindsym $mod+d exec $menu
 bindsym $mod+Shift+v exec pavucontrol
 bindsym $mod+Shift+f exec thunar

@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -eu
+
+export SSH_AUTH_SOCK="$HOME/.local/state/ssh-agent/socket"
+
+if [ -n "${TURNSTILE_ENV_DIR:-}" ]; then
+  exec chpst -e "$TURNSTILE_ENV_DIR" emacs --fg-daemon
+fi
+
+exec emacs --fg-daemon

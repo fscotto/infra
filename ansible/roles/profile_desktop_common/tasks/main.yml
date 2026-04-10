@@ -142,6 +142,11 @@
   notify: Reload SSH service
   when: (host_sshd_allow_users | default([])) | length > 0
 
+- name: Define effective desktop UFW rules
+  tags: [services, packages]
+  ansible.builtin.set_fact:
+    desktop_ufw_rules_effective: "{{ host_ufw_rules | default([]) }}"
+
 - name: Apply host UFW rules on desktop
   tags: [services, packages]
   community.general.ufw:
@@ -149,7 +154,16 @@
     name: "{{ item.name | default(omit) }}"
     port: "{{ item.port | default(omit) }}"
     proto: "{{ item.proto | default(omit) }}"
-  loop: "{{ host_ufw_rules | default([]) }}"
+    from_ip: "{{ item.src | default(omit) }}"
+    to_ip: "{{ item.dest | default(omit) }}"
+    from_port: "{{ item.from_port | default(omit) }}"
+    direction: "{{ item.direction | default(omit) }}"
+    interface: "{{ item.interface | default(omit) }}"
+    interface_in: "{{ item.interface_in | default(omit) }}"
+    interface_out: "{{ item.interface_out | default(omit) }}"
+    route: "{{ item.route | default(omit) }}"
+    comment: "{{ item.comment | default(omit) }}"
+  loop: "{{ desktop_ufw_rules_effective }}"
   loop_control:
     label: "{{ item.name | default(item.port) }}"
 
@@ -157,7 +171,7 @@
   tags: [services, packages]
   community.general.ufw:
     state: enabled
-  when: (host_ufw_rules | default([])) | length > 0
+  when: (desktop_ufw_rules_effective | default([])) | length > 0
 
 - name: Check whether libvirt service directory exists
   tags: [packages, services]

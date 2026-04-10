@@ -19,6 +19,7 @@ host_ufw_rules:
   - rule: allow
     port: "22"
     proto: tcp
+    src: "192.168.0.0/24"
 
 host_sshd_settings:
   PermitRootLogin: "no"

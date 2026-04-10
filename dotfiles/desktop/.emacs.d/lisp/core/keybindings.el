@@ -43,8 +43,8 @@
 (define-key fscotto/leader-map (kbd "o") fscotto/open)
 
 ;; -------- vterm --------
-(autoload 'vterm "vterm" nil t)
-(define-key fscotto/open (kbd "T") #'vterm)
+(autoload 'multi-vterm "multi-vterm" nil t)
+(define-key fscotto/open (kbd "T") #'multi-vterm)
 
 (with-eval-after-load 'vterm
   (define-key vterm-mode-map (kbd "C-c C-t") #'vterm-copy-mode))

@@ -83,6 +83,9 @@
 
 (with-eval-after-load 'projectile
   (define-key projectile-command-map (kbd "v") #'fscotto/project-vterm)
+  (define-key projectile-command-map (kbd "V") #'fscotto/project-multi-vterm)
+  (define-key projectile-command-map (kbd "x") #'fscotto/project-external-terminal)
+  (define-key projectile-command-map (kbd "a") #'fscotto/project-opencode)
   (define-key projectile-command-map (kbd "g") #'fscotto/project-magit-status))
 
 ;;;; LSP

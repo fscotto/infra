@@ -23,6 +23,42 @@
   (let ((default-directory (fscotto/project-root)))
     (vterm)))
 
+(defun fscotto/project-multi-vterm ()
+  "Open a new multi-vterm buffer in project root."
+  (interactive)
+  (let ((default-directory (fscotto/project-root)))
+    (multi-vterm)))
+
+(defun fscotto/launch-external-terminal (&optional command)
+  "Launch external terminal in project root, optionally running COMMAND."
+  (let* ((default-directory (file-name-as-directory (fscotto/project-root)))
+         (terminal-program (or (executable-find fscotto/external-terminal-program)
+                               fscotto/external-terminal-program))
+         (args (append
+                (list fscotto/external-terminal-working-directory-option
+                      default-directory)
+                (when command
+                  (append
+                   (list fscotto/external-terminal-execute-option)
+                   command)))))
+    (unless (file-executable-p terminal-program)
+      (user-error "External terminal not found: %s" fscotto/external-terminal-program))
+    (apply #'start-process
+           "fscotto-external-terminal"
+           nil
+           terminal-program
+           args)))
+
+(defun fscotto/project-external-terminal ()
+  "Open the external terminal in project root."
+  (interactive)
+  (fscotto/launch-external-terminal))
+
+(defun fscotto/project-opencode ()
+  "Open the external terminal in project root and run opencode."
+  (interactive)
+  (fscotto/launch-external-terminal '("opencode")))
+
 (defun fscotto/project-magit-status ()
   "Open magit-status in project root."
   (interactive)

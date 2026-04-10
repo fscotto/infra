@@ -141,13 +141,14 @@
     ;; Actions
     "C-c p c" "Compile"
     "C-c p t" "Test"
-    "C-c p v" "Open term in project"
+    "C-c p v" "Open vterm in project"
+    "C-c p V" "Open multi-vterm in project"
+    "C-c p x" "Open external term"
+    "C-c p a" "Open opencode"
     "C-c p e" "Edit project config"
     "C-c p g" "Project Git status"
-    "C-c p x" "Open Terminal"
     "C-c p 4" "Other Window"
     "C-c p 5" "Other Frame"
-    "C-c p x 4" "Other Window"
 
     ;; Cache
     "C-c p i" "Invalidate cache")

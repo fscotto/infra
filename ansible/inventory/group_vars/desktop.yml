@@ -124,6 +124,7 @@ profile_packages:
   - xournalpp
   - yaru
   - yaru-plus
+  - zstd
 
 desktop_common_dotfiles:
   - name: XDG autostart entries
@@ -169,6 +170,10 @@ desktop_common_dotfiles:
   - name: OpenCode config
     src: .config/opencode/
     dest: .config/opencode/
+    mode: preserve
+  - name: Codex config
+    src: .codex/
+    dest: .codex/
     mode: preserve
   - name: Turnstile user services
     src: .config/service/

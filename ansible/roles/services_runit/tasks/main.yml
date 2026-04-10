@@ -30,6 +30,8 @@
       mode: "0755"
     - path: "{{ user_home }}/.local/runit/sv"
       mode: "0755"
+    - path: "{{ user_home }}/.local/runit/sv/ollama"
+      mode: "0755"
     - path: "{{ user_home }}/.local/runit/sv/ssh-agent"
       mode: "0755"
     - path: "{{ user_home }}/.local/state"
@@ -45,6 +47,24 @@
     owner: "{{ username }}"
     group: "{{ user_group }}"
     mode: "0755"
+
+- name: Render per-user ollama runit service
+  tags: [services, packages]
+  ansible.builtin.template:
+    src: ollama.run.j2
+    dest: "{{ user_home }}/.local/runit/sv/ollama/run"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+
+- name: Enable per-user ollama runit service
+  tags: [services, packages]
+  ansible.builtin.file:
+    src: "../sv/ollama"
+    dest: "{{ user_home }}/.local/runit/current/ollama"
+    state: link
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
 
 - name: Enable per-user ssh-agent runit service
   tags: [services, packages]

@@ -87,6 +87,7 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 - pacchetti Void Linux e servizi runit
 - `turnstile` per servizi utente agganciati alla sessione, incluso `emacs` come server per `emacsclient`
 - `ssh-agent` come servizio runit utente always-on con socket stabile condiviso tra shell, SSH ed Emacs
+- `ollama` installato da tarball upstream e gestito come servizio runit utente always-on, con `Codex CLI` installato globalmente via npm
 - Flatpak con remoto Flathub
 - GNOME Keyring e bootstrap della posta via script dedicato
 - `Waybar` separata per compositor (`config-sway.jsonc` e `config-hyprland.jsonc`) con `style.css` condiviso

@@ -157,6 +157,7 @@ Use the narrowest command matching the changed area.
 - `profile_desktop_common` manages shared Void desktop bootstrap, `emptty`, PAM hooks, dotfiles, mail bootstrap, and shared desktop tooling
 - Void desktop user services now use `turnstile` with runit-backed definitions under `dotfiles/desktop/.config/service/`; session launchers refresh the shared turnstile env for GUI-aware services such as `emacs`
 - `ssh-agent` on Void desktops now runs under a separate always-on per-user runsvdir rooted at `~/.local/runit/current`, with a stable socket under `~/.local/state/ssh-agent/socket`
+- `ollama` on Void desktops is installed from the upstream Linux tarball into `/usr/local` and runs as a separate always-on per-user runit service under `~/.local/runit/current`; `Codex CLI` is installed globally via npm and can target that local Ollama instance
 - `profile_desktop_i3` contains the X11/i3 session pieces
 - `profile_desktop_sway` contains the wlroots/Sway session pieces and deploys shared Sway + Waybar dotfiles
 - `profile_desktop_hyprland` contains the optional Hyprland/Wayland session pieces

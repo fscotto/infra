@@ -349,37 +349,6 @@
     - "{{ user_home }}/Maildir/iCloudAccount"
     - "{{ user_home }}/Maildir/ProtonMailAccount"
 
-- name: Clone st repository
-  tags: [packages]
-  ansible.builtin.git:
-    repo: https://codeberg.org/fscotto/st
-    dest: "{{ user_home }}/.local/src/st"
-    update: true
-  become_user: "{{ username }}"
-  environment:
-    HOME: "{{ user_home }}"
-  register: st_repo
-
-- name: Check whether st binary is installed
-  tags: [packages]
-  ansible.builtin.stat:
-    path: /usr/local/bin/st
-  register: st_binary
-
-- name: Build and install st
-  tags: [packages]
-  ansible.builtin.command:
-    cmd: make clean install
-    chdir: "{{ user_home }}/.local/src/st"
-  when: st_repo.changed or not st_binary.stat.exists
-
-- name: Clean st build artifacts
-  tags: [packages]
-  ansible.builtin.command:
-    cmd: make clean
-    chdir: "{{ user_home }}/.local/src/st"
-  when: st_repo.changed or not st_binary.stat.exists
-
 - name: Ensure flathub remote is configured
   tags: [packages]
   community.general.flatpak_remote:
@@ -414,6 +383,8 @@
   tags: [packages]
   ansible.builtin.set_fact:
     desktop_tools_tmp_dir: /tmp/desktop-tools
+    st_repo: https://codeberg.org/fscotto/st
+    st_src_dir: "{{ user_home }}/.local/src/st"
     ollama_asset: >-
       {{
         'ollama-linux-amd64.tar.zst' if ansible_facts['architecture'] == 'x86_64'
@@ -435,17 +406,25 @@
         else ''
       }}
 
-- name: Ensure architecture is supported for OpenCode binary
+- name: Set derived desktop external tool asset metadata
   tags: [packages]
-  ansible.builtin.fail:
-    msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for OpenCode release binary"
-  when: opencode_asset_name == ''
+  ansible.builtin.set_fact:
+    gitmux_asset: "gitmux_{{ gitmux_version }}_linux_{{ gitmux_arch }}.tar.gz"
+    bw_asset: "bw-linux-{{ bw_version }}.zip"
+    bw_checksum: >-
+      sha256:https://github.com/bitwarden/cli/releases/download/v{{ bw_version }}/bw-linux-sha256-{{ bw_version }}.txt
 
 - name: Ensure architecture is supported for Ollama binary
   tags: [packages]
   ansible.builtin.fail:
     msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for Ollama release binary"
   when: ollama_asset == ''
+
+- name: Ensure architecture is supported for OpenCode binary
+  tags: [packages]
+  ansible.builtin.fail:
+    msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for OpenCode release binary"
+  when: opencode_asset_name == ''
 
 - name: Ensure architecture is supported for gitmux binary
   tags: [packages]
@@ -476,10 +455,9 @@
   register: opencode_latest_release
   changed_when: false
 
-- name: Set OpenCode release asset metadata
+- name: Set effective OpenCode release metadata
   tags: [packages]
   ansible.builtin.set_fact:
-    opencode_version: "{{ opencode_latest_release.json.tag_name }}"
     opencode_asset: >-
       {{
         opencode_latest_release.json.assets
@@ -491,16 +469,96 @@
 - name: Ensure latest OpenCode asset metadata is available
   tags: [packages]
   ansible.builtin.fail:
-    msg: "Could not find OpenCode asset {{ opencode_asset_name }} in release {{ opencode_version }}"
+    msg: "Could not find OpenCode asset {{ opencode_asset_name }} in the latest GitHub release"
   when: opencode_asset == {}
 
-- name: Download OpenCode release archive
+- name: Define desktop online archive binaries
+  tags: [packages]
+  ansible.builtin.set_fact:
+    desktop_online_archive_binaries:
+      - name: opencode
+        asset_name: "{{ opencode_asset.name }}"
+        url: "{{ opencode_asset.browser_download_url }}"
+        checksum: "{{ opencode_asset.digest | default(omit) }}"
+        extracted_binary: opencode
+        install_dest: /usr/local/bin/opencode
+      - name: gitmux
+        asset_name: "{{ gitmux_asset }}"
+        url: "https://github.com/arl/gitmux/releases/download/{{ gitmux_version }}/{{ gitmux_asset }}"
+        checksum: "sha256:https://github.com/arl/gitmux/releases/download/{{ gitmux_version }}/checksums.txt"
+        extracted_binary: gitmux
+        install_dest: /usr/local/bin/gitmux
+      - name: bw
+        asset_name: "{{ bw_asset }}"
+        url: "https://github.com/bitwarden/cli/releases/download/v{{ bw_version }}/{{ bw_asset }}"
+        checksum: "{{ bw_checksum }}"
+        extracted_binary: bw
+        install_dest: /usr/local/bin/bw
+
+- name: Download desktop online archive binary releases
   tags: [packages]
   ansible.builtin.get_url:
-    url: "{{ opencode_asset.browser_download_url }}"
-    dest: "{{ desktop_tools_tmp_dir }}/{{ opencode_asset.name }}"
-    checksum: "{{ opencode_asset.digest | default(omit) }}"
+    url: "{{ item.url }}"
+    dest: "{{ desktop_tools_tmp_dir }}/{{ item.asset_name }}"
+    checksum: "{{ item.checksum | default(omit) }}"
     mode: "0644"
+  loop: "{{ desktop_online_archive_binaries }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Extract desktop online archive binary releases
+  tags: [packages]
+  ansible.builtin.unarchive:
+    src: "{{ desktop_tools_tmp_dir }}/{{ item.asset_name }}"
+    dest: "{{ desktop_tools_tmp_dir }}"
+    remote_src: true
+  loop: "{{ desktop_online_archive_binaries }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Install desktop online archive binaries
+  tags: [packages]
+  ansible.builtin.copy:
+    src: "{{ desktop_tools_tmp_dir }}/{{ item.extracted_binary }}"
+    dest: "{{ item.install_dest }}"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ desktop_online_archive_binaries }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Clone st repository
+  tags: [packages]
+  ansible.builtin.git:
+    repo: "{{ st_repo }}"
+    dest: "{{ st_src_dir }}"
+    update: true
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  register: st_repo_state
+
+- name: Check whether st binary is installed
+  tags: [packages]
+  ansible.builtin.stat:
+    path: /usr/local/bin/st
+  register: st_binary
+
+- name: Build and install st
+  tags: [packages]
+  ansible.builtin.command:
+    cmd: make clean install
+    chdir: "{{ st_src_dir }}"
+  when: st_repo_state.changed or not st_binary.stat.exists
+
+- name: Clean st build artifacts
+  tags: [packages]
+  ansible.builtin.command:
+    cmd: make clean
+    chdir: "{{ st_src_dir }}"
+  when: st_repo_state.changed or not st_binary.stat.exists
 
 - name: Download Ollama release archive
   tags: [packages]
@@ -514,32 +572,15 @@
   tags: [packages]
   ansible.builtin.stat:
     path: /usr/local/bin/ollama
-  register: ollama_binary
+  register: ollama_install_state
 
-- name: Extract OpenCode release archive
-  tags: [packages]
-  ansible.builtin.unarchive:
-    src: "{{ desktop_tools_tmp_dir }}/{{ opencode_asset.name }}"
-    dest: "{{ desktop_tools_tmp_dir }}"
-    remote_src: true
-
-- name: Install OpenCode binary
-  tags: [packages]
-  ansible.builtin.copy:
-    src: "{{ desktop_tools_tmp_dir }}/opencode"
-    dest: /usr/local/bin/opencode
-    remote_src: true
-    owner: root
-    group: root
-    mode: "0755"
-
-- name: Remove previous Ollama libraries
+- name: Remove previous Ollama install paths when required
   tags: [packages]
   ansible.builtin.file:
     path: /usr/local/lib/ollama
     state: absent
   when:
-    - ollama_archive_download.changed or not ollama_binary.stat.exists
+    - ollama_archive_download.changed or not ollama_install_state.stat.exists
 
 - name: Extract Ollama release archive into /usr/local
   tags: [packages]
@@ -550,7 +591,7 @@
     executable: /bin/sh
   changed_when: true
   when:
-    - ollama_archive_download.changed or not ollama_binary.stat.exists
+    - ollama_archive_download.changed or not ollama_install_state.stat.exists
 
 - name: Install Codex CLI globally
   tags: [packages]
@@ -558,63 +599,3 @@
     name: "@openai/codex"
     global: true
     state: present
-
-- name: Set gitmux asset metadata
-  tags: [packages]
-  ansible.builtin.set_fact:
-    gitmux_asset: "gitmux_{{ gitmux_version }}_linux_{{ gitmux_arch }}.tar.gz"
-
-- name: Download gitmux release archive
-  tags: [packages]
-  ansible.builtin.get_url:
-    url: "https://github.com/arl/gitmux/releases/download/{{ gitmux_version }}/{{ gitmux_asset }}"
-    dest: "{{ desktop_tools_tmp_dir }}/{{ gitmux_asset }}"
-    checksum: "sha256:https://github.com/arl/gitmux/releases/download/{{ gitmux_version }}/checksums.txt"
-    mode: "0644"
-
-- name: Extract gitmux release archive
-  tags: [packages]
-  ansible.builtin.unarchive:
-    src: "{{ desktop_tools_tmp_dir }}/{{ gitmux_asset }}"
-    dest: "{{ desktop_tools_tmp_dir }}"
-    remote_src: true
-
-- name: Install gitmux binary
-  tags: [packages]
-  ansible.builtin.copy:
-    src: "{{ desktop_tools_tmp_dir }}/gitmux"
-    dest: /usr/local/bin/gitmux
-    remote_src: true
-    owner: root
-    group: root
-    mode: "0755"
-
-- name: Set bw asset metadata
-  tags: [packages]
-  ansible.builtin.set_fact:
-    bw_asset: "bw-linux-{{ bw_version }}.zip"
-
-- name: Download bw release archive
-  tags: [packages]
-  ansible.builtin.get_url:
-    url: "https://github.com/bitwarden/cli/releases/download/v{{ bw_version }}/{{ bw_asset }}"
-    dest: "{{ desktop_tools_tmp_dir }}/{{ bw_asset }}"
-    checksum: "sha256:https://github.com/bitwarden/cli/releases/download/v{{ bw_version }}/bw-linux-sha256-{{ bw_version }}.txt"
-    mode: "0644"
-
-- name: Extract bw release archive
-  tags: [packages]
-  ansible.builtin.unarchive:
-    src: "{{ desktop_tools_tmp_dir }}/{{ bw_asset }}"
-    dest: "{{ desktop_tools_tmp_dir }}"
-    remote_src: true
-
-- name: Install bw binary
-  tags: [packages]
-  ansible.builtin.copy:
-    src: "{{ desktop_tools_tmp_dir }}/bw"
-    dest: /usr/local/bin/bw
-    remote_src: true
-    owner: root
-    group: root
-    mode: "0755"

@@ -47,7 +47,7 @@
       }}
   when: workstation_manage_opencode | default(false)
 
-- name: Ensure architecture is supported for OpenCode binary
+- name: Ensure architecture is supported for workstation OpenCode binary
   tags: [packages]
   ansible.builtin.fail:
     msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for OpenCode release binary"
@@ -61,64 +61,77 @@
     path: "{{ workstation_tools_tmp_dir }}"
     state: directory
     mode: "0755"
-  when: workstation_manage_opencode | default(false)
 
-- name: Fetch latest OpenCode release metadata
+- name: Fetch latest OpenCode release metadata for workstation
   tags: [packages]
   ansible.builtin.uri:
     url: https://api.github.com/repos/anomalyco/opencode/releases/latest
     headers:
       Accept: application/vnd.github+json
     return_content: true
-  register: opencode_latest_release
+  register: workstation_opencode_latest_release
   changed_when: false
-  when: workstation_manage_opencode | default(false)
 
-- name: Set OpenCode release asset metadata
+- name: Set effective workstation OpenCode release metadata
   tags: [packages]
   ansible.builtin.set_fact:
-    opencode_version: "{{ opencode_latest_release.json.tag_name }}"
-    opencode_asset: >-
+    workstation_opencode_asset: >-
       {{
-        opencode_latest_release.json.assets
+        workstation_opencode_latest_release.json.assets
         | selectattr('name', 'equalto', opencode_asset_name)
         | first
         | default({})
       }}
-  when: workstation_manage_opencode | default(false)
 
-- name: Ensure latest OpenCode asset metadata is available
+- name: Ensure latest workstation OpenCode asset metadata is available
   tags: [packages]
   ansible.builtin.fail:
-    msg: "Could not find OpenCode asset {{ opencode_asset_name }} in release {{ opencode_version }}"
+    msg: "Could not find OpenCode asset {{ opencode_asset_name }} in the latest GitHub release"
   when:
-    - workstation_manage_opencode | default(false)
-    - opencode_asset == {}
+    - workstation_opencode_asset == {}
 
-- name: Download OpenCode release archive
+- name: Define workstation online archive binaries
+  tags: [packages]
+  ansible.builtin.set_fact:
+    workstation_online_archive_binaries:
+      - name: opencode
+        asset_name: "{{ workstation_opencode_asset.name }}"
+        url: "{{ workstation_opencode_asset.browser_download_url }}"
+        checksum: "{{ workstation_opencode_asset.digest | default(omit) }}"
+        extracted_binary: opencode
+        install_dest: /usr/local/bin/opencode
+
+- name: Download workstation online archive binary releases
   tags: [packages]
   ansible.builtin.get_url:
-    url: "{{ opencode_asset.browser_download_url }}"
-    dest: "{{ workstation_tools_tmp_dir }}/{{ opencode_asset.name }}"
-    checksum: "{{ opencode_asset.digest | default(omit) }}"
+    url: "{{ item.url }}"
+    dest: "{{ workstation_tools_tmp_dir }}/{{ item.asset_name }}"
+    checksum: "{{ item.checksum | default(omit) }}"
     mode: "0644"
-  when: workstation_manage_opencode | default(false)
+  loop: "{{ workstation_online_archive_binaries }}"
+  loop_control:
+    label: "{{ item.name }}"
 
-- name: Extract OpenCode release archive
+- name: Extract workstation online archive binary releases
   tags: [packages]
   ansible.builtin.unarchive:
-    src: "{{ workstation_tools_tmp_dir }}/{{ opencode_asset.name }}"
+    src: "{{ workstation_tools_tmp_dir }}/{{ item.asset_name }}"
     dest: "{{ workstation_tools_tmp_dir }}"
     remote_src: true
-  when: workstation_manage_opencode | default(false)
+  loop: "{{ workstation_online_archive_binaries }}"
+  loop_control:
+    label: "{{ item.name }}"
 
-- name: Install OpenCode binary
+- name: Install workstation online archive binaries
   tags: [packages]
   ansible.builtin.copy:
-    src: "{{ workstation_tools_tmp_dir }}/opencode"
-    dest: /usr/local/bin/opencode
+    src: "{{ workstation_tools_tmp_dir }}/{{ item.extracted_binary }}"
+    dest: "{{ item.install_dest }}"
     remote_src: true
     owner: root
     group: root
     mode: "0755"
+  loop: "{{ workstation_online_archive_binaries }}"
+  loop_control:
+    label: "{{ item.name }}"
   when: workstation_manage_opencode | default(false)

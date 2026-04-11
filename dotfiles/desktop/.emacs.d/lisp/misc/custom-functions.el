@@ -38,13 +38,17 @@
   (interactive)
   (fscotto/open-multi-vterm-in (fscotto/project-root)))
 
-(defun fscotto/launch-external-terminal (&optional command)
-  "Launch external terminal in project root, optionally running COMMAND."
-  (let* ((default-directory (file-name-as-directory (fscotto/project-root)))
+(defconst fscotto/opencode-db-path
+  (expand-file-name "~/.local/share/opencode/opencode.db")
+  "Path to the OpenCode SQLite database.")
+
+(defun fscotto/launch-external-terminal (&optional command directory)
+  "Launch external terminal in DIRECTORY, optionally running COMMAND."
+  (let* ((default-directory (file-name-as-directory (or directory (fscotto/project-root))))
          (terminal-program (or (executable-find fscotto/external-terminal-program)
                                fscotto/external-terminal-program))
          (args (append
-                (list fscotto/external-terminal-working-directory-option
+                 (list fscotto/external-terminal-working-directory-option
                       default-directory)
                 (when command
                   (append
@@ -57,6 +61,55 @@
            nil
            terminal-program
            args)))
+
+(defun fscotto/opencode-session-candidates (directory)
+  "Return OpenCode session candidates for DIRECTORY.
+
+Each entry is a cons cell of display string and session id."
+  (let ((sqlite3-program (executable-find "sqlite3"))
+        (session-directory (directory-file-name (expand-file-name directory))))
+    (unless sqlite3-program
+      (user-error "sqlite3 not found"))
+    (unless (file-exists-p fscotto/opencode-db-path)
+      (user-error "OpenCode database not found: %s" fscotto/opencode-db-path))
+    (mapcar
+     (lambda (line)
+       (pcase-let* ((fields (split-string line "\t"))
+                    (`(,session-id ,title ,updated-at) fields)
+                    (title (if (and title (not (string= title "")))
+                               title
+                             "Untitled session"))
+                    (updated-seconds (/ (string-to-number updated-at) 1000))
+                    (updated-label (format-time-string "%Y-%m-%d %H:%M"
+                                                       (seconds-to-time updated-seconds)))
+                    (short-id (if (> (length session-id) 12)
+                                  (substring session-id 0 12)
+                                session-id)))
+         (cons (format "%s | %s | %s" title updated-label short-id)
+               session-id)))
+     (process-lines
+      sqlite3-program
+      "-tabs"
+      "-noheader"
+      fscotto/opencode-db-path
+      (format (concat
+               "select id, title, time_updated "
+               "from session "
+               "where directory = '%s' and time_archived is null "
+               "order by time_updated desc;")
+              (replace-regexp-in-string "'" "''" session-directory))))))
+
+(defun fscotto/project-opencode-session ()
+  "Resume a saved OpenCode session for the current project."
+  (interactive)
+  (let* ((project-directory (fscotto/project-root))
+         (candidates (fscotto/opencode-session-candidates project-directory)))
+    (unless candidates
+      (user-error "No OpenCode sessions found for %s" project-directory))
+    (let* ((selection (completing-read "OpenCode session: " candidates nil t))
+           (session-id (cdr (assoc selection candidates))))
+      (fscotto/launch-external-terminal (list "opencode" "--session" session-id)
+                                        project-directory))))
 
 (defun fscotto/project-external-terminal ()
   "Open the external terminal in project root."

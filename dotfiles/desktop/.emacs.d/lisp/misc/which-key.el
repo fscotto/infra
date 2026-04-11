@@ -145,6 +145,7 @@
     "C-c p V" "Open multi-vterm in project"
     "C-c p x" "Open external term"
     "C-c p a" "Open opencode"
+    "C-c p A" "Resume opencode session"
     "C-c p e" "Edit project config"
     "C-c p g" "Project Git status"
     "C-c p 4" "Other Window"

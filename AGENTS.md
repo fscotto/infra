@@ -65,6 +65,7 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 ## Workstation / Windows Notes
 - Native Linux workstation hosts can combine `workstation_host_linux` with an OS-specific dev group.
 - `deadalus-fedora` keeps GNOME managed settings in `ansible/inventory/host_vars/deadalus-fedora.yml`.
+- Ubuntu workstation follow-up work is still open around YubiKey/GPG/SSH-FIDO2 package verification, GPG signing setup on the YubiKey, and evaluating `ed25519-sk` SSH key generation.
 - `workstation_host_windows` runs with `gather_facts: false` and validates PSRP settings plus `windows_package_backend` before role execution.
 - Windows taskbar pins are driven by `windows_taskbar_pins` in `ansible/inventory/group_vars/workstation_host_windows.yml`; validate identifiers from a real Windows session before changing them.
 

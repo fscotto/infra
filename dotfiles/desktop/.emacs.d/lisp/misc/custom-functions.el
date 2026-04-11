@@ -23,11 +23,20 @@
   (let ((default-directory (fscotto/project-root)))
     (vterm)))
 
+(defun fscotto/open-multi-vterm-in (directory)
+  "Open a new multi-vterm buffer in DIRECTORY."
+  (let ((default-directory (file-name-as-directory directory)))
+    (multi-vterm)))
+
+(defun fscotto/home-multi-vterm ()
+  "Open a new multi-vterm buffer in HOME."
+  (interactive)
+  (fscotto/open-multi-vterm-in (expand-file-name "~/")))
+
 (defun fscotto/project-multi-vterm ()
   "Open a new multi-vterm buffer in project root."
   (interactive)
-  (let ((default-directory (fscotto/project-root)))
-    (multi-vterm)))
+  (fscotto/open-multi-vterm-in (fscotto/project-root)))
 
 (defun fscotto/launch-external-terminal (&optional command)
   "Launch external terminal in project root, optionally running COMMAND."

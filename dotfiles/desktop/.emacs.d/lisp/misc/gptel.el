@@ -4,10 +4,13 @@
   :ensure t
   :commands (gptel gptel-send gptel-rewrite)
   :config
-  (let ((private-config
-         (expand-file-name "lisp/misc/gptel-private.el" user-emacs-directory)))
-    (when (file-readable-p private-config)
-      (load private-config nil 'nomessage))))
+  (setq gptel-backend
+        (gptel-make-ollama
+         "Ollama"
+         :host "localhost:11434"
+         :stream t))
+  ;; Set `gptel-model' after installing a local Ollama model.
+  )
 
 (provide 'fscotto-gptel)
 

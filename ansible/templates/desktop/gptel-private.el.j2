@@ -1,7 +1,0 @@
-;;; gptel-private.el -*- lexical-binding: t; -*-
-
-(let ((openai-api-key "{{ vault_openai_api_key | default('') }}"))
-  (when (> (length openai-api-key) 0)
-    (setq gptel-api-key openai-api-key)))
-
-;;; gptel-private.el ends here

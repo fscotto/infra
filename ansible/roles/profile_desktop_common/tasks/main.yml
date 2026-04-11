@@ -282,9 +282,6 @@
     - src: desktop/email.el.j2
       dest: .emacs.d/lisp/misc/email.el
       mode: "0644"
-    - src: desktop/gptel-private.el.j2
-      dest: .emacs.d/lisp/misc/gptel-private.el
-      mode: "0600"
   loop_control:
     label: "{{ item.dest }}"
 

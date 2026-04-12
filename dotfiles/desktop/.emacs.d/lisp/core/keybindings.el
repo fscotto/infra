@@ -55,7 +55,7 @@
 
 ;; -------- elfeed --------
 (autoload 'elfeed "elfeed" nil t)
-(define-key fscotto/open (kbd "f") #'elfeed)
+(define-key fscotto/open (kbd "f") #'fscotto/elfeed-load-db-and-open)
 
 ;; -------- gptel --------
 (autoload 'gptel "gptel" nil t)

@@ -1,15 +1,40 @@
 ;;functions to support syncing .elfeed between machines
 ;;makes sure elfeed reads index from disk before launching
+(defvar fscotto/elfeed-initial-update-done nil
+  "Non-nil once Elfeed has triggered its first automatic update this session.")
+
+(defvar fscotto/elfeed-update-timer nil
+  "Timer used for periodic Elfeed updates.")
+
+(defun fscotto/elfeed-auto-update ()
+  "Refresh Elfeed feeds in the background."
+  (when (require 'elfeed nil 'noerror)
+    (require 'elfeed-db)
+    (elfeed-db-load)
+    (elfeed-update)))
+
+(defun fscotto/elfeed-start-auto-update ()
+  "Start the periodic Elfeed update timer if needed."
+  (unless (timerp fscotto/elfeed-update-timer)
+    (setq fscotto/elfeed-update-timer
+          (run-at-time "15 min" (* 15 60) #'fscotto/elfeed-auto-update))))
+
 (defun fscotto/elfeed-load-db-and-open ()
-  "Wrapper to load the elfeed db from disk before opening URL https://pragmaticemacs.wordpress.com/2016/08/17/read-your-rss-feeds-in-emacs-with-elfeed/
+  "Open Elfeed, updating once per session and then every 15 minutes.
+
+Based on https://pragmaticemacs.wordpress.com/2016/08/17/read-your-rss-feeds-in-emacs-with-elfeed/
   Created: 2016-08-17
   Updated: 2025-06-13"
   (interactive)
-  (elfeed)
+  (require 'elfeed)
+  (require 'elfeed-db)
   (elfeed-db-load)
-  ;; (elfeed-search-update--force)
-  (elfeed-update)
-  (elfeed-db-save))
+  (elfeed)
+  (fscotto/elfeed-start-auto-update)
+  (unless fscotto/elfeed-initial-update-done
+    (setq fscotto/elfeed-initial-update-done t)
+    (message "Updating Elfeed feeds...")
+    (elfeed-update)))
 
 (defun fscotto/project-root ()
   "Return projectile project root or fallback to default-directory."

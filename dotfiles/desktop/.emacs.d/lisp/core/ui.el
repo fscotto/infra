@@ -1,16 +1,7 @@
 ;;; core-ui.el -*- lexical-binding: t; -*-
 
 ;; Load default theme
-(use-package sublime-themes
-  :ensure t)
-
-(use-package soothe-theme
-  :ensure t)
-
 (use-package nordic-night-theme
-  :ensure t)
-
-(use-package timu-caribbean-theme
   :ensure t)
 
 (load-theme 'nordic-night t)

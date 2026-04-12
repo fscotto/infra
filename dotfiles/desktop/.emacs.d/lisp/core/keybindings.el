@@ -61,6 +61,10 @@
 (autoload 'gptel "gptel" nil t)
 (define-key fscotto/open (kbd "l") #'gptel)
 
+;; -------- dirvish --------
+(autoload 'dirvish-dwim "dirvish" nil t)
+(define-key fscotto/open (kbd "d") #'dirvish-dwim)
+
 ;;;; Elfeed mode maps
 (with-eval-after-load 'elfeed
   (define-key elfeed-search-mode-map (kbd "w") #'elfeed-search-yank)

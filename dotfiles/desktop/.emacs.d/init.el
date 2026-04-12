@@ -16,6 +16,7 @@
 
  ;; Tools
  'tools/completion
+ 'tools/dired
  'tools/project
  'tools/lsp
  'tools/dap

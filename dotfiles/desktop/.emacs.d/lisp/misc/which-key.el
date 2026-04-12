@@ -30,6 +30,7 @@
   ;; Open (C-c o …)
   ;; --------------------------------------------------------------------------
   (which-key-add-key-based-replacements
+    "C-c o d" "Dirvish"
     "C-c o f" "RSS (Elfeed)"
     "C-c o l" "LLM chat (gptel)"
     "C-c o m" "mu4e (Email Client)"

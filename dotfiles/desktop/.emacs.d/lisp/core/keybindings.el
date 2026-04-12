@@ -65,6 +65,10 @@
 (autoload 'dirvish-dwim "dirvish" nil t)
 (define-key fscotto/open (kbd "d") #'dirvish-dwim)
 
+;; -------- ztree --------
+(autoload 'ztree-diff "ztree" nil t)
+(define-key fscotto/open (kbd "z") #'ztree-diff)
+
 ;;;; Elfeed mode maps
 (with-eval-after-load 'elfeed
   (define-key elfeed-search-mode-map (kbd "w") #'elfeed-search-yank)

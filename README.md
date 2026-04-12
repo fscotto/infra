@@ -402,6 +402,44 @@ ansible-lint ansible/roles/<role>
 yamllint ansible/path/to/file.yml
 ```
 
+## Tag supportati dal playbook
+
+Per vedere l'elenco reale aggiornato dei tag disponibili:
+
+```bash
+ansible-playbook ansible/site.yml --list-tags
+```
+
+Allo stato attuale `ansible/site.yml` espone questi tag:
+
+| Tag | Scopo | Ambito principale |
+| --- | --- | --- |
+| `always` | pre-task sempre eseguiti, inclusi caricamento vault e validazioni preliminari | common, Windows |
+| `dotfiles` | distribuzione/configurazione dotfiles | tutti i profili |
+| `dotfiles:common` | dotfiles comuni condivisi | common, workstation, server |
+| `dotfiles:desktop` | dotfiles desktop | desktop Void |
+| `dotfiles:host` | override host-specifici desktop | desktop Void |
+| `dotfiles:server` | dotfiles dedicati al profilo server | server |
+| `dotfiles:workstation` | dotfiles dedicati alle workstation | workstation Linux, WSL |
+| `emptty` | gestione display manager `emptty` | desktop Void |
+| `gnome` | configurazione host GNOME | workstation host Linux, parte desktop |
+| `hyprland` | sessione/configurazione Hyprland | desktop Void |
+| `i3` | sessione/configurazione i3 | desktop Void |
+| `nvidia` | componenti NVIDIA desktop | desktop Void |
+| `packages` | installazione e aggiornamento pacchetti | tutti i profili |
+| `services` | gestione servizi runit/systemd/Windows | tutti i profili |
+| `sway` | sessione/configurazione Sway | desktop Void |
+| `vscode` | installazione/configurazione VS Code | Fedora, host Linux, Windows |
+| `wsl` | bootstrap e configurazione WSL | WSL, Windows |
+
+Esempi pratici:
+
+```bash
+ansible-playbook ansible/site.yml --limit nymph --tags dotfiles:desktop,sway --check --diff
+ansible-playbook ansible/site.yml --limit deadalus-fedora --tags packages,vscode --check --diff
+ansible-playbook ansible/site.yml --limit prometheus --tags services,dotfiles:server --check --diff
+```
+
 Se tocchi `Waybar`, valida anche i config JSONC con:
 
 ```bash

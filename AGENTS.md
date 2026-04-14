@@ -52,9 +52,9 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 
 ## Desktop Void Notes
 - `profile_desktop_common` owns the shared desktop bootstrap.
-- GUI-aware user services use `turnstile` and live under `dotfiles/desktop/.config/service/`.
-- `ssh-agent` is a separate always-on per-user runit service under `~/.local/runit/current` with stable socket `~/.local/state/ssh-agent/socket`.
-- `ollama` is installed from the upstream Linux tarball into `/usr/local` and runs as a separate always-on per-user runit service under `~/.local/runit/current`.
+- User services are managed by `turnstile` and live under `dotfiles/desktop/.config/service/`.
+- `ssh-agent` runs under `turnstile` with stable socket `~/.local/state/ssh-agent/socket`.
+- `ollama` is installed from the upstream Linux tarball into `/usr/local` and runs under `turnstile`.
 - `Codex CLI` is installed globally via npm and can target the local Ollama instance.
 - Critical session entrypoints:
   - `dotfiles/desktop/.xinitrc`

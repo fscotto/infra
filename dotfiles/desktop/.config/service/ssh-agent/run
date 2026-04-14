@@ -1,0 +1,15 @@
+#!/bin/sh
+
+set -eu
+
+sockdir="$HOME/.local/state/ssh-agent"
+sockpath="$sockdir/socket"
+
+mkdir -p "$sockdir"
+rm -f "$sockpath"
+
+if [ -n "${TURNSTILE_ENV_DIR:-}" ]; then
+  exec chpst -e "$TURNSTILE_ENV_DIR" ssh-agent -D -a "$sockpath"
+fi
+
+exec ssh-agent -D -a "$sockpath"

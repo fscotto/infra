@@ -1,0 +1,13 @@
+---
+program_options:
+  tray: auto
+  automount: true
+  notify: true
+  password_cache: false
+  password_prompt:
+    - /bin/sh
+    - -c
+    - 'exec "$HOME/.local/bin/udiskie-password" "$1" "$2"'
+    - sh
+    - '{id_uuid}'
+    - '{device_presentation}'

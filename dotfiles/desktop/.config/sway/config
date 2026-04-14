@@ -33,7 +33,7 @@ exec swayosd-server
 exec /usr/libexec/xfce-polkit
 exec nm-applet
 exec blueman-applet
-exec udiskie --tray --automount
+exec udiskie
 exec xfce4-clipman
 
 # Input and output defaults

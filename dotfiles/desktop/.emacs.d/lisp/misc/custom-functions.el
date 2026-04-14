@@ -124,6 +124,21 @@ Each entry is a cons cell of display string and session id."
                "order by time_updated desc;")
               (replace-regexp-in-string "'" "''" session-directory))))))
 
+(defun fscotto/project-opencode-latest-session-id ()
+  "Return the latest saved OpenCode session id for the current project."
+  (car (last (car (fscotto/opencode-session-candidates (fscotto/project-root))))))
+
+(defun fscotto/project-opencode-dwim ()
+  "Open the most useful OpenCode session for the current project.
+
+Resume the latest saved session when available, otherwise create a new one."
+  (interactive)
+  (let ((session-id (fscotto/project-opencode-latest-session-id)))
+    (if session-id
+        (fscotto/launch-external-terminal (list "opencode" "--session" session-id)
+                                          (fscotto/project-root))
+      (fscotto/project-opencode))))
+
 (defun fscotto/project-opencode-session ()
   "Resume a saved OpenCode session for the current project."
   (interactive)

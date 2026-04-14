@@ -126,7 +126,7 @@ Each entry is a cons cell of display string and session id."
 
 (defun fscotto/project-opencode-latest-session-id ()
   "Return the latest saved OpenCode session id for the current project."
-  (car (last (car (fscotto/opencode-session-candidates (fscotto/project-root))))))
+  (cdr (car (fscotto/opencode-session-candidates (fscotto/project-root)))))
 
 (defun fscotto/project-opencode-dwim ()
   "Open the most useful OpenCode session for the current project.

@@ -1,20 +1,18 @@
 #!/bin/bash
 
 runvm() {
-  local vm state choice count i ip
+  local vm state choice count i ip conn="qemu:///system"
 
   if ! command -v virsh >/dev/null 2>&1; then
     printf '%s\n' "runvm: virsh is required (libvirt)" >&2
     return 1
   fi
 
-  sudo -v
-
   local line
   vms=()
   while IFS= read -r line; do
     [ -n "$line" ] && vms+=("$line")
-  done < <(sudo virsh list --all --name)
+  done < <(virsh --connect "$conn" list --all --name)
 
   if [ ${#vms[@]} -eq 0 ]; then
     printf '%s\n' "runvm: no VMs found" >&2
@@ -24,7 +22,7 @@ runvm() {
   printf '\n%s\n' "VMs:"
   count=1
   for i in "${!vms[@]}"; do
-    state=$(sudo virsh dominfo "${vms[$i]}" 2>/dev/null | awk '/^State:/ {print $2}')
+    state=$(virsh --connect "$conn" dominfo "${vms[$i]}" 2>/dev/null | awk '/^State:/ {print $2}')
     printf '  %d) %-30s [%s]\n' "$((count++))" "${vms[$i]}" "${state:-unknown}"
   done
   printf '\n'
@@ -41,13 +39,13 @@ runvm() {
   fi
 
   vm="${vms[$((choice - 1))]}"
-  state=$(sudo virsh dominfo "$vm" 2>/dev/null | awk '/^State:/ {print $2}')
+  state=$(virsh --connect "$conn" dominfo "$vm" 2>/dev/null | awk '/^State:/ {print $2}')
 
   printf '\nSelected: %s\n' "$vm"
 
   if [ "$state" = "running" ]; then
     printf '  VM is already running.\n'
-    ip=$(_runvm_get_ip "$vm")
+    ip=$(_runvm_get_ip "$vm" "$conn")
     if [ -n "$ip" ] && [ "$ip" != "<unknown>" ]; then
       printf '  IP: %s\n' "$ip"
     fi
@@ -55,14 +53,14 @@ runvm() {
   fi
 
   printf 'Starting %s...\n' "$vm"
-  if ! sudo virsh start "$vm"; then
+  if ! virsh --connect "$conn" start "$vm"; then
     printf '  failed to start %s\n' "$vm" >&2
     return 1
   fi
 
   printf '  %s started.\n' "$vm"
   printf '  Waiting for IP...\n'
-  ip=$(_runvm_get_ip "$vm")
+  ip=$(_runvm_get_ip "$vm" "$conn")
 
   if [ -n "$DISPLAY" ] && command -v notify-send >/dev/null 2>&1; then
     notify-send "$vm started" "IP: $ip" 2>/dev/null
@@ -74,17 +72,16 @@ runvm() {
 }
 
 _runvm_get_ip() {
-  local vm="$1"
-  local mac network ip i
+  local vm="$1" conn="$2" mac network ip i
 
-  mac=$(sudo virsh dumpxml "$vm" | awk -F"'" '/mac address/ {print $2}')
+  mac=$(virsh --connect "$conn" dumpxml "$vm" | awk -F"'" '/mac address/ {print $2}')
   [ -z "$mac" ] && return 1
 
-  network=$(sudo virsh dumpxml "$vm" | awk -F"'" '/source network/ {print $2}')
+  network=$(virsh --connect "$conn" dumpxml "$vm" | awk -F"'" '/source network/ {print $2}')
   [ -z "$network" ] && return 1
 
   for i in $(seq 15); do
-    ip=$(sudo virsh net-dhcp-leases "$network" 2>/dev/null | \
+    ip=$(virsh --connect "$conn" net-dhcp-leases "$network" 2>/dev/null | \
          awk -v m="$mac" '$3 == m {print $5}' | cut -d/ -f1)
     [ -n "$ip" ] && break
     sleep 2

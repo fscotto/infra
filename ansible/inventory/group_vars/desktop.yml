@@ -170,6 +170,10 @@ desktop_common_dotfiles:
     src: .config/opencode/
     dest: .config/opencode/
     mode: preserve
+  - name: MPV config
+    src: .config/mpv/
+    dest: .config/mpv/
+    mode: preserve
   - name: Udiskie config
     src: .config/udiskie/
     dest: .config/udiskie/

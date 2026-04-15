@@ -3,12 +3,16 @@
 ap() {
   export PLAYBOOK_DIR="${PLAYBOOK_DIR:-$HOME/AnsiblePlaybook}"
 
-  local cmd=(ansible-playbook "$PLAYBOOK_DIR/ansible/site.yml" -l "$HOSTNAME" -K)
+  (
+    cd "$PLAYBOOK_DIR"
 
-  if [ -n "$1" ]; then
-    cmd+=(--tag "$1")
-  fi
+    local cmd=(ansible-playbook ansible/site.yml -l "$HOSTNAME" -K)
 
-  printf '+ %s\n' "${cmd[*]}"
-  "${cmd[@]}"
+    if [ -n "$1" ]; then
+      cmd+=(--tag "$1")
+    fi
+
+    printf '+ %s\n' "${cmd[*]}"
+    "${cmd[@]}"
+  )
 }

@@ -115,8 +115,11 @@ profile_packages:
   - ristretto
   - rsync
   - shotwell
+  - ruff
   - terminus-font
   - texlive
+  - ty
+  - uv
   - Thunar
   - thunar-archive-plugin
   - thunar-volman

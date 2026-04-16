@@ -6,13 +6,13 @@
 ;; Load modules
 ;;=====================================================================================
 (fscotto/load-modules
- ;; Core
- 'core/packages
- 'core/ui
- 'core/performance
- 'core/editor
- 'core/keybindings
- 'core/buffer
+  ;; Core
+  'core/packages
+  'core/ui
+  'core/performance
+  'core/editor
+  'core/keybindings
+  'core/buffer
 
   ;; Tools
   'tools/completion
@@ -24,28 +24,29 @@
   'tools/dap
   'tools/treesitter
 
- ;; Languages
- 'lang/c
- 'lang/docker
- 'lang/golang
- 'lang/json
- 'lang/markdown
- 'lang/org
- 'lang/shell
- 'lang/yaml
+  ;; Languages
+  'lang/c
+  'lang/docker
+  'lang/golang
+  'lang/json
+  'lang/markdown
+  'lang/org
+  'lang/python
+  'lang/shell
+  'lang/yaml
 
- ;; Misc
- 'misc/dashboard
- 'misc/custom-functions
- 'misc/doom-modeline
- 'misc/which-key
- 'misc/gptel
- 'misc/email
- 'misc/rss
+  ;; Misc
+  'misc/dashboard
+  'misc/custom-functions
+  'misc/doom-modeline
+  'misc/which-key
+  'misc/gptel
+  'misc/email
+  'misc/rss
   'misc/terminal
   'misc/vcs
   'misc/pdf
   'misc/epub
- 'misc/i3-config)
+  'misc/i3-config)
 
 (message "...user configuration loaded")

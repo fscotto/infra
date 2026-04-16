@@ -1,5 +1,7 @@
 ;;; core-editor
 
+(require 'ansi-color)
+
 (setq standard-indent 4)
 (setq tab-stop-list nil)
 (setq indent-tabs-mode nil)
@@ -8,6 +10,8 @@
 (setq vc-follow-symlinks 't)
 (prefer-coding-system 'utf-8-unix)
 (setq custom-file (null-device))
+
+(add-hook 'compilation-filter-hook #'ansi-color-compilation-filter)
 
 (provide 'editor)
 

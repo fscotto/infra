@@ -8,8 +8,6 @@
     c-ts-mode
     c++-mode
     c++-ts-mode
-    python-mode
-    python-ts-mode
     sh-mode
     bash-ts-mode) . lsp-deferred)
   :config

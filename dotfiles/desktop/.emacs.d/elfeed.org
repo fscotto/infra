@@ -17,3 +17,7 @@
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCnDDucQDLncrauOCmanCIgw][MorroLinux]] :linux: :foss:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCDDG9vOcmgwlslJJpCWjqOg][Salvatore Sanfilippo]] :programming:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCrqM0Ym_NbK1fqeQG2VIohg][Tsoding Daily]] :emacs: :programming:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCYUuuUblZog6vwI6tV6BzfA][Edoardo Dusi]] :news: :foss:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC2rGTghMdMJqLV1HY2eq4og][rdwei]] :linux: :programming:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCIdYIrInVnUwHVbogLj6bqA][Riccardo Palumbo]] :hardware: :review:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCYlMGSxDy8fCQGXesK64aEg][YouTux Channel]] :news: :foss: :linux:

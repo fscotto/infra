@@ -116,6 +116,7 @@ profile_packages:
   - rsync
   - shotwell
   - terminus-font
+  - texlive
   - Thunar
   - thunar-archive-plugin
   - thunar-volman

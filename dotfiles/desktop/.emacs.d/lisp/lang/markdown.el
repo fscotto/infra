@@ -1,8 +1,15 @@
 ;;; markdown.el -*- lexical-binding: t; -*-
+
 (use-package markdown-mode
   :ensure t
-  :mode ("README\\.md\\'" . gfm-mode)
-  :init (setq markdown-command "multimarkdown"))
+  :mode ("\\.md\\'" . gfm-mode)
+  :config
+  (setq markdown-fontify-code-blocks-natively t)
+  (setq markdown-live-preview-mode t))
 
-(provide 'markdown)
+(use-package markdown-toc
+  :ensure t)
+
+(provide 'lang/markdown)
+
 ;;; markdown.el ends here

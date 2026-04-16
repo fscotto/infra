@@ -225,3 +225,13 @@ Resume the latest saved session when available, otherwise create a new one."
     (unless (and sym (string-prefix-p "Test" sym))
       (user-error "No Go test at point"))
     sym))
+
+(defun fscotto/sudo-edit (&optional arg)
+  "Reopen current file as root via TRAMP.
+If ARG is provided (C-u), prompts for file path."
+  (interactive "P")
+  (if arg
+      (find-file (concat "/sudo:root@localhost:" (read-file-name "File: ")))
+    (if buffer-file-name
+        (find-alternate-file (concat "/sudo:root@localhost:" buffer-file-name))
+      (user-error "This buffer is not associated with a file"))))

@@ -62,13 +62,33 @@ runvm() {
   printf '  Waiting for IP...\n'
   ip=$(_runvm_get_ip "$vm" "$conn")
 
+  if [ "$ip" != "<unknown>" ]; then
+    _runvm_update_hosts "$vm" "$ip"
+    printf '  IP: %s\n' "$ip"
+  else
+    printf '  IP: %s\n' "$ip"
+  fi
+
   if [ -n "$DISPLAY" ] && command -v notify-send >/dev/null 2>&1; then
     notify-send "$vm started" "IP: $ip" 2>/dev/null
   fi
 
-  printf '  IP: %s\n' "$ip"
-
   return 0
+}
+
+_runvm_normalize_name() {
+  echo "$1" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]'
+}
+
+_runvm_update_hosts() {
+  local vm="$1" ip="$2"
+  local alias short
+
+  alias=$(_runvm_normalize_name "$vm")
+  short="${alias}.localdomain"
+
+  sudo sed -i "/ ${alias}$/d; /^${ip} /d" /etc/hosts 2>/dev/null
+  printf '%s  %s %s\n' "$ip" "$short" "$alias" | sudo tee -a /etc/hosts >/dev/null
 }
 
 _runvm_get_ip() {

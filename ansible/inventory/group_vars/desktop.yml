@@ -85,6 +85,8 @@ profile_packages:
   - deluge-gtk
   - dnsmasq
   - emacs-gtk3
+  - poppler-glib
+  - poppler-utils
   - exo
   - fontconfig-devel
   - freetype-devel

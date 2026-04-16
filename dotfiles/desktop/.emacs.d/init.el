@@ -41,11 +41,10 @@
  'misc/gptel
  'misc/email
  'misc/rss
- 'misc/terminal
- 'misc/vcs
- ;; FIXME PDF viewer with annotations
- ;; 'misc/pdf
- 'misc/epub
+  'misc/terminal
+  'misc/vcs
+  'misc/pdf
+  'misc/epub
  'misc/i3-config)
 
 (message "...user configuration loaded")

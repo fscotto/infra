@@ -14,13 +14,14 @@
  'core/keybindings
  'core/buffer
 
- ;; Tools
- 'tools/completion
- 'tools/dired
- 'tools/project
- 'tools/lsp
- 'tools/dap
- 'tools/treesitter
+  ;; Tools
+  'tools/completion
+  'tools/dired
+  'tools/project
+  'tools/spell
+  'tools/lsp
+  'tools/dap
+  'tools/treesitter
 
  ;; Languages
  'lang/c

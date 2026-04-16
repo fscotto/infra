@@ -12,8 +12,7 @@
         org-startup-folded 'content
         org-todo-keywords '((sequence "🆕(t)" "▶️(s)" "⏳(w)" "🔎(p)" "|" "✅(d)" "🗑(c)" "👨(g)")))
   :config
-  (add-hook 'org-mode-hook 'org-indent-mode)
-  (add-hook 'org-mode-hook 'flyspell-mode))
+  (add-hook 'org-mode-hook 'org-indent-mode))
 
 (use-package org-bullets
   :ensure t

@@ -4,6 +4,7 @@
 
 (global-set-key (kbd "C-x C-b") #'ibuffer)
 (global-set-key (kbd "C-<return>") 'company-complete)
+(global-set-key (kbd "M-n f") #'flyspell-buffer)
 
 (defvar fscotto/leader-map (make-sparse-keymap)
   "Keymap per comandi sotto C-c.")

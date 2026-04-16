@@ -23,6 +23,7 @@ desktop_common_packages:
   - xfce-polkit
   - xdg-desktop-portal
   - xdg-desktop-portal-gtk
+  - xdg-user-dirs
 
 desktop_i3_packages:
   - arandr

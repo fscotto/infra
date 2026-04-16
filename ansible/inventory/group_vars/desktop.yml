@@ -234,6 +234,10 @@ desktop_common_dotfiles:
     src: .local/bin/udiskie-password
     dest: .local/bin/udiskie-password
     mode: "0755"
+  - name: SSH config
+    src: .ssh/config
+    dest: .ssh/config
+    mode: "0600"
 
 desktop_i3_dotfiles:
   - name: i3 config

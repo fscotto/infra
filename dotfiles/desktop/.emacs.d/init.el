@@ -19,6 +19,7 @@
   'tools/dired
   'tools/project
   'tools/spell
+  'tools/tramp
   'tools/lsp
   'tools/dap
   'tools/treesitter

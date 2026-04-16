@@ -16,6 +16,15 @@
   loop: "{{ xdg_user_directories | default([]) }}"
   when: "'void' in group_names"
 
+- name: Ensure SSH socket directory exists
+  tags: [dotfiles, dotfiles:common]
+  ansible.builtin.file:
+    path: "{{ effective_user_home }}/.local/state/ssh/sockets"
+    state: directory
+    owner: "{{ effective_username }}"
+    group: "{{ effective_user_group }}"
+    mode: "0700"
+
 - name: Copy common dotfiles
   tags: [dotfiles, dotfiles:common]
   ansible.builtin.copy:

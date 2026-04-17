@@ -4,7 +4,7 @@ opacity = 1.0
 
 [font]
 normal = { family = "Liberation Mono", style = "Regular" }
-size = 10
+size = 12
 
 [scrolling]
 history = 10000

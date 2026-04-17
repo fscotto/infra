@@ -19,8 +19,21 @@
   :type 'string
   :group 'fscotto)
 
+(defvar-local fscotto/vterm-font-cookie nil
+  "Face remap cookie used to set a custom font in vterm buffers.")
+
+(defun fscotto/apply-vterm-font ()
+  "Use Hack Nerd Font only inside vterm buffers."
+  (when fscotto/vterm-font-cookie
+    (face-remap-remove-relative fscotto/vterm-font-cookie))
+  (setq fscotto/vterm-font-cookie
+        (face-remap-add-relative
+         'default
+         '(:family "Hack Nerd Font" :height 120 :weight regular))))
+
 (use-package vterm
-  :ensure t)
+  :ensure t
+  :hook (vterm-mode . fscotto/apply-vterm-font))
 
 (use-package multi-vterm
   :ensure t

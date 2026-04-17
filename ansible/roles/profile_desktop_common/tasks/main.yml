@@ -436,8 +436,6 @@
   tags: [packages]
   ansible.builtin.set_fact:
     desktop_tools_tmp_dir: /tmp/desktop-tools
-    st_repo: https://codeberg.org/fscotto/st
-    st_src_dir: "{{ user_home }}/.local/src/st"
     opencode_asset_name: >-
       {{
         'opencode-linux-x64-baseline.tar.gz' if ansible_facts['architecture'] == 'x86_64'
@@ -530,33 +528,10 @@
   loop_control:
     label: "{{ item.name }}"
 
-- name: Clone st repository
+- name: Build and install desktop source tools
   tags: [packages]
-  ansible.builtin.git:
-    repo: "{{ st_repo }}"
-    dest: "{{ st_src_dir }}"
-    update: true
-  become_user: "{{ username }}"
-  environment:
-    HOME: "{{ user_home }}"
-  register: st_repo_state
-
-- name: Check whether st binary is installed
-  tags: [packages]
-  ansible.builtin.stat:
-    path: /usr/local/bin/st
-  register: st_binary
-
-- name: Build and install st
-  tags: [packages]
-  ansible.builtin.command:
-    cmd: make clean install
-    chdir: "{{ st_src_dir }}"
-  when: st_repo_state.changed or not st_binary.stat.exists
-
-- name: Clean st build artifacts
-  tags: [packages]
-  ansible.builtin.command:
-    cmd: make clean
-    chdir: "{{ st_src_dir }}"
-  when: st_repo_state.changed or not st_binary.stat.exists
+  ansible.builtin.include_tasks: source_tool.yml
+  loop: "{{ desktop_source_tools }}"
+  loop_control:
+    loop_var: source_tool
+    label: "{{ source_tool.name }}"

@@ -121,6 +121,18 @@ profile_packages:
   - yaru-plus
   - zstd
 
+desktop_source_tools:
+  - name: st
+    repo: https://codeberg.org/fscotto/st
+    build_cmd: make
+    binary_name: st
+    install_name: st
+  - name: gf
+    repo: https://github.com/nakst/gf.git
+    build_cmd: ./build.sh
+    binary_name: gf2
+    install_name: gf
+
 desktop_common_dotfiles:
   - name: XDG autostart entries
     src: .config/autostart/

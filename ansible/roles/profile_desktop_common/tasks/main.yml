@@ -389,7 +389,6 @@
         else ''
       }}
     gitmux_version: v0.11.5
-    bw_version: 1.22.1
     opencode_asset_name: >-
       {{
         'opencode-linux-x64-baseline.tar.gz' if ansible_facts['architecture'] == 'x86_64'
@@ -407,9 +406,6 @@
   tags: [packages]
   ansible.builtin.set_fact:
     gitmux_asset: "gitmux_{{ gitmux_version }}_linux_{{ gitmux_arch }}.tar.gz"
-    bw_asset: "bw-linux-{{ bw_version }}.zip"
-    bw_checksum: >-
-      sha256:https://github.com/bitwarden/cli/releases/download/v{{ bw_version }}/bw-linux-sha256-{{ bw_version }}.txt
 
 - name: Ensure architecture is supported for Ollama binary
   tags: [packages]
@@ -428,12 +424,6 @@
   ansible.builtin.fail:
     msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for gitmux release binary"
   when: gitmux_arch == ''
-
-- name: Ensure architecture is supported for bw binary
-  tags: [packages]
-  ansible.builtin.fail:
-    msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for bw release binary"
-  when: ansible_facts['architecture'] != 'x86_64'
 
 - name: Ensure temporary directory exists for external tools
   tags: [packages]
@@ -485,12 +475,6 @@
         checksum: "sha256:https://github.com/arl/gitmux/releases/download/{{ gitmux_version }}/checksums.txt"
         extracted_binary: gitmux
         install_dest: /usr/local/bin/gitmux
-      - name: bw
-        asset_name: "{{ bw_asset }}"
-        url: "https://github.com/bitwarden/cli/releases/download/v{{ bw_version }}/{{ bw_asset }}"
-        checksum: "{{ bw_checksum }}"
-        extracted_binary: bw
-        install_dest: /usr/local/bin/bw
 
 - name: Download desktop online archive binary releases
   tags: [packages]

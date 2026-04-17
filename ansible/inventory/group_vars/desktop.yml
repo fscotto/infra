@@ -186,10 +186,6 @@ desktop_common_dotfiles:
     src: .config/udiskie/
     dest: .config/udiskie/
     mode: preserve
-  - name: Codex config
-    src: .codex/
-    dest: .codex/
-    mode: preserve
   - name: Turnstile user services
     src: .config/service/
     dest: .config/service/

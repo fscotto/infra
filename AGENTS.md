@@ -55,7 +55,6 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 - User services are managed by `turnstile` and live under `dotfiles/desktop/.config/service/`.
 - `ssh-agent` runs under `turnstile` with stable socket `~/.local/state/ssh-agent/socket`.
 - `ollama` is installed from the upstream Linux tarball into `/usr/local` and runs under `turnstile`.
-- `Codex CLI` is installed globally via npm and can target the local Ollama instance.
 - Critical session entrypoints:
   - `dotfiles/desktop/.xinitrc`
   - `dotfiles/desktop/.local/bin/start-sway-session`

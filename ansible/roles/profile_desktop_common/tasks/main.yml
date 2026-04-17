@@ -573,10 +573,3 @@
   changed_when: true
   when:
     - ollama_archive_download.changed or not ollama_install_state.stat.exists
-
-- name: Install Codex CLI globally
-  tags: [packages]
-  community.general.npm:
-    name: "@openai/codex"
-    global: true
-    state: present

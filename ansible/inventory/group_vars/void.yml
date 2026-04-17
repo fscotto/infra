@@ -35,6 +35,7 @@ void_packages_base:
   - socklog-void
   - tmux
   - ufw
+  - xdotool
   - void-repo-nonfree
   - vpm
   - vsv

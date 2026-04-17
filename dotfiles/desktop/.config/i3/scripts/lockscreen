@@ -1,16 +1,20 @@
 #!/bin/sh
 
-img=/tmp/lockscreen.png
+wallpaper="$HOME/.config/i3/wallpapers/void-minimalist.png"
+cached="$HOME/.cache/i3lock/wallpaper.png"
+dims_cache="$HOME/.cache/i3lock/dims.txt"
+dims=$(xdotool getdisplaygeometry | tr ' ' 'x')
 
-# screenshot
-scrot "$img"
+if [ ! -f "$cached" ] || \
+   [ "$(stat -c %Y "$wallpaper")" -gt "$(stat -c %Y "$cached")" ] || \
+   [ "$dims" != "$(cat "$dims_cache" 2>/dev/null)" ]; then
+  mkdir -p "$HOME/.cache/i3lock"
+  convert "$wallpaper" -resize "$dims^" -extent "$dims" PNG:- > "$cached"
+  echo -n "$dims" > "$dims_cache"
+fi
 
-# blur
-convert "$img" -blur 0x8 "$img"
-
-# lock
 i3lock \
---image "$img" \
+--image "$cached" \
 --clock \
 --indicator \
 --radius 100 \

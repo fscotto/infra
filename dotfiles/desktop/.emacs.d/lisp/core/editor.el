@@ -8,6 +8,7 @@
 
 ;; Setting variables
 (setq vc-follow-symlinks 't)
+(setq vc-handled-backends nil)
 (prefer-coding-system 'utf-8-unix)
 (setq custom-file (null-device))
 

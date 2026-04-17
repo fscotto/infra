@@ -45,6 +45,8 @@
                   (mu4e-trash-folder . "/iCloudAccount/Junk")))))
 
   (setq sendmail-program "/usr/bin/msmtp"
+      mail-user-agent 'mu4e-user-agent
+      read-mail-command 'mu4e
       send-mail-function 'sendmail-send-it
       message-sendmail-f-is-evil t
       message-sendmail-extra-arguments '("--read-envelope-from")

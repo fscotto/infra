@@ -31,6 +31,7 @@
 (autoload 'magit-commit "magit" nil t)
 (autoload 'magit-push "magit" nil t)
 (autoload 'magit-fetch "magit" nil t)
+(global-set-key (kbd "C-x g") #'magit-status)
 
 ;; keybinding (sempre definite nella mappa)
 (define-key fscotto/git-map (kbd "s") #'magit-status)
@@ -52,6 +53,8 @@
 
 ;; -------- mu4e --------
 (autoload 'mu4e "mu4e" nil t)
+(autoload 'mu4e-compose-new "mu4e" nil t)
+(global-set-key (kbd "C-x m") #'mu4e-compose-new)
 (define-key fscotto/open (kbd "m") #'mu4e)
 
 ;; -------- elfeed --------

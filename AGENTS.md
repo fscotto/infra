@@ -38,7 +38,7 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
   - WSL dev: `ansible-playbook ansible/site.yml --limit deadalus-wsl --check --diff`
   - Server: `ansible-playbook ansible/site.yml --limit prometheus --check --diff`
 - Focused checks:
-  - Waybar JSON: `python3 -m json.tool dotfiles/desktop/.config/waybar/config-sway.jsonc >/dev/null` and `python3 -m json.tool dotfiles/desktop/.config/waybar/config-hyprland.jsonc >/dev/null`
+- Waybar JSON: `python3 -m json.tool dotfiles/desktop/.config/waybar/config-sway.jsonc >/dev/null`
   - Mail bootstrap: `sh -n scripts/bootstrap_mail.sh` and `shellcheck scripts/bootstrap_mail.sh`
   - Windows bootstrap parse: `pwsh -NoProfile -Command "[void][System.Management.Automation.Language.Parser]::ParseFile('scripts/bootstrap_windows_workstation.ps1', [ref]$null, [ref]$null)"`
 
@@ -58,7 +58,6 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 - Critical session entrypoints:
   - `dotfiles/desktop/.xinitrc`
   - `dotfiles/desktop/.local/bin/start-sway-session`
-  - `dotfiles/desktop/.local/bin/start-hyprland-session`
 - Do not auto-restart `emptty` during playbook runs on active desktop hosts; restart it manually from another TTY/SSH session if needed.
 
 ## Workstation / Windows Notes

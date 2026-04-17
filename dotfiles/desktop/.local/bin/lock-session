@@ -22,17 +22,10 @@ case "${XDG_CURRENT_DESKTOP:-}" in
       --indicator \
       --clock
     ;;
-  *Hyprland*|*hyprland*)
-    exec hyprlock
-    ;;
   *i3*|*I3*)
     exec "$HOME/.config/i3/scripts/lockscreen"
     ;;
 esac
-
-if command -v hyprlock >/dev/null 2>&1; then
-  exec hyprlock
-fi
 
 if command -v swaylock >/dev/null 2>&1; then
   exec swaylock -f

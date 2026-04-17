@@ -20,9 +20,6 @@ case "$choice" in
       *sway*|*Sway*)
         swaymsg exit
         ;;
-      *Hyprland*|*hyprland*)
-        hyprctl dispatch exit
-        ;;
       *i3*|*I3*)
         i3-msg exit
         ;;

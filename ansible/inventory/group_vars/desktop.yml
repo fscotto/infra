@@ -45,21 +45,6 @@ desktop_i3_packages:
   - xorg-minimal
   - xss-lock
 
-desktop_hyprland_packages:
-  - grim
-  - hypridle
-  - hyprland
-  - xorg-server-xwayland
-  - hyprland-qtutils
-  - hyprlock
-  - hyprpaper
-  - qt5-wayland
-  - qt6-wayland
-  - slurp
-  - Waybar
-  - wl-clipboard
-  - xdg-desktop-portal-hyprland
-
 desktop_sway_packages:
   - grim
   - kanshi
@@ -252,24 +237,6 @@ desktop_i3_dotfiles:
     src: .xinitrc
     dest: .xinitrc
     mode: "0644"
-
-desktop_hyprland_dotfiles:
-  - name: Hyprland config
-    src: .config/hypr/
-    dest: .config/hypr/
-    mode: preserve
-  - name: Waybar config
-    src: .config/waybar/
-    dest: .config/waybar/
-    mode: preserve
-  - name: Hyprland session wrapper
-    src: .local/bin/start-hyprland-session
-    dest: .local/bin/start-hyprland-session
-    mode: "0755"
-  - name: Wayland screenshot script
-    src: .local/bin/screenshot-wayland
-    dest: .local/bin/screenshot-wayland
-    mode: "0755"
 
 desktop_sway_dotfiles:
   - name: Sway config

@@ -70,7 +70,7 @@ Sistema operativo:
 Sessioni desktop:
 
 - `ikaros`: i3
-- `nymph`: i3 + Sway + Hyprland con scelta sessione a login
+- `nymph`: i3 + Sway con scelta sessione a login
 
 Macchine:
 
@@ -82,7 +82,7 @@ Queste macchine condividono la stessa configurazione base desktop e vengono mant
 Lo stato attuale del profilo desktop include, tra le altre cose:
 
 - dotfiles comuni e desktop
-- sessione i3 su tutti i desktop Void e sessioni Sway/Hyprland opzionali su `nymph`
+- sessione i3 su tutti i desktop Void e sessione Sway opzionale su `nymph`
 - `emptty` con scelta sessione a login su `nymph` e default host-specific sugli altri desktop
 - pacchetti Void Linux e servizi runit
 - `turnstile` per i servizi utente, inclusi `emacs`, `ssh-agent` e `ollama`
@@ -90,7 +90,7 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 - `ollama` installato da tarball upstream e gestito come servizio utente `turnstile`
 - Flatpak con remoto Flathub
 - GNOME Keyring e bootstrap della posta via script dedicato
-- `Waybar` separata per compositor (`config-sway.jsonc` e `config-hyprland.jsonc`) con `style.css` condiviso
+- `Waybar` per Sway con `style.css` condiviso
 - `kanshi` su `nymph` per il profilo monitor Wayland, con workspace Sway deterministici: in dual monitor `1` resta su `eDP-1` e `2-10` vanno su `DP-1`, mentre in laptop-only tutti tornano su `eDP-1`
 
 ---
@@ -260,7 +260,6 @@ I principali ruoli attualmente presenti sono:
 | profile_desktop_common    | bootstrap desktop Void condiviso    |
 | profile_desktop_i3        | sessione desktop i3                 |
 | profile_desktop_sway      | sessione desktop Sway               |
-| profile_desktop_hyprland  | sessione desktop Hyprland           |
 | profile_desktop_host      | override desktop specifici per host |
 | profile_workstation_dev_common | configurazione dev workstation condivisa |
 | profile_workstation_gnome | configurazione host workstation GNOME |
@@ -278,7 +277,7 @@ Il playbook `ansible/site.yml` e attualmente composto da sette blocchi:
 
 ```text
 all:!workstation_host_windows -> dotfiles_common
-void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_host
+void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_sway + profile_desktop_host
 workstation_dev_ubuntu -> packages_ubuntu + services_systemd + profile_workstation_dev_common
 workstation_dev_fedora -> packages_fedora + services_systemd + profile_workstation_dev_common
 workstation_host_linux -> profile_workstation_gnome
@@ -361,7 +360,7 @@ ansible-playbook ansible/site.yml
 Allo stato attuale questo comando:
 
 - distribuisce i dotfiles comuni a tutti gli host
-- per gli host Void applica bootstrap desktop condiviso, sessioni i3/Sway/Hyprland e override specifici per host
+- per gli host Void applica bootstrap desktop condiviso, sessioni i3/Sway e override specifici per host
 - per `workstation_dev_ubuntu` applica pacchetti Ubuntu, servizi systemd e profilo dev comune
 - per `workstation_dev_fedora` applica pacchetti Fedora, servizi systemd e profilo dev comune
 - per `workstation_host_linux` applica il layer host Linux GNOME
@@ -423,7 +422,6 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `dotfiles:workstation` | dotfiles dedicati alle workstation | workstation Linux, WSL |
 | `emptty` | gestione display manager `emptty` | desktop Void |
 | `gnome` | configurazione host GNOME | workstation host Linux, parte desktop |
-| `hyprland` | sessione/configurazione Hyprland | desktop Void |
 | `i3` | sessione/configurazione i3 | desktop Void |
 | `nvidia` | componenti NVIDIA desktop | desktop Void |
 | `packages` | installazione e aggiornamento pacchetti | tutti i profili |
@@ -444,7 +442,6 @@ Se tocchi `Waybar`, valida anche i config JSONC con:
 
 ```bash
 python3 -m json.tool dotfiles/desktop/.config/waybar/config-sway.jsonc >/dev/null
-python3 -m json.tool dotfiles/desktop/.config/waybar/config-hyprland.jsonc >/dev/null
 ```
 
 ---

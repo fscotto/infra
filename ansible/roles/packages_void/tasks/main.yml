@@ -62,11 +62,6 @@
             else []
           )
         + (
-            (desktop_hyprland_packages | default([]))
-            if 'hyprland' in (desktop_sessions_enabled | default([]))
-            else []
-          )
-        + (
             (desktop_sway_packages | default([]))
             if 'sway' in (desktop_sessions_enabled | default([]))
             else []

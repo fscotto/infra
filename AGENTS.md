@@ -54,7 +54,6 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 - `profile_desktop_common` owns the shared desktop bootstrap.
 - User services are managed by `turnstile` and live under `dotfiles/desktop/.config/service/`.
 - `ssh-agent` runs under `turnstile` with stable socket `~/.local/state/ssh-agent/socket`.
-- `ollama` is installed from the upstream Linux tarball into `/usr/local` and runs under `turnstile`.
 - Critical session entrypoints:
   - `dotfiles/desktop/.xinitrc`
   - `dotfiles/desktop/.local/bin/start-sway-session`

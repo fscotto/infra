@@ -85,9 +85,9 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 - sessione i3 su tutti i desktop Void e sessione Sway opzionale su `nymph`
 - `emptty` con scelta sessione a login su `nymph` e default host-specific sugli altri desktop
 - pacchetti Void Linux e servizi runit
-- `turnstile` per i servizi utente, inclusi `emacs`, `ssh-agent` e `ollama`
+- `turnstile` per i servizi utente, inclusi `emacs` e `ssh-agent`
 - `ssh-agent` con socket stabile condiviso tra shell, SSH ed Emacs in `~/.local/state/ssh-agent/socket`
-- `ollama` installato da tarball upstream e gestito come servizio utente `turnstile`
+- `ollama` eseguito via container Podman
 - Flatpak con remoto Flathub
 - GNOME Keyring e bootstrap della posta via script dedicato
 - `Waybar` per Sway con `style.css` condiviso

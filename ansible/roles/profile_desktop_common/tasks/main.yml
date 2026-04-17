@@ -382,12 +382,6 @@
     desktop_tools_tmp_dir: /tmp/desktop-tools
     st_repo: https://codeberg.org/fscotto/st
     st_src_dir: "{{ user_home }}/.local/src/st"
-    ollama_asset: >-
-      {{
-        'ollama-linux-amd64.tar.zst' if ansible_facts['architecture'] == 'x86_64'
-        else 'ollama-linux-arm64.tar.zst' if ansible_facts['architecture'] in ['aarch64', 'arm64']
-        else ''
-      }}
     gitmux_version: v0.11.5
     opencode_asset_name: >-
       {{
@@ -406,12 +400,6 @@
   tags: [packages]
   ansible.builtin.set_fact:
     gitmux_asset: "gitmux_{{ gitmux_version }}_linux_{{ gitmux_arch }}.tar.gz"
-
-- name: Ensure architecture is supported for Ollama binary
-  tags: [packages]
-  ansible.builtin.fail:
-    msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for Ollama release binary"
-  when: ollama_asset == ''
 
 - name: Ensure architecture is supported for OpenCode binary
   tags: [packages]
@@ -540,36 +528,3 @@
     cmd: make clean
     chdir: "{{ st_src_dir }}"
   when: st_repo_state.changed or not st_binary.stat.exists
-
-- name: Download Ollama release archive
-  tags: [packages]
-  ansible.builtin.get_url:
-    url: "https://ollama.com/download/{{ ollama_asset }}"
-    dest: "{{ desktop_tools_tmp_dir }}/{{ ollama_asset }}"
-    mode: "0644"
-  register: ollama_archive_download
-
-- name: Check whether Ollama is already installed
-  tags: [packages]
-  ansible.builtin.stat:
-    path: /usr/local/bin/ollama
-  register: ollama_install_state
-
-- name: Remove previous Ollama install paths when required
-  tags: [packages]
-  ansible.builtin.file:
-    path: /usr/local/lib/ollama
-    state: absent
-  when:
-    - ollama_archive_download.changed or not ollama_install_state.stat.exists
-
-- name: Extract Ollama release archive into /usr/local
-  tags: [packages]
-  ansible.builtin.shell: >-
-    zstd -d -c "{{ desktop_tools_tmp_dir }}/{{ ollama_asset }}" |
-    tar -xf - -C /usr/local
-  args:
-    executable: /bin/sh
-  changed_when: true
-  when:
-    - ollama_archive_download.changed or not ollama_install_state.stat.exists

@@ -1,0 +1,55 @@
+#!/bin/sh
+
+set -eu
+
+default_dir=${1:-$HOME}
+
+new_session() {
+  printf 'New session name: '
+  IFS= read -r session_name
+
+  [ -n "$session_name" ] || return 0
+
+  if ! tmux has-session -t "$session_name" 2>/dev/null; then
+    tmux new-session -d -s "$session_name" -c "$default_dir"
+  fi
+
+  tmux switch-client -t "$session_name"
+  exit 0
+}
+
+while :; do
+  selection=$(
+    tmux list-sessions -F '#{session_name}' |
+      fzf \
+        --layout=reverse \
+        --height=100% \
+        --border \
+        --prompt='sessions> ' \
+        --header='Enter switch  Ctrl-n new  Ctrl-k kill' \
+        --preview 'tmux list-windows -t {} -F "#{window_index}: #{window_name}#{?window_active, [active],}"' \
+        --preview-window='right,60%' \
+        --expect=ctrl-k,ctrl-n
+  ) || exit 0
+
+  key=$(printf '%s\n' "$selection" | sed -n '1p')
+  session_name=$(printf '%s\n' "$selection" | sed -n '2p')
+
+  case "$key" in
+    ctrl-n)
+      new_session
+      ;;
+  esac
+
+  [ -n "$session_name" ] || exit 0
+
+  case "$key" in
+    ctrl-k)
+      tmux kill-session -t "$session_name"
+      ;;
+    *)
+      tmux switch-client -t "$session_name"
+      exit 0
+      ;;
+  esac
+done

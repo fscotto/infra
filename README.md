@@ -88,6 +88,7 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 - `turnstile` per i servizi utente, inclusi `emacs` e `ssh-agent`
 - `ssh-agent` con socket stabile condiviso tra shell, SSH ed Emacs in `~/.local/state/ssh-agent/socket`
 - `ollama` eseguito via container Podman
+- `tmux` con plugin gestiti da TPM al bootstrap del profilo desktop
 - Flatpak con remoto Flathub
 - GNOME Keyring e bootstrap della posta via script dedicato
 - `Waybar` per Sway con `style.css` condiviso

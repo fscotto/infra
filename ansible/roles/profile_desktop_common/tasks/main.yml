@@ -22,6 +22,9 @@
     - "{{ user_home }}/.config/alacritty"
     - "{{ user_home }}/.config/Thunar"
     - "{{ user_home }}/.config/rofi"
+    - "{{ user_home }}/.tmux"
+    - "{{ user_home }}/.tmux/bin"
+    - "{{ user_home }}/.tmux/plugins"
 
 - name: Ensure user local bin directory exists
   tags: [dotfiles, dotfiles:desktop, dotfiles:host]
@@ -285,6 +288,59 @@
   loop_control:
     label: "{{ item.dest }}"
 
+- name: Define managed tmux plugin directories
+  tags: [dotfiles, dotfiles:desktop, tmux]
+  ansible.builtin.set_fact:
+    tmux_managed_plugin_names:
+      - tpm
+      - tmux-sensible
+      - tmux-autoreload
+      - tmux-resurrect
+      - tmux-continuum
+
+- name: Check whether tmux plugin directories are git checkouts
+  tags: [dotfiles, dotfiles:desktop, tmux]
+  ansible.builtin.stat:
+    path: "{{ user_home }}/.tmux/plugins/{{ item }}/.git"
+  loop: "{{ tmux_managed_plugin_names }}"
+  loop_control:
+    label: "{{ item }}"
+  register: tmux_plugin_git_state
+
+- name: Remove stale vendored tmux plugin directories
+  tags: [dotfiles, dotfiles:desktop, tmux]
+  ansible.builtin.file:
+    path: "{{ user_home }}/.tmux/plugins/{{ item.item }}"
+    state: absent
+  loop: "{{ tmux_plugin_git_state.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when:
+    - item.stat.exists == false
+
+- name: Bootstrap tmux plugin manager checkout
+  tags: [dotfiles, dotfiles:desktop, tmux]
+  ansible.builtin.git:
+    repo: https://github.com/tmux-plugins/tpm
+    dest: "{{ user_home }}/.tmux/plugins/tpm"
+    version: master
+    update: true
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+
+- name: Install tmux plugins through TPM
+  tags: [dotfiles, dotfiles:desktop, tmux]
+  ansible.builtin.command:
+    cmd: "{{ user_home }}/.tmux/plugins/tpm/bin/install_plugins"
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  register: tmux_plugin_install
+  changed_when: >-
+    (tmux_plugin_install.stdout | default('')) is search('download success') or
+    (tmux_plugin_install.stderr | default('')) is search('download success')
+
 - name: Refresh user font cache
   tags: [dotfiles, dotfiles:desktop]
   ansible.builtin.command: fc-cache -f
@@ -382,36 +438,18 @@
     desktop_tools_tmp_dir: /tmp/desktop-tools
     st_repo: https://codeberg.org/fscotto/st
     st_src_dir: "{{ user_home }}/.local/src/st"
-    gitmux_version: v0.11.5
     opencode_asset_name: >-
       {{
         'opencode-linux-x64-baseline.tar.gz' if ansible_facts['architecture'] == 'x86_64'
         else 'opencode-linux-arm64.tar.gz' if ansible_facts['architecture'] in ['aarch64', 'arm64']
         else ''
       }}
-    gitmux_arch: >-
-      {{
-        'amd64' if ansible_facts['architecture'] == 'x86_64'
-        else 'arm64' if ansible_facts['architecture'] in ['aarch64', 'arm64']
-        else ''
-      }}
-
-- name: Set derived desktop external tool asset metadata
-  tags: [packages]
-  ansible.builtin.set_fact:
-    gitmux_asset: "gitmux_{{ gitmux_version }}_linux_{{ gitmux_arch }}.tar.gz"
 
 - name: Ensure architecture is supported for OpenCode binary
   tags: [packages]
   ansible.builtin.fail:
     msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for OpenCode release binary"
   when: opencode_asset_name == ''
-
-- name: Ensure architecture is supported for gitmux binary
-  tags: [packages]
-  ansible.builtin.fail:
-    msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for gitmux release binary"
-  when: gitmux_arch == ''
 
 - name: Ensure temporary directory exists for external tools
   tags: [packages]
@@ -457,12 +495,6 @@
         checksum: "{{ opencode_asset.digest | default(omit) }}"
         extracted_binary: opencode
         install_dest: /usr/local/bin/opencode
-      - name: gitmux
-        asset_name: "{{ gitmux_asset }}"
-        url: "https://github.com/arl/gitmux/releases/download/{{ gitmux_version }}/{{ gitmux_asset }}"
-        checksum: "sha256:https://github.com/arl/gitmux/releases/download/{{ gitmux_version }}/checksums.txt"
-        extracted_binary: gitmux
-        install_dest: /usr/local/bin/gitmux
 
 - name: Download desktop online archive binary releases
   tags: [packages]

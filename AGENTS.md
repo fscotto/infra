@@ -21,7 +21,7 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 - Prefer minimal, targeted edits. Preserve idempotency and existing ordering.
 - Most hosts use `ansible_connection: local`; Windows host is the exception.
 - Treat `secrets/` as sensitive. Never print secret values.
-- Do not edit vendored tmux plugins under `dotfiles/desktop/.tmux/plugins/` unless explicitly asked.
+- Tmux plugins are bootstrapped by TPM on the host; the repo only keeps tmux config and custom helper scripts.
 - Read the relevant role tasks, templates, vars, and deployed dotfiles before editing.
 
 ## Validation

@@ -139,6 +139,13 @@ desktop_source_tools:
     install_name: bookokrat
     build_output_path: target/release/bookokrat
 
+desktop_binary_tools:
+  - name: ollama
+    install_name: ollama
+    repo: https://github.com/ollama/ollama
+    asset_arch: amd64
+    install_mode: tree
+
 desktop_npm_packages:
   - name: "opencode-ai"
     state: latest

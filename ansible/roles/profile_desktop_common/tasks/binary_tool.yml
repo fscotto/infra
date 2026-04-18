@@ -1,0 +1,67 @@
+---
+- name: Check installed {{ binary_tool.name }} binary
+  ansible.builtin.stat:
+    path: "/usr/local/bin/{{ binary_tool.install_name | default(binary_tool.name) }}"
+  register: binary_installed
+
+- name: Get current {{ binary_tool.name }} version
+  ansible.builtin.command:
+    cmd: "/usr/local/bin/{{ binary_tool.install_name | default(binary_tool.name) }} --version"
+  register: binary_current_version
+  changed_when: false
+  failed_when: false
+
+- name: Set effective version for {{ binary_tool.name }}
+  ansible.builtin.set_fact:
+    binary_tool_version: >-
+      {{
+        ollama_version
+        if binary_tool.name == 'ollama'
+        else binary_tool.version | default('')
+      }}
+    binary_tool_asset_name: >-
+      {{
+        ollama_asset_name.name
+        if binary_tool.name == 'ollama'
+        else binary_tool.asset_name
+      }}
+
+- name: Ensure extraction directory exists for {{ binary_tool.name }}
+  ansible.builtin.file:
+    path: "{{ desktop_tools_tmp_dir }}/{{ binary_tool.name }}"
+    state: directory
+    mode: "0755"
+  when: binary_tool.install_mode | default('binary') != 'tree'
+
+- name: Extract {{ binary_tool.name }} archive
+  ansible.builtin.unarchive:
+    src: "{{ desktop_tools_tmp_dir }}/{{ binary_tool_asset_name }}"
+    dest: "{{ desktop_tools_tmp_dir }}/{{ binary_tool.name }}"
+    remote_src: true
+    creates: "{{ desktop_tools_tmp_dir }}/{{ binary_tool.name }}/{{ binary_tool.install_name | default(binary_tool.name) }}"
+  when:
+    - binary_tool.install_mode | default('binary') != 'tree'
+    - binary_current_version.rc != 0 or binary_current_version.stdout_lines[0] != binary_tool_version
+
+- name: Install {{ binary_tool.name }} archive tree
+  ansible.builtin.unarchive:
+    src: "{{ desktop_tools_tmp_dir }}/{{ binary_tool_asset_name }}"
+    dest: /usr/local
+    remote_src: true
+  become: true
+  when:
+    - binary_tool.install_mode | default('binary') == 'tree'
+    - binary_current_version.rc != 0 or binary_current_version.stdout_lines[0] != binary_tool_version
+
+- name: Install {{ binary_tool.name }} binary
+  ansible.builtin.copy:
+    src: "{{ desktop_tools_tmp_dir }}/{{ binary_tool.name }}/{{ binary_tool.install_name | default(binary_tool.name) }}"
+    dest: "/usr/local/bin/{{ binary_tool.install_name | default(binary_tool.name) }}"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+  when:
+    - binary_tool.install_mode | default('binary') != 'tree'
+    - binary_current_version.rc != 0 or binary_current_version.stdout_lines[0] != binary_tool_version

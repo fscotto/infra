@@ -138,6 +138,12 @@ desktop_source_tools:
     binary_name: bookokrat
     install_name: bookokrat
     build_output_path: target/release/bookokrat
+  - name: llmfit
+    repo: https://github.com/AlexsJones/llmfit
+    build_cmd: cargo build --release
+    binary_name: llmfit
+    install_name: llmfit
+    build_output_path: target/release/llmfit
 
 desktop_binary_tools:
   - name: ollama

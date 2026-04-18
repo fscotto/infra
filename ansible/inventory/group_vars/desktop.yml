@@ -133,6 +133,10 @@ desktop_source_tools:
     binary_name: gf2
     install_name: gf
 
+desktop_npm_packages:
+  - name: "opencode-ai"
+    state: latest
+
 desktop_common_dotfiles:
   - name: XDG autostart entries
     src: .config/autostart/

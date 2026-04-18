@@ -432,102 +432,6 @@
     - (desktop_flatpak_extensions | default([])) | length > 0
     - item | length > 0
 
-- name: Set desktop external tool release metadata
-  tags: [packages]
-  ansible.builtin.set_fact:
-    desktop_tools_tmp_dir: /tmp/desktop-tools
-    opencode_asset_name: >-
-      {{
-        'opencode-linux-x64-baseline.tar.gz' if ansible_facts['architecture'] == 'x86_64'
-        else 'opencode-linux-arm64.tar.gz' if ansible_facts['architecture'] in ['aarch64', 'arm64']
-        else ''
-      }}
-
-- name: Ensure architecture is supported for OpenCode binary
-  tags: [packages]
-  ansible.builtin.fail:
-    msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for OpenCode release binary"
-  when: opencode_asset_name == ''
-
-- name: Ensure temporary directory exists for external tools
-  tags: [packages]
-  ansible.builtin.file:
-    path: "{{ desktop_tools_tmp_dir }}"
-    state: directory
-    mode: "0755"
-
-- name: Fetch latest OpenCode release metadata
-  tags: [packages]
-  ansible.builtin.uri:
-    url: https://api.github.com/repos/anomalyco/opencode/releases/latest
-    headers:
-      Accept: application/vnd.github+json
-    return_content: true
-  register: opencode_latest_release
-  changed_when: false
-
-- name: Set effective OpenCode release metadata
-  tags: [packages]
-  ansible.builtin.set_fact:
-    opencode_asset: >-
-      {{
-        opencode_latest_release.json.assets
-        | selectattr('name', 'equalto', opencode_asset_name)
-        | first
-        | default({})
-      }}
-
-- name: Ensure latest OpenCode asset metadata is available
-  tags: [packages]
-  ansible.builtin.fail:
-    msg: "Could not find OpenCode asset {{ opencode_asset_name }} in the latest GitHub release"
-  when: opencode_asset == {}
-
-- name: Define desktop online archive binaries
-  tags: [packages]
-  ansible.builtin.set_fact:
-    desktop_online_archive_binaries:
-      - name: opencode
-        asset_name: "{{ opencode_asset.name }}"
-        url: "{{ opencode_asset.browser_download_url }}"
-        checksum: "{{ opencode_asset.digest | default(omit) }}"
-        extracted_binary: opencode
-        install_dest: /usr/local/bin/opencode
-
-- name: Download desktop online archive binary releases
-  tags: [packages]
-  ansible.builtin.get_url:
-    url: "{{ item.url }}"
-    dest: "{{ desktop_tools_tmp_dir }}/{{ item.asset_name }}"
-    checksum: "{{ item.checksum | default(omit) }}"
-    mode: "0644"
-  loop: "{{ desktop_online_archive_binaries }}"
-  loop_control:
-    label: "{{ item.name }}"
-
-- name: Extract desktop online archive binary releases
-  tags: [packages]
-  ansible.builtin.unarchive:
-    src: "{{ desktop_tools_tmp_dir }}/{{ item.asset_name }}"
-    dest: "{{ desktop_tools_tmp_dir }}"
-    remote_src: true
-  loop: "{{ desktop_online_archive_binaries }}"
-  loop_control:
-    label: "{{ item.name }}"
-
-- name: Install desktop online archive binaries
-  tags: [packages]
-  ansible.builtin.copy:
-    src: "{{ desktop_tools_tmp_dir }}/{{ item.extracted_binary }}"
-    dest: "{{ item.install_dest }}"
-    remote_src: true
-    owner: root
-    group: root
-    mode: "0755"
-  loop: "{{ desktop_online_archive_binaries }}"
-  loop_control:
-    label: "{{ item.name }}"
-
 - name: Build and install desktop source tools
   tags: [packages]
   ansible.builtin.include_tasks: source_tool.yml
@@ -535,3 +439,15 @@
   loop_control:
     loop_var: source_tool
     label: "{{ source_tool.name }}"
+
+- name: Install desktop npm packages
+  tags: [packages]
+  community.general.npm:
+    name: "{{ item.name }}"
+    global: true
+    state: "{{ item.state | default('present') }}"
+  become: true
+  loop: "{{ desktop_npm_packages | default([]) }}"
+  when: desktop_npm_packages | length > 0
+  loop_control:
+    label: "{{ item.name }}"

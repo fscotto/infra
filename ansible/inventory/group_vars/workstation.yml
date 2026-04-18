@@ -1,2 +1,6 @@
 ---
 workstation_manage_opencode: true
+
+workstation_npm_packages:
+  - name: "opencode-ai"
+    state: latest

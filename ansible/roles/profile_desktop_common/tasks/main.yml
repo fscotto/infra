@@ -434,8 +434,12 @@
 
 - name: Build and install desktop source tools
   tags: [packages]
-  ansible.builtin.include_tasks: source_tool.yml
+  ansible.builtin.include_tasks:
+    file: source_tool.yml
+    apply:
+      tags: [packages]
   loop: "{{ desktop_source_tools }}"
+  when: desktop_source_tools | length > 0
   loop_control:
     loop_var: source_tool
     label: "{{ source_tool.name }}"

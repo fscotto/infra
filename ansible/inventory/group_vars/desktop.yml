@@ -132,6 +132,12 @@ desktop_source_tools:
     build_cmd: ./build.sh
     binary_name: gf2
     install_name: gf
+  - name: bookokrat
+    repo: https://github.com/bugzmanov/bookokrat
+    build_cmd: cargo build --release
+    binary_name: bookokrat
+    install_name: bookokrat
+    build_output_path: target/release/bookokrat
 
 desktop_npm_packages:
   - name: "opencode-ai"

@@ -16,19 +16,23 @@
 
 - name: Check built {{ source_tool.name }} binary
   ansible.builtin.stat:
-    path: "{{ user_home }}/.local/src/{{ source_tool.name }}/{{ source_tool.binary_name | default(source_tool.name) }}"
+    path: "{{ user_home }}/.local/src/{{ source_tool.name }}/{{ source_tool.build_output_path | default(source_tool.binary_name) }}"
   register: source_tool_built_binary
 
 - name: Build {{ source_tool.name }}
   ansible.builtin.command:
     cmd: "{{ source_tool.build_cmd }}"
     chdir: "{{ user_home }}/.local/src/{{ source_tool.name }}"
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+    PATH: "{{ user_home }}/.cargo/bin:{{ ansible_facts.env.PATH }}"
   when:
     - source_tool_repo_state.changed or not source_tool_built_binary.stat.exists
 
 - name: Install {{ source_tool.name }}
   ansible.builtin.copy:
-    src: "{{ user_home }}/.local/src/{{ source_tool.name }}/{{ source_tool.binary_name | default(source_tool.name) }}"
+    src: "{{ user_home }}/.local/src/{{ source_tool.name }}/{{ source_tool.build_output_path | default(source_tool.binary_name) }}"
     dest: "/usr/local/bin/{{ source_tool.install_name | default(source_tool.name) }}"
     remote_src: true
     owner: root

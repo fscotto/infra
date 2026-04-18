@@ -43,6 +43,7 @@ void_packages_base:
   - vsv
   - xtools
   - yt-dlp
+  - plocate
 
 enabled_services:
   - NetworkManager

@@ -386,7 +386,7 @@
       mode: "0755"
     - path: "{{ user_home }}/.local/share/keyrings"
       mode: "0700"
-    - path: "{{ user_home }}/.local/src"
+    - path: /usr/src
       mode: "0755"
 
 - name: Ensure maildir directories exist

@@ -34,6 +34,7 @@ void_packages_base:
   - socklog
   - socklog-void
   - tmux
+  - tealdeer
   - tree-sitter-grammars
   - ufw
   - xdotool

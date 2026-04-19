@@ -11,8 +11,13 @@
         dashboard-center-content t
         dashboard-set-heading-icons t
         dashboard-set-file-icons t
-        dashboard-items '((recents  . 8)
-                          (projects . 5)))
+        dashboard-path-style 'truncate-middle
+        dashboard-path-max-length 60
+        dashboard-week-agenda t
+        dashboard-agenda-prefix-format "  %-10:c %s "
+        dashboard-agenda-time-string-format "%a %d %b"
+        dashboard-items '((recents . 8)
+                          (agenda  . 5)))
   :config
   (dashboard-setup-startup-hook))
 

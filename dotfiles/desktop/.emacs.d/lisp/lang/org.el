@@ -3,11 +3,15 @@
 (use-package htmlize
   :ensure t)
 
+;; Setting default directory for Org files.
+(setq org-directory "~/Org")
+
 (use-package org
   :init
   (setq org-clock-mode-line-total 'today
         org-fontify-quote-and-verse-blocks t
         org-indent-mode t
+        org-agenda-skip-unavailable-files t
         org-return-follows-link t
         org-startup-folded 'content
         org-todo-keywords '((sequence "🆕(t)" "▶️(s)" "⏳(w)" "🔎(p)" "|" "✅(d)" "🗑(c)" "👨(g)"))
@@ -16,7 +20,21 @@
                                 "pdflatex -interaction nonstopmode %f")
         org-latex-default-class "article"
         org-html-doctype "html5"
-        org-html-html5-fancy t)
+        org-html-html5-fancy t
+        org-default-notes-file (expand-file-name "inbox.org" org-directory)
+        org-agenda-files (mapcar (lambda (file)
+                                   (expand-file-name file org-directory))
+                                 '("inbox.org" "tasks.org" "calendar.org" "notes.org"))
+        org-capture-templates
+        '(("t" "Task" entry
+           (file org-default-notes-file)
+           "* 🆕 %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n")
+          ("n" "Note" entry
+          (file (expand-file-name "notes.org" org-directory))
+           "* %U %?\n")
+          ("e" "Event" entry
+           (file (expand-file-name "calendar.org" org-directory))
+           "* %?\nSCHEDULED: %^T\n")))
   :config
   (add-hook 'org-mode-hook 'org-indent-mode))
 
@@ -41,10 +59,6 @@
    'org-babel-load-languages
    '((mermaid . t)
      (scheme . t))))
-
-
-;; Setting default directory for Org files
-(setq org-directory "~/Org")
 
 (provide 'org)
 

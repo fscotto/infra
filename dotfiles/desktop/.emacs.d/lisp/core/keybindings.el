@@ -11,6 +11,14 @@
 
 (define-key global-map (kbd "C-c") fscotto/leader-map)
 
+;;;; Org
+
+(autoload 'org-agenda "org" nil t)
+(autoload 'org-capture "org-capture" nil t)
+
+(define-key fscotto/leader-map (kbd "a") #'org-agenda)
+(define-key fscotto/leader-map (kbd "c") #'org-capture)
+
 ;;;; Git / Magit
 (defun fscotto/enable-magit-keymap ()
   "Enable Git keybindings if current buffer is inside a Git repository."

@@ -237,6 +237,10 @@ desktop_common_dotfiles:
     src: .emacs.d/
     dest: .emacs.d/
     mode: preserve
+  - name: GPG authinfo for LLM APIs
+    src: .authinfo.gpg
+    dest: .authinfo.gpg
+    mode: "0600"
   - name: GTK theme setup script
     src: .local/bin/setup-gtk-theme
     dest: .local/bin/setup-gtk-theme

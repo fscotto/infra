@@ -11,6 +11,7 @@ void_packages_base:
   - elogind
   - fastfetch
   - flatpak
+  - fuse3
   - gcc
   - gdb
   - gnome-keyring
@@ -30,6 +31,7 @@ void_packages_base:
   - pkg-config
   - podman
   - podman-compose
+  - rclone
   - seahorse
   - socklog
   - socklog-void

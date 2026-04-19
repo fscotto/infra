@@ -11,7 +11,7 @@
         org-return-follows-link t
         org-startup-folded 'content
         org-todo-keywords '((sequence "🆕(t)" "▶️(s)" "⏳(w)" "🔎(p)" "|" "✅(d)" "🗑(c)" "👨(g)"))
-        org-export-backends '(html latex odt markdown ascii icalendar)
+        org-export-backends '(html latex odt md ascii icalendar)
         org-latex-pdf-process '("pdflatex -interaction nonstopmode %f"
                                 "pdflatex -interaction nonstopmode %f")
         org-latex-default-class "article"
@@ -44,7 +44,7 @@
 
 
 ;; Setting default directory for Org files
-(setq org-directory "~/Remotes/pCloud/Org")
+(setq org-directory "~/Org")
 
 (provide 'org)
 

@@ -1,0 +1,33 @@
+#!/bin/sh
+
+set -eu
+
+mountpoint="$HOME/Remotes/pCloud"
+cache_dir="$HOME/.cache/rclone/pcloud"
+config_path="$HOME/.config/rclone/rclone.conf"
+
+mkdir -p "$cache_dir" "$mountpoint"
+
+if mountpoint -q "$mountpoint"; then
+  exit 0
+fi
+
+if [ -n "${TURNSTILE_ENV_DIR:-}" ]; then
+  exec chpst -e "$TURNSTILE_ENV_DIR" rclone mount \
+    pcloud: "$mountpoint" \
+    --config "$config_path" \
+    --cache-dir "$cache_dir" \
+    --vfs-cache-mode writes \
+    --dir-cache-time 10m \
+    --poll-interval 1m \
+    --log-level INFO
+fi
+
+exec rclone mount \
+  pcloud: "$mountpoint" \
+  --config "$config_path" \
+  --cache-dir "$cache_dir" \
+  --vfs-cache-mode writes \
+  --dir-cache-time 10m \
+  --poll-interval 1m \
+  --log-level INFO

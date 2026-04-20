@@ -35,6 +35,7 @@ void_packages_base:
   - seahorse
   - socklog
   - socklog-void
+  - syncthing
   - tmux
   - tealdeer
   - tree-sitter-grammars

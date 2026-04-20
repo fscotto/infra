@@ -390,33 +390,12 @@
       mode: "0755"
     - path: "{{ user_home }}/.local/share/keyrings"
       mode: "0700"
+    - path: "{{ user_home }}/Org"
+      mode: "0755"
     - path: "{{ user_home }}/Remotes"
       mode: "0755"
     - path: /usr/src
       mode: "0755"
-
-- name: Check whether Org home path already exists
-  tags: [dotfiles, dotfiles:desktop]
-  ansible.builtin.stat:
-    path: "{{ user_home }}/Org"
-    follow: false
-  register: org_home_path
-
-- name: Fail when Org home path conflicts with managed symlink
-  tags: [dotfiles, dotfiles:desktop]
-  ansible.builtin.fail:
-    msg: "{{ user_home }}/Org already exists and is not the managed symlink to {{ user_home }}/Remotes/pCloud/Org"
-  when:
-    - org_home_path.stat.exists | default(false)
-    - not (org_home_path.stat.islnk | default(false) and org_home_path.stat.lnk_source | default('') == user_home + '/Remotes/pCloud/Org')
-
-- name: Ensure Org home path points to pCloud Org directory
-  tags: [dotfiles, dotfiles:desktop]
-  ansible.builtin.file:
-    src: "{{ user_home }}/Remotes/pCloud/Org"
-    dest: "{{ user_home }}/Org"
-    state: link
-    force: true
 
 - name: Ensure maildir directories exist
   tags: [dotfiles, dotfiles:desktop]

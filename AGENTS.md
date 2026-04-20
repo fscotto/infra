@@ -41,6 +41,7 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 - Waybar JSON: `python3 -m json.tool dotfiles/desktop/.config/waybar/config-sway.jsonc >/dev/null`
   - Mail bootstrap: `sh -n scripts/bootstrap_mail.sh` and `shellcheck scripts/bootstrap_mail.sh`
   - Windows bootstrap parse: `pwsh -NoProfile -Command "[void][System.Management.Automation.Language.Parser]::ParseFile('scripts/bootstrap_windows_workstation.ps1', [ref]$null, [ref]$null)"`
+  - Server compose render: `docker compose -f /opt/docker/server/docker-compose.yml config`
 
 ## Conventions
 - Use FQCN Ansible modules.

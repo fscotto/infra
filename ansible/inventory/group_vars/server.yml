@@ -80,10 +80,34 @@ server_directories:
     owner: root
     group: root
     mode: "0755"
+  - path: /opt/syncthing/config
+    owner: root
+    group: root
+    mode: "0755"
+  - path: /srv/syncthing
+    owner: root
+    group: root
+    mode: "0755"
+  - path: /srv/syncthing/data
+    owner: root
+    group: root
+    mode: "0755"
 
 server_ufw_rules:
   - rule: allow
     name: OpenSSH
+  - rule: allow
+    port: "22000"
+    proto: tcp
+    comment: Syncthing sync traffic
+  - rule: allow
+    port: "22000"
+    proto: udp
+    comment: Syncthing QUIC sync traffic
+  - rule: allow
+    port: "21027"
+    proto: udp
+    comment: Syncthing local discovery
 
 server_sshd_settings:
   PermitRootLogin: "no"

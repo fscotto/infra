@@ -68,6 +68,23 @@ services:
       - "3000:3000"
       - "127.0.0.1:222:22"
 
+  syncthing:
+    image: syncthing/syncthing:2
+    container_name: syncthing
+    hostname: syncthing
+    restart: unless-stopped
+    expose:
+      - "8384"
+    volumes:
+      - "/opt/syncthing/config:/var/syncthing"
+      - "/srv/syncthing/data:/data"
+    ports:
+      - "22000:22000/tcp"
+      - "22000:22000/udp"
+      - "21027:21027/udp"
+    networks:
+      - web
+
 networks:
   web:
     external: false

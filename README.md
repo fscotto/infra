@@ -194,8 +194,9 @@ Lo stato attuale del profilo server include:
 - installazione pacchetti base Ubuntu via apt
 - installazione e configurazione di Docker dal repository ufficiale
 - abilitazione dei servizi systemd dichiarati in inventory/group vars
-- copia dei dotfiles server e rendering dei template server
+- copia dei dotfiles server e rendering dei template server, incluso il `docker-compose.yml` dello stack servizi
 - attivazione del firewall UFW con regola SSH esplicita
+- apertura delle porte Syncthing `22000/tcp`, `22000/udp` e `21027/udp`, lasciando la GUI non esposta direttamente su UFW
 
 Utente del profilo server:
 
@@ -294,6 +295,7 @@ Questo significa che, allo stato attuale:
 - la workstation Fedora (`deadalus-fedora`) usa lo stesso principio di composizione a gruppi con il ramo Fedora dedicato e con `gsettings` host-specifici dichiarati in inventory
 - il ramo Windows + WSL e predisposto con bootstrap PowerShell e play Windows/WSL dedicati
 - il server Ubuntu (`prometheus`) e gestito con pacchetti, servizi, dotfiles server e firewall
+- lo stack container server include `navidrome`, `postgres`, `gitea`, `nginx-proxy-manager` e `syncthing`, con GUI Syncthing raggiungibile tramite la rete Docker `web`
 
 # Dotfiles
 
@@ -400,6 +402,7 @@ ansible-playbook ansible/site.yml --limit <host> --tags <tag1>,<tag2> --check --
 ansible-playbook ansible/site.yml --limit <host> --start-at-task "<task name>" --check --diff
 ansible-lint ansible/roles/<role>
 yamllint ansible/path/to/file.yml
+docker compose -f /opt/docker/server/docker-compose.yml config
 ```
 
 ## Tag supportati dal playbook

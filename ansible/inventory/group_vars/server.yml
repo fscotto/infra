@@ -89,8 +89,8 @@ server_directories:
     group: root
     mode: "0755"
   - path: /srv/syncthing/data
-    owner: root
-    group: root
+    owner: "1000"
+    group: "1000"
     mode: "0755"
 
 server_ufw_rules:

@@ -6,6 +6,12 @@
 ;; Setting default directory for Org files.
 (setq org-directory "~/Org")
 
+(defvar org-notes-file (expand-file-name "notes.org" org-directory)
+  "Default Org notes file.")
+
+(defvar org-calendar-file (expand-file-name "calendar.org" org-directory)
+  "Default Org calendar file.")
+
 (use-package org
   :init
   (setq org-clock-mode-line-total 'today
@@ -30,10 +36,10 @@
            (file org-default-notes-file)
            "* 🆕 %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n")
           ("n" "Note" entry
-          (file (expand-file-name "notes.org" org-directory))
+           (file org-notes-file)
            "* %U %?\n")
           ("e" "Event" entry
-           (file (expand-file-name "calendar.org" org-directory))
+           (file org-calendar-file)
            "* %?\nSCHEDULED: %^T\n")))
   :config
   (add-hook 'org-mode-hook 'org-indent-mode))

@@ -2,11 +2,15 @@
 void_packages_base:
   - 7zip
   - NetworkManager
+  - avahi
   - base-system
   - bat
   - clang
   - clang-tools-extra
   - cmake
+  - cups
+  - cups-filters
+  - cups-pk-helper
   - delta
   - elogind
   - fastfetch
@@ -32,10 +36,14 @@ void_packages_base:
   - podman
   - podman-compose
   - rclone
+  - sane
+  - sane-airscan
   - seahorse
+  - simple-scan
   - socklog
   - socklog-void
   - syncthing
+  - system-config-printer
   - tmux
   - tealdeer
   - tree-sitter-grammars
@@ -50,7 +58,9 @@ void_packages_base:
 
 enabled_services:
   - NetworkManager
+  - avahi-daemon
   - bluetoothd
+  - cupsd
   - dbus
   - elogind
   - emptty

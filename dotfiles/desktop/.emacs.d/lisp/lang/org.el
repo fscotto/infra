@@ -57,6 +57,17 @@
   (setq org-re-reveal-transition 'none
         org-re-reveal-theme "dracula"))
 
+(use-package org-alert
+  :ensure t
+  :after org
+  :config
+  (setq alert-default-style 'libnotify
+        org-alert-interval 300
+        org-alert-notify-cutoff 10
+        org-alert-notify-after-event-cutoff 10
+        org-alert-notification-title "Org Agenda")
+  (org-alert-enable))
+
 (use-package ob-mermaid
   :ensure t
   :init

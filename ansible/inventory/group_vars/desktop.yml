@@ -144,6 +144,12 @@ desktop_source_tools:
     binary_name: llmfit
     install_name: llmfit
     build_output_path: target/release/llmfit
+  - name: rust-script
+    repo: https://github.com/fornwall/rust-script
+    build_cmd: cargo build --release
+    binary_name: rust-script
+    install_name: rust-script
+    build_output_path: target/release/rust-script
 
 desktop_binary_tools:
   - name: ollama

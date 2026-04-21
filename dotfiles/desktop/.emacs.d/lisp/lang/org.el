@@ -36,7 +36,13 @@
         org-indent-mode t
         org-agenda-skip-unavailable-files t
         org-return-follows-link t
+        org-src-fontify-natively t
+        org-src-tab-acts-natively t
         org-startup-folded 'content
+        org-hide-leading-stars t
+        org-hide-emphasis-markers t
+        org-id-link-to-org-use-this t
+        org-id-track-globally t
         org-todo-keywords
         '((sequence
            "TODO(t)"
@@ -91,6 +97,10 @@
            "* %?\nSCHEDULED: %^T\n")))
   :config
   (require 'org-tempo)
+  (require 'org-id)
+  (require 'org-protocol)
+  (add-to-list 'org-src-lang-modes '("go" . go-ts))
+  (add-to-list 'org-src-lang-modes '("rust" . rust-ts))
   (add-hook 'org-mode-hook 'org-indent-mode))
 
 (use-package org-appear
@@ -116,20 +126,42 @@
   :config
   (setq alert-default-style 'libnotify
         org-alert-interval 300
-        org-alert-notify-cutoff 10
+        org-alert-notify-cutoff 5
         org-alert-notify-after-event-cutoff 10
         org-alert-notification-title "Org Agenda")
-  (org-alert-enable))
+  (add-hook 'org-agenda-mode-hook #'org-alert-enable))
 
 (use-package ob-mermaid
   :ensure t
   :init
-  (setq ob-mermaid-cli-path "mmdc")
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((mermaid . t)
-     (scheme . t))))
+  (setq ob-mermaid-cli-path (or (executable-find "mmdc") "mmdc")))
+
+(use-package ob-go
+  :ensure t
+  :after org)
+
+(use-package ob-rust
+  :ensure t
+  :after org)
 
 (provide 'lang/org)
+
+(with-eval-after-load 'org
+  (require 'ob-C)
+  (require 'ob-emacs-lisp)
+  (require 'ob-go)
+  (require 'ob-perl)
+  (require 'ob-python)
+  (require 'ob-rust)
+  (require 'ob-shell)
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((C       . t)
+     (emacs-lisp . t)
+     (go      . t)
+     (perl    . t)
+     (python  . t)
+     (rust    . t)
+     (shell   . t))))
 
 ;;; org.el ends here

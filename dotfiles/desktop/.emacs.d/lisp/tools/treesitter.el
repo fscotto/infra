@@ -10,7 +10,7 @@
   :after treesit
   :custom
   (treesit-auto-install 'prompt)
-  (treesit-auto-langs '(bash c cpp dockerfile go gomod json markdown python yaml))
+  (treesit-auto-langs '(bash c cpp dockerfile go gomod json markdown python rust yaml))
   :config
   (treesit-auto-add-to-auto-mode-alist 'all)
   (global-treesit-auto-mode))

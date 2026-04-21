@@ -3,7 +3,7 @@
 set -eu
 
 if [ -n "${TURNSTILE_ENV_DIR:-}" ]; then
-  exec chpst -e "$TURNSTILE_ENV_DIR" syncthing serve --no-browser --logfile=default
+  exec chpst -e "$TURNSTILE_ENV_DIR" syncthing serve --no-browser --no-restart --logfile=default
 fi
 
-exec syncthing serve --no-browser --logfile=default
+exec syncthing serve --no-browser --no-restart --logfile=default

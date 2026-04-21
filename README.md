@@ -87,6 +87,7 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 - pacchetti Void Linux e servizi runit
 - `turnstile` per i servizi utente, inclusi `emacs` e `ssh-agent`
 - `ssh-agent` con socket stabile condiviso tra shell, SSH ed Emacs in `~/.local/state/ssh-agent/socket`
+- `.emacs.d` distribuito da un task dedicato Ansible con tag `emacs`
 - `ollama` eseguito via container Podman
 - `tmux` con plugin gestiti da TPM al bootstrap del profilo desktop
 - Flatpak con remoto Flathub
@@ -217,6 +218,13 @@ ansible-playbook ansible/site.yml --limit prometheus -e server_username=myuser -
 ---
 
 # Composizione della configurazione
+
+Deploy mirato della configurazione Emacs sui desktop Void:
+
+```bash
+ansible-playbook ansible/site.yml --limit ikaros --tags emacs
+ansible-playbook ansible/site.yml --limit nymph --tags emacs
+```
 
 La configurazione finale di una macchina è ottenuta combinando più livelli.
 

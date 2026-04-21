@@ -233,10 +233,6 @@ desktop_common_dotfiles:
     src: .tmux/bin/
     dest: .tmux/bin/
     mode: preserve
-  - name: Emacs config
-    src: .emacs.d/
-    dest: .emacs.d/
-    mode: preserve
   - name: GPG authinfo for LLM APIs
     src: .authinfo.gpg
     dest: .authinfo.gpg
@@ -265,6 +261,12 @@ desktop_common_dotfiles:
     src: .ssh/config
     dest: .ssh/config
     mode: "0600"
+
+desktop_emacs_dotfiles:
+  - name: Emacs config
+    src: .emacs.d/
+    dest: .emacs.d/
+    mode: preserve
 
 desktop_i3_dotfiles:
   - name: i3 config

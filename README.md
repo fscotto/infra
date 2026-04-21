@@ -70,7 +70,7 @@ Sistema operativo:
 Sessioni desktop:
 
 - `ikaros`: i3
-- `nymph`: i3 + Sway con scelta sessione a login
+- `nymph`: SwayFX
 
 Macchine:
 
@@ -82,8 +82,8 @@ Queste macchine condividono la stessa configurazione base desktop e vengono mant
 Lo stato attuale del profilo desktop include, tra le altre cose:
 
 - dotfiles comuni e desktop
-- sessione i3 su tutti i desktop Void e sessione Sway opzionale su `nymph`
-- `emptty` con scelta sessione a login su `nymph` e default host-specific sugli altri desktop
+- sessione i3 su `ikaros` e sessione SwayFX su `nymph`
+- `emptty` con default host-specific per il desktop attivo su ogni host
 - pacchetti Void Linux e servizi runit
 - `turnstile` per i servizi utente, inclusi `emacs` e `ssh-agent`
 - `ssh-agent` con socket stabile condiviso tra shell, SSH ed Emacs in `~/.local/state/ssh-agent/socket`
@@ -92,7 +92,7 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 - `tmux` con plugin gestiti da TPM al bootstrap del profilo desktop
 - Flatpak con remoto Flathub
 - GNOME Keyring e bootstrap della posta via script dedicato
-- `Waybar` per Sway con `style.css` condiviso
+- shell Noctalia per SwayFX su `nymph`, con plugin per clipboard, polkit e screenshot
 - `kanshi` su `nymph` per il profilo monitor Wayland, con workspace Sway deterministici: in dual monitor `1` resta su `eDP-1` e `2-10` vanno su `DP-1`, mentre in laptop-only tutti tornano su `eDP-1`
 
 ---
@@ -448,12 +448,6 @@ Esempi pratici:
 ansible-playbook ansible/site.yml --limit nymph --tags dotfiles:desktop,sway --check --diff
 ansible-playbook ansible/site.yml --limit deadalus-fedora --tags packages,vscode --check --diff
 ansible-playbook ansible/site.yml --limit prometheus --tags services,dotfiles:server --check --diff
-```
-
-Se tocchi `Waybar`, valida anche i config JSONC con:
-
-```bash
-python3 -m json.tool dotfiles/desktop/.config/waybar/config-sway.jsonc >/dev/null
 ```
 
 ---

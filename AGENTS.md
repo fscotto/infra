@@ -39,7 +39,6 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
   - Server: `ansible-playbook ansible/site.yml --limit prometheus --check --diff`
 - Focused checks:
 - Emacs dotfiles only: `ansible-playbook ansible/site.yml --limit ikaros --tags emacs --check --diff` or `--limit nymph --tags emacs --check --diff`
-- Waybar JSON: `python3 -m json.tool dotfiles/desktop/.config/waybar/config-sway.jsonc >/dev/null`
   - Mail bootstrap: `sh -n scripts/bootstrap_mail.sh` and `shellcheck scripts/bootstrap_mail.sh`
   - Windows bootstrap parse: `pwsh -NoProfile -Command "[void][System.Management.Automation.Language.Parser]::ParseFile('scripts/bootstrap_windows_workstation.ps1', [ref]$null, [ref]$null)"`
   - Server compose render: `docker compose -f /opt/docker/server/docker-compose.yml config`

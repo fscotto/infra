@@ -1,0 +1,32 @@
+---
+- name: Bootstrap official Noctalia plugins checkout
+  ansible.builtin.git:
+    repo: https://github.com/noctalia-dev/noctalia-plugins.git
+    dest: "{{ user_home }}/.local/share/noctalia-plugins/official"
+    version: main
+    update: true
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+
+- name: Bootstrap Clipper plugin checkout
+  ansible.builtin.git:
+    repo: https://github.com/blackbartblues/noctalia-clipper.git
+    dest: "{{ user_home }}/.config/noctalia/plugins/clipper"
+    version: master
+    update: true
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+
+- name: Link official Noctalia plugins
+  ansible.builtin.file:
+    src: "{{ user_home }}/.local/share/noctalia-plugins/official/{{ item }}"
+    dest: "{{ user_home }}/.config/noctalia/plugins/{{ item }}"
+    state: link
+    force: true
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+  loop:
+    - polkit-agent
+    - screenshot

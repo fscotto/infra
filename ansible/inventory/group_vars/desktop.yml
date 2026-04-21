@@ -13,15 +13,11 @@ desktop_ollama_enabled: false
 desktop_common_packages:
   - brightnessctl
   - dex
-  - dunst
   - emptty
-  - network-manager-applet
   - pinentry-emacs
   - pinentry-gtk
-  - rofi
   - turnstile
   - udiskie
-  - xfce-polkit
   - xdg-desktop-portal
   - xdg-desktop-portal-gtk
   - xdg-user-dirs
@@ -35,10 +31,15 @@ desktop_i3_packages:
   - i3blocks-blocklets
   - i3lock-color
   - i3status
+  - dunst
+  - network-manager-applet
+  - rofi
   - scrot
   - setxkbmap
+  - blueman
   - volumeicon
   - xclip
+  - xfce-polkit
   - xfce4-clipman-plugin
   - xfce4-screenshooter
   - xkbutils
@@ -50,20 +51,13 @@ desktop_sway_packages:
   - grim
   - kanshi
   - slurp
-  - SwayOSD
-  - sway
-  - swayidle
-  - swaylock
-  - Waybar
+  - swayfx
   - wl-clipboard
-  - xfce4-clipman-plugin
-  - xfce4-screenshooter
   - xdg-desktop-portal-wlr
 
 profile_packages:
   - alacritty
   - bluez
-  - blueman
   - bridge-utils
   - celluloid
   - ctags
@@ -168,10 +162,6 @@ desktop_common_dotfiles:
     src: .config/autostart/
     dest: .config/autostart/
     mode: preserve
-  - name: dunst config
-    src: .config/dunst/
-    dest: .config/dunst/
-    mode: preserve
   - name: alacritty config
     src: .config/alacritty/
     dest: .config/alacritty/
@@ -179,10 +169,6 @@ desktop_common_dotfiles:
   - name: Thunar config
     src: .config/Thunar/
     dest: .config/Thunar/
-    mode: preserve
-  - name: rofi config
-    src: .config/rofi/
-    dest: .config/rofi/
     mode: preserve
   - name: MIME application defaults
     src: .config/mimeapps.list
@@ -248,14 +234,6 @@ desktop_common_dotfiles:
     src: .local/bin/setup-gtk-theme
     dest: .local/bin/setup-gtk-theme
     mode: "0755"
-  - name: Lock session script
-    src: .local/bin/lock-session
-    dest: .local/bin/lock-session
-    mode: "0755"
-  - name: Powermenu script
-    src: .local/bin/powermenu
-    dest: .local/bin/powermenu
-    mode: "0755"
   - name: Turnstile environment update script
     src: .local/bin/update-turnstile-env
     dest: .local/bin/update-turnstile-env
@@ -280,9 +258,17 @@ desktop_i3_dotfiles:
     src: .config/i3/
     dest: .config/i3/
     mode: preserve
+  - name: dunst config
+    src: .config/dunst/
+    dest: .config/dunst/
+    mode: preserve
   - name: i3blocks config
     src: .config/i3blocks/
     dest: .config/i3blocks/
+    mode: preserve
+  - name: rofi config
+    src: .config/rofi/
+    dest: .config/rofi/
     mode: preserve
   - name: .xinitrc
     src: .xinitrc
@@ -294,10 +280,6 @@ desktop_sway_dotfiles:
     src: .config/sway/
     dest: .config/sway/
     mode: preserve
-  - name: Waybar config
-    src: .config/waybar/
-    dest: .config/waybar/
-    mode: preserve
   - name: Sway wallpaper assets
     src: .config/i3/wallpapers/
     dest: .config/sway/wallpapers/
@@ -305,10 +287,6 @@ desktop_sway_dotfiles:
   - name: Sway session wrapper
     src: .local/bin/start-sway-session
     dest: .local/bin/start-sway-session
-    mode: "0755"
-  - name: Wayland screenshot script
-    src: .local/bin/screenshot-wayland
-    dest: .local/bin/screenshot-wayland
     mode: "0755"
 
 desktop_flatpak_packages:

@@ -2,28 +2,57 @@
 hostname: nymph
 
 desktop_sessions_enabled:
-  - i3
   - sway
 
-desktop_prompt_for_session: true
+desktop_default_session: sway
+desktop_default_session_env: wayland
 desktop_emptty_session_error_logging: rotate
 
+host_xbps_repositories:
+  - name: noctalia
+    url: https://universalrepo.r1xelelo.workers.dev/void
+
 host_packages:
+  - cliphist
+  - grimshot
   - nvidia
+  - noctalia-shell
+  - power-profiles-daemon
   - mesa-dri
   - vulkan-loader
   - mesa-vulkan-intel
   - intel-video-accel
   - tlp
   - tlp-rdw
+  - upower
+
+host_remove_packages:
+  - arandr
+  - autorandr
+  - feh
+  - i3
+  - i3blocks
+  - i3blocks-blocklets
+  - i3lock-color
+  - i3status
+  - dunst
+  - network-manager-applet
+  - rofi
+  - scrot
+  - setxkbmap
+  - blueman
+  - volumeicon
+  - xclip
+  - xfce-polkit
+  - xfce4-clipman-plugin
+  - xfce4-screenshooter
+  - xkbutils
+  - xorg-fonts
+  - xorg-minimal
+  - xss-lock
 
 host_enabled_services:
   - tlp
-
-host_i3_dotfiles:
-  - src: .config/autorandr/
-    dest: .config/autorandr/
-    mode: preserve
 
 host_sway_dotfiles:
   - src: .config/sway/host.conf

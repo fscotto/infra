@@ -1,45 +1,15 @@
 set $mod Mod4
 set $terminal alacritty
 set $fallback_terminal st
-set $menu rofi -show drun -theme ~/.config/rofi/config.rasi
-set $locker ~/.local/bin/lock-session
-set $powermenu ~/.local/bin/powermenu
-set $screenshot ~/.local/bin/screenshot-wayland
 
 # Host-specific overrides
 include ~/.config/sway/host.conf
+include ~/.config/sway/shell.conf
 
 font pango:Liberation Mono 10
 
-# Session bootstrap
-exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE XCURSOR_THEME XCURSOR_SIZE
-exec systemctl --user import-environment WAYLAND_DISPLAY DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE XCURSOR_THEME XCURSOR_SIZE
-exec ~/.local/bin/update-turnstile-env
-exec dex --autostart --environment sway
-exec gnome-keyring-daemon --start --components=secrets
-exec ~/.local/bin/setup-gtk-theme
-exec waybar -c ~/.config/waybar/config-sway.jsonc -s ~/.config/waybar/style.css
-
-# Session services
-exec pipewire
-exec pipewire-pulse
-exec wireplumber
-exec kanshi
-exec swayidle -w timeout 600 '~/.local/bin/lock-session' timeout 900 'swaymsg "output * dpms off"' resume 'swaymsg "output * dpms on"' before-sleep '~/.local/bin/lock-session'
-
-# Tray and desktop applets
-exec dunst
-exec swayosd-server
-exec /usr/libexec/xfce-polkit
-exec nm-applet
-exec blueman-applet
-exec udiskie
-exec xfce4-clipman
-
 # Input and output defaults
 seat seat0 xcursor_theme Yaru 24
-
-output * bg ~/.config/sway/wallpapers/dont_like_wallpapers.jpg fill
 
 input type:keyboard {
     xkb_layout us
@@ -74,15 +44,15 @@ bindsym $mod+Return exec $terminal
 bindsym $mod+Shift+Return exec $fallback_terminal
 bindsym $mod+Shift+e exec emacsclient -c -n
 bindsym $mod+d exec $menu
-bindsym $mod+Shift+v exec pavucontrol
+bindsym $mod+Shift+v exec $audio_panel
 bindsym $mod+Shift+f exec thunar
 bindsym $mod+Shift+x exec $locker
 bindsym $mod+Shift+q kill
 
 # Screenshots
-bindsym Print exec sh -c 'xfce4-screenshooter -f || ~/.local/bin/screenshot-wayland full'
-bindsym Shift+Print exec sh -c 'xfce4-screenshooter -r || ~/.local/bin/screenshot-wayland region'
-bindsym Alt+Print exec sh -c 'xfce4-screenshooter -w || ~/.local/bin/screenshot-wayland output'
+bindsym Print exec $screenshot_full
+bindsym Shift+Print exec $screenshot_region
+bindsym Alt+Print exec $screenshot_window
 
 # Focus
 bindsym $mod+$left focus left
@@ -122,13 +92,13 @@ bindsym $mod+Shift+minus move scratchpad
 bindsym $mod+minus scratchpad show
 
 # Volume and brightness OSD
-bindsym XF86AudioRaiseVolume exec swayosd-client --output-volume raise
-bindsym XF86AudioLowerVolume exec swayosd-client --output-volume lower
-bindsym XF86AudioMute exec swayosd-client --output-volume mute-toggle
-bindsym XF86AudioMicMute exec swayosd-client --input-volume mute-toggle
+bindsym XF86AudioRaiseVolume exec $audio_raise
+bindsym XF86AudioLowerVolume exec $audio_lower
+bindsym XF86AudioMute exec $audio_mute
+bindsym XF86AudioMicMute exec $audio_mic_mute
 
-bindsym XF86MonBrightnessUp exec swayosd-client --brightness raise
-bindsym XF86MonBrightnessDown exec swayosd-client --brightness lower
+bindsym XF86MonBrightnessUp exec $brightness_up
+bindsym XF86MonBrightnessDown exec $brightness_down
 
 # Media keys
 bindsym XF86AudioPlay exec playerctl play-pause

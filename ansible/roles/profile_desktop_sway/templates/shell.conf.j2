@@ -1,0 +1,29 @@
+set $menu qs -c noctalia-shell ipc call launcher toggle
+set $audio_panel qs -c noctalia-shell ipc call volume openPanel
+set $locker qs -c noctalia-shell ipc call lockScreen lock
+set $powermenu qs -c noctalia-shell ipc call sessionMenu toggle
+set $screenshot_full qs -c noctalia-shell ipc call plugin:screenshot takeScreenshot output
+set $screenshot_region qs -c noctalia-shell ipc call plugin:screenshot takeScreenshot region
+set $screenshot_window qs -c noctalia-shell ipc call plugin:screenshot takeScreenshot window
+set $audio_raise qs -c noctalia-shell ipc call volume increase
+set $audio_lower qs -c noctalia-shell ipc call volume decrease
+set $audio_mute qs -c noctalia-shell ipc call volume muteOutput
+set $audio_mic_mute qs -c noctalia-shell ipc call volume muteInput
+set $brightness_up qs -c noctalia-shell ipc call brightness increase
+set $brightness_down qs -c noctalia-shell ipc call brightness decrease
+
+exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE XCURSOR_THEME XCURSOR_SIZE
+exec systemctl --user import-environment WAYLAND_DISPLAY DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE XCURSOR_THEME XCURSOR_SIZE
+exec ~/.local/bin/update-turnstile-env
+exec dex --autostart --environment sway
+exec gnome-keyring-daemon --start --components=secrets
+exec ~/.local/bin/setup-gtk-theme
+exec pipewire
+exec pipewire-pulse
+exec wireplumber
+exec kanshi
+exec udiskie
+exec wl-paste --watch cliphist store
+exec qs -c noctalia-shell
+
+bindsym $mod+c exec qs -c noctalia-shell ipc call launcher clipboard

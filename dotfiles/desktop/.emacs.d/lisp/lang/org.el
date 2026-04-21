@@ -12,15 +12,63 @@
 (defvar org-calendar-file (expand-file-name "calendar.org" org-directory)
   "Default Org calendar file.")
 
+(defface +org-todo-active
+  '((t (:foreground "#51afef" :weight bold)))
+  "Face for active Org TODO states.")
+
+(defface +org-todo-project
+  '((t (:foreground "#c678dd" :weight bold)))
+  "Face for project Org TODO states.")
+
+(defface +org-todo-onhold
+  '((t (:foreground "#ECBE7B" :weight bold)))
+  "Face for waiting Org TODO states.")
+
+(defface +org-todo-cancel
+  '((t (:foreground "#ff6c6b" :weight bold)))
+  "Face for cancelled Org TODO states.")
+
 (use-package org
   :init
   (setq org-clock-mode-line-total 'today
+        org-fontify-done-headline t
         org-fontify-quote-and-verse-blocks t
         org-indent-mode t
         org-agenda-skip-unavailable-files t
         org-return-follows-link t
         org-startup-folded 'content
-        org-todo-keywords '((sequence "🆕(t)" "▶️(s)" "⏳(w)" "🔎(p)" "|" "✅(d)" "🗑(c)" "👨(g)"))
+        org-todo-keywords
+        '((sequence
+           "TODO(t)"
+           "PROJ(p)"
+           "LOOP(r)"
+           "STRT(s)"
+           "WAIT(w)"
+           "HOLD(h)"
+           "IDEA(i)"
+           "|"
+           "DONE(d)"
+           "KILL(k)")
+          (sequence
+           "[ ](T)"
+           "[-](S)"
+           "[?](W)"
+           "|"
+           "[X](D)")
+          (sequence
+           "|"
+           "OKAY(o)"
+           "YES(y)"
+           "NO(n)"))
+        org-todo-keyword-faces
+        '(("[-]"  . +org-todo-active)
+          ("STRT" . +org-todo-active)
+          ("[?]"  . +org-todo-onhold)
+          ("WAIT" . +org-todo-onhold)
+          ("HOLD" . +org-todo-onhold)
+          ("PROJ" . +org-todo-project)
+          ("NO"   . +org-todo-cancel)
+          ("KILL" . +org-todo-cancel))
         org-export-backends '(html latex odt md ascii icalendar)
         org-latex-pdf-process '("pdflatex -interaction nonstopmode %f"
                                 "pdflatex -interaction nonstopmode %f")
@@ -30,11 +78,11 @@
         org-default-notes-file (expand-file-name "inbox.org" org-directory)
         org-agenda-files (mapcar (lambda (file)
                                    (expand-file-name file org-directory))
-                                 '("inbox.org" "tasks.org" "calendar.org" "notes.org"))
+         '("inbox.org" "tasks.org" "calendar.org" "notes.org"))
         org-capture-templates
         '(("t" "Task" entry
            (file org-default-notes-file)
-           "* 🆕 %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n")
+           "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n")
           ("n" "Note" entry
            (file org-notes-file)
            "* %U %?\n")
@@ -42,7 +90,12 @@
            (file org-calendar-file)
            "* %?\nSCHEDULED: %^T\n")))
   :config
+  (require 'org-tempo)
   (add-hook 'org-mode-hook 'org-indent-mode))
+
+(use-package org-appear
+  :ensure t
+  :hook (org-mode . org-appear-mode))
 
 (use-package org-bullets
   :ensure t
@@ -77,6 +130,6 @@
    '((mermaid . t)
      (scheme . t))))
 
-(provide 'org)
+(provide 'lang/org)
 
 ;;; org.el ends here

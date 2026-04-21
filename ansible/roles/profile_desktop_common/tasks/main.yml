@@ -264,6 +264,13 @@
   loop_control:
     label: "{{ item.dest }}"
 
+- name: Remove disabled ollama user service
+  tags: [dotfiles, dotfiles:desktop, services]
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/service/ollama"
+    state: absent
+  when: not (desktop_ollama_enabled | default(false) | bool)
+
 - name: Copy Emacs desktop dotfiles
   tags: [dotfiles, dotfiles:desktop, emacs]
   ansible.builtin.copy:

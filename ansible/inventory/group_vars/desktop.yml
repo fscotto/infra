@@ -8,6 +8,7 @@ desktop_default_session: i3
 desktop_default_session_env: xorg
 desktop_restart_emptty_automatically: false
 desktop_emptty_session_error_logging: disabled
+desktop_ollama_enabled: false
 
 desktop_common_packages:
   - brightnessctl

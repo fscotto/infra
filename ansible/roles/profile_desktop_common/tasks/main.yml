@@ -452,6 +452,35 @@
     - (desktop_flatpak_extensions | default([])) | length > 0
     - item | length > 0
 
+- name: Bootstrap rustup toolchain installer
+  tags: [packages]
+  block:
+    - name: Check whether rustup is initialized
+      ansible.builtin.stat:
+        path: "{{ user_home }}/.cargo/bin/rustc"
+      register: rustup_initialized
+
+    - name: Run rustup-init with cargo env sourced
+      ansible.builtin.shell:
+        cmd: . ~/.cargo/env && rustup-init -y --no-modify-path
+        creates: "{{ user_home }}/.cargo/bin/rustc"
+      become_user: "{{ username }}"
+      environment:
+        HOME: "{{ user_home }}"
+      when: not rustup_initialized.stat.exists
+
+    - name: Ensure cargo env is sourced in shell profile
+      ansible.builtin.lineinfile:
+        path: "{{ user_home }}/.bashrc"
+        regexp: '\. cargo/env'
+        line: . "$HOME/.cargo/env"
+        state: present
+        create: true
+        mode: "0644"
+      become_user: "{{ username }}"
+      when: not rustup_initialized.stat.exists
+  when: desktop_source_tools | length > 0
+
 - name: Build and install desktop source tools
   tags: [packages]
   ansible.builtin.include_tasks:

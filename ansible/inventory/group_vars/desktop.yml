@@ -60,7 +60,7 @@ profile_packages:
   - bridge-utils
   - celluloid
   - ctags
-  - chromium
+  - firefox
   - deluge-gtk
   - dnsmasq
   - emacs-gtk3
@@ -307,7 +307,6 @@ desktop_flatpak_packages:
   - com.calibre_ebook.calibre
   - com.github.tchx84.Flatseal
   - com.spotify.Client
-  - io.gitlab.librewolf-community
   - io.github.flattool.Warehouse
   - org.telegram.desktop
   - sh.loft.devpod

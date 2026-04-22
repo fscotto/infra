@@ -1,23 +1,117 @@
 ---
+- name: Check whether official Clipper plugin directory exists
+  ansible.builtin.stat:
+    path: "{{ user_home }}/.local/share/noctalia-plugins/official/clipper"
+    follow: false
+  register: official_clipper_path_state
+
+- name: Repair official Clipper plugin permissions before git update
+  ansible.builtin.file:
+    path: "{{ user_home }}/.local/share/noctalia-plugins/official/clipper"
+    state: directory
+    recurse: true
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "u=rwX,go=rX"
+  when:
+    - official_clipper_path_state.stat.exists
+    - official_clipper_path_state.stat.isdir
+
+- name: Remove untracked files from official Clipper subtree before git update
+  ansible.builtin.command:
+    cmd: git clean -fd -- clipper
+    chdir: "{{ user_home }}/.local/share/noctalia-plugins/official"
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  register: official_clipper_clean
+  changed_when: >-
+    (official_clipper_clean.stdout | default('') | trim) != '' or
+    (official_clipper_clean.stderr | default('') | trim) != ''
+  when:
+    - official_clipper_path_state.stat.exists
+    - official_clipper_path_state.stat.isdir
+
 - name: Bootstrap official Noctalia plugins checkout
   ansible.builtin.git:
     repo: https://github.com/noctalia-dev/noctalia-plugins.git
     dest: "{{ user_home }}/.local/share/noctalia-plugins/official"
     version: main
     update: true
+    force: true
   become_user: "{{ username }}"
   environment:
     HOME: "{{ user_home }}"
 
-- name: Bootstrap Clipper plugin checkout
-  ansible.builtin.git:
-    repo: https://github.com/blackbartblues/noctalia-clipper.git
-    dest: "{{ user_home }}/.config/noctalia/plugins/clipper"
-    version: master
-    update: true
+- name: Check if Clipper is a real directory (needs migration to symlink)
+  ansible.builtin.stat:
+    path: "{{ user_home }}/.config/noctalia/plugins/clipper"
+    follow: false
+  register: clipper_path_state
+
+- name: Check whether Clipper pinned data exists
+  ansible.builtin.stat:
+    path: "{{ user_home }}/.config/noctalia/plugins/clipper/pinned.json"
+  register: clipper_pinned_state
+  when:
+    - clipper_path_state.stat.exists
+    - clipper_path_state.stat.isdir
+    - not (clipper_path_state.stat.islnk | default(false))
+
+- name: Preserve Clipper pinned data before migration
+  ansible.builtin.copy:
+    src: "{{ user_home }}/.config/noctalia/plugins/clipper/pinned.json"
+    dest: "{{ user_home }}/.local/share/noctalia-plugins/official/clipper/pinned.json"
+    remote_src: true
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0644"
   become_user: "{{ username }}"
   environment:
     HOME: "{{ user_home }}"
+  when:
+    - clipper_pinned_state is defined and clipper_pinned_state.stat is defined and clipper_pinned_state.stat.exists
+
+- name: Check whether Clipper notecards directory exists
+  ansible.builtin.stat:
+    path: "{{ user_home }}/.config/noctalia/plugins/clipper/notecards"
+  register: clipper_notecards_state
+  when:
+    - clipper_path_state.stat.exists
+    - clipper_path_state.stat.isdir
+    - not (clipper_path_state.stat.islnk | default(false))
+
+- name: Preserve Clipper notecards before migration
+  ansible.builtin.copy:
+    src: "{{ user_home }}/.config/noctalia/plugins/clipper/notecards/"
+    dest: "{{ user_home }}/.local/share/noctalia-plugins/official/clipper/notecards/"
+    remote_src: true
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: preserve
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  when:
+    - clipper_notecards_state is defined and clipper_notecards_state.stat is defined and clipper_notecards_state.stat.exists and clipper_notecards_state.stat.isdir
+
+- name: Remove old Clipper directory (migration to symlink)
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/noctalia/plugins/clipper"
+    state: absent
+  when:
+    - clipper_path_state.stat.exists
+    - clipper_path_state.stat.isdir
+    - not (clipper_path_state.stat.islnk | default(false))
+
+- name: Create Clipper symlink to official plugin
+  ansible.builtin.file:
+    src: "{{ user_home }}/.local/share/noctalia-plugins/official/clipper"
+    dest: "{{ user_home }}/.config/noctalia/plugins/clipper"
+    state: link
+    force: true
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
 
 - name: Link official Noctalia plugins
   ansible.builtin.file:

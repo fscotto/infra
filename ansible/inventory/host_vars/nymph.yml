@@ -39,3 +39,6 @@ host_sway_dotfiles:
   - src: .config/kanshi/config
     dest: .config/kanshi/config
     mode: "0644"
+
+noctalia_bar_monitors:
+  - DP-1

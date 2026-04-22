@@ -88,7 +88,6 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 - `turnstile` per i servizi utente, inclusi `emacs` e `ssh-agent`
 - `ssh-agent` con socket stabile condiviso tra shell, SSH ed Emacs in `~/.local/state/ssh-agent/socket`
 - `.emacs.d` distribuito da un task dedicato Ansible con tag `emacs`
-- `ollama` eseguito via container Podman, con servizio utente controllato da `desktop_ollama_enabled` (default `false`)
 - `tmux` con plugin gestiti da TPM al bootstrap del profilo desktop
 - Flatpak con remoto Flathub
 - GNOME Keyring e bootstrap della posta via script dedicato

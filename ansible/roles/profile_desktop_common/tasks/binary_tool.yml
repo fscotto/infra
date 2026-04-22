@@ -13,18 +13,8 @@
 
 - name: Set effective version for {{ binary_tool.name }}
   ansible.builtin.set_fact:
-    binary_tool_version: >-
-      {{
-        ollama_version
-        if binary_tool.name == 'ollama'
-        else binary_tool.version | default('')
-      }}
-    binary_tool_asset_name: >-
-      {{
-        ollama_asset_name.name
-        if binary_tool.name == 'ollama'
-        else binary_tool.asset_name
-      }}
+    binary_tool_version: "{{ binary_tool.version | default('') }}"
+    binary_tool_asset_name: "{{ binary_tool.asset_name }}"
 
 - name: Ensure extraction directory exists for {{ binary_tool.name }}
   ansible.builtin.file:

@@ -1,9 +1,0 @@
-#!/bin/sh
-
-set -eu
-
-if [ -n "${TURNSTILE_ENV_DIR:-}" ]; then
-  exec chpst -e "$TURNSTILE_ENV_DIR" /usr/local/bin/ollama serve
-fi
-
-exec /usr/local/bin/ollama serve

@@ -264,13 +264,6 @@
   loop_control:
     label: "{{ item.dest }}"
 
-- name: Remove disabled ollama user service
-  tags: [dotfiles, dotfiles:desktop, services]
-  ansible.builtin.file:
-    path: "{{ user_home }}/.config/service/ollama"
-    state: absent
-  when: not (desktop_ollama_enabled | default(false) | bool)
-
 - name: Copy Emacs desktop dotfiles
   tags: [dotfiles, dotfiles:desktop, emacs]
   ansible.builtin.copy:
@@ -476,56 +469,12 @@
   ansible.builtin.set_fact:
     desktop_tools_tmp_dir: /tmp/desktop-tools
 
-- name: Set ollama tool config from list
-  tags: [packages]
-  ansible.builtin.set_fact:
-    desktop_ollama_tool: >-
-      {{
-        desktop_binary_tools
-        | selectattr('name', 'equalto', 'ollama')
-        | first
-        | default({})
-      }}
-  when: "'ollama' in (desktop_binary_tools | map(attribute='name') | list)"
-
-- name: Fetch latest ollama release metadata
-  tags: [packages]
-  ansible.builtin.uri:
-    url: https://api.github.com/repos/ollama/ollama/releases/latest
-    headers:
-      Accept: application/vnd.github+json
-    return_content: true
-  register: ollama_latest_release
-  changed_when: false
-  when: "'ollama' in (desktop_binary_tools | map(attribute='name') | list)"
-
-- name: Set ollama release metadata
-  tags: [packages]
-  ansible.builtin.set_fact:
-    ollama_version: "{{ ollama_latest_release.json.tag_name | regex_replace('^v') }}"
-    ollama_asset_name: >-
-      {{
-        ollama_latest_release.json.assets
-        | selectattr('name', 'equalto', 'ollama-linux-' ~ desktop_ollama_tool.asset_arch ~ '.tar.zst')
-        | first
-        | default({})
-      }}
-  when: "'ollama' in (desktop_binary_tools | map(attribute='name') | list)"
-
 - name: Ensure temporary directory exists for desktop binary tools
   tags: [packages]
   ansible.builtin.file:
     path: "{{ desktop_tools_tmp_dir }}"
     state: directory
     mode: "0755"
-
-- name: Fetch latest ollama release archive
-  tags: [packages]
-  ansible.builtin.get_url:
-    url: "https://github.com/ollama/ollama/releases/download/v{{ ollama_version }}/{{ ollama_asset_name.name }}"
-    dest: "{{ desktop_tools_tmp_dir }}/{{ ollama_asset_name.name }}"
-    mode: "0644"
-  when: "'ollama' in (desktop_binary_tools | map(attribute='name') | list)"
 
 - name: Install desktop binary tools
   tags: [packages]

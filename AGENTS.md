@@ -55,7 +55,6 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 - `profile_desktop_common` owns the shared desktop bootstrap.
 - `.emacs.d` is deployed by a dedicated `profile_desktop_common` task tagged `emacs`.
 - User services are managed by `turnstile` and live under `dotfiles/desktop/.config/service/`.
-- `desktop_ollama_enabled` controls whether the user `ollama` service is present; default is `false` and hosts can override it in `host_vars`.
 - `ssh-agent` runs under `turnstile` with stable socket `~/.local/state/ssh-agent/socket`.
 - Critical session entrypoints:
   - `dotfiles/desktop/.xinitrc`

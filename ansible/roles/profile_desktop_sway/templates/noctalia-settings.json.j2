@@ -70,7 +70,14 @@
         "rightClickAction": "controlCenter",
         "rightClickCommand": "",
         "rightClickFollowMouse": true,
-        "screenOverrides": [],
+        "screenOverrides": [
+{% for override in noctalia_screen_overrides | default([]) %}
+            {
+                "enabled": {{ override.enabled | lower }},
+                "name": "{{ override.name }}"
+            }{% if not loop.last %},{% endif %}
+{% endfor %}
+        ],
         "showCapsule": true,
         "showOnWorkspaceSwitch": true,
         "showOutline": false,

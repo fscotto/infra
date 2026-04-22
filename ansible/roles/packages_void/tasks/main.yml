@@ -72,3 +72,10 @@
       }}
     state: present
     update_cache: false
+
+- name: Remove host-absent packages on Void Linux
+  tags: [packages]
+  community.general.xbps:
+    name: "{{ host_packages_absent | default([]) }}"
+    state: absent
+  when: (host_packages_absent | default([])) | length > 0

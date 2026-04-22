@@ -113,6 +113,21 @@
     owner: "{{ username }}"
     group: "{{ user_group }}"
 
+- name: Check if usb-drive-manager is a real directory (needs migration to symlink)
+  ansible.builtin.stat:
+    path: "{{ user_home }}/.config/noctalia/plugins/usb-drive-manager"
+    follow: false
+  register: usb_drive_manager_path_state
+
+- name: Remove old usb-drive-manager directory (migration to symlink)
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/noctalia/plugins/usb-drive-manager"
+    state: absent
+  when:
+    - usb_drive_manager_path_state.stat.exists
+    - usb_drive_manager_path_state.stat.isdir
+    - not (usb_drive_manager_path_state.stat.islnk | default(false))
+
 - name: Link official Noctalia plugins
   ansible.builtin.file:
     src: "{{ user_home }}/.local/share/noctalia-plugins/official/{{ item }}"
@@ -124,3 +139,4 @@
   loop:
     - polkit-agent
     - screenshot
+    - usb-drive-manager

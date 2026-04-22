@@ -82,7 +82,7 @@ Queste macchine condividono la stessa configurazione base desktop e vengono mant
 Lo stato attuale del profilo desktop include, tra le altre cose:
 
 - dotfiles comuni e desktop
-- sessione i3 su `ikaros` e sessione SwayFX su `nymph`
+- sessione i3 su `ikaros` e sessione Sway su `nymph`
 - `emptty` con default host-specific per il desktop attivo su ogni host
 - pacchetti Void Linux e servizi runit
 - `turnstile` per i servizi utente, inclusi `emacs` e `ssh-agent`
@@ -91,8 +91,10 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 - `tmux` con plugin gestiti da TPM al bootstrap del profilo desktop
 - Flatpak con remoto Flathub
 - GNOME Keyring e bootstrap della posta via script dedicato
-- shell Noctalia per SwayFX su `nymph`, con plugin per clipboard, polkit e screenshot
+- shell Noctalia su Sway su `nymph`, con plugin ufficiali per clipboard (`clipper`), polkit (`polkit-agent`), screenshot (`screenshot`) e gestione USB (`usb-drive-manager`); config condivisa in `dotfiles/desktop/.config/noctalia/` e `settings.json` renderizzato da template Ansible con variabili host-specifiche
+- `udiskie` come backend per automount/LUKS su Sway, senza tray; la UI dei dispositivi removibili è demandata a `usb-drive-manager`
 - `kanshi` su `nymph` per il profilo monitor Wayland, con workspace Sway deterministici: in dual monitor `1` resta su `eDP-1` e `2-10` vanno su `DP-1`, mentre in laptop-only tutti tornano su `eDP-1`
+- monitor Noctalia e `screenOverrides` dichiarati in inventory (`noctalia_bar_monitors`, `noctalia_screen_overrides`) per host `nymph`
 
 ---
 

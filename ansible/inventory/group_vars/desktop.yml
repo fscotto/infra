@@ -298,6 +298,8 @@ desktop_sway_dotfiles:
 noctalia_bar_monitors:
   - DP-1
 
+noctalia_screen_overrides: []
+
 desktop_flatpak_packages:
   - be.alexandervanhee.gradia
   - ch.protonmail.protonmail-bridge

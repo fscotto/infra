@@ -42,3 +42,14 @@ host_sway_dotfiles:
 
 noctalia_bar_monitors:
   - DP-1
+  - eDP-1
+
+noctalia_screen_overrides:
+  - name: DP-1
+    enabled: false
+  - name: eDP-1
+    enabled: false
+
+host_packages_absent:
+  - network-manager-applet
+  - blueman

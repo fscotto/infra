@@ -39,6 +39,7 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
   - Server: `ansible-playbook ansible/site.yml --limit prometheus --check --diff`
 - Focused checks:
 - Emacs dotfiles only: `ansible-playbook ansible/site.yml --limit ikaros --tags emacs --check --diff` or `--limit nymph --tags emacs --check --diff`
+  - Sway/Noctalia bootstrap on nymph: `ansible-playbook ansible/site.yml --limit nymph --tags packages,dotfiles:desktop,sway --check --diff`
   - Mail bootstrap: `sh -n scripts/bootstrap_mail.sh` and `shellcheck scripts/bootstrap_mail.sh`
   - Windows bootstrap parse: `pwsh -NoProfile -Command "[void][System.Management.Automation.Language.Parser]::ParseFile('scripts/bootstrap_windows_workstation.ps1', [ref]$null, [ref]$null)"`
   - Server compose render: `docker compose -f /opt/docker/server/docker-compose.yml config`
@@ -60,6 +61,10 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
   - `dotfiles/desktop/.xinitrc`
   - `dotfiles/desktop/.local/bin/start-sway-session`
 - Do not auto-restart `emptty` during playbook runs on active desktop hosts; restart it manually from another TTY/SSH session if needed.
+- `profile_desktop_sway` owns the Sway session, Noctalia config rendering, and official plugin linking.
+- Noctalia shared config lives in `dotfiles/desktop/.config/noctalia/`; bar monitors and `screenOverrides` come from inventory (`noctalia_bar_monitors`, `noctalia_screen_overrides`).
+- On Sway hosts, `udiskie` is the backend for automount/LUKS but runs without tray; USB device UI is handled by `usb-drive-manager`.
+- Do not re-introduce `network-manager-applet` or `blueman` on Sway hosts without an explicit host-specific reason.
 
 ## Workstation / Windows Notes
 - Native Linux workstation hosts can combine `workstation_host_linux` with an OS-specific dev group.

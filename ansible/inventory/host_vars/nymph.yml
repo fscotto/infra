@@ -26,31 +26,6 @@ host_packages:
   - tlp-rdw
   - upower
 
-host_remove_packages:
-  - arandr
-  - autorandr
-  - feh
-  - i3
-  - i3blocks
-  - i3blocks-blocklets
-  - i3lock-color
-  - i3status
-  - dunst
-  - network-manager-applet
-  - rofi
-  - scrot
-  - setxkbmap
-  - blueman
-  - volumeicon
-  - xclip
-  - xfce-polkit
-  - xfce4-clipman-plugin
-  - xfce4-screenshooter
-  - xkbutils
-  - xorg-fonts
-  - xorg-minimal
-  - xss-lock
-
 host_enabled_services:
   - tlp
 

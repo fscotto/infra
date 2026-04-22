@@ -6,3 +6,7 @@ Never break an existing host.
 - Always test with --limit
 - Use dry-run (--check --diff)
 - Avoid destructive changes
+
+## Git Rules
+
+- Never auto-commit; always ask the user before committing

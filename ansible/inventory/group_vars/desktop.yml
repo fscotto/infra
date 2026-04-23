@@ -58,7 +58,6 @@ profile_packages:
   - alacritty
   - bluez
   - bridge-utils
-  - celluloid
   - ctags
   - firefox
   - deluge-gtk

@@ -149,6 +149,8 @@ desktop_binary_tools: []
 desktop_npm_packages:
   - name: "opencode-ai"
     state: latest
+  - name: "@openai/codex"
+    state: latest
 
 desktop_common_dotfiles:
   - name: XDG autostart entries

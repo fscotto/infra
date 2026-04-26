@@ -2,9 +2,9 @@
 
 ;; Load default theme
 (use-package nordic-night-theme
-  :ensure t)
-
-(load-theme 'nordic-night t)
+  :ensure t
+  :config
+  (load-theme 'nordic-night t))
 
 ;; Setting default font
 (set-frame-font "Liberation Mono 14" nil t)

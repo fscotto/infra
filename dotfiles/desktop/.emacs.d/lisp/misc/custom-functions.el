@@ -128,16 +128,19 @@ Each entry is a cons cell of display string and session id."
   "Return the latest saved OpenCode session id for the current project."
   (cdr (car (fscotto/opencode-session-candidates (fscotto/project-root)))))
 
-(defun fscotto/project-opencode-dwim ()
-  "Open the most useful OpenCode session for the current project.
-
-Resume the latest saved session when available, otherwise create a new one."
+(defun fscotto/project-agent-dwim ()
+  "Choose an agent for the current project and launch it externally."
   (interactive)
-  (let ((session-id (fscotto/project-opencode-latest-session-id)))
-    (if session-id
-        (fscotto/launch-external-terminal (list "opencode" "--session" session-id)
-                                          (fscotto/project-root))
-      (fscotto/project-opencode))))
+  (let ((agent (completing-read "Agent: " '("Codex" "OpenCode") nil t)))
+    (pcase agent
+      ("OpenCode"
+       (let ((session-id (fscotto/project-opencode-latest-session-id)))
+         (if session-id
+             (fscotto/launch-external-terminal (list "opencode" "--session" session-id)
+                                               (fscotto/project-root))
+           (fscotto/project-opencode))))
+      ("Codex"
+       (fscotto/launch-external-terminal '("codex" "resume" "--last"))))))
 
 (defun fscotto/project-opencode-session ()
   "Resume a saved OpenCode session for the current project."
@@ -150,6 +153,16 @@ Resume the latest saved session when available, otherwise create a new one."
            (session-id (cdr (assoc selection candidates))))
       (fscotto/launch-external-terminal (list "opencode" "--session" session-id)
                                         project-directory))))
+
+(defun fscotto/project-agent-session ()
+  "Choose an agent and resume a saved session for the current project."
+  (interactive)
+  (let ((agent (completing-read "Agent session: " '("Codex" "OpenCode") nil t)))
+    (pcase agent
+      ("OpenCode"
+       (fscotto/project-opencode-session))
+      ("Codex"
+       (fscotto/launch-external-terminal '("codex" "resume"))))))
 
 (defun fscotto/project-external-terminal ()
   "Open the external terminal in project root."

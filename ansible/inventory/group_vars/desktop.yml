@@ -151,6 +151,8 @@ desktop_npm_packages:
     state: latest
   - name: "@openai/codex"
     state: latest
+  - name: "@google/gemini-cli"
+    state: latest
 
 desktop_common_dotfiles:
   - name: XDG autostart entries

@@ -1,0 +1,14 @@
+{
+  "security": {
+    "auth": {
+      "selectedType": "oauth-personal"
+    }
+  },
+  "context": {
+    "fileName": [
+      "~/.config/ai/bootstrap.md",
+      "~/.config/ai/rules/safety.md",
+      "~/.config/ai/AGENTS.md"
+    ]
+  }
+}

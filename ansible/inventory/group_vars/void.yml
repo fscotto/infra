@@ -30,6 +30,7 @@ void_packages_base:
   - mu4e
   - network-manager-applet
   - nodejs
+  - ntfs-3g
   - pavucontrol
   - pipewire
   - pkg-config

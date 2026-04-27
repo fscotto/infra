@@ -50,6 +50,28 @@ common_dotfiles:
     dest: .vimrc
     mode: "0644"
   - name: bat config
-    src: .config/bat/.config/bat/
-    dest: .config/bat/
+    src: .config/bat
+    dest: .config/bat
+    mode: preserve
+
+ai_agents_npm_packages:
+  - name: "opencode-ai"
+    state: latest
+  - name: "@openai/codex"
+    state: latest
+  - name: "@google/gemini-cli"
+    state: latest
+
+ai_agents_dotfiles:
+  - name: AI common config
+    src: .config/ai
+    dest: .config/ai
+    mode: preserve
+  - name: Gemini CLI config
+    src: .gemini
+    dest: .gemini
+    mode: preserve
+  - name: OpenCode config
+    src: .config/opencode
+    dest: .config/opencode
     mode: preserve

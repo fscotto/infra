@@ -146,13 +146,7 @@ desktop_source_tools:
 
 desktop_binary_tools: []
 
-desktop_npm_packages:
-  - name: "opencode-ai"
-    state: latest
-  - name: "@openai/codex"
-    state: latest
-  - name: "@google/gemini-cli"
-    state: latest
+desktop_npm_packages: "{{ ai_agents_npm_packages + [] }}"
 
 desktop_common_dotfiles:
   - name: XDG autostart entries
@@ -186,10 +180,6 @@ desktop_common_dotfiles:
   - name: yt-dlp config
     src: .config/yt-dlp/
     dest: .config/yt-dlp/
-    mode: preserve
-  - name: OpenCode config
-    src: .config/opencode/
-    dest: .config/opencode/
     mode: preserve
   - name: MPV config
     src: .config/mpv/

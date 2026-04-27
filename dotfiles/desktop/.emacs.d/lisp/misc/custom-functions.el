@@ -1,4 +1,5 @@
-;;functions to support syncing .elfeed between machines
+(require 'seq)
+(require 'subr-x)
 ;;makes sure elfeed reads index from disk before launching
 (defvar fscotto/elfeed-initial-update-done nil
   "Non-nil once Elfeed has triggered its first automatic update this session.")
@@ -131,7 +132,7 @@ Each entry is a cons cell of display string and session id."
 (defun fscotto/project-agent-dwim ()
   "Choose an agent for the current project and launch it externally."
   (interactive)
-  (let ((agent (completing-read "Agent: " '("Codex" "OpenCode") nil t)))
+  (let ((agent (completing-read "Agent: " '("Codex" "Gemini" "OpenCode") nil t)))
     (pcase agent
       ("OpenCode"
        (let ((session-id (fscotto/project-opencode-latest-session-id)))
@@ -140,7 +141,10 @@ Each entry is a cons cell of display string and session id."
                                                (fscotto/project-root))
            (fscotto/project-opencode))))
       ("Codex"
-       (fscotto/launch-external-terminal '("codex" "resume" "--last"))))))
+       (fscotto/launch-external-terminal '("codex" "resume" "--last")))
+      ("Gemini"
+       (fscotto/launch-external-terminal '("gemini" "--resume" "latest")
+                                         (fscotto/project-root))))))
 
 (defun fscotto/project-opencode-session ()
   "Resume a saved OpenCode session for the current project."
@@ -154,15 +158,75 @@ Each entry is a cons cell of display string and session id."
       (fscotto/launch-external-terminal (list "opencode" "--session" session-id)
                                         project-directory))))
 
+(defun fscotto/gemini-session-candidates (directory)
+  "Return Gemini session candidates for DIRECTORY.
+
+Each entry is a cons cell of display string and session index.
+Tries JSON output first, falls back to text parsing if unavailable."
+  (let* ((default-directory (file-name-as-directory directory))
+         (json-output (shell-command-to-string
+                       "gemini --list-sessions --output-format json 2>/dev/null")))
+    (cond
+     ((string-match "^{" json-output)
+      (ignore-errors
+        (require 'json)
+        (let* ((parsed (json-parse-string json-output))
+               (sessions (gethash "sessions" parsed)))
+          (when (vectorp sessions)
+            (seq-map-indexed
+             (lambda (s idx)
+               (let* ((idx-str (number-to-string (1+ idx)))
+                      (msg (if (hash-table-p s)
+                               (or (gethash "firstUserMessage" s) "Session")
+                             "Session"))
+                      (ts (and (hash-table-p s)
+                               (ignore-errors (gethash "lastUpdated" s))
+                               (when (stringp it) (string-trim it))))
+                      (label (if ts (format "%s [%s]" msg ts) msg)))
+                 (cons label idx-str)))
+             sessions)))))
+     (t
+      (let* ((output (shell-command-to-string "gemini --list-sessions"))
+             (lines (seq-filter (lambda (s) (string-match "\\S-" s))
+                                (split-string output "\n" t)))
+             (data-lines (seq-drop lines 1))
+             (candidates nil))
+        (dolist (line data-lines)
+          (let ((trimmed (string-trim line)))
+            (when (string-match
+                   (rx (group (one-or-more digit))
+                       (one-or-more whitespace)
+                       (group (one-or-more nonl)))
+                   trimmed)
+              (push (cons (match-string 2 trimmed)
+                          (match-string 1 trimmed))
+                    candidates))))
+        (nreverse candidates))))))
+
+(defun fscotto/project-gemini-session ()
+  "Choose and resume a Gemini session for the current project."
+  (interactive)
+  (let* ((project-directory (fscotto/project-root))
+         (candidates (fscotto/gemini-session-candidates project-directory)))
+    (unless candidates
+      (user-error "No Gemini sessions found for %s" project-directory))
+    (let* ((selection (completing-read "Gemini session: " candidates nil t))
+           (session-idx (cdr (assoc selection candidates))))
+      (fscotto/launch-external-terminal
+       (list "gemini" "--resume" session-idx)
+       project-directory))))
+
 (defun fscotto/project-agent-session ()
   "Choose an agent and resume a saved session for the current project."
   (interactive)
-  (let ((agent (completing-read "Agent session: " '("Codex" "OpenCode") nil t)))
+  (let ((agent (completing-read "Agent session: " '("Codex" "Gemini" "OpenCode") nil t)))
     (pcase agent
       ("OpenCode"
        (fscotto/project-opencode-session))
       ("Codex"
-       (fscotto/launch-external-terminal '("codex" "resume"))))))
+       (fscotto/launch-external-terminal '("codex" "resume")))
+      ("Gemini"
+       (fscotto/project-gemini-session)))))
 
 (defun fscotto/project-external-terminal ()
   "Open the external terminal in project root."

@@ -68,10 +68,16 @@ ai_agents_dotfiles:
     dest: .config/ai
     mode: preserve
   - name: Gemini CLI config
-    src: .gemini
-    dest: .gemini
-    mode: preserve
+    src: .gemini/settings.json
+    dest: .gemini/settings.json
+    mode: "0644"
   - name: OpenCode config
     src: .config/opencode
     dest: .config/opencode
     mode: preserve
+
+ai_agents_templates:
+  - name: Codex config
+    src: .codex/config.toml.j2
+    dest: .codex/config.toml
+    mode: "0644"

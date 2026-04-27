@@ -37,6 +37,30 @@
   loop_control:
     label: "{{ item.dest }}"
 
+- name: Ensure AI config directories exist
+  tags: [dotfiles, dotfiles:common]
+  ansible.builtin.file:
+    path: "{{ effective_user_home }}/{{ item }}"
+    state: directory
+    owner: "{{ effective_username }}"
+    group: "{{ effective_user_group }}"
+    mode: "0755"
+  loop:
+    - .codex
+  when: (ai_agents_templates | default([])) | length > 0
+
+- name: Render AI agent templates
+  tags: [dotfiles, dotfiles:common]
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/../dotfiles/common/{{ item.src }}"
+    dest: "{{ effective_user_home }}/{{ item.dest }}"
+    owner: "{{ effective_username }}"
+    group: "{{ effective_user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ ai_agents_templates | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+
 - name: Refresh bat cache
   tags: [dotfiles, dotfiles:common]
   ansible.builtin.command:

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-wallpaper="$HOME/.config/i3/wallpapers/void-minimalist.png"
+wallpaper="$HOME/.config/i3/wallpapers/maxresdefault.jpg"
 cached="$HOME/.cache/i3lock/wallpaper.png"
 dims_cache="$HOME/.cache/i3lock/dims.txt"
 dims=$(xdotool getdisplaygeometry | tr ' ' 'x')

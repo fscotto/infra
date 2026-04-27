@@ -33,7 +33,7 @@
     owner: "{{ effective_username }}"
     group: "{{ effective_user_group }}"
     mode: "{{ item.mode }}"
-  loop: "{{ common_dotfiles | default([]) }}"
+  loop: "{{ (common_dotfiles | default([])) + (ai_agents_dotfiles | default([])) }}"
   loop_control:
     label: "{{ item.dest }}"
 

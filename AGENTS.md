@@ -6,7 +6,8 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 - Main orchestration: `ansible/site.yml`
 - Inventory and layering inputs: `ansible/inventory/hosts.yml`, `ansible/inventory/group_vars/*.yml`, `ansible/inventory/host_vars/*.yml`
 - Dotfiles live under `dotfiles/`
-- OpenCode loads global instructions from `dotfiles/desktop/.config/opencode/opencode.json`
+- AI agent instructions (bootstrap, rules, knowledge) are centralized in `dotfiles/common/.config/ai/` and shared between Opencode, Codex, and Gemini CLI.
+- OpenCode loads its entrypoint configuration from `dotfiles/common/.config/opencode/opencode.json`.
 
 ## Topology
 - Void desktops: `ikaros`, `nymph`

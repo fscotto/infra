@@ -33,7 +33,11 @@
     owner: "{{ effective_username }}"
     group: "{{ effective_user_group }}"
     mode: "{{ item.mode }}"
-  loop: "{{ (common_dotfiles | default([])) + (ai_agents_dotfiles | default([])) }}"
+  loop: >-
+    {{
+      (common_dotfiles | default([]))
+      + ((ai_agents_dotfiles | default([])) if (ai_agents_enabled | default(false)) else [])
+    }}
   loop_control:
     label: "{{ item.dest }}"
 
@@ -47,7 +51,9 @@
     mode: "0755"
   loop:
     - .codex
-  when: (ai_agents_templates | default([])) | length > 0
+  when:
+    - ai_agents_enabled | default(false)
+    - (ai_agents_templates | default([])) | length > 0
 
 - name: Render AI agent templates
   tags: [dotfiles, dotfiles:common]
@@ -60,6 +66,7 @@
   loop: "{{ ai_agents_templates | default([]) }}"
   loop_control:
     label: "{{ item.dest }}"
+  when: ai_agents_enabled | default(false)
 
 - name: Refresh bat cache
   tags: [dotfiles, dotfiles:common]

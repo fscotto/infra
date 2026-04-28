@@ -62,6 +62,8 @@ ai_agents_npm_packages:
   - name: "@google/gemini-cli"
     state: latest
 
+ai_agents_enabled: true
+
 ai_agents_dotfiles:
   - name: AI common config
     src: .config/ai

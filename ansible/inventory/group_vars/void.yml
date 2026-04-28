@@ -18,6 +18,8 @@ void_packages_base:
   - fuse3
   - gcc
   - gdb
+  - gist
+  - github-cli
   - gnome-keyring
   - go
   - gvfs

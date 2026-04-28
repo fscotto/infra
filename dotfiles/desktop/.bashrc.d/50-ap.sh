@@ -12,7 +12,7 @@ ap() {
       cmd+=(--tag "$1")
     fi
 
-    printf '+ %s\n' "${cmd[*]}"
+    printf '\033[0;36m+ %s\033[0m\n' "${cmd[*]}"
     "${cmd[@]}"
   )
 }

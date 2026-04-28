@@ -6,8 +6,9 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 - Main orchestration: `ansible/site.yml`
 - Inventory and layering inputs: `ansible/inventory/hosts.yml`, `ansible/inventory/group_vars/*.yml`, `ansible/inventory/host_vars/*.yml`
 - Dotfiles live under `dotfiles/`
-- AI agent instructions (bootstrap, rules, knowledge) are centralized in `dotfiles/common/.config/ai/` and shared between Opencode, Codex, and Gemini CLI.
+- AI agent instructions (bootstrap, rules, knowledge) are centralized in `dotfiles/common/.config/ai/` and shared between OpenCode, Codex, and Gemini CLI.
 - OpenCode loads its entrypoint configuration from `dotfiles/common/.config/opencode/opencode.json`.
+- Codex config is rendered from `dotfiles/common/.codex/config.toml.j2` so `model_instructions_file` points to the deployed `~/.config/ai/bootstrap.md`.
 
 ## Topology
 - Void desktops: `ikaros`, `nymph`
@@ -39,7 +40,7 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
   - WSL dev: `ansible-playbook ansible/site.yml --limit deadalus-wsl --check --diff`
   - Server: `ansible-playbook ansible/site.yml --limit prometheus --check --diff`
 - Focused checks:
-- Emacs dotfiles only: `ansible-playbook ansible/site.yml --limit ikaros --tags emacs --check --diff` or `--limit nymph --tags emacs --check --diff`
+  - Emacs dotfiles only: `ansible-playbook ansible/site.yml --limit ikaros --tags emacs --check --diff` or `--limit nymph --tags emacs --check --diff`
   - Sway/Noctalia bootstrap on nymph: `ansible-playbook ansible/site.yml --limit nymph --tags packages,dotfiles:desktop,sway --check --diff`
   - Mail bootstrap: `sh -n scripts/bootstrap_mail.sh` and `shellcheck scripts/bootstrap_mail.sh`
   - Windows bootstrap parse: `pwsh -NoProfile -Command "[void][System.Management.Automation.Language.Parser]::ParseFile('scripts/bootstrap_windows_workstation.ps1', [ref]$null, [ref]$null)"`
@@ -56,6 +57,7 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 ## Desktop Void Notes
 - `profile_desktop_common` owns the shared desktop bootstrap.
 - `.emacs.d` is deployed by a dedicated `profile_desktop_common` task tagged `emacs`.
+- NTFS filesystem support is provided by `ntfs-3g` in `ansible/inventory/group_vars/void.yml`.
 - User services are managed by `turnstile` and live under `dotfiles/desktop/.config/service/`.
 - `ssh-agent` runs under `turnstile` with stable socket `~/.local/state/ssh-agent/socket`.
 - Critical session entrypoints:
@@ -73,6 +75,13 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 - Ubuntu workstation follow-up work is still open around YubiKey/GPG/SSH-FIDO2 package verification, GPG signing setup on the YubiKey, and evaluating `ed25519-sk` SSH key generation.
 - `workstation_host_windows` runs with `gather_facts: false` and validates PSRP settings plus `windows_package_backend` before role execution.
 - Windows taskbar pins are driven by `windows_taskbar_pins` in `ansible/inventory/group_vars/workstation_host_windows.yml`; validate identifiers from a real Windows session before changing them.
+
+## Coding Agent Notes
+- Shared agent packages live in `ai_agents_npm_packages` in `ansible/inventory/group_vars/all.yml`.
+- Shared agent dotfiles live in `ai_agents_dotfiles`; rendered configs live in `ai_agents_templates`.
+- Desktop, native workstation, and WSL profiles consume the shared agent package list; do not duplicate package entries in profile-specific vars.
+- `dotfiles_common` copies common dotfiles plus `ai_agents_dotfiles`, then renders `ai_agents_templates`.
+- Keep `.config/ai/` as the common instruction source; update agent-specific entrypoints to reference it rather than duplicating instruction text.
 
 ## Tooling Notes
 - Install local tooling with:

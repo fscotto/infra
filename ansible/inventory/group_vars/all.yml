@@ -50,12 +50,14 @@ common_dotfiles:
     dest: .vimrc
     mode: "0644"
   - name: bat config
-    src: .config/bat
-    dest: .config/bat
+    src: .config/bat/
+    dest: .config/bat/
     mode: preserve
 
 ai_agents_npm_packages:
   - name: "opencode-ai"
+    state: latest
+  - name: "@anthropic-ai/claude-code"
     state: latest
   - name: "@openai/codex"
     state: latest
@@ -66,16 +68,20 @@ ai_agents_enabled: true
 
 ai_agents_dotfiles:
   - name: AI common config
-    src: .config/ai
-    dest: .config/ai
+    src: .config/ai/
+    dest: .config/ai/
     mode: preserve
   - name: Gemini CLI config
-    src: .gemini/settings.json
-    dest: .gemini/settings.json
-    mode: "0644"
+    src: .gemini/
+    dest: .gemini/
+    mode: preserve
   - name: OpenCode config
-    src: .config/opencode
-    dest: .config/opencode
+    src: .config/opencode/
+    dest: .config/opencode/
+    mode: preserve
+  - name: Claude Code memory
+    src: .claude/
+    dest: .claude/
     mode: preserve
 
 ai_agents_templates:

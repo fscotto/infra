@@ -132,8 +132,10 @@ Each entry is a cons cell of display string and session id."
 (defun fscotto/project-agent-dwim ()
   "Choose an agent for the current project and launch it externally."
   (interactive)
-  (let ((agent (completing-read "Agent: " '("Codex" "Gemini" "OpenCode") nil t)))
+  (let ((agent (completing-read "Agent: " '("Claude" "Codex" "Gemini" "OpenCode") nil t)))
     (pcase agent
+      ("Claude"
+       (fscotto/launch-external-terminal '("claude" "--continue")))
       ("OpenCode"
        (let ((session-id (fscotto/project-opencode-latest-session-id)))
          (if session-id
@@ -219,8 +221,10 @@ Tries JSON output first, falls back to text parsing if unavailable."
 (defun fscotto/project-agent-session ()
   "Choose an agent and resume a saved session for the current project."
   (interactive)
-  (let ((agent (completing-read "Agent session: " '("Codex" "Gemini" "OpenCode") nil t)))
+  (let ((agent (completing-read "Agent session: " '("Claude" "Codex" "Gemini" "OpenCode") nil t)))
     (pcase agent
+      ("Claude"
+       (fscotto/launch-external-terminal '("claude" "--resume")))
       ("OpenCode"
        (fscotto/project-opencode-session))
       ("Codex"

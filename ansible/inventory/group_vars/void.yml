@@ -23,6 +23,7 @@ void_packages_base:
   - gnome-keyring
   - go
   - gvfs
+  - hugo
   - ImageMagick
   - isync
   - libsecret

@@ -16,6 +16,15 @@
   loop: "{{ xdg_user_directories | default([]) }}"
   when: "'void' in group_names"
 
+- name: Extract templates kit to Templates directory
+  tags: [dotfiles, dotfiles:common]
+  ansible.builtin.unarchive:
+    src: "{{ playbook_dir }}/../dotfiles/common/templates_kit.zip"
+    dest: "{{ effective_user_home }}/Templates"
+    owner: "{{ effective_username }}"
+    group: "{{ effective_user_group }}"
+  when: "'void' in group_names"
+
 - name: Ensure SSH socket directory exists
   tags: [dotfiles, dotfiles:common]
   ansible.builtin.file:

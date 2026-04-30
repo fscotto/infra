@@ -28,6 +28,7 @@ void_packages_base:
   - isync
   - libsecret
   - libtool
+  - linux-mainline
   - lm_sensors
   - msmtp
   - mu4e

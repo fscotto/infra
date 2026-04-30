@@ -16,6 +16,7 @@ host_packages:
   - cliphist
   - grimshot
   - nvidia
+  - linux-mainline-headers
   - noctalia-shell
   - power-profiles-daemon
   - mesa-dri

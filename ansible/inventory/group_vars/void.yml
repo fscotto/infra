@@ -30,6 +30,8 @@ void_packages_base:
   - libtool
   - linux-mainline
   - lm_sensors
+  - man-pages-devel
+  - man-pages-posix
   - msmtp
   - mu4e
   - network-manager-applet

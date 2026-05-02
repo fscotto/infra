@@ -45,8 +45,7 @@
   'misc/rss
   'misc/terminal
   'misc/vcs
-  'misc/pdf
-  'misc/epub
+  'misc/documents
   'misc/i3-config)
 
 (message "...user configuration loaded")

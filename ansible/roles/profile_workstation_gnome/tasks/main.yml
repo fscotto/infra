@@ -74,6 +74,20 @@
   changed_when: true
   when: item.stdout | trim != item.item.value
 
+- name: Apply workstation GNOME extension dconf settings
+  tags: [gnome]
+  ansible.builtin.command:
+    argv:
+      - dconf
+      - write
+      - "{{ item.path }}{{ item.key }}"
+      - "{{ item.value }}"
+  become_user: "{{ username }}"
+  loop: "{{ workstation_gnome_extension_dconf_settings | default([]) }}"
+  loop_control:
+    label: "{{ item.path }}{{ item.key }}"
+  changed_when: true
+
 - name: Check whether VS Code CLI is available on workstation host
   tags: [packages, vscode]
   ansible.builtin.command:

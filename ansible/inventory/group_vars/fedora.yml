@@ -50,6 +50,9 @@ workstation_host_linux_packages_fedora:
   - code
   - firewall-config
   - gnome-extensions-app
+  - gnome-shell-extension-appindicator
+  - gnome-shell-extension-just-perfection
+  - gnome-shell-extension-no-overview
   - gnome-tweaks
   - libreoffice
   - meld
@@ -58,6 +61,7 @@ workstation_host_linux_packages_fedora:
   - pinentry-gnome3
   - podman
   - podman-compose
+  - rclone
   - yubikey-manager
 
 workstation_flatpak_remote_name: flathub

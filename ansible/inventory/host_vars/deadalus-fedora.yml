@@ -148,3 +148,29 @@ workstation_gnome_managed_settings:
   - schema: org.gnome.TextEditor
     key: wrap-text
     value: "true"
+  - schema: org.gnome.desktop.background
+    key: picture-uri
+    value: "'file:///usr/share/backgrounds/gnome/lcd-rainbow-l.jxl'"
+  - schema: org.gnome.desktop.background
+    key: picture-uri-dark
+    value: "'file:///usr/share/backgrounds/gnome/lcd-rainbow-d.jxl'"
+
+workstation_gnome_extension_dconf_settings:
+  - path: /org/gnome/shell/extensions/paperwm/
+    key: selection-border-radius-bottom
+    value: "15"
+  - path: /org/gnome/shell/extensions/paperwm/
+    key: selection-border-radius-top
+    value: "15"
+  - path: /org/gnome/shell/extensions/paperwm/
+    key: selection-border-size
+    value: "5"
+  - path: /org/gnome/shell/extensions/paperwm/
+    key: show-window-position-bar
+    value: "false"
+  - path: /org/gnome/shell/extensions/paperwm/
+    key: show-workspace-indicator
+    value: "false"
+  - path: /org/gnome/shell/extensions/paperwm/
+    key: window-gap
+    value: "10"

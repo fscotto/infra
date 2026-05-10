@@ -518,7 +518,7 @@
     label: "{{ binary_tool.name }}"
 
 - name: Install desktop npm packages
-  tags: [packages]
+  tags: [packages, npm]
   community.general.npm:
     name: "{{ item.name }}"
     global: true

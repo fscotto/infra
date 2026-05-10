@@ -436,6 +436,7 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `emptty` | gestione display manager `emptty` | desktop Void |
 | `gnome` | configurazione host GNOME | workstation host Linux, parte desktop |
 | `i3` | sessione/configurazione i3 | desktop Void |
+| `npm` | installazione pacchetti npm globali | desktop Void, workstation Linux, WSL |
 | `nvidia` | componenti NVIDIA desktop | desktop Void |
 | `packages` | installazione e aggiornamento pacchetti | tutti i profili |
 | `services` | gestione servizi runit/systemd/Windows | tutti i profili |

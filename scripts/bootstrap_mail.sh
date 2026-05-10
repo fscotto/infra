@@ -198,8 +198,20 @@ parse_secret_lookup_args() {
 
 resolve_dbus_session_bus_address() {
   if [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
-    printf '%s\n' "$DBUS_SESSION_BUS_ADDRESS"
-    return 0
+    case "$DBUS_SESSION_BUS_ADDRESS" in
+      unix:path=*)
+        _path=${DBUS_SESSION_BUS_ADDRESS#unix:path=}
+        _path=${_path%%,*}
+        if [ -S "$_path" ]; then
+          printf '%s\n' "$DBUS_SESSION_BUS_ADDRESS"
+          return 0
+        fi
+        ;;
+      unix:abstract=*)
+        printf '%s\n' "$DBUS_SESSION_BUS_ADDRESS"
+        return 0
+        ;;
+    esac
   fi
 
   if [ -f "$HOME/.dbus-session-bus-address" ]; then

@@ -7,12 +7,33 @@ desktop_sessions_enabled:
 desktop_default_session: gnome
 desktop_default_session_env: wayland
 
-host_grub_cmdline_linux: >-
+host_kernel_cmdline: >-
   rd.luks.uuid=1e15d159-5d05-4a1f-9639-ac200dff9f9c rootflags=subvol=@
   apparmor=1 security=apparmor nouveau.modeset=0 nvidia-drm.modeset=1
 
+host_systemd_boot_esp_path: /boot
+host_systemd_boot_default: arch.conf
+host_systemd_boot_timeout: 3
+host_systemd_boot_console_mode: max
+host_systemd_boot_editor: false
+host_systemd_boot_entries:
+  - filename: arch.conf
+    title: Arch Linux
+    linux: /vmlinuz-linux
+    initrds:
+      - /intel-ucode.img
+      - /initramfs-linux.img
+    options: "{{ host_kernel_cmdline }}"
+  - filename: arch-fallback.conf
+    title: Arch Linux fallback
+    linux: /vmlinuz-linux
+    initrds:
+      - /intel-ucode.img
+      - /initramfs-linux-fallback.img
+    options: "{{ host_kernel_cmdline }}"
+
 host_packages:
-  - grub
+  - intel-ucode
   - intel-media-driver
   - libva-intel-driver
   - mesa

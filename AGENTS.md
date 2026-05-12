@@ -68,6 +68,7 @@ Ansible-driven personal infrastructure repo for Void/Arch desktops, Linux workst
   - `dotfiles/desktop/.local/bin/start-sway-session`
 - Do not auto-restart `emptty` during playbook runs on active Void desktop hosts; restart it manually from another TTY/SSH session if needed.
 - `nymph` is an Arch GNOME/GDM desktop; do not route it through Void/i3/Sway/emptty tasks.
+- `nymph` uses systemd-boot; keep loader entries and kernel cmdline in `ansible/inventory/host_vars/nymph.yml`.
 - `profile_desktop_sway` owns the Sway session, Noctalia config rendering, and official plugin linking when a Sway desktop is explicitly enabled.
 - Noctalia shared config lives in `dotfiles/desktop/.config/noctalia/`; bar monitors and `screenOverrides` come from inventory (`noctalia_bar_monitors`, `noctalia_screen_overrides`) on Sway hosts.
 - On Sway hosts, `udiskie` is the backend for automount/LUKS but runs without tray; USB device UI is handled by `usb-drive-manager`.

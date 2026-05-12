@@ -88,10 +88,38 @@ desktop_void_dotfiles:
     src: .config/service/
     dest: .config/service/
     mode: preserve
+  - name: Thunar config
+    src: .config/Thunar/
+    dest: .config/Thunar/
+    mode: preserve
+  - name: MIME application defaults
+    src: .config/mimeapps.list
+    dest: .config/mimeapps.list
+    mode: "0644"
+  - name: Bash DBus session fragment
+    src: .bashrc.d/14-dbus-session.sh
+    dest: .bashrc.d/14-dbus-session.sh
+    mode: "0644"
+  - name: Bash SSH agent socket fragment
+    src: .bashrc.d/16-ssh-agent-socket.sh
+    dest: .bashrc.d/16-ssh-agent-socket.sh
+    mode: "0644"
   - name: Bash runit desktop fragment
     src: .bashrc.d/15-runit-desktop.sh
     dest: .bashrc.d/15-runit-desktop.sh
     mode: "0644"
+  - name: GTK theme setup script
+    src: .local/bin/setup-gtk-theme
+    dest: .local/bin/setup-gtk-theme
+    mode: "0755"
+  - name: Udiskie password helper
+    src: .local/bin/udiskie-password
+    dest: .local/bin/udiskie-password
+    mode: "0755"
+  - name: Udiskie config
+    src: .config/udiskie/
+    dest: .config/udiskie/
+    mode: preserve
   - name: Turnstile environment update script
     src: .local/bin/update-turnstile-env
     dest: .local/bin/update-turnstile-env

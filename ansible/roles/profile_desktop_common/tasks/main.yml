@@ -19,10 +19,7 @@
   loop:
     - "{{ user_home }}/.config"
     - "{{ user_home }}/.config/autostart"
-    - "{{ user_home }}/.config/dunst"
     - "{{ user_home }}/.config/alacritty"
-    - "{{ user_home }}/.config/Thunar"
-    - "{{ user_home }}/.config/rofi"
     - "{{ user_home }}/.config/systemd"
     - "{{ user_home }}/.config/systemd/user"
     - "{{ user_home }}/.bashrc.d"
@@ -504,14 +501,27 @@
         path: "{{ user_home }}/.cargo/bin/rustc"
       register: rustup_initialized
 
-    - name: Run rustup-init with cargo env sourced
+    - name: Run rustup-init with cargo env sourced (Void)
       ansible.builtin.shell:
         cmd: . ~/.cargo/env && rustup-init -y --no-modify-path
         creates: "{{ user_home }}/.cargo/bin/rustc"
       become_user: "{{ username }}"
       environment:
         HOME: "{{ user_home }}"
-      when: not rustup_initialized.stat.exists
+      when:
+        - not rustup_initialized.stat.exists
+        - "'void' in group_names"
+
+    - name: Install Rust stable toolchain via rustup (Arch)
+      ansible.builtin.command:
+        cmd: rustup toolchain install stable
+        creates: "{{ user_home }}/.cargo/bin/rustc"
+      become_user: "{{ username }}"
+      environment:
+        HOME: "{{ user_home }}"
+      when:
+        - not rustup_initialized.stat.exists
+        - "'arch' in group_names"
 
     - name: Ensure cargo env is sourced in shell profile
       ansible.builtin.lineinfile:

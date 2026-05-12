@@ -64,7 +64,6 @@ arch_desktop_common_packages:
   - brightnessctl
   - dex
   - pinentry
-  - udiskie
   - xdg-desktop-portal
   - xdg-desktop-portal-gtk
   - xdg-user-dirs
@@ -116,12 +115,12 @@ arch_profile_packages:
   - texlive-binextra
   - texlive-latex
   - texlive-latexextra
+  - ttf-hack-nerd
   - ttf-liberation
   - ttf-nerd-fonts-symbols
   - ctags
   - uv
   - virt-manager
-  - xarchiver
   - xournalpp
   - zstd
 
@@ -135,7 +134,6 @@ enabled_services:
   - ufw
 
 desktop_systemd_user_services:
-  - ssh-agent.service
   - emacs.service
   - syncthing.service
   - rclone-pcloud.service

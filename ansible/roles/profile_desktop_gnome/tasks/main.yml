@@ -16,3 +16,27 @@
     force: true
     owner: root
     group: root
+
+- name: Enable gnome-keyring PAM auth hook for GDM
+  tags: [gnome]
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/gdm-password
+    insertafter: '^auth\s+include\s+system-local-login$'
+    line: "auth       optional  pam_gnome_keyring.so"
+    state: present
+
+- name: Enable gnome-keyring PAM session hook for GDM
+  tags: [gnome]
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/gdm-password
+    insertafter: '^session\s+include\s+system-local-login$'
+    line: "session    optional  pam_gnome_keyring.so auto_start"
+    state: present
+
+- name: Enable gnome-keyring PAM password hook for GDM
+  tags: [gnome]
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/gdm-password
+    insertafter: '^password\s+include\s+system-local-login$'
+    line: "password   optional  pam_gnome_keyring.so use_authtok"
+    state: present

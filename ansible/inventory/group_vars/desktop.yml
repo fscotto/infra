@@ -50,14 +50,6 @@ desktop_common_dotfiles:
     src: .config/alacritty/
     dest: .config/alacritty/
     mode: preserve
-  - name: Thunar config
-    src: .config/Thunar/
-    dest: .config/Thunar/
-    mode: preserve
-  - name: MIME application defaults
-    src: .config/mimeapps.list
-    dest: .config/mimeapps.list
-    mode: "0644"
   - name: fastfetch config
     src: .config/fastfetch/
     dest: .config/fastfetch/
@@ -78,10 +70,6 @@ desktop_common_dotfiles:
     src: .config/mpv/
     dest: .config/mpv/
     mode: preserve
-  - name: Udiskie config
-    src: .config/udiskie/
-    dest: .config/udiskie/
-    mode: preserve
   - name: Bash cargo env fragment
     src: .bashrc.d/08-cargo-env.sh
     dest: .bashrc.d/08-cargo-env.sh
@@ -93,14 +81,6 @@ desktop_common_dotfiles:
   - name: Bash man page colors fragment
     src: .bashrc.d/12-manpages.sh
     dest: .bashrc.d/12-manpages.sh
-    mode: "0644"
-  - name: Bash DBus session fragment
-    src: .bashrc.d/14-dbus-session.sh
-    dest: .bashrc.d/14-dbus-session.sh
-    mode: "0644"
-  - name: Bash SSH agent socket fragment
-    src: .bashrc.d/16-ssh-agent-socket.sh
-    dest: .bashrc.d/16-ssh-agent-socket.sh
     mode: "0644"
   - name: Bash editor fragment
     src: .bashrc.d/20-editor-desktop.sh
@@ -138,14 +118,6 @@ desktop_common_dotfiles:
     src: .authinfo.gpg
     dest: .authinfo.gpg
     mode: "0600"
-  - name: GTK theme setup script
-    src: .local/bin/setup-gtk-theme
-    dest: .local/bin/setup-gtk-theme
-    mode: "0755"
-  - name: Udiskie password helper
-    src: .local/bin/udiskie-password
-    dest: .local/bin/udiskie-password
-    mode: "0755"
   - name: Calibre database Flatpak wrapper
     src: .local/bin/calibredb
     dest: .local/bin/calibredb
@@ -160,6 +132,10 @@ desktop_arch_dotfiles:
     src: .config/systemd/user/
     dest: .config/systemd/user/
     mode: preserve
+  - name: MIME application defaults
+    src: .config/mimeapps.arch.list
+    dest: .config/mimeapps.list
+    mode: "0644"
 
 desktop_emacs_dotfiles:
   - name: Emacs config

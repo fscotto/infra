@@ -6,6 +6,7 @@
     regexp: '^#?HandleLidSwitch='
     line: 'HandleLidSwitch=suspend'
     state: present
+  when: "'void' in group_names"
 
 - name: Ensure common config directories exist
   tags: [dotfiles, dotfiles:desktop]
@@ -22,6 +23,9 @@
     - "{{ user_home }}/.config/alacritty"
     - "{{ user_home }}/.config/Thunar"
     - "{{ user_home }}/.config/rofi"
+    - "{{ user_home }}/.config/systemd"
+    - "{{ user_home }}/.config/systemd/user"
+    - "{{ user_home }}/.bashrc.d"
     - "{{ user_home }}/.tmux"
     - "{{ user_home }}/.tmux/bin"
     - "{{ user_home }}/.tmux/plugins"
@@ -42,6 +46,7 @@
     insertafter: '^auth\s+include\s+system-local-login$'
     line: "auth       optional  pam_gnome_keyring.so"
     state: present
+  when: "'void' in group_names"
 
 - name: Enable gnome-keyring PAM session hook
   tags: [packages, gnome]
@@ -50,6 +55,7 @@
     insertafter: '^session\s+include\s+system-local-login$'
     line: "session    optional  pam_gnome_keyring.so auto_start"
     state: present
+  when: "'void' in group_names"
 
 - name: Enable gnome-keyring PAM password hook
   tags: [packages, gnome]
@@ -58,6 +64,7 @@
     insertafter: '^password\s+include\s+system-local-login$'
     line: "password   optional  pam_gnome_keyring.so use_authtok"
     state: present
+  when: "'void' in group_names"
 
 - name: Check whether SSH host ed25519 key exists
   tags: [services]
@@ -181,6 +188,7 @@
   ansible.builtin.stat:
     path: /etc/sv/libvirtd
   register: libvirtd_service_dir
+  when: "'void' in group_names"
 
 - name: Enable libvirt daemon service
   tags: [packages, services]
@@ -188,7 +196,9 @@
     src: /etc/sv/libvirtd
     dest: /var/service/libvirtd
     state: link
-  when: libvirtd_service_dir.stat.exists
+  when:
+    - "'void' in group_names"
+    - libvirtd_service_dir.stat.exists
 
 - name: Check virtualization group availability
   tags: [packages]
@@ -229,6 +239,7 @@
     owner: root
     group: root
     mode: "0755"
+  when: "'void' in group_names"
 
 - name: Ensure emptty session directories exist
   tags: [packages, services, emptty]
@@ -241,6 +252,7 @@
   loop:
     - /etc/emptty/xsessions
     - /etc/emptty/wayland-sessions
+  when: "'void' in group_names"
 
 - name: Configure emptty
   tags: [packages, services, emptty]
@@ -251,6 +263,7 @@
     group: root
     mode: "0644"
   notify: Restart emptty
+  when: "'void' in group_names"
 
 - name: Copy common desktop dotfiles
   tags: [dotfiles, dotfiles:desktop]
@@ -260,9 +273,40 @@
     owner: "{{ username }}"
     group: "{{ user_group }}"
     mode: "{{ item.mode }}"
-  loop: "{{ desktop_common_dotfiles | default([]) }}"
+  loop: >-
+    {{
+      (desktop_common_dotfiles | default([]))
+      + ((desktop_void_dotfiles | default([])) if 'void' in group_names else [])
+      + ((desktop_arch_dotfiles | default([])) if 'arch' in group_names else [])
+    }}
   loop_control:
     label: "{{ item.dest }}"
+
+- name: Ensure systemd user enablement directory exists
+  tags: [services, dotfiles, dotfiles:desktop]
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/systemd/user/default.target.wants"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+  when:
+    - "'arch' in group_names"
+    - (desktop_systemd_user_services | default([])) | length > 0
+
+- name: Enable desktop systemd user services
+  tags: [services, dotfiles, dotfiles:desktop]
+  ansible.builtin.file:
+    src: "{{ user_home }}/.config/systemd/user/{{ item }}"
+    dest: "{{ user_home }}/.config/systemd/user/default.target.wants/{{ item }}"
+    state: link
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    force: true
+  loop: "{{ desktop_systemd_user_services | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  when: "'arch' in group_names"
 
 - name: Copy Emacs desktop dotfiles
   tags: [dotfiles, dotfiles:desktop, emacs]

@@ -79,3 +79,125 @@ enabled_services:
   - ufw
   - virtlockd
   - virtlogd
+
+desktop_restart_emptty_automatically: false
+desktop_emptty_session_error_logging: disabled
+
+desktop_void_dotfiles:
+  - name: Turnstile user services
+    src: .config/service/
+    dest: .config/service/
+    mode: preserve
+  - name: Bash runit desktop fragment
+    src: .bashrc.d/15-runit-desktop.sh
+    dest: .bashrc.d/15-runit-desktop.sh
+    mode: "0644"
+  - name: Turnstile environment update script
+    src: .local/bin/update-turnstile-env
+    dest: .local/bin/update-turnstile-env
+    mode: "0755"
+
+desktop_common_packages:
+  - brightnessctl
+  - dex
+  - emptty
+  - pinentry-emacs
+  - pinentry-gtk
+  - turnstile
+  - udiskie
+  - xdg-desktop-portal
+  - xdg-desktop-portal-gtk
+  - xdg-user-dirs
+
+desktop_i3_packages:
+  - arandr
+  - autorandr
+  - feh
+  - i3
+  - i3blocks
+  - i3blocks-blocklets
+  - i3lock-color
+  - i3status
+  - dunst
+  - network-manager-applet
+  - rofi
+  - scrot
+  - setxkbmap
+  - blueman
+  - volumeicon
+  - xclip
+  - xfce-polkit
+  - xfce4-clipman-plugin
+  - xfce4-screenshooter
+  - xkbutils
+  - xorg-fonts
+  - xorg-minimal
+  - xss-lock
+
+desktop_sway_packages:
+  - grim
+  - kanshi
+  - slurp
+  - swayfx
+  - wl-clipboard
+  - xdg-desktop-portal-wlr
+
+profile_packages:
+  - alacritty
+  - bluez
+  - bridge-utils
+  - ctags
+  - firefox
+  - deluge-gtk
+  - dnsmasq
+  - emacs-gtk3
+  - poppler-glib
+  - poppler-utils
+  - exo
+  - fontconfig-devel
+  - freetype-devel
+  - gvfs-cdda
+  - gvfs-mtp
+  - gvfs-smb
+  - gufw
+  - libvirt
+  - libspa-bluetooth
+  - libreoffice
+  - liberation-fonts-ttf
+  - libvterm-devel
+  - libX11-devel
+  - libXft-devel
+  - meld
+  - mpv
+  - nerd-fonts-ttf
+  - nerd-fonts-symbols-ttf
+  - pdfarranger
+  - playerctl
+  - qemu
+  - qemu-firmware
+  - qemu-img
+  - qemu-tools
+  - remmina
+  - ripgrep
+  - rustup
+  - ristretto
+  - rsync
+  - shotwell
+  - ruff
+  - terminus-font
+  - texlive
+  - ty
+  - tumbler
+  - uv
+  - Thunar
+  - thunar-archive-plugin
+  - thunar-volman
+  - ffmpegthumbnailer
+  - virt-manager
+  - virt-manager-tools
+  - wireplumber
+  - xarchiver
+  - xournalpp
+  - yaru
+  - yaru-plus
+  - zstd

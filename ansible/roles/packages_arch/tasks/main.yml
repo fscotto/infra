@@ -1,0 +1,27 @@
+---
+- name: Synchronize and upgrade Arch Linux packages
+  tags: [packages]
+  community.general.pacman:
+    update_cache: true
+    upgrade: true
+
+- name: Install packages on Arch Linux
+  tags: [packages]
+  community.general.pacman:
+    name: >-
+      {{
+        (
+          (common_packages | default([]))
+        + (arch_packages_base | default([]))
+        + (arch_desktop_common_packages | default([]))
+        + (
+            (arch_desktop_gnome_packages | default([]))
+            if 'gnome' in (desktop_sessions_enabled | default([]))
+            else []
+          )
+        + (arch_profile_packages | default([]))
+        + (host_packages | default([]))
+        )
+        | unique
+      }}
+    state: present

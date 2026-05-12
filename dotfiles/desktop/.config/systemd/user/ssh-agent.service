@@ -1,0 +1,13 @@
+[Unit]
+Description=SSH key agent
+
+[Service]
+Type=simple
+Environment=SSH_AUTH_SOCK=%h/.local/state/ssh-agent/socket
+ExecStartPre=/usr/bin/mkdir -p %h/.local/state/ssh-agent
+ExecStartPre=/usr/bin/rm -f %h/.local/state/ssh-agent/socket
+ExecStart=/usr/bin/ssh-agent -D -a %h/.local/state/ssh-agent/socket
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

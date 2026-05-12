@@ -1,0 +1,18 @@
+---
+- name: Ensure GNOME desktop session is enabled for this profile
+  tags: [gnome]
+  ansible.builtin.assert:
+    that:
+      - "'gnome' in (desktop_sessions_enabled | default([]))"
+    fail_msg: >-
+      profile_desktop_gnome requires desktop_sessions_enabled to include gnome.
+
+- name: Ensure systemd boots to the graphical target
+  tags: [services, gnome]
+  ansible.builtin.file:
+    src: /usr/lib/systemd/system/graphical.target
+    dest: /etc/systemd/system/default.target
+    state: link
+    force: true
+    owner: root
+    group: root

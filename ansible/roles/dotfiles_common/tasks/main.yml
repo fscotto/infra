@@ -14,7 +14,7 @@
     group: "{{ effective_user_group }}"
     mode: "0755"
   loop: "{{ xdg_user_directories | default([]) }}"
-  when: "'void' in group_names"
+  when: "'desktop' in group_names"
 
 - name: Extract templates kit to Templates directory
   tags: [dotfiles, dotfiles:common]
@@ -23,7 +23,7 @@
     dest: "{{ effective_user_home }}/Templates"
     owner: "{{ effective_username }}"
     group: "{{ effective_user_group }}"
-  when: "'void' in group_names"
+  when: "'desktop' in group_names"
 
 - name: Ensure SSH socket directory exists
   tags: [dotfiles, dotfiles:common]

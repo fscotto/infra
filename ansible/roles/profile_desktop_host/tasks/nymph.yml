@@ -4,13 +4,18 @@
   ansible.builtin.lineinfile:
     path: /etc/default/grub
     regexp: '^GRUB_CMDLINE_LINUX='
-    line: 'GRUB_CMDLINE_LINUX="rd.luks.uuid=1e15d159-5d05-4a1f-9639-ac200dff9f9c rootflags=subvol=@ apparmor=1 security=apparmor nouveau.modeset=0 nvidia-drm.modeset=1"'
+    line: 'GRUB_CMDLINE_LINUX="{{ host_grub_cmdline_linux }}"'
     state: present
+  register: nymph_grub_cmdline
+  when: host_grub_cmdline_linux is defined
 
 - name: Regenerate GRUB configuration
   tags: [packages, nvidia]
   ansible.builtin.command: grub-mkconfig -o /boot/grub/grub.cfg
   changed_when: true
+  when:
+    - host_grub_cmdline_linux is defined
+    - nymph_grub_cmdline is changed
 
 - name: Configure NVIDIA power management for hybrid graphics
   tags: [packages, nvidia]

@@ -2,55 +2,27 @@
 hostname: nymph
 
 desktop_sessions_enabled:
-  - i3
+  - gnome
 
-desktop_default_session: i3
-desktop_default_session_env: xorg
-desktop_emptty_session_error_logging: rotate
+desktop_default_session: gnome
+desktop_default_session_env: wayland
 
-host_xbps_repositories:
-  - name: noctalia
-    url: https://universalrepo.r1xelelo.workers.dev/void
+host_grub_cmdline_linux: >-
+  rd.luks.uuid=1e15d159-5d05-4a1f-9639-ac200dff9f9c rootflags=subvol=@
+  apparmor=1 security=apparmor nouveau.modeset=0 nvidia-drm.modeset=1
 
 host_packages:
-  - cliphist
-  - grimshot
+  - grub
+  - intel-media-driver
+  - libva-intel-driver
+  - mesa
   - nvidia
-  - linux-mainline-headers
-  - noctalia-shell
+  - nvidia-settings
+  - nvidia-utils
   - power-profiles-daemon
-  - mesa-dri
-  - vulkan-loader
-  - mesa-vulkan-intel
-  - intel-video-accel
-  - tlp
-  - tlp-rdw
   - upower
+  - vulkan-icd-loader
+  - vulkan-intel
 
 host_enabled_services:
-  - tlp
-
-host_sway_dotfiles:
-  - src: .config/sway/host.conf
-    dest: .config/sway/host.conf
-    mode: "0644"
-  - src: .config/sway/session-env
-    dest: .config/sway/session-env
-    mode: "0644"
-  - src: .config/kanshi/config
-    dest: .config/kanshi/config
-    mode: "0644"
-
-noctalia_bar_monitors:
-  - DP-1
-  - eDP-1
-
-noctalia_screen_overrides:
-  - name: DP-1
-    enabled: false
-  - name: eDP-1
-    enabled: false
-
-host_packages_absent:
-  - network-manager-applet
-  - blueman
+  - power-profiles-daemon

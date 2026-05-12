@@ -1,0 +1,14 @@
+[Unit]
+Description=Emacs daemon
+After=ssh-agent.service
+Wants=ssh-agent.service
+
+[Service]
+Type=simple
+Environment=SSH_AUTH_SOCK=%h/.local/state/ssh-agent/socket
+WorkingDirectory=%h
+ExecStart=/usr/bin/emacs --fg-daemon
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

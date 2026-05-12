@@ -1,0 +1,12 @@
+[Unit]
+Description=Mount pCloud remote with rclone
+
+[Service]
+Type=simple
+ExecStart=/bin/sh -lc 'mkdir -p "$HOME/.cache/rclone/pcloud" "$HOME/Remotes/pCloud"; mountpoint -q "$HOME/Remotes/pCloud" && exit 0; exec /usr/bin/rclone mount pcloud: "$HOME/Remotes/pCloud" --config "$HOME/.config/rclone/rclone.conf" --cache-dir "$HOME/.cache/rclone/pcloud" --vfs-cache-mode writes --dir-cache-time 10m --poll-interval 1m --log-level INFO'
+ExecStop=/bin/sh -lc 'mountpoint -q "$HOME/Remotes/pCloud" && exec /usr/bin/fusermount3 -u "$HOME/Remotes/pCloud" || exit 0'
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

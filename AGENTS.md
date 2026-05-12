@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Ansible-driven personal infrastructure repo for Void desktops, Linux workstations, Windows+WSL, and an Ubuntu server.
+Ansible-driven personal infrastructure repo for Void/Arch desktops, Linux workstations, Windows+WSL, and an Ubuntu server.
 
 ## Source Of Truth
 - Main orchestration: `ansible/site.yml`
@@ -11,7 +11,8 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 - Codex config is rendered from `dotfiles/common/.codex/config.toml.j2` so `model_instructions_file` points to the deployed `~/.config/ai/bootstrap.md`.
 
 ## Topology
-- Void desktops: `ikaros`, `nymph`
+- Void desktops: `ikaros`
+- Arch desktops: `nymph`
 - Native Linux workstations: `deadalus-ubuntu`, `deadalus-fedora`
 - Windows host + WSL dev: `deadalus-win`, `deadalus-wsl`
 - Ubuntu server: `prometheus`
@@ -34,14 +35,15 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
   - `ansible-lint ansible/roles`
   - `yamllint ansible/`
 - Host-focused dry runs:
-  - Void desktop work: `ansible-playbook ansible/site.yml --limit ikaros --check --diff` or `--limit nymph --check --diff`
+  - Void desktop work: `ansible-playbook ansible/site.yml --limit ikaros --check --diff`
+  - Arch desktop work: `ansible-playbook ansible/site.yml --limit nymph --check --diff`
   - Ubuntu workstation: `ansible-playbook ansible/site.yml --limit deadalus-ubuntu --check --diff`
   - Fedora workstation: `ansible-playbook ansible/site.yml --limit deadalus-fedora --check --diff`
   - WSL dev: `ansible-playbook ansible/site.yml --limit deadalus-wsl --check --diff`
   - Server: `ansible-playbook ansible/site.yml --limit prometheus --check --diff`
 - Focused checks:
   - Emacs dotfiles only: `ansible-playbook ansible/site.yml --limit ikaros --tags emacs --check --diff` or `--limit nymph --tags emacs --check --diff`
-  - Sway/Noctalia bootstrap on nymph: `ansible-playbook ansible/site.yml --limit nymph --tags packages,dotfiles:desktop,sway --check --diff`
+  - Arch GNOME desktop bootstrap on nymph: `ansible-playbook ansible/site.yml --limit nymph --tags packages,services,gnome --check --diff`
   - Mail bootstrap: `sh -n scripts/bootstrap_mail.sh` and `shellcheck scripts/bootstrap_mail.sh`
   - Windows bootstrap parse: `pwsh -NoProfile -Command "[void][System.Management.Automation.Language.Parser]::ParseFile('scripts/bootstrap_windows_workstation.ps1', [ref]$null, [ref]$null)"`
   - Server compose render: `docker compose -f /opt/docker/server/docker-compose.yml config`
@@ -54,18 +56,20 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 - Put host-specific overrides in `host_vars`, not shared `group_vars`.
 - Use `no_log: true` for secret-bearing task inputs or outputs.
 
-## Desktop Void Notes
+## Desktop Notes
 - `profile_desktop_common` owns the shared desktop bootstrap.
 - `.emacs.d` is deployed by a dedicated `profile_desktop_common` task tagged `emacs`.
 - NTFS filesystem support is provided by `ntfs-3g` in `ansible/inventory/group_vars/void.yml`.
-- User services are managed by `turnstile` and live under `dotfiles/desktop/.config/service/`.
-- `ssh-agent` runs under `turnstile` with stable socket `~/.local/state/ssh-agent/socket`.
+- Void user services are managed by `turnstile` and live under `dotfiles/desktop/.config/service/`.
+- Arch user services are systemd user units under `dotfiles/desktop/.config/systemd/user/`.
+- `ssh-agent` keeps the stable socket `~/.local/state/ssh-agent/socket`.
 - Critical session entrypoints:
   - `dotfiles/desktop/.xinitrc`
   - `dotfiles/desktop/.local/bin/start-sway-session`
-- Do not auto-restart `emptty` during playbook runs on active desktop hosts; restart it manually from another TTY/SSH session if needed.
-- `profile_desktop_sway` owns the Sway session, Noctalia config rendering, and official plugin linking.
-- Noctalia shared config lives in `dotfiles/desktop/.config/noctalia/`; bar monitors and `screenOverrides` come from inventory (`noctalia_bar_monitors`, `noctalia_screen_overrides`).
+- Do not auto-restart `emptty` during playbook runs on active Void desktop hosts; restart it manually from another TTY/SSH session if needed.
+- `nymph` is an Arch GNOME/GDM desktop; do not route it through Void/i3/Sway/emptty tasks.
+- `profile_desktop_sway` owns the Sway session, Noctalia config rendering, and official plugin linking when a Sway desktop is explicitly enabled.
+- Noctalia shared config lives in `dotfiles/desktop/.config/noctalia/`; bar monitors and `screenOverrides` come from inventory (`noctalia_bar_monitors`, `noctalia_screen_overrides`) on Sway hosts.
 - On Sway hosts, `udiskie` is the backend for automount/LUKS but runs without tray; USB device UI is handled by `usb-drive-manager`.
 - Do not re-introduce `network-manager-applet` or `blueman` on Sway hosts without an explicit host-specific reason.
 

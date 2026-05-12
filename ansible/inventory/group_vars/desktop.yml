@@ -6,113 +6,6 @@ desktop_sessions_enabled:
 
 desktop_default_session: i3
 desktop_default_session_env: xorg
-desktop_restart_emptty_automatically: false
-desktop_emptty_session_error_logging: disabled
-
-desktop_common_packages:
-  - brightnessctl
-  - dex
-  - emptty
-  - pinentry-emacs
-  - pinentry-gtk
-  - turnstile
-  - udiskie
-  - xdg-desktop-portal
-  - xdg-desktop-portal-gtk
-  - xdg-user-dirs
-
-desktop_i3_packages:
-  - arandr
-  - autorandr
-  - feh
-  - i3
-  - i3blocks
-  - i3blocks-blocklets
-  - i3lock-color
-  - i3status
-  - dunst
-  - network-manager-applet
-  - rofi
-  - scrot
-  - setxkbmap
-  - blueman
-  - volumeicon
-  - xclip
-  - xfce-polkit
-  - xfce4-clipman-plugin
-  - xfce4-screenshooter
-  - xkbutils
-  - xorg-fonts
-  - xorg-minimal
-  - xss-lock
-
-desktop_sway_packages:
-  - grim
-  - kanshi
-  - slurp
-  - swayfx
-  - wl-clipboard
-  - xdg-desktop-portal-wlr
-
-profile_packages:
-  - alacritty
-  - bluez
-  - bridge-utils
-  - ctags
-  - firefox
-  - deluge-gtk
-  - dnsmasq
-  - emacs-gtk3
-  - poppler-glib
-  - poppler-utils
-  - exo
-  - fontconfig-devel
-  - freetype-devel
-  - gvfs-cdda
-  - gvfs-mtp
-  - gvfs-smb
-  - gufw
-  - libvirt
-  - libspa-bluetooth
-  - libreoffice
-  - liberation-fonts-ttf
-  - libvterm-devel
-  - libX11-devel
-  - libXft-devel
-  - meld
-  - mpv
-  - nerd-fonts-ttf
-  - nerd-fonts-symbols-ttf
-  - pdfarranger
-  - playerctl
-  - qemu
-  - qemu-firmware
-  - qemu-img
-  - qemu-tools
-  - remmina
-  - ripgrep
-  - rustup
-  - ristretto
-  - rsync
-  - shotwell
-  - ruff
-  - terminus-font
-  - texlive
-  - ty
-  - tumbler
-  - uv
-  - Thunar
-  - thunar-archive-plugin
-  - thunar-volman
-  - ffmpegthumbnailer
-  - virt-manager
-  - virt-manager-tools
-  - wireplumber
-  - xarchiver
-  - xournalpp
-  - yaru
-  - yaru-plus
-  - zstd
 
 desktop_source_tools:
   - name: st
@@ -189,14 +82,42 @@ desktop_common_dotfiles:
     src: .config/udiskie/
     dest: .config/udiskie/
     mode: preserve
-  - name: Turnstile user services
-    src: .config/service/
-    dest: .config/service/
-    mode: preserve
-  - name: Bash profile fragments
-    src: .bashrc.d/
-    dest: .bashrc.d/
-    mode: preserve
+  - name: Bash cargo env fragment
+    src: .bashrc.d/08-cargo-env.sh
+    dest: .bashrc.d/08-cargo-env.sh
+    mode: "0644"
+  - name: Bash GPG TTY fragment
+    src: .bashrc.d/10-gpg-tty.sh
+    dest: .bashrc.d/10-gpg-tty.sh
+    mode: "0644"
+  - name: Bash man page colors fragment
+    src: .bashrc.d/12-manpages.sh
+    dest: .bashrc.d/12-manpages.sh
+    mode: "0644"
+  - name: Bash DBus session fragment
+    src: .bashrc.d/14-dbus-session.sh
+    dest: .bashrc.d/14-dbus-session.sh
+    mode: "0644"
+  - name: Bash SSH agent socket fragment
+    src: .bashrc.d/16-ssh-agent-socket.sh
+    dest: .bashrc.d/16-ssh-agent-socket.sh
+    mode: "0644"
+  - name: Bash editor fragment
+    src: .bashrc.d/20-editor-desktop.sh
+    dest: .bashrc.d/20-editor-desktop.sh
+    mode: "0644"
+  - name: Bash Emacs client fragment
+    src: .bashrc.d/25-emacs-client-desktop.sh
+    dest: .bashrc.d/25-emacs-client-desktop.sh
+    mode: "0644"
+  - name: Bash VM helper fragment
+    src: .bashrc.d/30-runvm.sh
+    dest: .bashrc.d/30-runvm.sh
+    mode: "0644"
+  - name: Bash Ansible playbook helper fragment
+    src: .bashrc.d/50-ap.sh
+    dest: .bashrc.d/50-ap.sh
+    mode: "0644"
   - name: .gitignore_global
     src: .gitignore_global
     dest: .gitignore_global
@@ -221,10 +142,6 @@ desktop_common_dotfiles:
     src: .local/bin/setup-gtk-theme
     dest: .local/bin/setup-gtk-theme
     mode: "0755"
-  - name: Turnstile environment update script
-    src: .local/bin/update-turnstile-env
-    dest: .local/bin/update-turnstile-env
-    mode: "0755"
   - name: Udiskie password helper
     src: .local/bin/udiskie-password
     dest: .local/bin/udiskie-password
@@ -237,6 +154,12 @@ desktop_common_dotfiles:
     src: .ssh/config
     dest: .ssh/config
     mode: "0600"
+
+desktop_arch_dotfiles:
+  - name: systemd user services
+    src: .config/systemd/user/
+    dest: .config/systemd/user/
+    mode: preserve
 
 desktop_emacs_dotfiles:
   - name: Emacs config

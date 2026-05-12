@@ -83,7 +83,6 @@ arch_desktop_gnome_packages:
 
 arch_profile_packages:
   - alacritty
-  - bridge-utils
   - deluge
   - dnsmasq
   - edk2-ovmf
@@ -93,6 +92,7 @@ arch_profile_packages:
   - fontconfig
   - freetype2
   - gufw
+  - iproute2
   - libvterm
   - libx11
   - libxft
@@ -118,7 +118,7 @@ arch_profile_packages:
   - texlive-latexextra
   - ttf-liberation
   - ttf-nerd-fonts-symbols
-  - universal-ctags
+  - ctags
   - uv
   - virt-manager
   - xarchiver

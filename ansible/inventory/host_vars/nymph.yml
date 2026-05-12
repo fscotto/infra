@@ -37,7 +37,7 @@ host_packages:
   - intel-media-driver
   - libva-intel-driver
   - mesa
-  - nvidia
+  - nvidia-open
   - nvidia-settings
   - nvidia-utils
   - power-profiles-daemon

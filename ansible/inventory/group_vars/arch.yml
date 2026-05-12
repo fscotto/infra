@@ -32,7 +32,6 @@ arch_packages_base:
   - man-db
   - man-pages
   - msmtp
-  - mu
   - networkmanager
   - nodejs
   - npm

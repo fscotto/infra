@@ -154,32 +154,6 @@ desktop_i3_dotfiles:
     dest: .xinitrc
     mode: "0644"
 
-desktop_sway_dotfiles:
-  - name: Sway config
-    src: .config/sway/
-    dest: .config/sway/
-    mode: preserve
-  - name: Sway wallpaper assets
-    src: .config/i3/wallpapers/
-    dest: .config/sway/wallpapers/
-    mode: preserve
-  - name: Sway session wrapper
-    src: .local/bin/start-sway-session
-    dest: .local/bin/start-sway-session
-    mode: "0755"
-  - name: Noctalia colors
-    src: .config/noctalia/colors.json
-    dest: .config/noctalia/colors.json
-    mode: "0644"
-  - name: Noctalia plugins
-    src: .config/noctalia/plugins.json
-    dest: .config/noctalia/plugins.json
-    mode: "0644"
-  - name: Noctalia colorschemes
-    src: .config/noctalia/colorschemes/
-    dest: .config/noctalia/colorschemes/
-    mode: preserve
-
 noctalia_bar_monitors:
   - DP-1
 

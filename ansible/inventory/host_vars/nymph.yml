@@ -6,3 +6,19 @@ desktop_sessions_enabled:
 
 desktop_default_session: i3
 desktop_default_session_env: xorg
+desktop_emptty_session_error_logging: rotate
+
+host_packages:
+  - nvidia
+  - linux-mainline-headers
+  - mesa-dri
+  - vulkan-loader
+  - mesa-vulkan-intel
+  - intel-video-accel
+  - power-profiles-daemon
+  - tlp
+  - tlp-rdw
+  - upower
+
+host_enabled_services:
+  - tlp

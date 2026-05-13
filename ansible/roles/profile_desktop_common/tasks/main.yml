@@ -272,36 +272,9 @@
     {{
       (desktop_common_dotfiles | default([]))
       + ((desktop_void_dotfiles | default([])) if 'void' in group_names else [])
-      + ((desktop_arch_dotfiles | default([])) if 'arch' in group_names else [])
     }}
   loop_control:
     label: "{{ item.dest }}"
-
-- name: Ensure systemd user enablement directory exists
-  tags: [services, dotfiles, dotfiles:desktop]
-  ansible.builtin.file:
-    path: "{{ user_home }}/.config/systemd/user/default.target.wants"
-    state: directory
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
-    mode: "0755"
-  when:
-    - "'arch' in group_names"
-    - (desktop_systemd_user_services | default([])) | length > 0
-
-- name: Enable desktop systemd user services
-  tags: [services, dotfiles, dotfiles:desktop]
-  ansible.builtin.file:
-    src: "{{ user_home }}/.config/systemd/user/{{ item }}"
-    dest: "{{ user_home }}/.config/systemd/user/default.target.wants/{{ item }}"
-    state: link
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
-    force: true
-  loop: "{{ desktop_systemd_user_services | default([]) }}"
-  loop_control:
-    label: "{{ item }}"
-  when: "'arch' in group_names"
 
 - name: Copy Emacs desktop dotfiles
   tags: [dotfiles, dotfiles:desktop, emacs]
@@ -499,27 +472,14 @@
         path: "{{ user_home }}/.cargo/bin/rustc"
       register: rustup_initialized
 
-    - name: Run rustup-init with cargo env sourced (Void)
+    - name: Run rustup-init with cargo env sourced
       ansible.builtin.shell:
         cmd: . ~/.cargo/env && rustup-init -y --no-modify-path
         creates: "{{ user_home }}/.cargo/bin/rustc"
       become_user: "{{ username }}"
       environment:
         HOME: "{{ user_home }}"
-      when:
-        - not rustup_initialized.stat.exists
-        - "'void' in group_names"
-
-    - name: Install Rust stable toolchain via rustup (Arch)
-      ansible.builtin.command:
-        cmd: rustup toolchain install stable
-        creates: "{{ user_home }}/.cargo/bin/rustc"
-      become_user: "{{ username }}"
-      environment:
-        HOME: "{{ user_home }}"
-      when:
-        - not rustup_initialized.stat.exists
-        - "'arch' in group_names"
+      when: not rustup_initialized.stat.exists
 
     - name: Ensure cargo env is sourced in shell profile
       ansible.builtin.lineinfile:

@@ -19,11 +19,3 @@
   loop_control:
     label: "{{ item }}"
 
-- name: Enable systemd services without starting them
-  tags: [services, packages]
-  ansible.builtin.systemd:
-    name: "{{ item }}"
-    enabled: true
-  loop: "{{ enabled_services_only | default([]) }}"
-  loop_control:
-    label: "{{ item }}"

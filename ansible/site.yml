@@ -27,16 +27,6 @@
     - profile_desktop_i3
     - profile_desktop_host
 
-- hosts: arch
-  become: true
-
-  roles:
-    - packages_arch
-    - services_systemd
-    - profile_desktop_common
-    - profile_desktop_gnome
-    - profile_desktop_host
-
 - hosts: workstation_dev_ubuntu
   become: true
 

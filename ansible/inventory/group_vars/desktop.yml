@@ -112,20 +112,6 @@ desktop_common_dotfiles:
     dest: .ssh/config
     mode: "0600"
 
-desktop_arch_dotfiles:
-  - name: rclone pcloud systemd user service
-    src: .config/systemd/user/rclone-pcloud.service
-    dest: .config/systemd/user/rclone-pcloud.service
-    mode: "0644"
-  - name: syncthing systemd user service
-    src: .config/systemd/user/syncthing.service
-    dest: .config/systemd/user/syncthing.service
-    mode: "0644"
-  - name: MIME application defaults
-    src: .config/mimeapps.arch.list
-    dest: .config/mimeapps.list
-    mode: "0644"
-
 desktop_emacs_dotfiles:
   - name: Emacs config
     src: .emacs.d/

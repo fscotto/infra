@@ -1,75 +1,16 @@
 ---
-- name: Ensure systemd-boot loader entries directory exists
+- name: Configure GRUB kernel parameters for NVIDIA hybrid graphics
   tags: [packages, nvidia]
-  ansible.builtin.file:
-    path: "{{ host_systemd_boot_esp_path }}/loader/entries"
-    state: directory
-    owner: root
-    group: root
-    mode: "0755"
-  when: host_systemd_boot_esp_path is defined
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX='
+    line: 'GRUB_CMDLINE_LINUX="rd.luks.uuid=1e15d159-5d05-4a1f-9639-ac200dff9f9c rootflags=subvol=@ apparmor=1 security=apparmor nouveau.modeset=0 nvidia-drm.modeset=1"'
+    state: present
 
-- name: Check whether systemd-boot is installed
+- name: Regenerate GRUB configuration
   tags: [packages, nvidia]
-  ansible.builtin.command:
-    argv:
-      - bootctl
-      - "--esp-path={{ host_systemd_boot_esp_path }}"
-      - is-installed
-  register: nymph_systemd_boot_state
-  changed_when: false
-  failed_when: false
-  when:
-    - host_systemd_boot_esp_path is defined
-    - not ansible_check_mode
-
-- name: Install systemd-boot
-  tags: [packages, nvidia]
-  ansible.builtin.command:
-    argv:
-      - bootctl
-      - "--esp-path={{ host_systemd_boot_esp_path }}"
-      - install
+  ansible.builtin.command: grub-mkconfig -o /boot/grub/grub.cfg
   changed_when: true
-  when:
-    - host_systemd_boot_esp_path is defined
-    - not ansible_check_mode
-    - nymph_systemd_boot_state.rc | default(1) != 0
-
-- name: Configure systemd-boot loader defaults
-  tags: [packages, nvidia]
-  ansible.builtin.copy:
-    dest: "{{ host_systemd_boot_esp_path }}/loader/loader.conf"
-    content: |
-      default {{ host_systemd_boot_default }}
-      timeout {{ host_systemd_boot_timeout | default(3) }}
-      console-mode {{ host_systemd_boot_console_mode | default('max') }}
-      editor {{ 'yes' if host_systemd_boot_editor | default(false) else 'no' }}
-    owner: root
-    group: root
-    mode: "0644"
-  when:
-    - host_systemd_boot_esp_path is defined
-    - host_systemd_boot_default is defined
-
-- name: Configure systemd-boot Arch entries
-  tags: [packages, nvidia]
-  ansible.builtin.copy:
-    dest: "{{ host_systemd_boot_esp_path }}/loader/entries/{{ item.filename }}"
-    content: |-
-      title {{ item.title }}
-      linux {{ item.linux }}
-      {% for initrd in item.initrds | default([]) %}
-      initrd {{ initrd }}
-      {% endfor %}
-      options {{ item.options }}
-    owner: root
-    group: root
-    mode: "0644"
-  loop: "{{ host_systemd_boot_entries | default([]) }}"
-  loop_control:
-    label: "{{ item.filename }}"
-  when: host_systemd_boot_esp_path is defined
 
 - name: Configure NVIDIA power management for hybrid graphics
   tags: [packages, nvidia]

@@ -19,7 +19,6 @@
   loop:
     - "{{ user_home }}/.config"
     - "{{ user_home }}/.config/autostart"
-    - "{{ user_home }}/.config/alacritty"
     - "{{ user_home }}/.config/systemd"
     - "{{ user_home }}/.config/systemd/user"
     - "{{ user_home }}/.bashrc.d"

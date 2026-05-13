@@ -115,6 +115,10 @@ desktop_void_dotfiles:
     src: .bashrc.d/15-runit-desktop.sh
     dest: .bashrc.d/15-runit-desktop.sh
     mode: "0644"
+  - name: alacritty config
+    src: .config/alacritty/
+    dest: .config/alacritty/
+    mode: preserve
   - name: GTK theme setup script
     src: .local/bin/setup-gtk-theme
     dest: .local/bin/setup-gtk-theme

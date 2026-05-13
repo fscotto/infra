@@ -69,19 +69,41 @@ arch_desktop_common_packages:
   - xdg-user-dirs
 
 arch_desktop_gnome_packages:
+  - baobab
   - gdm
+  - gnome-backgrounds
+  - gnome-calculator
+  - gnome-calendar
+  - gnome-characters
+  - gnome-clocks
+  - gnome-console
   - gnome-control-center
+  - gnome-disk-utility
+  - gnome-font-viewer
   - gnome-session
   - gnome-settings-daemon
   - gnome-shell
   - gnome-shell-extensions
   - gnome-tweaks
+  - gvfs-afc
+  - gvfs-dnssd
+  - gvfs-goa
+  - gvfs-gphoto2
+  - gvfs-nfs
+  - gvfs-onedrive
+  - gvfs-wsdd
+  - loupe
   - mutter
   - nautilus
+  - papers
+  - rygel
+  - showtime
+  - snapshot
+  - sushi
   - xdg-desktop-portal-gnome
+  - xdg-user-dirs-gtk
 
 arch_profile_packages:
-  - alacritty
   - deluge
   - dnsmasq
   - edk2-ovmf
@@ -102,7 +124,6 @@ arch_profile_packages:
   - noto-fonts
   - noto-fonts-emoji
   - pdfarranger
-  - playerctl
   - poppler
   - poppler-glib
   - qemu-desktop

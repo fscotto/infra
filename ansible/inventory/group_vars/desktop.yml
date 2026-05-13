@@ -35,10 +35,6 @@ desktop_common_dotfiles:
     src: .config/autostart/
     dest: .config/autostart/
     mode: preserve
-  - name: alacritty config
-    src: .config/alacritty/
-    dest: .config/alacritty/
-    mode: preserve
   - name: fastfetch config
     src: .config/fastfetch/
     dest: .config/fastfetch/

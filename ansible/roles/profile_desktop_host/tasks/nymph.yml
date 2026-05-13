@@ -1,48 +1,38 @@
 ---
-- name: Read /etc/default/grub
+- name: Check if GRUB_CMDLINE_LINUX line exists in /etc/default/grub
   tags: [packages, nvidia]
-  ansible.builtin.slurp:
-    src: /etc/default/grub
-  register: nymph_grub_default
+  ansible.builtin.command:
+    cmd: grep -E '^GRUB_CMDLINE_LINUX=' /etc/default/grub
+  register: nymph_grub_cmdline_check
+  changed_when: false
+  failed_when: false
 
-- name: Extract current GRUB_CMDLINE_LINUX value
-  tags: [packages, nvidia]
-  ansible.builtin.set_fact:
-    nymph_grub_cmdline_current: >-
-      {{
-        (nymph_grub_default.content | b64decode).split('\n')
-        | select('match', '^GRUB_CMDLINE_LINUX="')
-        | first | default('GRUB_CMDLINE_LINUX=""')
-        | regex_replace('^GRUB_CMDLINE_LINUX="', '')
-        | regex_replace('"$', '')
-      }}
-
-- name: Build merged GRUB cmdline with NVIDIA parameters
-  tags: [packages, nvidia]
-  ansible.builtin.set_fact:
-    nymph_grub_cmdline_target: >-
-      {{
-        (
-          nymph_grub_cmdline_current
-          ~ (' nouveau.modeset=0' if 'nouveau.modeset=0' not in nymph_grub_cmdline_current else '')
-          ~ (' nvidia-drm.modeset=1' if 'nvidia-drm.modeset=1' not in nymph_grub_cmdline_current else '')
-        ) | trim
-      }}
-
-- name: Ensure NVIDIA kernel parameters are present in GRUB cmdline
+- name: Initialize empty GRUB_CMDLINE_LINUX line if missing
   tags: [packages, nvidia]
   ansible.builtin.lineinfile:
     path: /etc/default/grub
-    regexp: '^GRUB_CMDLINE_LINUX='
-    line: 'GRUB_CMDLINE_LINUX="{{ nymph_grub_cmdline_target }}"'
+    line: 'GRUB_CMDLINE_LINUX=""'
+    insertafter: '^GRUB_CMDLINE_LINUX_DEFAULT='
     state: present
-  register: nymph_grub_cmdline
+  when: nymph_grub_cmdline_check.rc != 0
+  register: nymph_grub_cmdline_init
+
+- name: Append NVIDIA kernel parameters to GRUB_CMDLINE_LINUX if missing
+  tags: [packages, nvidia]
+  ansible.builtin.replace:
+    path: /etc/default/grub
+    regexp: '^(GRUB_CMDLINE_LINUX="(?:(?!{{ item | regex_escape }})[^"])*?)"$'
+    replace: '\1 {{ item }}"'
+  loop:
+    - nouveau.modeset=0
+    - nvidia-drm.modeset=1
+  register: nymph_grub_cmdline_append
 
 - name: Regenerate GRUB configuration
   tags: [packages, nvidia]
   ansible.builtin.command: grub-mkconfig -o /boot/grub/grub.cfg
   changed_when: true
-  when: nymph_grub_cmdline is changed
+  when: nymph_grub_cmdline_init is changed or nymph_grub_cmdline_append is changed
 
 - name: Configure NVIDIA power management for hybrid graphics
   tags: [packages, nvidia]

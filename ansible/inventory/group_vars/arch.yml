@@ -129,9 +129,11 @@ enabled_services:
   - avahi-daemon
   - bluetooth
   - cups
-  - gdm
   - libvirtd
   - ufw
+
+enabled_services_only:
+  - gdm
 
 desktop_systemd_user_services:
   - syncthing.service

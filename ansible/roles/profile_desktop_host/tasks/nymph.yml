@@ -1,14 +1,41 @@
 ---
+- name: Read /etc/default/grub
+  tags: [packages, nvidia]
+  ansible.builtin.slurp:
+    src: /etc/default/grub
+  register: nymph_grub_default
+
+- name: Extract current GRUB_CMDLINE_LINUX value
+  tags: [packages, nvidia]
+  ansible.builtin.set_fact:
+    nymph_grub_cmdline_current: >-
+      {{
+        (nymph_grub_default.content | b64decode).split('\n')
+        | select('match', '^GRUB_CMDLINE_LINUX="')
+        | first | default('GRUB_CMDLINE_LINUX=""')
+        | regex_replace('^GRUB_CMDLINE_LINUX="', '')
+        | regex_replace('"$', '')
+      }}
+
+- name: Build merged GRUB cmdline with NVIDIA parameters
+  tags: [packages, nvidia]
+  ansible.builtin.set_fact:
+    nymph_grub_cmdline_target: >-
+      {{
+        (
+          nymph_grub_cmdline_current
+          ~ (' nouveau.modeset=0' if 'nouveau.modeset=0' not in nymph_grub_cmdline_current else '')
+          ~ (' nvidia-drm.modeset=1' if 'nvidia-drm.modeset=1' not in nymph_grub_cmdline_current else '')
+        ) | trim
+      }}
+
 - name: Ensure NVIDIA kernel parameters are present in GRUB cmdline
   tags: [packages, nvidia]
   ansible.builtin.lineinfile:
     path: /etc/default/grub
-    backrefs: true
-    regexp: '^(GRUB_CMDLINE_LINUX="(?!.*{{ item | regex_escape }}).*)"$'
-    line: '\1 {{ item }}"'
-  loop:
-    - nouveau.modeset=0
-    - nvidia-drm.modeset=1
+    regexp: '^GRUB_CMDLINE_LINUX='
+    line: 'GRUB_CMDLINE_LINUX="{{ nymph_grub_cmdline_target }}"'
+    state: present
   register: nymph_grub_cmdline
 
 - name: Regenerate GRUB configuration

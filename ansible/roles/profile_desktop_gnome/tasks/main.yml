@@ -17,6 +17,16 @@
     owner: root
     group: root
 
+- name: Enable package-provided emacs user service
+  tags: [services, dotfiles:desktop, emacs]
+  ansible.builtin.file:
+    src: /usr/lib/systemd/user/emacs.service
+    dest: "{{ user_home }}/.config/systemd/user/default.target.wants/emacs.service"
+    state: link
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    force: true
+
 - name: Deploy gpg-agent.conf for GNOME (pinentry-gnome3, no ssh-support)
   tags: [dotfiles, dotfiles:desktop, gnome]
   ansible.builtin.copy:

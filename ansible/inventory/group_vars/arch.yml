@@ -85,7 +85,7 @@ arch_profile_packages:
   - deluge
   - dnsmasq
   - edk2-ovmf
-  - emacs
+  - emacs-wayland
   - ffmpegthumbnailer
   - firefox
   - fontconfig
@@ -134,6 +134,5 @@ enabled_services:
   - ufw
 
 desktop_systemd_user_services:
-  - emacs.service
   - syncthing.service
   - rclone-pcloud.service

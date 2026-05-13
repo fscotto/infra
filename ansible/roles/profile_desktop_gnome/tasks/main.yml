@@ -17,6 +17,15 @@
     owner: root
     group: root
 
+- name: Deploy gpg-agent.conf for GNOME (pinentry-gnome3, no ssh-support)
+  tags: [dotfiles, dotfiles:desktop, gnome]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/.gnupg/gpg-agent.arch.conf"
+    dest: "{{ user_home }}/.gnupg/gpg-agent.conf"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0600"
+
 - name: Enable gnome-keyring PAM auth hook for GDM
   tags: [gnome]
   ansible.builtin.lineinfile:

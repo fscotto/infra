@@ -75,7 +75,6 @@ arch_desktop_gnome_packages:
   - gnome-calendar
   - gnome-characters
   - gnome-clocks
-  - gnome-console
   - gnome-control-center
   - gnome-disk-utility
   - gnome-font-viewer
@@ -95,6 +94,7 @@ arch_desktop_gnome_packages:
   - mutter
   - nautilus
   - papers
+  - ptyxis
   - rygel
   - showtime
   - snapshot

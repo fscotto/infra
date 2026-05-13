@@ -27,12 +27,3 @@
   when:
     - not ansible_check_mode
     - "'void' in group_names"
-
-- name: Reload SSH service with systemd
-  listen: Reload SSH service
-  ansible.builtin.systemd:
-    name: "{{ desktop_ssh_service_name | default('sshd') }}"
-    state: reloaded
-  when:
-    - not ansible_check_mode
-    - "'arch' in group_names"

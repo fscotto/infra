@@ -19,12 +19,11 @@
   loop:
     - "{{ user_home }}/.config"
     - "{{ user_home }}/.config/autostart"
-    - "{{ user_home }}/.config/systemd"
-    - "{{ user_home }}/.config/systemd/user"
     - "{{ user_home }}/.bashrc.d"
     - "{{ user_home }}/.tmux"
     - "{{ user_home }}/.tmux/bin"
     - "{{ user_home }}/.tmux/plugins"
+    - "{{ user_home }}/.ssh"
 
 - name: Ensure user local bin directory exists
   tags: [dotfiles, dotfiles:desktop, dotfiles:host]

@@ -62,9 +62,7 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 - Critical session entrypoints:
   - `dotfiles/desktop/.xinitrc`
 - Do not auto-restart `emptty` during playbook runs on active Void desktop hosts; restart it manually from another TTY/SSH session if needed.
-- Noctalia shared config lives in `dotfiles/desktop/.config/noctalia/`; bar monitors and `screenOverrides` come from inventory (`noctalia_bar_monitors`, `noctalia_screen_overrides`) on Sway hosts.
-- On Sway hosts, `udiskie` is the backend for automount/LUKS but runs without tray; USB device UI is handled by `usb-drive-manager`.
-- Do not re-introduce `network-manager-applet` or `blueman` on Sway hosts without an explicit host-specific reason.
+- `nymph` is an i3/X11 Void laptop with NVIDIA Optimus; host-specific tasks in `profile_desktop_host/tasks/nymph.yml` handle GRUB NVIDIA cmdline params, `prime-run` wrapper, and the WirePlumber camera priority config.
 
 ## Workstation / Windows Notes
 - Native Linux workstation hosts can combine `workstation_host_linux` with an OS-specific dev group.

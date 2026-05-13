@@ -31,8 +31,11 @@ infra/
 │   ├── common/
 │   ├── desktop/
 │   ├── fedora/
+│   ├── ubuntu/
 │   ├── server/
 │   ├── workstation/
+│   ├── workstation_host_linux/
+│   ├── workstation_dev_wsl/
 │   ├── ikaros/
 │   └── nymph/
 │
@@ -70,7 +73,7 @@ Sistema operativo:
 Sessioni desktop:
 
 - `ikaros`: i3
-- `nymph`: SwayFX
+- `nymph`: i3
 
 Macchine:
 
@@ -82,8 +85,8 @@ Queste macchine condividono la stessa configurazione base desktop e vengono mant
 Lo stato attuale del profilo desktop include, tra le altre cose:
 
 - dotfiles comuni e desktop
-- sessione i3 su `ikaros` e sessione Sway su `nymph`
-- `emptty` con default host-specific per il desktop attivo su ogni host
+- sessione i3 su entrambi gli host
+- `emptty` con default host-specific per il desktop attivo, con `XORG_SESSIONS_PATH` puntato a `/etc/emptty/xsessions` per esporre solo le sessioni esplicitamente whitelistate
 - pacchetti Void Linux e servizi runit
 - `turnstile` per i servizi utente, inclusi `emacs` e `ssh-agent`
 - `ssh-agent` con socket stabile condiviso tra shell, SSH ed Emacs in `~/.local/state/ssh-agent/socket`
@@ -91,10 +94,9 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 - `tmux` con plugin gestiti da TPM al bootstrap del profilo desktop
 - Flatpak con remoto Flathub
 - GNOME Keyring e bootstrap della posta via script dedicato
-- shell Noctalia su Sway su `nymph`, con plugin ufficiali per clipboard (`clipper`), polkit (`polkit-agent`), screenshot (`screenshot`) e gestione USB (`usb-drive-manager`); config condivisa in `dotfiles/desktop/.config/noctalia/` e `settings.json` renderizzato da template Ansible con variabili host-specifiche
-- `udiskie` come backend per automount/LUKS su Sway, senza tray; la UI dei dispositivi removibili è demandata a `usb-drive-manager`
-- `kanshi` su `nymph` per il profilo monitor Wayland, con workspace Sway deterministici: in dual monitor `1` resta su `eDP-1` e `2-10` vanno su `DP-1`, mentre in laptop-only tutti tornano su `eDP-1`
-- monitor Noctalia e `screenOverrides` dichiarati in inventory (`noctalia_bar_monitors`, `noctalia_screen_overrides`) per host `nymph`
+- `udiskie` come backend per automount/LUKS
+- `autorandr` per profili monitor host-specifici (`nymph` ha profili `dual` e `solo`)
+- override NVIDIA Optimus su `nymph`: parametri kernel GRUB iniettati in modo idempotente in `GRUB_CMDLINE_LINUX`, wrapper `prime-run` e config WirePlumber per priorità telecamera
 
 ---
 
@@ -270,7 +272,6 @@ I principali ruoli attualmente presenti sono:
 | services_systemd          | gestione servizi systemd            |
 | profile_desktop_common    | bootstrap desktop Void condiviso    |
 | profile_desktop_i3        | sessione desktop i3                 |
-| profile_desktop_sway      | sessione desktop Sway               |
 | profile_desktop_host      | override desktop specifici per host |
 | profile_workstation_dev_common | configurazione dev workstation condivisa |
 | profile_workstation_gnome | configurazione host workstation GNOME |
@@ -288,7 +289,7 @@ Il playbook `ansible/site.yml` e attualmente composto da sette blocchi:
 
 ```text
 all:!workstation_host_windows -> dotfiles_common
-void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_sway + profile_desktop_host
+void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_host
 workstation_dev_ubuntu -> packages_ubuntu + services_systemd + profile_workstation_dev_common
 workstation_dev_fedora -> packages_fedora + services_systemd + profile_workstation_dev_common
 workstation_host_linux -> profile_workstation_gnome
@@ -316,7 +317,10 @@ dotfiles/
 ├── desktop
 ├── server
 ├── fedora
+├── ubuntu
 ├── workstation
+├── workstation_host_linux
+├── workstation_dev_wsl
 ├── ikaros
 └── nymph
 ```
@@ -372,7 +376,7 @@ ansible-playbook ansible/site.yml
 Allo stato attuale questo comando:
 
 - distribuisce i dotfiles comuni a tutti gli host
-- per gli host Void applica bootstrap desktop condiviso, sessioni i3/Sway e override specifici per host
+- per gli host Void applica bootstrap desktop condiviso, sessione i3 e override specifici per host
 - per `workstation_dev_ubuntu` applica pacchetti Ubuntu, servizi systemd e profilo dev comune
 - per `workstation_dev_fedora` applica pacchetti Fedora, servizi systemd e profilo dev comune
 - per `workstation_host_linux` applica il layer host Linux GNOME
@@ -440,14 +444,13 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `nvidia` | componenti NVIDIA desktop | desktop Void |
 | `packages` | installazione e aggiornamento pacchetti | tutti i profili |
 | `services` | gestione servizi runit/systemd/Windows | tutti i profili |
-| `sway` | sessione/configurazione Sway | desktop Void |
 | `vscode` | installazione/configurazione VS Code | Fedora, host Linux, Windows |
 | `wsl` | bootstrap e configurazione WSL | WSL, Windows |
 
 Esempi pratici:
 
 ```bash
-ansible-playbook ansible/site.yml --limit nymph --tags dotfiles:desktop,sway --check --diff
+ansible-playbook ansible/site.yml --limit nymph --tags dotfiles:desktop,i3 --check --diff
 ansible-playbook ansible/site.yml --limit deadalus-fedora --tags packages,vscode --check --diff
 ansible-playbook ansible/site.yml --limit prometheus --tags services,dotfiles:server --check --diff
 ```

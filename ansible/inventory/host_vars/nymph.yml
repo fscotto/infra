@@ -27,3 +27,6 @@ host_i3_dotfiles:
   - src: .config/autorandr/
     dest: .config/autorandr/
     mode: preserve
+  - src: .config/wireplumber/wireplumber.conf.d/60-camera-priority.conf
+    dest: .config/wireplumber/wireplumber.conf.d/60-camera-priority.conf
+    mode: "0644"

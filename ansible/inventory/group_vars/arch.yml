@@ -51,7 +51,6 @@ arch_packages_base:
   - simple-scan
   - speech-dispatcher
   - syncthing
-  - system-config-printer
   - tealdeer
   - tmux
   - tree-sitter-cli

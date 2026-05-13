@@ -472,9 +472,9 @@
         path: "{{ user_home }}/.cargo/bin/rustc"
       register: rustup_initialized
 
-    - name: Run rustup-init with cargo env sourced
-      ansible.builtin.shell:
-        cmd: . ~/.cargo/env && rustup-init -y --no-modify-path
+    - name: Run rustup-init
+      ansible.builtin.command:
+        cmd: rustup-init -y --no-modify-path
         creates: "{{ user_home }}/.cargo/bin/rustc"
       become_user: "{{ username }}"
       environment:

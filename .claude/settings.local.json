@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(xargs ls -la)"
+      "Bash(xargs ls -la)",
+      "Bash(command -v pacman)",
+      "Bash(command -v paclist)",
+      "Bash(command -v pacinfo)",
+      "Bash(git -C /home/fscotto/AnsiblePlaybook add ansible/inventory/group_vars/arch.yml ansible/roles/services_systemd/tasks/main.yml)",
+      "Bash(git -C /home/fscotto/AnsiblePlaybook commit -m ' *)",
+      "Bash(git -C /home/fscotto/AnsiblePlaybook diff --stat)",
+      "Bash(git -C /home/fscotto/AnsiblePlaybook status --short)",
+      "Bash(git -C /home/fscotto/AnsiblePlaybook log --oneline --all -- ansible/inventory/host_vars/nymph.yml ansible/roles/profile_desktop_host/tasks/nymph.yml 'dotfiles/nymph/*')",
+      "Bash(git *)"
     ]
   }
 }

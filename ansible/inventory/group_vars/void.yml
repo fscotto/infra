@@ -1,4 +1,11 @@
 ---
+desktop_void_source_tools:
+  - name: st
+    repo: https://codeberg.org/fscotto/st
+    build_cmd: make
+    binary_name: st
+    install_name: st
+
 void_packages_base:
   - 7zip
   - NetworkManager

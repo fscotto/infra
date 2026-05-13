@@ -8,22 +8,11 @@ desktop_default_session: i3
 desktop_default_session_env: xorg
 
 desktop_source_tools:
-  - name: st
-    repo: https://codeberg.org/fscotto/st
-    build_cmd: make
-    binary_name: st
-    install_name: st
   - name: gf
     repo: https://github.com/nakst/gf.git
     build_cmd: ./build.sh
     binary_name: gf2
     install_name: gf
-  - name: bookokrat
-    repo: https://github.com/bugzmanov/bookokrat
-    build_cmd: cargo build --release
-    binary_name: bookokrat
-    install_name: bookokrat
-    build_output_path: target/release/bookokrat
   - name: llmfit
     repo: https://github.com/AlexsJones/llmfit
     build_cmd: cargo build --release

@@ -4,9 +4,9 @@ follow = mouse
 gap_size = 10
 
 width = 360
-height = 120
+height = (0, 120)
 origin = top-right
-offset = 20x40
+offset = (20, 40)
 
 font = Liberation Sans 10
 line_height = 2
@@ -19,7 +19,7 @@ separator_height = 2
 frame_width = 2
 corner_radius = 8
 
-transparency = 0
+transparency = 15
 
 background = "#1f1f28"
 foreground = "#eeeeee"

@@ -163,6 +163,7 @@ desktop_i3_packages:
   - i3status
   - dunst
   - network-manager-applet
+  - picom
   - rofi
   - scrot
   - setxkbmap

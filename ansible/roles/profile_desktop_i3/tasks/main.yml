@@ -12,6 +12,7 @@
     - "{{ user_home }}/.config/dunst"
     - "{{ user_home }}/.config/i3"
     - "{{ user_home }}/.config/i3blocks"
+    - "{{ user_home }}/.config/picom"
     - "{{ user_home }}/.config/rofi"
   when: "'i3' in (desktop_sessions_enabled | default([]))"
 

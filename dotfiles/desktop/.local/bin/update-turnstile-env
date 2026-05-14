@@ -8,11 +8,9 @@ fi
 
 turnstile-update-runit-env \
   DISPLAY \
-  WAYLAND_DISPLAY \
   XAUTHORITY \
   DBUS_SESSION_BUS_ADDRESS \
   SSH_AUTH_SOCK \
   XDG_CURRENT_DESKTOP \
   XDG_SESSION_DESKTOP \
-  XDG_SESSION_TYPE \
-  SWAYSOCK >/dev/null 2>&1 || true
+  XDG_SESSION_TYPE >/dev/null 2>&1 || true

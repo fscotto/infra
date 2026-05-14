@@ -18,6 +18,9 @@ exec --no-startup-id pipewire
 exec --no-startup-id pipewire-pulse
 exec --no-startup-id wireplumber
 
+# Compositor
+exec_always --no-startup-id picom -b
+
 # Monitor configuration
 exec --no-startup-id autorandr --persistent --change
 
@@ -45,6 +48,12 @@ default_floating_border pixel 2
 new_window pixel 2
 new_float pixel 2
 hide_edge_borders none
+
+# Gaps (i3 >= 4.22)
+gaps inner 10
+gaps outer 4
+smart_gaps on
+smart_borders on
 
 # vim-like directions
 set $left h

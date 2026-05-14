@@ -135,6 +135,10 @@ desktop_i3_dotfiles:
     src: .config/rofi/
     dest: .config/rofi/
     mode: preserve
+  - name: picom config
+    src: .config/picom/picom.conf
+    dest: .config/picom/picom.conf
+    mode: "0644"
   - name: .xinitrc
     src: .xinitrc
     dest: .xinitrc

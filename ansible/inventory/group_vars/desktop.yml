@@ -154,6 +154,7 @@ desktop_flatpak_packages:
   - com.spotify.Client
   - io.github.flattool.Warehouse
   - org.telegram.desktop
+  - org.mozilla.Thunderbird
 
 desktop_flatpak_extensions:
   - org.gtk.Gtk3theme.Yaru-Blue-dark//stable

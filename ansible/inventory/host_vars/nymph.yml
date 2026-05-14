@@ -9,7 +9,7 @@ desktop_default_session_env: xorg
 desktop_emptty_session_error_logging: rotate
 
 host_packages:
-  - nvidia
+  - nvidia580
   - linux-mainline-headers
   - mesa-dri
   - vulkan-loader

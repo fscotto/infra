@@ -164,6 +164,7 @@ desktop_i3_packages:
   - dunst
   - network-manager-applet
   - picom
+  - polybar
   - rofi
   - scrot
   - setxkbmap

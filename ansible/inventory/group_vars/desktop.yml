@@ -139,6 +139,14 @@ desktop_i3_dotfiles:
     src: .config/picom/picom.conf
     dest: .config/picom/picom.conf
     mode: "0644"
+  - name: polybar config
+    src: .config/polybar/config.ini
+    dest: .config/polybar/config.ini
+    mode: "0644"
+  - name: polybar launcher
+    src: .config/polybar/launch.sh
+    dest: .config/polybar/launch.sh
+    mode: "0755"
   - name: .xinitrc
     src: .xinitrc
     dest: .xinitrc

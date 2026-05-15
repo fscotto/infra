@@ -21,6 +21,9 @@ exec --no-startup-id wireplumber
 # Compositor
 exec_always --no-startup-id picom -b
 
+# Status bar
+exec_always --no-startup-id ~/.config/polybar/launch.sh
+
 # Monitor configuration
 exec --no-startup-id autorandr --persistent --change
 
@@ -159,6 +162,17 @@ set $ws8 "8"
 set $ws9 "9"
 set $ws10 "10"
 
+workspace $ws1 output primary
+workspace $ws2 output primary
+workspace $ws3 output primary
+workspace $ws4 output primary
+workspace $ws5 output primary
+workspace $ws6 output primary
+workspace $ws7 output primary
+workspace $ws8 output primary
+workspace $ws9 output primary
+workspace $ws10 output primary
+
 bindsym $mod+1 workspace number $ws1
 bindsym $mod+2 workspace number $ws2
 bindsym $mod+3 workspace number $ws3
@@ -208,24 +222,24 @@ mode "resize" {
 
 bindsym $mod+r mode "resize"
 
-# i3bar + i3status
-bar {
-    status_command i3blocks
-    position bottom
-    tray_output primary
-    font pango:Liberation Mono 10
-
-    colors {
-        background #1f1f28
-        statusline #d0d0d0
-        separator  #3a3a46
-
-        focused_workspace  #4a90d9 #4a90d9 #ffffff
-        active_workspace   #3a3a46 #2b2b36 #d0d0d0
-        inactive_workspace #1f1f28 #1f1f28 #9a9a9a
-        urgent_workspace   #c7162b #c7162b #ffffff
-    }
-}
+# i3bar + i3status (disabilitato: ora gestito da polybar)
+# bar {
+#     status_command i3blocks
+#     position bottom
+#     tray_output primary
+#     font pango:Liberation Mono 10
+#
+#     colors {
+#         background #1f1f28
+#         statusline #d0d0d0
+#         separator  #3a3a46
+#
+#         focused_workspace  #4a90d9 #4a90d9 #ffffff
+#         active_workspace   #3a3a46 #2b2b36 #d0d0d0
+#         inactive_workspace #1f1f28 #1f1f28 #9a9a9a
+#         urgent_workspace   #c7162b #c7162b #ffffff
+#     }
+# }
 
 client.focused          #4a90d9 #4a90d9 #ffffff #4a90d9 #4a90d9
 client.focused_inactive #3a3a46 #2b2b36 #eeeeee #3a3a46 #3a3a46

@@ -147,6 +147,10 @@ desktop_i3_dotfiles:
     src: .config/polybar/launch.sh
     dest: .config/polybar/launch.sh
     mode: "0755"
+  - name: alacritty config
+    src: .config/alacritty/
+    dest: .config/alacritty/
+    mode: preserve
   - name: .xinitrc
     src: .xinitrc
     dest: .xinitrc

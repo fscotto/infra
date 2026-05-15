@@ -2,7 +2,7 @@ configuration {
     modi: "drun,run,window";
     show-icons: true;
     icon-theme: "Yaru";
-    font: "Liberation Sans 11";
+    font: "LiterationMono Nerd Font 11";
 }
 
 * {

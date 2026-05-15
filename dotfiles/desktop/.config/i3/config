@@ -3,7 +3,7 @@
 set $mod Mod4
 set $refresh_i3status killall -SIGUSR1 i3status
 
-font pango:Liberation Mono 10
+font pango:LiterationMono Nerd Font 10
 
 # Start XDG autostart entries (.desktop), useful on Void for pipewire/wireplumber/etc.
 exec --no-startup-id dex --autostart --environment i3

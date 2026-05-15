@@ -7,10 +7,10 @@
   (load-theme 'nordic-night t))
 
 ;; Setting default font
-(set-frame-font "Liberation Mono 14" nil t)
+(set-frame-font "LiterationMono Nerd Font 14" nil t)
 
 (add-to-list 'default-frame-alist
-	     '(font . "Liberation Mono-14"))
+	     '(font . "FantasqueSansM Nerd Font-14"))
 
 ;; Remove toolbar
 (tool-bar-mode -1)

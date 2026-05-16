@@ -1,5 +1,5 @@
 [Desktop Entry]
 Name=Sway
 Comment=SwayFX (Wayland)
-Exec=start-sway
+Exec=/usr/local/bin/start-sway
 Type=Application

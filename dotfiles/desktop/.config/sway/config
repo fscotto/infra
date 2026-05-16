@@ -10,17 +10,17 @@ set $down j
 set $up k
 set $right l
 
-# Workspaces (etichette in numeri romani)
-set $ws1  "1: I"
-set $ws2  "2: II"
-set $ws3  "3: III"
-set $ws4  "4: IV"
-set $ws5  "5: V"
-set $ws6  "6: VI"
-set $ws7  "7: VII"
-set $ws8  "8: VIII"
-set $ws9  "9: IX"
-set $ws10 "10: X"
+# Workspaces (waybar formatta i numeri in romani via format-icons)
+set $ws1  "1"
+set $ws2  "2"
+set $ws3  "3"
+set $ws4  "4"
+set $ws5  "5"
+set $ws6  "6"
+set $ws7  "7"
+set $ws8  "8"
+set $ws9  "9"
+set $ws10 "10"
 
 # Input devices
 input * {
@@ -49,13 +49,11 @@ xwayland enable
 focus_follows_mouse no
 mouse_warping none
 floating_modifier $mod
-tiling_drag modifier titlebar
+tiling_drag enable
 
 # Borders
 default_border pixel 2
 default_floating_border pixel 2
-new_window pixel 2
-new_float pixel 2
 hide_edge_borders none
 
 # Gaps

@@ -27,6 +27,16 @@
     mode: "0644"
   when: "'sway' in (desktop_sessions_enabled | default([]))"
 
+- name: Install Sway session launcher in /usr/local/bin
+  tags: [packages, services, sway]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/.local/bin/start-sway"
+    dest: /usr/local/bin/start-sway
+    owner: root
+    group: root
+    mode: "0755"
+  when: "'sway' in (desktop_sessions_enabled | default([]))"
+
 - name: Copy sway desktop dotfiles
   tags: [dotfiles, dotfiles:desktop, sway]
   ansible.builtin.copy:

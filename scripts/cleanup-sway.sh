@@ -22,11 +22,13 @@ xorg-server-xwayland
 SWAY_DOTFILES="
 $HOME/.config/sway
 $HOME/.config/waybar
-$HOME/.local/bin/start-sway
 $HOME/.cache/cliphist
 "
 
-EMPTTY_SESSION=/etc/emptty/wayland-sessions/sway.desktop
+SWAY_SYSTEM_FILES="
+/etc/emptty/wayland-sessions/sway.desktop
+/usr/local/bin/start-sway
+"
 
 confirm() {
   printf '%s [y/N] ' "$1"
@@ -65,12 +67,12 @@ for d in $SWAY_DOTFILES; do
     printf '  %s\n' "$d"
   fi
 done
-printf '\nEmptty session entry:\n'
-if [ -e "$EMPTTY_SESSION" ]; then
-  printf '  %s\n' "$EMPTTY_SESSION"
-else
-  printf '  (absent)\n'
-fi
+printf '\nSystem files to remove:\n'
+for f in $SWAY_SYSTEM_FILES; do
+  if [ -e "$f" ] || [ -L "$f" ]; then
+    printf '  %s\n' "$f"
+  fi
+done
 printf '\nShared (NOT removed): dunst, rofi, alacritty, xfce4-screenshooter and their configs.\n\n'
 
 confirm 'Proceed?' || { printf 'Aborted.\n'; exit 0; }
@@ -86,8 +88,10 @@ for d in $SWAY_DOTFILES; do
   fi
 done
 
-if [ -e "$EMPTTY_SESSION" ]; then
-  sudo rm -f -- "$EMPTTY_SESSION"
-fi
+for f in $SWAY_SYSTEM_FILES; do
+  if [ -e "$f" ] || [ -L "$f" ]; then
+    sudo rm -f -- "$f"
+  fi
+done
 
 printf '\nDone.\n'

@@ -162,10 +162,6 @@ desktop_sway_dotfiles:
     src: .config/sway/
     dest: .config/sway/
     mode: preserve
-  - name: Sway session launcher
-    src: .local/bin/start-sway
-    dest: .local/bin/start-sway
-    mode: "0755"
   - name: dunst config
     src: .config/dunst/
     dest: .config/dunst/

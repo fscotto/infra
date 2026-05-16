@@ -1,12 +1,10 @@
 #!/bin/sh
 
-exec swaylock-effects \
+exec swaylock \
     --image "$HOME/.config/sway/wallpapers/wallpaper-161664.jpg" \
     --scaling fill \
     --clock \
     --indicator \
-    --effect-blur 7x5 \
-    --fade-in 0.3 \
     --ring-color 2f4058 \
     --inside-color 1f1f28 \
     --line-color 00000000 \

@@ -183,7 +183,7 @@ desktop_sway_packages:
   - swayfx
   - swaybg
   - swayidle
-  - swaylock-effects
+  - swaylock
   - SwayOSD
   - Waybar
   - wl-clipboard

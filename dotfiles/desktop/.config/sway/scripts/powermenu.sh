@@ -1,6 +1,6 @@
 #!/bin/sh
 
-choice="$(printf "⏻  Shutdown\n  Reboot\n  Logout\n  Lock\n⏾  Suspend" \
+choice="$(printf "⏻  Shutdown\n  Reboot\n  Logout\n  Lock\n⏾  Suspend" \
 | rofi -dmenu \
 -i \
 -p "Power" \

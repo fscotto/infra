@@ -39,3 +39,6 @@ host_sway_dotfiles:
   - src: .config/sway/session-env
     dest: .config/sway/session-env
     mode: "0644"
+  - src: .config/kanshi/
+    dest: .config/kanshi/
+    mode: preserve

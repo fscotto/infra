@@ -15,6 +15,9 @@ export GDK_BACKEND='wayland,x11'
 
 export SSH_AUTH_SOCK="$HOME/.local/state/ssh-agent/socket"
 
+# Per-host session environment (GPU / Wayland tuning, etc.)
+[ -r "$HOME/.config/sway/session-env" ] && . "$HOME/.config/sway/session-env"
+
 exec dbus-run-session sh -eu -c '
   umask 077
   printf "%s\n" "$DBUS_SESSION_BUS_ADDRESS" > "$HOME/.dbus-session-bus-address"

@@ -10,6 +10,9 @@ set $down j
 set $up k
 set $right l
 
+# Default terminal (hosts can override via host.conf — e.g. nymph wraps it in prime-run)
+set $terminal alacritty
+
 # Workspaces (waybar formatta i numeri in romani via format-icons)
 set $ws1  "1"
 set $ws2  "2"
@@ -62,6 +65,9 @@ gaps outer 4
 smart_gaps on
 smart_borders on
 
+# Per-host overrides (terminal wrapper, gaps tweaks, workspace→output bindings, …)
+include ~/.config/sway/host.conf
+
 # Window rules
 for_window [app_id="(?i)polkit"] floating enable
 for_window [class="(?i)polkit"] floating enable
@@ -108,7 +114,7 @@ exec swayidle -w \
     before-sleep '~/.config/sway/scripts/lockscreen'
 
 # Terminal
-bindsym $mod+Return exec alacritty
+bindsym $mod+Return exec $terminal
 
 # Emacs client
 bindsym $mod+Shift+e exec emacsclient -c -n

@@ -130,10 +130,6 @@ desktop_void_dotfiles:
     src: .local/bin/update-turnstile-env
     dest: .local/bin/update-turnstile-env
     mode: "0755"
-  - name: Noctalia config
-    src: .config/noctalia/
-    dest: .config/noctalia/
-    mode: preserve
 
 desktop_common_packages:
   - blueman

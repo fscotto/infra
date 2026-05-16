@@ -32,7 +32,7 @@ input * {
 seat * xcursor_theme Yaru 24
 
 # Outputs
-output * bg ~/.config/sway/wallpapers/wallpaper-161664.jpg fill
+output * bg ~/.config/sway/wallpapers/wallpaper-161664.jpg center
 
 # SwayFX effects
 corner_radius 8
@@ -90,8 +90,16 @@ exec udiskie
 exec wl-paste --type text  --watch cliphist store
 exec wl-paste --type image --watch cliphist store
 
-# Lock on suspend
-exec swayidle -w before-sleep '~/.config/sway/scripts/lockscreen'
+# Idle / lock policy
+#   5 min  idle  → lock
+#   10 min idle  → screen off (DPMS)
+#   resume       → screen on
+#   before sleep → lock
+exec swayidle -w \
+    timeout 300 '~/.config/sway/scripts/lockscreen' \
+    timeout 600 'swaymsg "output * dpms off"' \
+        resume 'swaymsg "output * dpms on"' \
+    before-sleep '~/.config/sway/scripts/lockscreen'
 
 # Terminal
 bindsym $mod+Return exec alacritty

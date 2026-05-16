@@ -3,8 +3,7 @@
 exec swaylock \
     --image "$HOME/.config/sway/wallpapers/wallpaper-161664.jpg" \
     --scaling fill \
-    --clock \
-    --indicator \
+    --indicator-idle-visible \
     --ring-color 2f4058 \
     --inside-color 1f1f28 \
     --line-color 00000000 \

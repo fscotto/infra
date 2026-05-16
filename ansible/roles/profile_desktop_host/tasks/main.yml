@@ -19,3 +19,18 @@
     - "'i3' in (desktop_sessions_enabled | default([]))"
     - (host_i3_dotfiles | default([])) | length > 0
 
+- name: Copy host-specific sway dotfiles
+  tags: [dotfiles, dotfiles:desktop, dotfiles:host, sway]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/{{ hostname }}/{{ item.src }}"
+    dest: "{{ user_home }}/{{ item.dest }}"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ host_sway_dotfiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+  when:
+    - "'sway' in (desktop_sessions_enabled | default([]))"
+    - (host_sway_dotfiles | default([])) | length > 0
+

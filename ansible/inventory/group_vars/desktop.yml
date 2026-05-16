@@ -6,6 +6,7 @@ desktop_sessions_enabled:
 
 desktop_default_session: i3
 desktop_default_session_env: xorg
+desktop_prompt_for_session: true
 
 desktop_source_tools:
   - name: gf
@@ -156,10 +157,27 @@ desktop_i3_dotfiles:
     dest: .xinitrc
     mode: "0644"
 
-noctalia_bar_monitors:
-  - DP-1
-
-noctalia_screen_overrides: []
+desktop_sway_dotfiles:
+  - name: sway config
+    src: .config/sway/
+    dest: .config/sway/
+    mode: preserve
+  - name: dunst config
+    src: .config/dunst/
+    dest: .config/dunst/
+    mode: preserve
+  - name: rofi config
+    src: .config/rofi/
+    dest: .config/rofi/
+    mode: preserve
+  - name: waybar config
+    src: .config/waybar/
+    dest: .config/waybar/
+    mode: preserve
+  - name: alacritty config
+    src: .config/alacritty/
+    dest: .config/alacritty/
+    mode: preserve
 
 desktop_flatpak_packages:
   - be.alexandervanhee.gradia

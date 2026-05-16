@@ -1,0 +1,40 @@
+#!/bin/sh
+# Quick screenshot helpers for sway. Captures via grim, saves to disk and
+# also copies to the Wayland clipboard. Use the flameshot binding for
+# annotations / fancy capture.
+#
+# Usage: screenshot {full|region|output|window}
+
+set -eu
+
+mode="${1:-full}"
+dir="$HOME/Pictures/Screenshots"
+mkdir -p "$dir"
+file="$dir/$(date +%Y%m%d_%H%M%S).png"
+
+case "$mode" in
+  full)
+    grim "$file"
+    ;;
+  region)
+    grim -g "$(slurp)" "$file"
+    ;;
+  output)
+    out=$(swaymsg -t get_outputs --raw \
+            | jq -r '.[] | select(.focused) | .name')
+    grim -o "$out" "$file"
+    ;;
+  window)
+    geom=$(swaymsg -t get_tree \
+             | jq -r '.. | select(.focused? == true)
+                      | "\(.rect.x),\(.rect.y) \(.rect.width)x\(.rect.height)"')
+    grim -g "$geom" "$file"
+    ;;
+  *)
+    printf 'Usage: %s {full|region|output|window}\n' "$0" >&2
+    exit 1
+    ;;
+esac
+
+wl-copy < "$file"
+notify-send "Screenshot saved" "$file" -i image-x-generic >/dev/null 2>&1 || true

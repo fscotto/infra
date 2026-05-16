@@ -1,0 +1,259 @@
+# Sway / SwayFX config
+
+set $mod Mod4
+
+font pango:LiterationMono Nerd Font 10
+
+# vim-like directions
+set $left h
+set $down j
+set $up k
+set $right l
+
+# Default terminal (hosts can override via host.conf — e.g. nymph wraps it in prime-run)
+set $terminal alacritty
+
+# Workspaces (waybar formatta i numeri in romani via format-icons)
+set $ws1  "1"
+set $ws2  "2"
+set $ws3  "3"
+set $ws4  "4"
+set $ws5  "5"
+set $ws6  "6"
+set $ws7  "7"
+set $ws8  "8"
+set $ws9  "9"
+set $ws10 "10"
+
+# Input devices
+input * {
+    xkb_layout us
+    xkb_variant intl
+}
+
+# Cursor
+seat * xcursor_theme Yaru 24
+
+# Outputs
+output * bg ~/.config/sway/wallpapers/wallpaper-161664.jpg center
+
+# SwayFX effects
+corner_radius 8
+blur enable
+blur_passes 2
+blur_radius 5
+shadows enable
+default_dim_inactive 0.1
+
+# Allow X11 applications
+xwayland enable
+
+# General behavior
+focus_follows_mouse no
+mouse_warping none
+floating_modifier $mod
+tiling_drag enable
+
+# Borders
+default_border pixel 2
+default_floating_border pixel 2
+hide_edge_borders none
+
+# Gaps
+gaps inner 10
+gaps outer 4
+smart_gaps on
+smart_borders on
+
+# Per-host overrides (terminal wrapper, gaps tweaks, workspace→output bindings, …)
+include ~/.config/sway/host.conf
+
+# Window rules
+for_window [app_id="(?i)polkit"] floating enable
+for_window [class="(?i)polkit"] floating enable
+for_window [title="^Authentication Required"] floating enable
+
+# Autostart — XDG and session services
+exec dex --autostart --environment sway
+exec gnome-keyring-daemon --start --components=secrets
+exec_always ~/.config/sway/scripts/setup-gtk-theme.sh
+exec /usr/libexec/xdg-desktop-portal
+
+# Audio
+exec pipewire
+exec pipewire-pulse
+exec wireplumber
+
+# Status bar
+exec waybar
+
+# OSD daemon (volume/brightness/caps-lock)
+exec swayosd-server
+
+# Tray services
+exec dunst
+exec /usr/libexec/xfce-polkit
+exec nm-applet
+exec blueman-applet
+exec udiskie
+exec flameshot
+
+# Clipboard manager (Wayland-native)
+exec wl-paste --type text  --watch cliphist store
+exec wl-paste --type image --watch cliphist store
+
+# Idle / lock policy
+#   5 min  idle  → lock
+#   10 min idle  → screen off (DPMS)
+#   resume       → screen on
+#   before sleep → lock
+exec swayidle -w \
+    timeout 300 '~/.config/sway/scripts/lockscreen' \
+    timeout 600 'swaymsg "output * dpms off"' \
+        resume 'swaymsg "output * dpms on"' \
+    before-sleep '~/.config/sway/scripts/lockscreen'
+
+# Terminal
+bindsym $mod+Return exec $terminal
+
+# Emacs client
+bindsym $mod+Shift+e exec emacsclient -c -n
+
+# Launcher
+bindsym $mod+d exec "rofi -show drun -theme ~/.config/rofi/config.rasi"
+
+# Clipboard history picker
+bindsym $mod+c exec "cliphist list | rofi -dmenu -theme ~/.config/rofi/config.rasi | cliphist decode | wl-copy"
+
+# Audio panel control
+bindsym $mod+Shift+v exec pavucontrol
+
+# File manager
+bindsym $mod+Shift+f exec thunar
+
+# Manual lock screen
+bindsym $mod+Shift+x exec ~/.config/sway/scripts/lockscreen
+
+# Kill focused window
+bindsym $mod+Shift+q kill
+
+# Screenshot
+#   Print        → flameshot GUI (annotations, save + clipboard via portal)
+#   Shift+Print  → grim+slurp region → clipboard
+#   Alt+Print    → grim focused output → clipboard
+bindsym Print exec flameshot gui --path "$HOME/Pictures/Screenshots" --clipboard
+bindsym Shift+Print exec ~/.config/sway/scripts/screenshot region
+bindsym Alt+Print exec ~/.config/sway/scripts/screenshot output
+
+# Focus
+bindsym $mod+$left focus left
+bindsym $mod+$down focus down
+bindsym $mod+$up focus up
+bindsym $mod+$right focus right
+
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+
+# Move windows
+bindsym $mod+Shift+$left move left
+bindsym $mod+Shift+$down move down
+bindsym $mod+Shift+$up move up
+bindsym $mod+Shift+$right move right
+
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+Down move down
+bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Right move right
+
+# Split
+bindsym $mod+b split h
+bindsym $mod+v split v
+
+# Layouts
+bindsym $mod+f fullscreen toggle
+bindsym $mod+s layout stacking
+bindsym $mod+w layout tabbed
+bindsym $mod+e layout toggle split
+
+# Floating / focus mode
+bindsym $mod+Shift+space floating toggle
+bindsym $mod+space focus mode_toggle
+bindsym $mod+a focus parent
+
+# Scratchpad
+bindsym $mod+Shift+minus move scratchpad
+bindsym $mod+minus scratchpad show
+
+# Volume (via swayosd: aggiorna pactl + mostra OSD)
+bindsym XF86AudioRaiseVolume exec swayosd-client --output-volume raise
+bindsym XF86AudioLowerVolume exec swayosd-client --output-volume lower
+bindsym XF86AudioMute        exec swayosd-client --output-volume mute-toggle
+bindsym XF86AudioMicMute     exec swayosd-client --input-volume mute-toggle
+
+# Brightness (via swayosd: aggiorna brightnessctl + mostra OSD)
+bindsym XF86MonBrightnessUp   exec swayosd-client --brightness raise
+bindsym XF86MonBrightnessDown exec swayosd-client --brightness lower
+
+# Media keys
+bindsym XF86AudioPlay exec playerctl play-pause
+bindsym XF86AudioNext exec playerctl next
+bindsym XF86AudioPrev exec playerctl previous
+
+# Workspace switch
+bindsym $mod+1 workspace number $ws1
+bindsym $mod+2 workspace number $ws2
+bindsym $mod+3 workspace number $ws3
+bindsym $mod+4 workspace number $ws4
+bindsym $mod+5 workspace number $ws5
+bindsym $mod+6 workspace number $ws6
+bindsym $mod+7 workspace number $ws7
+bindsym $mod+8 workspace number $ws8
+bindsym $mod+9 workspace number $ws9
+bindsym $mod+0 workspace number $ws10
+bindsym $mod+comma workspace prev
+bindsym $mod+period workspace next
+
+bindsym $mod+Shift+1 move container to workspace number $ws1
+bindsym $mod+Shift+2 move container to workspace number $ws2
+bindsym $mod+Shift+3 move container to workspace number $ws3
+bindsym $mod+Shift+4 move container to workspace number $ws4
+bindsym $mod+Shift+5 move container to workspace number $ws5
+bindsym $mod+Shift+6 move container to workspace number $ws6
+bindsym $mod+Shift+7 move container to workspace number $ws7
+bindsym $mod+Shift+8 move container to workspace number $ws8
+bindsym $mod+Shift+9 move container to workspace number $ws9
+bindsym $mod+Shift+0 move container to workspace number $ws10
+
+# Reload / exit
+bindsym $mod+Shift+c reload
+bindsym $mod+Shift+r reload
+bindsym $mod+Shift+BackSpace exec swaymsg exit
+bindsym $mod+Shift+Escape exec ~/.config/sway/scripts/powermenu.sh
+
+# Resize mode
+mode "resize" {
+    bindsym $left  resize shrink width  10 px or 10 ppt
+    bindsym $down  resize grow   height 10 px or 10 ppt
+    bindsym $up    resize shrink height 10 px or 10 ppt
+    bindsym $right resize grow   width  10 px or 10 ppt
+
+    bindsym Left  resize shrink width  10 px or 10 ppt
+    bindsym Down  resize grow   height 10 px or 10 ppt
+    bindsym Up    resize shrink height 10 px or 10 ppt
+    bindsym Right resize grow   width  10 px or 10 ppt
+
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+    bindsym $mod+r mode "default"
+}
+bindsym $mod+r mode "resize"
+
+# Client colors (border, background, text, indicator, child_border)
+client.focused          #4a90d9 #4a90d9 #ffffff #4a90d9 #4a90d9
+client.focused_inactive #3a3a46 #2b2b36 #eeeeee #3a3a46 #3a3a46
+client.unfocused        #2b2b36 #1f1f28 #bcbcbc #2b2b36 #2b2b36
+client.urgent           #c7162b #c7162b #ffffff #c7162b #c7162b
+client.placeholder      #1f1f28 #1f1f28 #bcbcbc #1f1f28 #1f1f28
+client.background       #1f1f28

@@ -1,0 +1,71 @@
+---
+- name: Ensure sway config directories exist
+  tags: [dotfiles, dotfiles:desktop, sway]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+  loop:
+    - "{{ user_home }}/.config/alacritty"
+    - "{{ user_home }}/.config/dunst"
+    - "{{ user_home }}/.config/rofi"
+    - "{{ user_home }}/.config/sway"
+    - "{{ user_home }}/.config/sway/scripts"
+    - "{{ user_home }}/.config/sway/wallpapers"
+    - "{{ user_home }}/.config/waybar"
+  when: "'sway' in (desktop_sessions_enabled | default([]))"
+
+- name: Install allowed emptty Wayland sessions
+  tags: [packages, services, emptty, sway]
+  ansible.builtin.copy:
+    src: sway.desktop
+    dest: /etc/emptty/wayland-sessions/sway.desktop
+    owner: root
+    group: root
+    mode: "0644"
+  when: "'sway' in (desktop_sessions_enabled | default([]))"
+
+- name: Install Sway session launcher in /usr/local/bin
+  tags: [packages, services, sway]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/.local/bin/start-sway"
+    dest: /usr/local/bin/start-sway
+    owner: root
+    group: root
+    mode: "0755"
+  when: "'sway' in (desktop_sessions_enabled | default([]))"
+
+- name: Ensure /etc/xdg/xdg-desktop-portal exists
+  tags: [packages, services, sway, portal]
+  ansible.builtin.file:
+    path: /etc/xdg/xdg-desktop-portal
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: "'sway' in (desktop_sessions_enabled | default([]))"
+
+- name: Configure xdg-desktop-portal backend preferences for sway
+  tags: [packages, services, sway, portal]
+  ansible.builtin.copy:
+    src: sway-portals.conf
+    dest: /etc/xdg/xdg-desktop-portal/sway-portals.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: "'sway' in (desktop_sessions_enabled | default([]))"
+
+- name: Copy sway desktop dotfiles
+  tags: [dotfiles, dotfiles:desktop, sway]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/{{ item.src }}"
+    dest: "{{ user_home }}/{{ item.dest }}"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ desktop_sway_dotfiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+  when: "'sway' in (desktop_sessions_enabled | default([]))"

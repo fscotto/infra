@@ -37,6 +37,16 @@
     mode: "0755"
   when: "'sway' in (desktop_sessions_enabled | default([]))"
 
+- name: Ensure /etc/xdg/xdg-desktop-portal exists
+  tags: [packages, services, sway, portal]
+  ansible.builtin.file:
+    path: /etc/xdg/xdg-desktop-portal
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: "'sway' in (desktop_sessions_enabled | default([]))"
+
 - name: Configure xdg-desktop-portal backend preferences for sway
   tags: [packages, services, sway, portal]
   ansible.builtin.copy:

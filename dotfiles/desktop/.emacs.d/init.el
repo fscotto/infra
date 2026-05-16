@@ -46,6 +46,7 @@
   'misc/terminal
   'misc/vcs
   'misc/documents
-  'misc/i3-config)
+  'misc/i3-config
+  'misc/xclip)
 
 (message "...user configuration loaded")

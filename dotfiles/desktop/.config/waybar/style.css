@@ -57,7 +57,7 @@ window#waybar {
 #network     { color: #4a90d9; }
 #network.disconnected { color: #3a3a46; }
 #pulseaudio  { color: #7dcfff; }
-#pulseaudio.muted { color: #3a3a46; }
+#pulseaudio.muted { color: #8e8e9a; }
 #battery     { color: #d0d0d0; }
 #battery.charging { color: #9ec07c; }
 #battery.warning  { color: #e0af68; }

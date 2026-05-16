@@ -74,9 +74,9 @@
 
   "pulseaudio": {
     "format":           "{icon} {volume}%",
-    "format-muted":     " muted",
-    "format-bluetooth": "{icon} {volume}% ",
-    "format-icons":     { "default": ["", "", ""] },
+    "format-muted":     " muted",
+    "format-bluetooth": "{icon} {volume}% ",
+    "format-icons":     { "default": ["", "", ""] },
     "on-click":         "swayosd-client --output-volume mute-toggle",
     "on-click-right":   "pavucontrol"
   },

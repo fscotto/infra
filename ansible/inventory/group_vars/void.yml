@@ -174,8 +174,12 @@ desktop_i3_packages:
 desktop_sway_packages:
   - cliphist
   - dunst
+  - flameshot
+  - grim
+  - jq
   - kanshi
   - rofi
+  - slurp
   - swayfx
   - swaybg
   - swayidle
@@ -183,7 +187,6 @@ desktop_sway_packages:
   - SwayOSD
   - Waybar
   - wl-clipboard
-  - xfce4-screenshooter
   - xdg-desktop-portal-wlr
   - xorg-server-xwayland
 

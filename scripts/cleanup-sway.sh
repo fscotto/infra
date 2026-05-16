@@ -7,7 +7,11 @@ set -eu
 
 SWAY_PACKAGES="
 cliphist
+flameshot
+grim
+jq
 kanshi
+slurp
 swayfx
 swaybg
 swayidle

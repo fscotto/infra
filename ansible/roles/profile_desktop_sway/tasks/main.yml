@@ -37,6 +37,16 @@
     mode: "0755"
   when: "'sway' in (desktop_sessions_enabled | default([]))"
 
+- name: Configure xdg-desktop-portal backend preferences for sway
+  tags: [packages, services, sway, portal]
+  ansible.builtin.copy:
+    src: sway-portals.conf
+    dest: /etc/xdg/xdg-desktop-portal/sway-portals.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: "'sway' in (desktop_sessions_enabled | default([]))"
+
 - name: Copy sway desktop dotfiles
   tags: [dotfiles, dotfiles:desktop, sway]
   ansible.builtin.copy:

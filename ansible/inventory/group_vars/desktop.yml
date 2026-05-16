@@ -6,6 +6,7 @@ desktop_sessions_enabled:
 
 desktop_default_session: i3
 desktop_default_session_env: xorg
+desktop_prompt_for_session: true
 
 desktop_source_tools:
   - name: gf

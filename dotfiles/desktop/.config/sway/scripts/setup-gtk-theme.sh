@@ -1,0 +1,53 @@
+#!/bin/sh
+
+THEME="Yaru-blue-dark"
+ICONS="Yaru-blue-dark"
+CURSOR="Yaru"
+
+FONT_UI="Liberation Sans 10"
+
+mkdir -p "$HOME/.config/gtk-3.0"
+mkdir -p "$HOME/.config/gtk-4.0"
+
+cat > "$HOME/.gtkrc-2.0" <<EOF
+gtk-theme-name="$THEME"
+gtk-icon-theme-name="$ICONS"
+gtk-cursor-theme-name="$CURSOR"
+gtk-font-name="$FONT_UI"
+gtk-button-images=1
+gtk-menu-images=1
+EOF
+
+cat > "$HOME/.config/gtk-3.0/settings.ini" <<EOF
+[Settings]
+gtk-theme-name=$THEME
+gtk-icon-theme-name=$ICONS
+gtk-cursor-theme-name=$CURSOR
+gtk-font-name=$FONT_UI
+gtk-application-prefer-dark-theme=1
+gtk-xft-antialias=1
+gtk-xft-hinting=1
+gtk-xft-hintstyle=hintslight
+gtk-xft-rgba=rgb
+EOF
+
+cat > "$HOME/.config/gtk-4.0/settings.ini" <<EOF
+[Settings]
+gtk-theme-name=$THEME
+gtk-icon-theme-name=$ICONS
+gtk-cursor-theme-name=$CURSOR
+gtk-font-name=$FONT_UI
+gtk-application-prefer-dark-theme=1
+EOF
+
+# esporta variabili utili
+export GTK_THEME=$THEME
+export XCURSOR_THEME=$CURSOR
+export XCURSOR_SIZE=24
+
+if command -v gsettings >/dev/null 2>&1; then
+  gsettings set org.gnome.desktop.interface gtk-theme "$THEME" >/dev/null 2>&1 || true
+  gsettings set org.gnome.desktop.interface icon-theme "$ICONS" >/dev/null 2>&1 || true
+  gsettings set org.gnome.desktop.interface cursor-theme "$CURSOR" >/dev/null 2>&1 || true
+  gsettings set org.gnome.desktop.interface color-scheme prefer-dark >/dev/null 2>&1 || true
+fi

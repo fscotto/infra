@@ -6,11 +6,10 @@ if ! command -v turnstile-update-runit-env >/dev/null 2>&1; then
   exit 0
 fi
 
-turnstile-update-runit-env \
-  DISPLAY \
-  XAUTHORITY \
-  DBUS_SESSION_BUS_ADDRESS \
-  SSH_AUTH_SOCK \
-  XDG_CURRENT_DESKTOP \
-  XDG_SESSION_DESKTOP \
-  XDG_SESSION_TYPE >/dev/null 2>&1 || true
+vars="DISPLAY XAUTHORITY DBUS_SESSION_BUS_ADDRESS SSH_AUTH_SOCK XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE"
+
+[ -n "${WAYLAND_DISPLAY:-}" ] && vars="$vars WAYLAND_DISPLAY"
+[ -n "${SWAYSOCK:-}" ]        && vars="$vars SWAYSOCK"
+
+# shellcheck disable=SC2086
+turnstile-update-runit-env $vars >/dev/null 2>&1 || true

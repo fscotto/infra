@@ -246,6 +246,7 @@
     mode: "0755"
   loop:
     - /etc/emptty/xsessions
+    - /etc/emptty/wayland-sessions
   when: "'void' in group_names"
 
 - name: Configure emptty

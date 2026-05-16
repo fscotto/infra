@@ -63,7 +63,6 @@ void_packages_base:
   - tealdeer
   - tree-sitter-grammars
   - ufw
-  - xdotool
   - void-repo-nonfree
   - vpm
   - vsv
@@ -115,10 +114,6 @@ desktop_void_dotfiles:
     src: .bashrc.d/15-runit-desktop.sh
     dest: .bashrc.d/15-runit-desktop.sh
     mode: "0644"
-  - name: alacritty config
-    src: .config/alacritty/
-    dest: .config/alacritty/
-    mode: preserve
   - name: GTK theme setup script
     src: .local/bin/setup-gtk-theme
     dest: .local/bin/setup-gtk-theme
@@ -141,9 +136,11 @@ desktop_void_dotfiles:
     mode: preserve
 
 desktop_common_packages:
+  - blueman
   - brightnessctl
   - dex
   - emptty
+  - network-manager-applet
   - pinentry-emacs
   - pinentry-gtk
   - turnstile
@@ -151,6 +148,7 @@ desktop_common_packages:
   - xdg-desktop-portal
   - xdg-desktop-portal-gtk
   - xdg-user-dirs
+  - xfce-polkit
 
 desktop_i3_packages:
   - arandr
@@ -162,22 +160,36 @@ desktop_i3_packages:
   - i3lock-color
   - i3status
   - dunst
-  - network-manager-applet
   - picom
   - polybar
   - rofi
   - scrot
   - setxkbmap
-  - blueman
   - volumeicon
   - xclip
-  - xfce-polkit
   - xfce4-clipman-plugin
   - xfce4-screenshooter
   - xkbutils
   - xorg-fonts
   - xorg-minimal
   - xss-lock
+  - xdotool
+  
+desktop_sway_packages:
+  - cliphist
+  - dunst
+  - kanshi
+  - rofi
+  - swayfx
+  - swaybg
+  - swayidle
+  - swaylock-effects
+  - SwayOSD
+  - waybar
+  - wl-clipboard
+  - xfce4-screenshooter
+  - xdg-desktop-portal-wlr
+  - xorg-server-xwayland
 
 profile_packages:
   - alacritty

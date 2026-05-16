@@ -185,7 +185,7 @@ desktop_sway_packages:
   - swayidle
   - swaylock-effects
   - SwayOSD
-  - waybar
+  - Waybar
   - wl-clipboard
   - xfce4-screenshooter
   - xdg-desktop-portal-wlr

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 exec swaylock \
-    --image "$HOME/.config/sway/wallpapers/wallpaper-161664.jpg" \
+    --image "$HOME/.config/sway/wallpapers/maxresdefault.jpg" \
     --scaling fill \
     --indicator-idle-visible \
     --ring-color 2f4058 \

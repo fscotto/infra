@@ -74,7 +74,7 @@ exec pipewire-pulse
 exec wireplumber
 
 # Status bar
-exec_always waybar
+exec waybar
 
 # OSD daemon (volume/brightness/caps-lock)
 exec swayosd-server

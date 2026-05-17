@@ -6,7 +6,7 @@
 
   "modules-left":   ["sway/workspaces"],
   "modules-center": [],
-  "modules-right":  ["cpu", "memory", "disk", "temperature", "backlight", "network", "pulseaudio", "battery", "tray", "clock", "custom/power"],
+  "modules-right":  ["cpu", "memory", "disk", "temperature", "backlight", "network", "pulseaudio", "battery", "tray", "clock", "custom/dnd", "custom/power"],
 
   "sway/workspaces": {
     "disable-scroll": true,
@@ -97,6 +97,14 @@
   "tray": {
     "icon-size": 16,
     "spacing": 6
+  },
+
+  "custom/dnd": {
+    "exec": "dunstctl is-paused | grep -q true && echo '{\"text\":\"󰂛\",\"class\":\"paused\"}' || echo '{\"text\":\"󰂚\",\"class\":\"\"}'",
+    "return-type": "json",
+    "interval": 2,
+    "on-click": "dunstctl set-paused toggle",
+    "tooltip": false
   },
 
   "custom/power": {

@@ -170,6 +170,9 @@ bindsym $mod+Shift+v exec pavucontrol
 # File manager
 bindsym $mod+Shift+f exec thunar
 
+# Do not disturb (dunst pause toggle)
+bindsym $mod+Shift+d exec dunstctl set-paused toggle
+
 # Manual lock screen
 bindsym $mod+Shift+x exec ~/.config/sway/scripts/lockscreen
 

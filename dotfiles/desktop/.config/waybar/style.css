@@ -44,6 +44,7 @@ window#waybar {
 #pulseaudio,
 #battery,
 #tray,
+#custom-dnd,
 #custom-power {
     padding: 0 8px;
 }
@@ -66,6 +67,17 @@ window#waybar {
 #battery.full     { color: #9ec07c; }
 
 #tray { padding: 0 6px; }
+
+#custom-dnd {
+    color: #8e8e9a;
+    font-size: 11pt;
+}
+#custom-dnd.paused {
+    color: #e0af68;
+}
+#custom-dnd:hover {
+    background-color: rgba(224, 175, 104, 0.15);
+}
 
 #custom-power {
     color: #c7162b;

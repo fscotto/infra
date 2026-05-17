@@ -6,7 +6,7 @@
 
   "modules-left":   ["sway/workspaces"],
   "modules-center": [],
-  "modules-right":  ["cpu", "memory", "disk", "temperature", "backlight", "network", "pulseaudio", "battery", "tray", "clock"],
+  "modules-right":  ["cpu", "memory", "disk", "temperature", "backlight", "network", "pulseaudio", "battery", "tray", "clock", "custom/power"],
 
   "sway/workspaces": {
     "disable-scroll": true,
@@ -97,5 +97,11 @@
   "tray": {
     "icon-size": 16,
     "spacing": 6
+  },
+
+  "custom/power": {
+    "format": "⏻",
+    "tooltip": false,
+    "on-click": "wlogout -b 3 -c 0 -r 0"
   }
 }

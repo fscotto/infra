@@ -178,29 +178,33 @@ desktop_i3_dotfiles:
     mode: "0644"
 
 desktop_sway_dotfiles:
-  - name: sway config
-    src: .config/sway/
-    dest: .config/sway/
+  - name: alacritty config
+    src: .config/alacritty/
+    dest: .config/alacritty/
     mode: preserve
   - name: dunst config
     src: .config/dunst/
     dest: .config/dunst/
     mode: preserve
+  - name: flameshot config
+    src: .config/flameshot/
+    dest: .config/flameshot/
+    mode: preserve
   - name: rofi config
     src: .config/rofi/
     dest: .config/rofi/
+    mode: preserve
+  - name: sway config
+    src: .config/sway/
+    dest: .config/sway/
     mode: preserve
   - name: waybar config
     src: .config/waybar/
     dest: .config/waybar/
     mode: preserve
-  - name: flameshot config
-    src: .config/flameshot/
-    dest: .config/flameshot/
-    mode: preserve
-  - name: alacritty config
-    src: .config/alacritty/
-    dest: .config/alacritty/
+  - name: wlogout config
+    src: .config/wlogout/
+    dest: .config/wlogout/
     mode: preserve
 
 desktop_flatpak_packages:

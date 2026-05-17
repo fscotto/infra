@@ -1,0 +1,3 @@
+{"label": "logout",   "action": "swaymsg exit",      "text": "Logout",   "keybind": "l"}
+{"label": "reboot",   "action": "loginctl reboot",   "text": "Reboot",   "keybind": "r"}
+{"label": "shutdown", "action": "loginctl poweroff", "text": "Shutdown", "keybind": "s"}

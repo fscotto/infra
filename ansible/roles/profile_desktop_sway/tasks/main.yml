@@ -10,11 +10,11 @@
   loop:
     - "{{ user_home }}/.config/alacritty"
     - "{{ user_home }}/.config/dunst"
+    - "{{ user_home }}/.config/flameshot"
     - "{{ user_home }}/.config/rofi"
     - "{{ user_home }}/.config/sway"
-    - "{{ user_home }}/.config/sway/scripts"
-    - "{{ user_home }}/.config/sway/wallpapers"
     - "{{ user_home }}/.config/waybar"
+    - "{{ user_home }}/.config/wlogout"
   when: "'sway' in (desktop_sessions_enabled | default([]))"
 
 - name: Install allowed emptty Wayland sessions

@@ -45,6 +45,9 @@ blur_radius 5
 shadows enable
 default_dim_inactive 0.1
 
+# Layer effects (Waybar etc.) — sfrutta il blur globale già attivo
+layer_effects "waybar" blur enable; blur_ignore_transparent enable; shadows disable
+
 # Allow X11 applications
 xwayland enable
 

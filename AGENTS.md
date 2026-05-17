@@ -54,15 +54,24 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 - Use `no_log: true` for secret-bearing task inputs or outputs.
 
 ## Desktop Notes
-- `profile_desktop_common` owns the shared desktop bootstrap.
+- `profile_desktop_common` owns the shared desktop bootstrap; `profile_desktop_i3` (X11) and `profile_desktop_sway` (Wayland/SwayFX) install their respective session in parallel and are both wired into the `void` play in `ansible/site.yml`. `desktop_sessions_enabled` and `desktop_default_session` in host vars decide which sessions are exposed in `emptty` and which is preselected.
 - `.emacs.d` is deployed by a dedicated `profile_desktop_common` task tagged `emacs`.
 - NTFS filesystem support is provided by `ntfs-3g` in `ansible/inventory/group_vars/void.yml`.
 - Void user services are managed by `turnstile` and live under `dotfiles/desktop/.config/service/`.
 - `ssh-agent` keeps the stable socket `~/.local/state/ssh-agent/socket`.
 - Critical session entrypoints:
-  - `dotfiles/desktop/.xinitrc`
+  - `dotfiles/desktop/.xinitrc` (i3 / X11)
+  - `dotfiles/desktop/.config/sway/config` plus `host.conf` and `session-env` deployed via `host_sway_dotfiles` (sway / Wayland)
 - Do not auto-restart `emptty` during playbook runs on active Void desktop hosts; restart it manually from another TTY/SSH session if needed.
-- `nymph` is an i3/X11 Void laptop with NVIDIA Optimus; host-specific tasks in `profile_desktop_host/tasks/nymph.yml` handle GRUB NVIDIA cmdline params, `prime-run` wrapper, and the WirePlumber camera priority config.
+- `nymph` is a Void laptop with NVIDIA Optimus, running both i3 (X11) and sway (Wayland); host-specific tasks in `profile_desktop_host/tasks/nymph.yml` handle GRUB NVIDIA cmdline params, `prime-run` wrapper, and the WirePlumber camera priority config. Multi-monitor on X11 is driven by `autorandr`; on sway it is driven by `kanshi` (config deployed via `host_sway_dotfiles`).
+
+## Void Package And Dotfile Bucket Rules
+The four Void desktop package lists in `ansible/inventory/group_vars/void.yml` are kept disjoint by role:
+- `void_packages_base` — system runtime only (init/services, kernel, audio core, networking, filesystem, firewall, hardware daemons, runit logging).
+- `desktop_common_packages` — WM-agnostic GUI infra (GTK theme, polkit, keyring, NM-applet, blueman, audio GUI, file manager backend + GVFS, portal, flatpak, printing/scanning).
+- `desktop_i3_packages` / `desktop_sway_packages` — binaries specific to each session. Cross-WM packages used by both (`dunst`, `rofi`, `alacritty`) are intentionally duplicated in the two lists.
+`profile_packages` in the same file is cross-distro and is overridden by `group_vars/server.yml` and the workstation group vars; do not move desktop-specific Void entries through it.
+The dotfile vars follow the same split: `desktop_common_dotfiles` (in `group_vars/desktop.yml`) carries WM-agnostic GUI config and user scripts (Thunar, mimeapps, GTK theme setup, Udiskie, fontconfig, WirePlumber, mpv, …); `desktop_void_dotfiles` (in `group_vars/void.yml`) is reserved for files that need Void runtime (turnstile services, bash runit/dbus/ssh-agent fragments, `update-turnstile-env`).
 
 ## Workstation / Windows Notes
 - Native Linux workstation hosts can combine `workstation_host_linux` with an OS-specific dev group.

@@ -74,6 +74,9 @@ for_window [class="(?i)polkit"] floating enable
 for_window [title="^Authentication Required"] floating enable
 
 # Autostart — XDG and session services
+# Propagate Wayland env to dbus so xdg-desktop-portal backends inherit
+# WAYLAND_DISPLAY/SWAYSOCK when dbus-activated (otherwise they crash).
+exec dbus-update-activation-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP
 exec dex --autostart --environment sway
 exec gnome-keyring-daemon --start --components=secrets
 exec_always ~/.config/sway/scripts/setup-gtk-theme.sh

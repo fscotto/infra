@@ -434,6 +434,18 @@
     - "{{ user_home }}/Maildir/iCloudAccount"
     - "{{ user_home }}/Maildir/ProtonMailAccount"
 
+- name: Make Qt apps follow the GTK theme
+  tags: [theme]
+  ansible.builtin.copy:
+    dest: /etc/profile.d/10-qt-theme.sh
+    content: |
+      # Use the gtk3 Qt platform theme so Qt5/Qt6 widgets, file dialogs,
+      # icon theme and color scheme follow ~/.config/gtk-3.0/settings.ini.
+      export QT_QPA_PLATFORMTHEME=gtk3
+    owner: root
+    group: root
+    mode: "0644"
+
 - name: Ensure flathub remote is configured
   tags: [packages]
   community.general.flatpak_remote:

@@ -157,6 +157,8 @@ desktop_sway_packages:
   - cliphist
   - dunst
   - flameshot
+  - foot
+  - foot-terminfo
   - grim
   - kanshi
   - rofi

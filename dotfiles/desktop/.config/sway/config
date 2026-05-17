@@ -76,6 +76,36 @@ for_window [app_id="(?i)polkit"] floating enable
 for_window [class="(?i)polkit"] floating enable
 for_window [title="^Authentication Required"] floating enable
 
+# Floating: dialog X11 (open/save/print, generic transient dialogs)
+for_window [window_role="pop-up"] floating enable
+for_window [window_role="dialog"] floating enable
+for_window [window_role="task_dialog"] floating enable
+for_window [window_type="dialog"] floating enable
+for_window [window_type="utility"] floating enable
+
+# Floating: Bluetooth manager
+for_window [app_id="blueman-manager"] floating enable
+for_window [class="Blueman-manager"] floating enable
+
+# Floating: NetworkManager connection editor / VPN / pinentry
+for_window [app_id="nm-connection-editor"] floating enable
+for_window [class="Nm-connection-editor"] floating enable
+for_window [app_id="(?i)pinentry"] floating enable
+for_window [class="(?i)pinentry"] floating enable
+
+# Floating: Firefox auxiliary windows (Library/Downloads, About, Preferences, Manager)
+for_window [class="(?i)firefox" title="^Library$"] floating enable
+for_window [app_id="(?i)firefox" title="^Library$"] floating enable
+for_window [class="(?i)firefox" title="^About Mozilla Firefox$"] floating enable
+for_window [app_id="(?i)firefox" title="^About Mozilla Firefox$"] floating enable
+for_window [class="(?i)firefox" window_role="Preferences"] floating enable
+for_window [class="(?i)firefox" window_role="Manager"] floating enable
+for_window [class="(?i)firefox" window_role="Dialog"] floating enable
+for_window [class="(?i)firefox" window_role="Popup"] floating enable
+
+# Floating: file pickers GTK (open/save) — già coperti da window_type=dialog ma ridondante per portal
+for_window [app_id="org.freedesktop.impl.portal.desktop.gtk"] floating enable
+
 # Autostart — XDG and session services
 # Propagate Wayland env to dbus so xdg-desktop-portal backends inherit
 # WAYLAND_DISPLAY/SWAYSOCK when dbus-activated (otherwise they crash).
@@ -121,6 +151,9 @@ exec swayidle -w \
 
 # Terminal
 bindsym $mod+Return exec $terminal
+
+# Emergency terminal fallback
+bindsym $mod+Shift+Return exec foot
 
 # Emacs client
 bindsym $mod+Shift+e exec emacsclient -c -n

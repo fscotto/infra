@@ -40,7 +40,7 @@ output * bg ~/.config/sway/wallpapers/wallpaper-161664.jpg center
 # SwayFX effects
 corner_radius 8
 blur enable
-blur_passes 2
+blur_passes 1
 blur_radius 5
 shadows enable
 default_dim_inactive 0.1

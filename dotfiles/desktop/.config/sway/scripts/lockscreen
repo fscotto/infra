@@ -3,7 +3,7 @@
 exec swaylock \
     --image "$HOME/.config/sway/wallpapers/maxresdefault.jpg" \
     --scaling fill \
-    --indicator-idle-visible \
+    --indicator-radius 100 \
     --ring-color 2f4058 \
     --inside-color 1f1f28 \
     --line-color 00000000 \

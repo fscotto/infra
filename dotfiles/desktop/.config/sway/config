@@ -272,7 +272,7 @@ bindsym $mod+Shift+0 move container to workspace number $ws10
 bindsym $mod+Shift+c reload
 bindsym $mod+Shift+r reload
 bindsym $mod+Shift+BackSpace exec swaymsg exit
-bindsym $mod+Shift+Escape exec ~/.config/sway/scripts/powermenu.sh
+bindsym $mod+Shift+Escape exec wlogout -n -b 3 -c 16 -r 16 -L 1344 -R 1344 -T 650 -B 650
 
 # Resize mode
 mode "resize" {

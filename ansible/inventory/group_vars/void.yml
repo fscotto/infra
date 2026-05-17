@@ -11,29 +11,21 @@ void_packages_base:
   - NetworkManager
   - avahi
   - base-system
-  - bat
   - clang
   - clang-tools-extra
   - cmake
-  - cups
-  - cups-filters
-  - cups-pk-helper
   - delta
   - elogind
   - fastfetch
-  - flatpak
   - fuse3
   - gcc
   - gdb
   - gist
   - github-cli
-  - gnome-keyring
   - go
-  - gvfs
   - hugo
   - ImageMagick
   - isync
-  - libsecret
   - libtool
   - linux
   - linux-headers
@@ -45,26 +37,20 @@ void_packages_base:
   - man-pages-posix
   - msmtp
   - mu4e
-  - network-manager-applet
   - nodejs
   - ntfs-3g
-  - pavucontrol
   - pipewire
   - pkg-config
+  - plocate
   - podman
   - podman-compose
   - rclone
-  - sane
-  - sane-airscan
-  - seahorse
-  - simple-scan
   - socklog
   - socklog-void
   - speech-dispatcher
   - syncthing
-  - system-config-printer
-  - tmux
   - tealdeer
+  - tmux
   - tree-sitter-grammars
   - ufw
   - void-repo-nonfree
@@ -72,7 +58,6 @@ void_packages_base:
   - vsv
   - xtools
   - yt-dlp
-  - plocate
 
 enabled_services:
   - NetworkManager
@@ -98,14 +83,6 @@ desktop_void_dotfiles:
     src: .config/service/
     dest: .config/service/
     mode: preserve
-  - name: Thunar config
-    src: .config/Thunar/
-    dest: .config/Thunar/
-    mode: preserve
-  - name: MIME application defaults
-    src: .config/mimeapps.list
-    dest: .config/mimeapps.list
-    mode: "0644"
   - name: Bash DBus session fragment
     src: .bashrc.d/14-dbus-session.sh
     dest: .bashrc.d/14-dbus-session.sh
@@ -118,18 +95,6 @@ desktop_void_dotfiles:
     src: .bashrc.d/15-runit-desktop.sh
     dest: .bashrc.d/15-runit-desktop.sh
     mode: "0644"
-  - name: GTK theme setup script
-    src: .local/bin/setup-gtk-theme
-    dest: .local/bin/setup-gtk-theme
-    mode: "0755"
-  - name: Udiskie password helper
-    src: .local/bin/udiskie-password
-    dest: .local/bin/udiskie-password
-    mode: "0755"
-  - name: Udiskie config
-    src: .config/udiskie/
-    dest: .config/udiskie/
-    mode: preserve
   - name: Turnstile environment update script
     src: .local/bin/update-turnstile-env
     dest: .local/bin/update-turnstile-env
@@ -138,11 +103,24 @@ desktop_void_dotfiles:
 desktop_common_packages:
   - blueman
   - brightnessctl
+  - cups
+  - cups-filters
+  - cups-pk-helper
   - dex
   - emptty
+  - flatpak
+  - gnome-keyring
+  - gvfs
+  - libsecret
   - network-manager-applet
+  - pavucontrol
   - pinentry-emacs
   - pinentry-gtk
+  - sane
+  - sane-airscan
+  - seahorse
+  - simple-scan
+  - system-config-printer
   - turnstile
   - udiskie
   - xdg-desktop-portal
@@ -174,13 +152,12 @@ desktop_i3_packages:
   - xorg-minimal
   - xss-lock
   - xdotool
-  
+
 desktop_sway_packages:
   - cliphist
   - dunst
   - flameshot
   - grim
-  - jq
   - kanshi
   - rofi
   - slurp

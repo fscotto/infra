@@ -141,10 +141,10 @@ bindsym $mod+Shift+x exec ~/.config/sway/scripts/lockscreen
 bindsym $mod+Shift+q kill
 
 # Screenshot
-#   Print        → flameshot GUI (annotations, save + clipboard via portal)
+#   Print        → flameshot GUI
 #   Shift+Print  → grim+slurp region → clipboard
 #   Alt+Print    → grim focused output → clipboard
-bindsym Print exec flameshot gui --path "$HOME/Pictures/Screenshots" --clipboard
+bindsym Print exec flameshot gui
 bindsym Shift+Print exec ~/.config/sway/scripts/screenshot region
 bindsym Alt+Print exec ~/.config/sway/scripts/screenshot output
 

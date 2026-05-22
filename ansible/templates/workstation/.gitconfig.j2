@@ -8,6 +8,7 @@
 [user]
   name = {{ vault_personal_full_name }}
   email = {{ vault_git_work_email }}
+  signingkey = {{ vault_git_work_gpg }}
 
 [fetch]
   prune = true
@@ -19,7 +20,7 @@
   rebase = true
 
 [commit]
-  gpgsign = false
+  gpgsign = true
 
 [merge]
   conflictstyle = diff3

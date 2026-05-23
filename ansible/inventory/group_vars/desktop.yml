@@ -206,6 +206,10 @@ desktop_sway_dotfiles:
     src: .config/wlogout/
     dest: .config/wlogout/
     mode: preserve
+  - name: foot config
+    src: .config/foot/
+    dest: .config/foot/
+    mode: preserve
 
 desktop_flatpak_packages:
   - be.alexandervanhee.gradia

@@ -2,7 +2,7 @@
 
 set $mod Mod4
 
-font pango:LiterationMono Nerd Font 10
+font pango:NotoSans NF 10
 
 # vim-like directions
 set $left h

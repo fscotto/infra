@@ -48,3 +48,15 @@
     - workstation_npm_packages | length > 0
   loop_control:
     label: "{{ item.name }}"
+
+- name: Install IBM Bob coding agent
+  tags: [packages, ai_agents]
+  ansible.builtin.shell: >
+    curl -fsSL {{ workstation_ibm_bob_install_url }} | bash
+  args:
+    executable: /bin/bash
+    creates: /usr/local/bin/bob
+  become: true
+  when:
+    - workstation_manage_ibm_bob | default(false)
+    - workstation_ibm_bob_install_url | length > 0

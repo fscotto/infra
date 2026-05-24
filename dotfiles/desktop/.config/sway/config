@@ -114,6 +114,8 @@ exec dex --autostart --environment sway
 exec gnome-keyring-daemon --start --components=secrets
 exec_always ~/.config/sway/scripts/setup-gtk-theme.sh
 exec /usr/libexec/xdg-desktop-portal
+exec /usr/libexec/xdg-desktop-portal-wlr
+exec /usr/libexec/xdg-desktop-portal-gtk
 
 # Audio
 exec pipewire

@@ -18,6 +18,7 @@ void_packages_base:
   - elogind
   - fastfetch
   - fuse3
+  - fuse-sshfs
   - gcc
   - gdb
   - gist

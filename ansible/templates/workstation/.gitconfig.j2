@@ -24,13 +24,19 @@
 
 [merge]
   conflictstyle = diff3
-  tool = meld
+  tool = vscode
 
 [mergetool]
   prompt = false
 
+[mergetool "vscode"]
+  cmd = code --reuse-window --wait $MERGED
+
 [diff]
-  tool = meld
+  tool = vscode
+
+[difftool "vscode"]
+  cmd = code --reuse-window --wait --diff $LOCAL $REMOTE
 
 [color]
   ui = always

@@ -210,6 +210,10 @@ desktop_sway_dotfiles:
     src: .config/foot/
     dest: .config/foot/
     mode: preserve
+  - name: gtklock config
+    src: .config/gtklock/
+    dest: .config/gtklock/
+    mode: preserve
 
 desktop_flatpak_packages:
   - be.alexandervanhee.gradia

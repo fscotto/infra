@@ -1,17 +1,11 @@
 #!/bin/sh
 
-exec swaylock \
-    --image "$HOME/.config/sway/wallpapers/maxresdefault.jpg" \
-    --scaling fill \
-    --indicator-radius 100 \
-    --ring-color 2f4058 \
-    --inside-color 1f1f28 \
-    --line-color 00000000 \
-    --separator-color 3a3a46 \
-    --key-hl-color 6daeea \
-    --bs-hl-color c7162b \
-    --ring-ver-color 4a90d9 \
-    --inside-ver-color 1f1f28 \
-    --ring-wrong-color c7162b \
-    --inside-wrong-color 1f1f28 \
-    --text-color d0d0d0
+WALLPAPER="$HOME/.config/sway/wallpapers/maxresdefault.jpg"
+STYLE_TMP=$(mktemp /tmp/gtklock-XXXXXX.css)
+
+cat "$HOME/.config/gtklock/style.css" > "$STYLE_TMP"
+printf '\nwindow { background-image: url("file://%s"); background-size: cover; background-position: center; background-repeat: no-repeat; }\n' \
+    "$WALLPAPER" >> "$STYLE_TMP"
+
+gtklock --style "$STYLE_TMP"
+rm -f "$STYLE_TMP"

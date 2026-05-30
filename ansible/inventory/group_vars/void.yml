@@ -160,6 +160,7 @@ desktop_sway_packages:
   - flameshot
   - foot
   - foot-terminfo
+  - gtklock
   - grim
   - kanshi
   - rofi
@@ -167,7 +168,6 @@ desktop_sway_packages:
   - swayfx
   - swaybg
   - swayidle
-  - swaylock
   - SwayOSD
   - Waybar
   - wl-clipboard

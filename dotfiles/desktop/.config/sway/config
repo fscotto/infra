@@ -35,7 +35,7 @@ input * {
 seat * xcursor_theme Yaru 24
 
 # Outputs
-output * bg ~/.config/sway/wallpapers/wallpaper-161664.jpg center
+output * bg ~/.config/sway/wallpapers/darth-vader-sam.jpg center
 
 # SwayFX effects
 corner_radius 8

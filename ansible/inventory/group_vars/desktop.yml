@@ -2,10 +2,10 @@
 desktop_protonmail_bridge_cert_path: ~/.var/app/ch.protonmail.protonmail-bridge/config/protonmail/bridge-v3/cert.pem
 
 desktop_sessions_enabled:
-  - i3
+  - sway
 
-desktop_default_session: i3
-desktop_default_session_env: xorg
+desktop_default_session: sway
+desktop_default_session_env: wayland
 desktop_prompt_for_session: true
 
 desktop_source_tools:

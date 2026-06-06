@@ -1,0 +1,121 @@
+* {
+    font-family: "NotoSans NF";
+    font-size: 10pt;
+    font-weight: 600;
+    min-height: 0;
+}
+
+window#waybar {
+    background-color: rgba(6, 7, 13, 0.82);
+    color: #f2f4f8;
+    border: 1px solid rgba(84, 214, 255, 0.55);
+    border-radius: 0;
+}
+
+#workspaces {
+    padding: 0 4px;
+}
+
+#workspaces button {
+    padding: 0 8px;
+    margin: 3px 2px;
+    color: #c7ccd8;
+    background-color: rgba(17, 19, 27, 0.72);
+    border: 1px solid rgba(245, 230, 184, 0.18);
+    border-radius: 7px;
+}
+
+#workspaces button.visible {
+    color: #f5e6b8;
+    background-color: rgba(30, 34, 46, 0.92);
+    border-color: rgba(245, 230, 184, 0.45);
+}
+
+#workspaces button.active,
+#workspaces button.focused {
+    color: #061018;
+    background: linear-gradient(180deg, #54d6ff, #1478ff);
+    border-color: #9eeaff;
+}
+
+#workspaces button.urgent {
+    color: #ffffff;
+    background-color: #c7162b;
+    border-color: #ff6b6b;
+}
+
+#clock,
+#cpu,
+#memory,
+#disk,
+#temperature,
+#backlight,
+#network,
+#pulseaudio,
+#battery,
+#tray,
+#custom-dnd,
+#custom-power {
+    padding: 0 8px;
+    margin: 3px 2px;
+    border-radius: 7px;
+    background-color: rgba(17, 19, 27, 0.72);
+    border: 1px solid rgba(245, 230, 184, 0.12);
+}
+
+#clock {
+    color: #f5e6b8;
+    border-color: rgba(245, 230, 184, 0.38);
+}
+
+#cpu         { color: #b28cff; }
+#memory      { color: #54d6ff; }
+#disk        { color: #b9f6ca; }
+#temperature { color: #ffd166; }
+#backlight   { color: #f5e6b8; }
+#network     { color: #54d6ff; }
+#pulseaudio  { color: #9eeaff; }
+#battery     { color: #f2f4f8; }
+
+#network.disconnected,
+#pulseaudio.muted,
+#custom-dnd {
+    color: #8a8f9a;
+}
+
+#battery.charging,
+#battery.full {
+    color: #36ff73;
+}
+
+#battery.warning,
+#custom-dnd.paused {
+    color: #ffd166;
+    border-color: rgba(255, 209, 102, 0.45);
+}
+
+#battery.critical,
+#temperature.critical {
+    color: #ff6b6b;
+    border-color: rgba(199, 22, 43, 0.75);
+}
+
+#tray {
+    padding: 0 6px;
+}
+
+#custom-power {
+    color: #ff4d5d;
+    padding: 0 10px;
+    font-size: 12pt;
+    border-color: rgba(199, 22, 43, 0.40);
+}
+
+#custom-dnd:hover,
+#custom-power:hover,
+#clock:hover,
+#network:hover,
+#pulseaudio:hover {
+    background-color: rgba(84, 214, 255, 0.16);
+    border-color: rgba(84, 214, 255, 0.62);
+}

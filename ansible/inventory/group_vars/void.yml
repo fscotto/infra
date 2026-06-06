@@ -206,7 +206,7 @@ profile_packages:
   - firefox
   - deluge-gtk
   - dnsmasq
-  - emacs-gtk3
+  - emacs-pgtk
   - poppler-glib
   - poppler-utils
   - exo

@@ -3,6 +3,7 @@ desktop_protonmail_bridge_cert_path: ~/.var/app/ch.protonmail.protonmail-bridge/
 
 desktop_sessions_enabled:
   - sway
+  - hyprland
 
 desktop_default_session: sway
 desktop_default_session_env: wayland
@@ -213,6 +214,36 @@ desktop_sway_dotfiles:
   - name: gtklock config
     src: .config/gtklock/
     dest: .config/gtklock/
+    mode: preserve
+
+desktop_hyprland_dotfiles:
+  - name: alacritty config
+    src: .config/alacritty/
+    dest: .config/alacritty/
+    mode: preserve
+  - name: dunst config
+    src: .config/dunst/
+    dest: .config/dunst/
+    mode: preserve
+  - name: flameshot config
+    src: .config/flameshot/
+    dest: .config/flameshot/
+    mode: preserve
+  - name: rofi config
+    src: .config/rofi/
+    dest: .config/rofi/
+    mode: preserve
+  - name: hyprland config
+    src: .config/hypr/
+    dest: .config/hypr/
+    mode: preserve
+  - name: waybar config
+    src: .config/waybar/
+    dest: .config/waybar/
+    mode: preserve
+  - name: foot config
+    src: .config/foot/
+    dest: .config/foot/
     mode: preserve
 
 desktop_flatpak_packages:

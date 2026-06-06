@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Hyprland
+Comment=Hyprland (Wayland)
+Exec=/usr/local/bin/start-hyprland-session
+Type=Application
+DesktopNames=Hyprland

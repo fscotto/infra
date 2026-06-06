@@ -5,9 +5,9 @@
     path: /etc/xbps.d
     state: directory
     mode: "0755"
-  when: (host_xbps_repositories | default([])) | length > 0
+  when: (void_xbps_repositories | default([]) + host_xbps_repositories | default([])) | length > 0
 
-- name: Configure host-specific XBPS repositories
+- name: Configure Void XBPS repositories
   tags: [packages]
   ansible.builtin.copy:
     dest: "/etc/xbps.d/{{ item.name }}.conf"
@@ -16,11 +16,11 @@
     owner: root
     group: root
     mode: "0644"
-  loop: "{{ host_xbps_repositories | default([]) }}"
+  loop: "{{ void_xbps_repositories | default([]) + host_xbps_repositories | default([]) }}"
   loop_control:
     label: "{{ item.name }}"
-  register: host_xbps_repository_configs
-  when: (host_xbps_repositories | default([])) | length > 0
+  register: void_xbps_repository_configs
+  when: (void_xbps_repositories | default([]) + host_xbps_repositories | default([])) | length > 0
 
 - name: Install Void nonfree repository if needed
   tags: [packages]
@@ -37,7 +37,7 @@
     update_cache: true
     accept_pubkey: true
   when: >-
-    (host_xbps_repositories | default([])) | length > 0
+    (void_xbps_repositories | default([]) + host_xbps_repositories | default([])) | length > 0
     or (void_nonfree_repository is defined and void_nonfree_repository is changed)
 
 - name: Synchronize and upgrade Void Linux packages
@@ -64,6 +64,11 @@
         + (
             (desktop_sway_packages | default([]))
             if 'sway' in (desktop_sessions_enabled | default([]))
+            else []
+          )
+        + (
+            (desktop_hyprland_packages | default([]))
+            if 'hyprland' in (desktop_sessions_enabled | default([]))
             else []
           )
         + (host_packages | default([]))

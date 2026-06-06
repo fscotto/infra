@@ -1,4 +1,8 @@
 ---
+void_xbps_repositories:
+  - name: hyprland-void
+    url: https://raw.githubusercontent.com/sofijacom/hyprland-void/repository-x86_64-glibc
+
 desktop_void_source_tools:
   - name: st
     repo: https://codeberg.org/fscotto/st
@@ -173,6 +177,25 @@ desktop_sway_packages:
   - wl-clipboard
   - wlogout
   - xdg-desktop-portal-wlr
+  - xorg-server-xwayland
+
+desktop_hyprland_packages:
+  - cliphist
+  - dunst
+  - foot
+  - foot-terminfo
+  - grim
+  - hypridle
+  - hyprland
+  - hyprland-guiutils
+  - hyprlock
+  - hyprpaper
+  - rofi
+  - slurp
+  - SwayOSD
+  - Waybar
+  - wl-clipboard
+  - xdg-desktop-portal-hyprland
   - xorg-server-xwayland
 
 profile_packages:

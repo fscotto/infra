@@ -54,7 +54,7 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 - Use `no_log: true` for secret-bearing task inputs or outputs.
 
 ## Desktop Notes
-- `profile_desktop_common` owns the shared desktop bootstrap; `profile_desktop_i3` (X11) and `profile_desktop_sway` (Wayland/SwayFX) install their respective session in parallel and are both wired into the `void` play in `ansible/site.yml`. `desktop_sessions_enabled` and `desktop_default_session` in host vars decide which sessions are exposed in `emptty` and which is preselected.
+- `profile_desktop_common` owns the shared desktop bootstrap; `profile_desktop_i3` (X11), `profile_desktop_sway` (Wayland/SwayFX), and `profile_desktop_hyprland` (Wayland) install their respective sessions in parallel and are wired into the `void` play in `ansible/site.yml`. `desktop_sessions_enabled` and `desktop_default_session` in host vars decide which sessions are exposed in `emptty` and which is preselected.
 - `.emacs.d` is deployed by a dedicated `profile_desktop_common` task tagged `emacs`.
 - NTFS filesystem support is provided by `ntfs-3g` in `ansible/inventory/group_vars/void.yml`.
 - Void user services are managed by `turnstile` and live under `dotfiles/desktop/.config/service/`.
@@ -62,14 +62,15 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 - Critical session entrypoints:
   - `dotfiles/desktop/.xinitrc` (i3 / X11)
   - `dotfiles/desktop/.config/sway/config` plus `host.conf` and `session-env` deployed via `host_sway_dotfiles` (sway / Wayland)
+  - `dotfiles/desktop/.config/hypr/hyprland.conf` plus `host.conf` and `session-env` deployed via `host_hyprland_dotfiles` (Hyprland / Wayland)
 - Do not auto-restart `emptty` during playbook runs on active Void desktop hosts; restart it manually from another TTY/SSH session if needed.
-- `nymph` is a Void laptop with NVIDIA Optimus, running both i3 (X11) and sway (Wayland); host-specific tasks in `profile_desktop_host/tasks/nymph.yml` handle GRUB NVIDIA cmdline params, `prime-run` wrapper, and the WirePlumber camera priority config. Multi-monitor on X11 is driven by `autorandr`; on sway it is driven by `kanshi` (config deployed via `host_sway_dotfiles`).
+- `nymph` is a Void laptop with NVIDIA Optimus, running sway (Wayland) and Hyprland (Wayland); host-specific tasks in `profile_desktop_host/tasks/nymph.yml` handle GRUB NVIDIA cmdline params, `prime-run` wrapper, and the WirePlumber camera priority config. Multi-monitor on X11 is driven by `autorandr`; on sway it is driven by `kanshi` (config deployed via `host_sway_dotfiles`), and on Hyprland by host-specific Hyprland monitor/workspace rules.
 
 ## Void Package And Dotfile Bucket Rules
 The four Void desktop package lists in `ansible/inventory/group_vars/void.yml` are kept disjoint by role:
 - `void_packages_base` — system runtime only (init/services, kernel, audio core, networking, filesystem, firewall, hardware daemons, runit logging).
 - `desktop_common_packages` — WM-agnostic GUI infra (GTK theme, polkit, keyring, NM-applet, blueman, audio GUI, file manager backend + GVFS, portal, flatpak, printing/scanning).
-- `desktop_i3_packages` / `desktop_sway_packages` — binaries specific to each session. Cross-WM packages used by both (`dunst`, `rofi`, `alacritty`) are intentionally duplicated in the two lists.
+- `desktop_i3_packages` / `desktop_sway_packages` / `desktop_hyprland_packages` — binaries specific to each session. Cross-WM packages used by both (`dunst`, `rofi`, `alacritty`) are intentionally duplicated in the two lists.
 `profile_packages` in the same file is cross-distro and is overridden by `group_vars/server.yml` and the workstation group vars; do not move desktop-specific Void entries through it.
 The dotfile vars follow the same split: `desktop_common_dotfiles` (in `group_vars/desktop.yml`) carries WM-agnostic GUI config and user scripts (Thunar, mimeapps, GTK theme setup, Udiskie, fontconfig, WirePlumber, mpv, …); `desktop_void_dotfiles` (in `group_vars/void.yml`) is reserved for files that need Void runtime (turnstile services, bash runit/dbus/ssh-agent fragments, `update-turnstile-env`).
 

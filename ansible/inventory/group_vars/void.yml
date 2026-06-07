@@ -189,7 +189,9 @@ desktop_hyprland_packages:
   - hyprland
   - hyprland-guiutils
   - hyprlock
+  - hyprpolkitagent
   - hyprpaper
+  - hyprsysteminfo
   - rofi
   - slurp
   - SwayOSD

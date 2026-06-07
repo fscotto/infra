@@ -5,7 +5,7 @@ desktop_sessions_enabled:
   - sway
   - hyprland
 
-desktop_default_session: sway
+desktop_default_session: hyprland
 desktop_default_session_env: wayland
 desktop_prompt_for_session: true
 
@@ -224,10 +224,6 @@ desktop_hyprland_dotfiles:
   - name: dunst config
     src: .config/dunst/
     dest: .config/dunst/
-    mode: preserve
-  - name: flameshot config
-    src: .config/flameshot/
-    dest: .config/flameshot/
     mode: preserve
   - name: rofi config
     src: .config/rofi/

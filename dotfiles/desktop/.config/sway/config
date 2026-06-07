@@ -110,6 +110,7 @@ for_window [app_id="org.freedesktop.impl.portal.desktop.gtk"] floating enable
 # Propagate Wayland env to dbus so xdg-desktop-portal backends inherit
 # WAYLAND_DISPLAY/SWAYSOCK when dbus-activated (otherwise they crash).
 exec dbus-update-activation-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP
+exec env UPDATE_TURNSTILE_RESTART_EMACS=1 ~/.local/bin/update-turnstile-env
 exec dex --autostart --environment sway
 exec gnome-keyring-daemon --start --components=secrets
 exec_always ~/.config/sway/scripts/setup-gtk-theme.sh

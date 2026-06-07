@@ -8,8 +8,13 @@ fi
 
 vars="DISPLAY XAUTHORITY DBUS_SESSION_BUS_ADDRESS SSH_AUTH_SOCK XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE"
 
-[ -n "${WAYLAND_DISPLAY:-}" ] && vars="$vars WAYLAND_DISPLAY"
-[ -n "${SWAYSOCK:-}" ]        && vars="$vars SWAYSOCK"
+[ -n "${WAYLAND_DISPLAY:-}" ]             && vars="$vars WAYLAND_DISPLAY"
+[ -n "${SWAYSOCK:-}" ]                    && vars="$vars SWAYSOCK"
+[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && vars="$vars HYPRLAND_INSTANCE_SIGNATURE"
 
 # shellcheck disable=SC2086
 turnstile-update-runit-env $vars >/dev/null 2>&1 || true
+
+if [ "${UPDATE_TURNSTILE_RESTART_EMACS:-0}" = "1" ] && command -v sv >/dev/null 2>&1; then
+  sv restart "$HOME/.config/service/emacs" >/dev/null 2>&1 || true
+fi

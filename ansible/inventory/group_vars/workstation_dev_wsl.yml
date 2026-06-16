@@ -16,7 +16,9 @@ workstation_dev_wsl_excluded_packages:
 workstation_is_wsl: true
 workstation_manage_google_chrome: false
 workstation_removed_snap_packages: []
-workstation_snap_packages: []
+workstation_snap_packages:
+  - name: glab
+    classic: true
 workstation_dev_wsl_python_packages:
   - pypsrp
   - pyspnego

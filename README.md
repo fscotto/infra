@@ -70,34 +70,36 @@ Sistema operativo:
 
 - Void Linux
 
-Sessioni desktop:
+Modalita desktop:
 
-- `ikaros`: sway (Wayland) + Hyprland (Wayland), default sway
-- `nymph`: sway (Wayland) + Hyprland (Wayland), default sway
+- `minimal`: sway (Wayland) + Hyprland (Wayland), gestite da `emptty`
+- `kde`: KDE Plasma, gestito da SDDM
 
 Macchine:
 
 - `ikaros`
 - `nymph`
 
-Queste macchine condividono la stessa configurazione base desktop e vengono mantenute allineate tramite Ansible. Sway/SwayFX e Hyprland sono installate in parallelo e selezionabili da `emptty`; `desktop_default_session` decide quale sessione viene preselezionata al login.
+Queste macchine condividono la stessa configurazione base desktop e vengono mantenute allineate tramite Ansible. `desktop_environment` seleziona in modo esclusivo `minimal` (default) oppure `kde`. Nella modalita minimale Sway/SwayFX e Hyprland sono installate in parallelo e selezionabili da `emptty`; `desktop_default_session` decide quale sessione viene preselezionata al login.
 
 Lo stato attuale del profilo desktop include, tra le altre cose:
 
 - dotfiles comuni e desktop
-- sessioni sway e Hyprland su entrambi gli host (default sway, Hyprland disponibile via `emptty`)
-- `emptty` con default host-specific per il desktop attivo, con `XORG_SESSIONS_PATH` puntato a `/etc/emptty/xsessions` e session file Wayland esposti su `WAYLAND_SESSIONS_PATH` per `sway` e `hyprland`
+- sessioni sway e Hyprland su entrambi gli host in modalita `minimal`
+- KDE Plasma con applicazioni KDE curate e SDDM disponibile come alternativa esclusiva
+- `emptty` con default host-specific in modalita `minimal`, con session file Wayland esposti per `sway` e `hyprland`
 - pacchetti Void Linux e servizi runit; le liste pacchetti Void desktop sono separate per criterio:
   - `void_packages_base` per il runtime sistema (init, kernel, audio core, networking, firewall, hw daemons)
-  - `desktop_common_packages` per l'infrastruttura GUI WM-agnostic (tema, polkit, keyring, NM-applet, blueman, audio GUI, file manager backend, portal, flatpak, printing/scanning)
+  - `desktop_common_packages` per l'infrastruttura condivisa dalle due modalita
+  - `desktop_minimal_packages` per applicazioni GTK/XFCE e `emptty`
+  - `desktop_kde_packages` per Plasma, SDDM e le applicazioni KDE equivalenti
   - `desktop_sway_packages` e `desktop_hyprland_packages` per i binari specifici di ciascuna sessione
 - `turnstile` per i servizi utente, inclusi `emacs` e `ssh-agent`
 - `ssh-agent` con socket stabile condiviso tra shell, SSH ed Emacs in `~/.local/state/ssh-agent/socket`
 - `.emacs.d` distribuito da un task dedicato Ansible con tag `emacs`
 - `tmux` con plugin gestiti da TPM al bootstrap del profilo desktop
 - Flatpak con remoto Flathub
-- GNOME Keyring e bootstrap della posta via script dedicato
-- `udiskie` come backend per automount/LUKS
+- GNOME Keyring e `udiskie` nella modalita minimale; KWallet e integrazione UDisks di Plasma nella modalita KDE
 - multi-monitor: sotto sway è gestito da `kanshi` (config host-specifica in `host_sway_dotfiles` su `nymph`); sotto Hyprland gli override monitor vivono in `host_hyprland_dotfiles`
 - override NVIDIA Optimus su `nymph`: parametri kernel GRUB iniettati in modo idempotente in `GRUB_CMDLINE_LINUX`, wrapper `prime-run` e config WirePlumber per priorità telecamera
 
@@ -395,6 +397,14 @@ Per vedere l'elenco reale aggiornato dei tag disponibili:
 ansible-playbook ansible/site.yml --list-tags
 ```
 
+Per attivare KDE su un host, impostare `desktop_environment: kde` nei relativi `host_vars` ed eseguire prima un dry run. Il primo play configura KDE ma, se `emptty` e ancora attivo, rinvia il cambio del display manager. Da una TTY o sessione SSH separata, applicare quindi il passaggio esplicito:
+
+```bash
+ansible-playbook ansible/site.yml --limit <host> -e desktop_allow_display_manager_switch=true
+```
+
+La stessa procedura vale in senso inverso per tornare a `minimal`.
+
 Allo stato attuale `ansible/site.yml` espone questi tag:
 
 | Tag | Scopo | Ambito principale |
@@ -407,6 +417,8 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `dotfiles:server` | dotfiles dedicati al profilo server | server |
 | `dotfiles:workstation` | dotfiles dedicati alle workstation | workstation Linux, WSL |
 | `emptty` | gestione display manager `emptty` | desktop Void |
+| `display-manager` | selezione protetta tra `emptty` e SDDM | desktop Void |
+| `kde` | profilo KDE Plasma e relativa pulizia | desktop Void |
 | `gnome` | configurazione host GNOME | workstation host Linux, parte desktop |
 | `sway` | sessione/configurazione sway / SwayFX (Wayland) | desktop Void |
 | `hyprland` | sessione/configurazione Hyprland (Wayland) | desktop Void |

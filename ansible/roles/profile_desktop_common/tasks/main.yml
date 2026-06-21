@@ -1,4 +1,22 @@
 ---
+- name: Validate desktop environment selection
+  tags: [always]
+  ansible.builtin.assert:
+    that:
+      - (desktop_environment | default('minimal')) in ['minimal', 'kde']
+      - >-
+        (desktop_environment | default('minimal')) == 'kde'
+        or (desktop_sessions_enabled | default([]) | length > 0)
+      - >-
+        (desktop_environment | default('minimal')) == 'kde'
+        or (desktop_sessions_enabled | default([]) | difference(['sway', 'hyprland']) | length == 0)
+      - >-
+        (desktop_environment | default('minimal')) == 'kde'
+        or desktop_default_session in (desktop_sessions_enabled | default([]))
+    fail_msg: >-
+      desktop_environment must be minimal or kde. Minimal desktops also require
+      desktop_default_session to be included in desktop_sessions_enabled.
+
 - name: Configure elogind to suspend on lid close
   tags: [packages]
   ansible.builtin.lineinfile:
@@ -34,32 +52,33 @@
     group: "{{ user_group }}"
     mode: "0755"
 
-- name: Enable gnome-keyring PAM auth hook
+- name: Manage gnome-keyring PAM auth hook
   tags: [packages, gnome]
   ansible.builtin.lineinfile:
     path: /etc/pam.d/login
     insertafter: '^auth\s+include\s+system-local-login$'
     line: "auth       optional  pam_gnome_keyring.so"
-    state: present
+    state: "{{ 'present' if (desktop_environment | default('minimal')) == 'minimal' else 'absent' }}"
   when: "'void' in group_names"
 
-- name: Enable gnome-keyring PAM session hook
+- name: Manage gnome-keyring PAM session hook
   tags: [packages, gnome]
   ansible.builtin.lineinfile:
     path: /etc/pam.d/login
     insertafter: '^session\s+include\s+system-local-login$'
     line: "session    optional  pam_gnome_keyring.so auto_start"
-    state: present
+    state: "{{ 'present' if (desktop_environment | default('minimal')) == 'minimal' else 'absent' }}"
   when: "'void' in group_names"
 
-- name: Enable gnome-keyring PAM password hook
+- name: Manage gnome-keyring PAM password hook
   tags: [packages, gnome]
   ansible.builtin.lineinfile:
     path: /etc/pam.d/login
     insertafter: '^password\s+include\s+system-local-login$'
     line: "password   optional  pam_gnome_keyring.so use_authtok"
-    state: present
-  when: "'void' in group_names"
+    state: "{{ 'present' if (desktop_environment | default('minimal')) == 'minimal' else 'absent' }}"
+  when:
+    - "'void' in group_names"
 
 - name: Check whether SSH host ed25519 key exists
   tags: [services]
@@ -234,7 +253,9 @@
     owner: root
     group: root
     mode: "0755"
-  when: "'void' in group_names"
+  when:
+    - "'void' in group_names"
+    - (desktop_environment | default('minimal')) == 'minimal'
 
 - name: Ensure emptty session directories exist
   tags: [packages, services, emptty]
@@ -247,7 +268,9 @@
   loop:
     - /etc/emptty/xsessions
     - /etc/emptty/wayland-sessions
-  when: "'void' in group_names"
+  when:
+    - "'void' in group_names"
+    - (desktop_environment | default('minimal')) == 'minimal'
 
 - name: Configure emptty
   tags: [packages, services, emptty]
@@ -258,7 +281,9 @@
     group: root
     mode: "0644"
   notify: Restart emptty
-  when: "'void' in group_names"
+  when:
+    - "'void' in group_names"
+    - (desktop_environment | default('minimal')) == 'minimal'
 
 - name: Copy common desktop dotfiles
   tags: [dotfiles, dotfiles:desktop]
@@ -271,6 +296,11 @@
   loop: >-
     {{
       (desktop_common_dotfiles | default([]))
+      + (
+          (desktop_minimal_dotfiles | default([]))
+          if (desktop_environment | default('minimal')) == 'minimal'
+          else []
+        )
       + ((desktop_void_dotfiles | default([])) if 'void' in group_names else [])
     }}
   loop_control:
@@ -445,6 +475,14 @@
     owner: root
     group: root
     mode: "0644"
+  when: (desktop_environment | default('minimal')) == 'minimal'
+
+- name: Remove minimal Qt theme override for KDE
+  tags: [theme]
+  ansible.builtin.file:
+    path: /etc/profile.d/10-qt-theme.sh
+    state: absent
+  when: (desktop_environment | default('minimal')) == 'kde'
 
 - name: Ensure flathub remote is configured
   tags: [packages]

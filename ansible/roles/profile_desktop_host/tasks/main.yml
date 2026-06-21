@@ -16,6 +16,7 @@
   loop_control:
     label: "{{ item.dest }}"
   when:
+    - (desktop_environment | default('minimal')) == 'minimal'
     - "'sway' in (desktop_sessions_enabled | default([]))"
     - (host_sway_dotfiles | default([])) | length > 0
 
@@ -32,5 +33,6 @@
   loop_control:
     label: "{{ item.dest }}"
   when:
+    - (desktop_environment | default('minimal')) == 'minimal'
     - "'hyprland' in (desktop_sessions_enabled | default([]))"
     - (host_hyprland_dotfiles | default([])) | length > 0

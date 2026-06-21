@@ -64,7 +64,6 @@ enabled_services:
   - cupsd
   - dbus
   - elogind
-  - emptty
   - libvirtd
   - nanoklogd
   - socklog-unix
@@ -99,32 +98,64 @@ desktop_void_dotfiles:
     mode: "0755"
 
 desktop_common_packages:
-  - blueman
-  - brightnessctl
   - cups
   - cups-filters
   - cups-pk-helper
-  - dex
-  - emptty
   - flatpak
-  - gnome-keyring
-  - gvfs
   - libsecret
-  - network-manager-applet
-  - pavucontrol
   - pinentry-emacs
-  - pinentry-gtk
   - sane
   - sane-airscan
+  - turnstile
+  - xdg-desktop-portal
+  - xdg-user-dirs
+
+desktop_minimal_packages:
+  - alacritty
+  - blueman
+  - brightnessctl
+  - dex
+  - emptty
+  - exo
+  - ffmpegthumbnailer
+  - gnome-keyring
+  - gvfs
+  - gvfs-cdda
+  - gvfs-mtp
+  - gvfs-smb
+  - network-manager-applet
+  - pavucontrol
+  - pinentry-gtk
+  - ristretto
   - seahorse
+  - shotwell
   - simple-scan
   - system-config-printer
-  - turnstile
+  - Thunar
+  - thunar-archive-plugin
+  - thunar-volman
+  - tumbler
   - udiskie
-  - xdg-desktop-portal
+  - xarchiver
   - xdg-desktop-portal-gtk
-  - xdg-user-dirs
   - xfce-polkit
+  - xournalpp
+
+desktop_kde_packages:
+  - ark
+  - dolphin
+  - ffmpegthumbs
+  - gwenview
+  - kate
+  - kde-plasma
+  - kleopatra
+  - konsole
+  - okular
+  - polkit-kde-agent
+  - print-manager
+  - sddm
+  - skanpage
+  - spectacle
 
 desktop_sway_packages:
   - cliphist
@@ -169,7 +200,6 @@ desktop_hyprland_packages:
   - xorg-server-xwayland
 
 profile_packages:
-  - alacritty
   - bash-language-server
   - bluez
   - bridge-utils
@@ -181,12 +211,8 @@ profile_packages:
   - emacs-pgtk
   - poppler-glib
   - poppler-utils
-  - exo
   - fontconfig-devel
   - freetype-devel
-  - gvfs-cdda
-  - gvfs-mtp
-  - gvfs-smb
   - gufw
   - golangci-lint
   - gopls
@@ -211,25 +237,16 @@ profile_packages:
   - remmina
   - ripgrep
   - rustup
-  - ristretto
   - rsync
-  - shotwell
   - shfmt
   - ruff
   - terminus-font
   - texlive
   - ty
-  - tumbler
   - uv
-  - Thunar
-  - thunar-archive-plugin
-  - thunar-volman
-  - ffmpegthumbnailer
   - virt-manager
   - virt-manager-tools
   - wireplumber
-  - xarchiver
-  - xournalpp
   - yaru
   - yaru-plus
   - zstd

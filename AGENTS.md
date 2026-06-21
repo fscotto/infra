@@ -52,7 +52,7 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 - Use `no_log: true` for secret-bearing task inputs or outputs.
 
 ## Desktop Notes
-- `profile_desktop_common` owns the shared desktop bootstrap; `profile_desktop_sway` (Wayland/SwayFX) and `profile_desktop_hyprland` (Wayland) install their respective sessions in parallel and are wired into the `void` play in `ansible/site.yml`. `desktop_sessions_enabled` and `desktop_default_session` in host vars decide which sessions are exposed in `emptty` and which is preselected.
+- `desktop_environment` selects the mutually exclusive `minimal` (default) or `kde` desktop mode. `profile_desktop_common` owns shared bootstrap; the minimal mode uses `profile_desktop_sway` and `profile_desktop_hyprland`, while `profile_desktop_kde` owns KDE-specific defaults and cleanup. `desktop_sessions_enabled` and `desktop_default_session` apply only to the minimal mode.
 - `.emacs.d` is deployed by a dedicated `profile_desktop_common` task tagged `emacs`.
 - NTFS filesystem support is provided by `ntfs-3g` in `ansible/inventory/group_vars/void.yml`.
 - Void user services are managed by `turnstile` and live under `dotfiles/desktop/.config/service/`.
@@ -60,16 +60,17 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux workstation
 - Critical session entrypoints:
   - `dotfiles/desktop/.config/sway/config` plus `host.conf` and `session-env` deployed via `host_sway_dotfiles` (sway / Wayland)
   - `dotfiles/desktop/.config/hypr/hyprland.conf` plus `host.conf` and `session-env` deployed via `host_hyprland_dotfiles` (Hyprland / Wayland)
-- Do not auto-restart `emptty` during playbook runs on active Void desktop hosts; restart it manually from another TTY/SSH session if needed.
+- Do not switch or restart a display manager during a playbook run from an active graphical session. Changing between `emptty` and SDDM requires an explicit run from another TTY/SSH session with `desktop_allow_display_manager_switch=true`.
 - `nymph` is a Void laptop with NVIDIA Optimus, running sway (Wayland) and Hyprland (Wayland); host-specific tasks in `profile_desktop_host/tasks/nymph.yml` handle GRUB NVIDIA cmdline params, `prime-run` wrapper, and the WirePlumber camera priority config. Multi-monitor on sway is driven by `kanshi` (config deployed via `host_sway_dotfiles`), and on Hyprland by host-specific Hyprland monitor/workspace rules.
 
 ## Void Package And Dotfile Bucket Rules
-The four Void desktop package lists in `ansible/inventory/group_vars/void.yml` are kept disjoint by role:
+The Void desktop package lists in `ansible/inventory/group_vars/void.yml` are kept disjoint by role:
 - `void_packages_base` — system runtime only (init/services, kernel, audio core, networking, filesystem, firewall, hardware daemons, runit logging).
-- `desktop_common_packages` — WM-agnostic GUI infra (GTK theme, polkit, keyring, NM-applet, blueman, audio GUI, file manager backend + GVFS, portal, flatpak, printing/scanning).
-- `desktop_sway_packages` / `desktop_hyprland_packages` — binaries specific to each session. Cross-WM packages used by both (`dunst`, `rofi`, `alacritty`) are intentionally duplicated in the two lists.
+- `desktop_common_packages` — GUI infrastructure shared by minimal and KDE modes.
+- `desktop_minimal_packages` / `desktop_kde_packages` — mutually exclusive applications, integration components, and display managers.
+- `desktop_sway_packages` / `desktop_hyprland_packages` — binaries specific to each session. Cross-WM packages used by both (such as `dunst`, `rofi`, and `foot`) are intentionally duplicated in the two lists.
 `profile_packages` in the same file is cross-distro and is overridden by `group_vars/server.yml` and the workstation group vars; do not move desktop-specific Void entries through it.
-The dotfile vars follow the same split: `desktop_common_dotfiles` (in `group_vars/desktop.yml`) carries WM-agnostic GUI config and user scripts (Thunar, mimeapps, GTK theme setup, Udiskie, fontconfig, WirePlumber, mpv, …); `desktop_void_dotfiles` (in `group_vars/void.yml`) is reserved for files that need Void runtime (turnstile services, bash runit/dbus/ssh-agent fragments, `update-turnstile-env`).
+The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-independent content, while `desktop_minimal_dotfiles` carries Thunar, Udiskie, and minimal MIME defaults. KDE uses its own MIME defaults. `desktop_void_dotfiles` remains reserved for files that need the Void runtime.
 
 ## Workstation Notes
 - Native Linux workstation hosts can combine `workstation_host_linux` with an OS-specific dev group.

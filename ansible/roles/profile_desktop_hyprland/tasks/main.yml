@@ -15,7 +15,9 @@
     - "{{ user_home }}/.config/hypr"
     - "{{ user_home }}/.config/rofi"
     - "{{ user_home }}/.config/waybar"
-  when: "'hyprland' in (desktop_sessions_enabled | default([]))"
+  when:
+    - (desktop_environment | default('minimal')) == 'minimal'
+    - "'hyprland' in (desktop_sessions_enabled | default([]))"
 
 - name: Install allowed emptty Hyprland Wayland session
   tags: [packages, services, emptty, hyprland]
@@ -25,14 +27,18 @@
     owner: root
     group: root
     mode: "0644"
-  when: "'hyprland' in (desktop_sessions_enabled | default([]))"
+  when:
+    - (desktop_environment | default('minimal')) == 'minimal'
+    - "'hyprland' in (desktop_sessions_enabled | default([]))"
 
 - name: Remove legacy Hyprland session launcher shadowing package binary
   tags: [packages, services, hyprland]
   ansible.builtin.file:
     path: /usr/local/bin/start-hyprland
     state: absent
-  when: "'hyprland' in (desktop_sessions_enabled | default([]))"
+  when:
+    - (desktop_environment | default('minimal')) == 'minimal'
+    - "'hyprland' in (desktop_sessions_enabled | default([]))"
 
 - name: Install Hyprland session launcher in /usr/local/bin
   tags: [packages, services, hyprland]
@@ -42,7 +48,9 @@
     owner: root
     group: root
     mode: "0755"
-  when: "'hyprland' in (desktop_sessions_enabled | default([]))"
+  when:
+    - (desktop_environment | default('minimal')) == 'minimal'
+    - "'hyprland' in (desktop_sessions_enabled | default([]))"
 
 - name: Ensure /etc/xdg/xdg-desktop-portal exists for Hyprland
   tags: [packages, services, hyprland, portal]
@@ -52,7 +60,9 @@
     owner: root
     group: root
     mode: "0755"
-  when: "'hyprland' in (desktop_sessions_enabled | default([]))"
+  when:
+    - (desktop_environment | default('minimal')) == 'minimal'
+    - "'hyprland' in (desktop_sessions_enabled | default([]))"
 
 - name: Configure xdg-desktop-portal backend preferences for Hyprland
   tags: [packages, services, hyprland, portal]
@@ -62,7 +72,9 @@
     owner: root
     group: root
     mode: "0644"
-  when: "'hyprland' in (desktop_sessions_enabled | default([]))"
+  when:
+    - (desktop_environment | default('minimal')) == 'minimal'
+    - "'hyprland' in (desktop_sessions_enabled | default([]))"
 
 - name: Copy Hyprland desktop dotfiles
   tags: [dotfiles, dotfiles:desktop, hyprland]
@@ -75,4 +87,6 @@
   loop: "{{ desktop_hyprland_dotfiles | default([]) }}"
   loop_control:
     label: "{{ item.dest }}"
-  when: "'hyprland' in (desktop_sessions_enabled | default([]))"
+  when:
+    - (desktop_environment | default('minimal')) == 'minimal'
+    - "'hyprland' in (desktop_sessions_enabled | default([]))"

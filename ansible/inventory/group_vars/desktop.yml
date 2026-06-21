@@ -1,6 +1,9 @@
 ---
 desktop_protonmail_bridge_cert_path: ~/.var/app/ch.protonmail.protonmail-bridge/config/protonmail/bridge-v3/cert.pem
 
+desktop_environment: minimal
+desktop_allow_display_manager_switch: false
+
 desktop_sessions_enabled:
   - sway
   - hyprland
@@ -59,22 +62,6 @@ desktop_common_dotfiles:
   - name: GTK theme setup script
     src: .local/bin/setup-gtk-theme
     dest: .local/bin/setup-gtk-theme
-    mode: "0755"
-  - name: MIME application defaults
-    src: .config/mimeapps.list
-    dest: .config/mimeapps.list
-    mode: "0644"
-  - name: Thunar config
-    src: .config/Thunar/
-    dest: .config/Thunar/
-    mode: preserve
-  - name: Udiskie config
-    src: .config/udiskie/
-    dest: .config/udiskie/
-    mode: preserve
-  - name: Udiskie password helper
-    src: .local/bin/udiskie-password
-    dest: .local/bin/udiskie-password
     mode: "0755"
   - name: WirePlumber config
     src: .config/wireplumber/
@@ -144,6 +131,40 @@ desktop_common_dotfiles:
     src: .ssh/config
     dest: .ssh/config
     mode: "0600"
+
+desktop_minimal_dotfiles:
+  - name: Minimal desktop MIME defaults
+    src: .config/mimeapps.list
+    dest: .config/mimeapps.list
+    mode: "0644"
+  - name: Thunar config
+    src: .config/Thunar/
+    dest: .config/Thunar/
+    mode: preserve
+  - name: Udiskie config
+    src: .config/udiskie/
+    dest: .config/udiskie/
+    mode: preserve
+  - name: Udiskie password helper
+    src: .local/bin/udiskie-password
+    dest: .local/bin/udiskie-password
+    mode: "0755"
+
+desktop_minimal_managed_paths:
+  - .config/Thunar
+  - .config/alacritty
+  - .config/dunst
+  - .config/flameshot
+  - .config/foot
+  - .config/gtklock
+  - .config/hypr
+  - .config/kanshi
+  - .config/rofi
+  - .config/sway
+  - .config/udiskie
+  - .config/waybar
+  - .config/wlogout
+  - .local/bin/udiskie-password
 
 desktop_emacs_dotfiles:
   - name: Emacs config

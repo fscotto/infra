@@ -15,7 +15,9 @@
     - "{{ user_home }}/.config/sway"
     - "{{ user_home }}/.config/waybar"
     - "{{ user_home }}/.config/wlogout"
-  when: "'sway' in (desktop_sessions_enabled | default([]))"
+  when:
+    - (desktop_environment | default('minimal')) == 'minimal'
+    - "'sway' in (desktop_sessions_enabled | default([]))"
 
 - name: Install allowed emptty Wayland sessions
   tags: [packages, services, emptty, sway]
@@ -25,7 +27,9 @@
     owner: root
     group: root
     mode: "0644"
-  when: "'sway' in (desktop_sessions_enabled | default([]))"
+  when:
+    - (desktop_environment | default('minimal')) == 'minimal'
+    - "'sway' in (desktop_sessions_enabled | default([]))"
 
 - name: Install Sway session launcher in /usr/local/bin
   tags: [packages, services, sway]
@@ -35,7 +39,9 @@
     owner: root
     group: root
     mode: "0755"
-  when: "'sway' in (desktop_sessions_enabled | default([]))"
+  when:
+    - (desktop_environment | default('minimal')) == 'minimal'
+    - "'sway' in (desktop_sessions_enabled | default([]))"
 
 - name: Ensure /etc/xdg/xdg-desktop-portal exists
   tags: [packages, services, sway, portal]
@@ -45,7 +51,9 @@
     owner: root
     group: root
     mode: "0755"
-  when: "'sway' in (desktop_sessions_enabled | default([]))"
+  when:
+    - (desktop_environment | default('minimal')) == 'minimal'
+    - "'sway' in (desktop_sessions_enabled | default([]))"
 
 - name: Configure xdg-desktop-portal backend preferences for sway
   tags: [packages, services, sway, portal]
@@ -55,7 +63,9 @@
     owner: root
     group: root
     mode: "0644"
-  when: "'sway' in (desktop_sessions_enabled | default([]))"
+  when:
+    - (desktop_environment | default('minimal')) == 'minimal'
+    - "'sway' in (desktop_sessions_enabled | default([]))"
 
 - name: Copy sway desktop dotfiles
   tags: [dotfiles, dotfiles:desktop, sway]
@@ -68,4 +78,6 @@
   loop: "{{ desktop_sway_dotfiles | default([]) }}"
   loop_control:
     label: "{{ item.dest }}"
-  when: "'sway' in (desktop_sessions_enabled | default([]))"
+  when:
+    - (desktop_environment | default('minimal')) == 'minimal'
+    - "'sway' in (desktop_sessions_enabled | default([]))"

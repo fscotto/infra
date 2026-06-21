@@ -19,7 +19,7 @@
   loop: "{{ void_xbps_repositories | default([]) + host_xbps_repositories | default([]) }}"
   loop_control:
     label: "{{ item.name }}"
-  register: void_xbps_repository_configs
+  register: packages_void_xbps_repository_configs
   when: (void_xbps_repositories | default([]) + host_xbps_repositories | default([])) | length > 0
 
 - name: Install Void nonfree repository if needed
@@ -28,7 +28,7 @@
     name: void-repo-nonfree
     state: present
     update_cache: false
-  register: void_nonfree_repository
+  register: packages_void_nonfree_repository
   when: "'void-repo-nonfree' in (host_packages | default([]) + void_packages_base | default([]))"
 
 - name: Refresh XBPS cache after configuring repositories
@@ -38,7 +38,7 @@
     accept_pubkey: true
   when: >-
     (void_xbps_repositories | default([]) + host_xbps_repositories | default([])) | length > 0
-    or (void_nonfree_repository is defined and void_nonfree_repository is changed)
+    or (packages_void_nonfree_repository is defined and packages_void_nonfree_repository is changed)
 
 - name: Synchronize and upgrade Void Linux packages
   tags: [packages]
@@ -57,13 +57,24 @@
         + (profile_packages | default([]))
         + (desktop_common_packages | default([]))
         + (
+            (desktop_minimal_packages | default([]))
+            if (desktop_environment | default('minimal')) == 'minimal'
+            else (desktop_kde_packages | default([]))
+          )
+        + (
             (desktop_sway_packages | default([]))
-            if 'sway' in (desktop_sessions_enabled | default([]))
+            if (
+              (desktop_environment | default('minimal')) == 'minimal'
+              and 'sway' in (desktop_sessions_enabled | default([]))
+            )
             else []
           )
         + (
             (desktop_hyprland_packages | default([]))
-            if 'hyprland' in (desktop_sessions_enabled | default([]))
+            if (
+              (desktop_environment | default('minimal')) == 'minimal'
+              and 'hyprland' in (desktop_sessions_enabled | default([]))
+            )
             else []
           )
         + (host_packages | default([]))
@@ -72,6 +83,40 @@
       }}
     state: present
     update_cache: false
+
+- name: Check whether the selected display manager is active
+  tags: [packages, display-manager]
+  ansible.builtin.stat:
+    path: >-
+      /var/service/{{ 'sddm' if (desktop_environment | default('minimal')) == 'kde' else 'emptty' }}
+  register: packages_void_selected_display_manager
+
+- name: Remove packages managed by the inactive desktop environment
+  tags: [packages]
+  community.general.xbps:
+    name: >-
+      {{
+        (
+          (
+            (desktop_minimal_packages | default([]))
+            | reject('equalto', 'emptty')
+            | list
+          )
+          + (desktop_sway_packages | default([]))
+          + (desktop_hyprland_packages | default([]))
+        )
+        if (desktop_environment | default('minimal')) == 'kde'
+        else (
+          (desktop_kde_packages | default([]))
+          | reject('equalto', 'sddm')
+          | list
+        )
+      }}
+    state: absent
+    update_cache: false
+  when: >-
+    packages_void_selected_display_manager.stat.exists
+    or (desktop_allow_display_manager_switch | default(false))
 
 - name: Remove host-absent packages on Void Linux
   tags: [packages]

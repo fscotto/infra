@@ -21,4 +21,11 @@
   ;; Loading DAP adapters
   ;; For Python
   (require 'dap-python)
-  (setq dap-python-debugger 'debugpy))
+  (setq dap-python-debugger 'debugpy
+        dap-python-executable
+        (let ((uv-debugpy-python
+               (expand-file-name
+                "~/.local/share/uv/tools/debugpy/bin/python")))
+          (if (file-executable-p uv-debugpy-python)
+              uv-debugpy-python
+            "python3"))))

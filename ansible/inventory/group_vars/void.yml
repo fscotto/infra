@@ -170,11 +170,13 @@ desktop_hyprland_packages:
 
 profile_packages:
   - alacritty
+  - bash-language-server
   - bluez
   - bridge-utils
   - ctags
   - firefox
   - deluge-gtk
+  - delve
   - dnsmasq
   - emacs-pgtk
   - poppler-glib
@@ -186,6 +188,9 @@ profile_packages:
   - gvfs-mtp
   - gvfs-smb
   - gufw
+  - golangci-lint
+  - gopls
+  - hunspell
   - libvirt
   - libspa-bluetooth
   - libreoffice
@@ -209,6 +214,7 @@ profile_packages:
   - ristretto
   - rsync
   - shotwell
+  - shfmt
   - ruff
   - terminus-font
   - texlive

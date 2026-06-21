@@ -552,3 +552,21 @@
   when: desktop_npm_packages | length > 0
   loop_control:
     label: "{{ item.name }}"
+
+- name: Install desktop Python tools with uv
+  tags: [packages, emacs]
+  ansible.builtin.command:
+    cmd: "uv tool install --upgrade {{ item }}"
+  become: true
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  register: profile_desktop_common_uv_tool_install
+  changed_when: >-
+    (profile_desktop_common_uv_tool_install.stdout | default('')
+     + profile_desktop_common_uv_tool_install.stderr | default(''))
+    is regex('(?i)installed|updated')
+  loop: "{{ desktop_uv_tools | default([]) }}"
+  when: desktop_uv_tools | default([]) | length > 0
+  loop_control:
+    label: "{{ item }}"

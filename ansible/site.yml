@@ -1,5 +1,5 @@
 ---
-- hosts: all:!workstation_host_windows
+- hosts: all
   become: true
   pre_tasks:
     - name: Load local vault variables when available
@@ -29,14 +29,6 @@
     - profile_desktop_hyprland
     - profile_desktop_host
 
-- hosts: workstation_dev_ubuntu
-  become: true
-
-  roles:
-    - packages_ubuntu
-    - services_systemd
-    - profile_workstation_dev_common
-
 - hosts: workstation_dev_fedora
   become: true
 
@@ -59,53 +51,6 @@
     - services_systemd
     - profile_workstation_dev_common
     - profile_workstation_dev_wsl
-
-- hosts: workstation_host_windows
-  gather_facts: false
-
-  pre_tasks:
-    - name: Load local vault variables when available
-      tags: [always]
-      ansible.builtin.include_vars:
-        file: "{{ playbook_dir }}/../secrets/vault.yml"
-      when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.yml', errors='ignore', wantlist=True) | length > 0
-
-    - name: Load machine-local vault variables when available
-      tags: [always]
-      ansible.builtin.include_vars:
-        file: "{{ playbook_dir }}/../secrets/vault.local.yml"
-      when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.local.yml', errors='ignore', wantlist=True) | length > 0
-
-    - name: Resolve Windows PSRP connection settings
-      tags: [always]
-      ansible.builtin.set_fact:
-        ansible_host: "{{ windows_psrp_host | default(vault_windows_psrp_host | default('')) }}"
-        ansible_user: "{{ windows_psrp_user | default(vault_windows_psrp_user | default('')) }}"
-        ansible_password: "{{ windows_psrp_password | default(vault_windows_psrp_password | default('')) }}"
-        windows_package_backend: "{{ windows_package_backend | default(vault_windows_package_backend | default('winget_psrp')) }}"
-
-    - name: Ensure Windows PSRP connection settings are defined
-      tags: [always]
-      ansible.builtin.assert:
-        that:
-          - (ansible_host | default('') | length) > 0
-          - (ansible_user | default('') | length) > 0
-        fail_msg: >-
-          Define windows_psrp_host and windows_psrp_user via extra vars, secrets/vault.yml,
-          or secrets/vault.local.yml
-          before running the workstation_host_windows play.
-
-    - name: Ensure Windows package backend is supported
-      tags: [always]
-      ansible.builtin.assert:
-        that:
-          - windows_package_backend in ['winget_psrp', 'winget_wsl_local']
-        fail_msg: >-
-          Unsupported windows_package_backend '{{ windows_package_backend }}'.
-          Supported values are winget_psrp and winget_wsl_local.
-
-  roles:
-    - profile_workstation_host_windows
 
 - hosts: ubuntu_server
   become: true

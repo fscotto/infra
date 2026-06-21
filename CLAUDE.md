@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-Ansible-driven personal infrastructure as code for Void Linux desktops (`ikaros`, `nymph`), Linux/Windows workstations (`deadalus-*`), and an Ubuntu server (`prometheus`). See `AGENTS.md` for topology and `README.md` for full profile descriptions.
+Ansible-driven personal infrastructure as code for Void Linux desktops (`ikaros`, `nymph`), Linux workstations (`deadalus-fedora`, `deadalus-wsl`), and an Ubuntu server (`prometheus`). See `AGENTS.md` for topology and `README.md` for full profile descriptions.
 
 ## Validation commands
 
@@ -15,7 +15,6 @@ ansible-playbook ansible/site.yml --syntax-check
 # Dry-run per host
 ansible-playbook ansible/site.yml --limit ikaros --check --diff
 ansible-playbook ansible/site.yml --limit nymph --check --diff
-ansible-playbook ansible/site.yml --limit deadalus-ubuntu --check --diff
 ansible-playbook ansible/site.yml --limit deadalus-fedora --check --diff
 ansible-playbook ansible/site.yml --limit deadalus-wsl --check --diff
 ansible-playbook ansible/site.yml --limit prometheus --check --diff
@@ -34,7 +33,7 @@ sh -n scripts/bootstrap_mail.sh && shellcheck scripts/bootstrap_mail.sh
 
 ## Architecture
 
-Configuration is composed in layers: `all → OS → profile → host`. Most hosts use `ansible_connection: local`; `deadalus-win` is the PSRP/Windows exception.
+Configuration is composed in layers: `all → OS → profile → host`. All hosts use `ansible_connection: local`.
 
 `ansible/site.yml` is the sole orchestration entry point — keep it thin. Implementation belongs in roles under `ansible/roles/`.
 

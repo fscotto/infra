@@ -19,9 +19,7 @@ workstation_removed_snap_packages: []
 workstation_snap_packages:
   - name: glab
     classic: true
-workstation_dev_wsl_python_packages:
-  - pypsrp
-  - pyspnego
+workstation_dev_wsl_python_packages: []
 workstation_wsl_systemd_enabled: true
 workstation_dev_wsl_dotfiles:
   - src: .gnupg/gpg-agent.conf

@@ -55,13 +55,13 @@ Il repository è diviso in due componenti principali:
 
 # Macchine gestite
 
-Il repository modella attualmente tre tipologie di profilo e prepara due filoni workstation: Linux nativa e Windows + WSL.
+Il repository modella attualmente tre tipologie di profilo, con i filoni workstation Linux nativa e WSL.
 
 Nota sullo stato attuale del playbook principale:
 
 - `ansible/site.yml` applica oggi in automatico il profilo desktop su host Void Linux
 - `ansible/site.yml` applica la workstation Linux nativa separando il layer dev comune dal layer host GNOME
-- `ansible/site.yml` applica anche il ramo `workstation_host_windows` + `workstation_dev_wsl` per il modello Windows 11 + WSL
+- `ansible/site.yml` applica anche il ramo `workstation_dev_wsl` per il modello dev in WSL
 - `ansible/site.yml` applica anche il profilo `ubuntu_server` con baseline apt, systemd, dotfiles server e firewall UFW
 
 ## Desktop
@@ -107,9 +107,8 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 
 Sistemi operativi supportati:
 
-- Ubuntu LTS nativa
 - Fedora Workstation nativa
-- Windows 11 host + Ubuntu WSL
+- Ubuntu WSL
 
 Desktop environment host Linux:
 
@@ -117,9 +116,8 @@ Desktop environment host Linux:
 
 Macchine attuali:
 
-- `deadalus-ubuntu` come workstation Ubuntu nativa
 - `deadalus-fedora` come workstation Fedora nativa
-- supporto attivo per host Windows 11 + WSL tramite `deadalus-win` e `deadalus-wsl`
+- `deadalus-wsl` come ambiente dev Ubuntu in WSL
 
 Questo profilo è pensato per sviluppo e lavoro, con separazione tra layer host e layer dev.
 
@@ -127,13 +125,12 @@ Nel modello Ansible usato qui, un singolo inventory host puo appartenere intenzi
 
 Il profilo workstation e agganciato al playbook principale e ora distingue:
 
-- layer dev Ubuntu condiviso tra workstation Linux nativa e Ubuntu in WSL
-- layer dev Fedora nativo parallelo a Ubuntu
+- layer dev Ubuntu condiviso tra WSL e server
+- layer dev Fedora nativo
 - layer host Linux GNOME
-- layer host Windows 11 con bootstrap WSL, remoting `PSRP` su `HTTPS/5986`, gestione app via `winget` con backend configurabile e VS Code lato Windows
 - layer WSL dedicato per sviluppo con `systemd`
 
-Per esempio, lo stesso host Linux puo stare in `workstation_host_linux` e in `workstation_dev_fedora` oppure `workstation_dev_ubuntu`, a seconda del layering che vuoi comporre.
+Per esempio, lo stesso host Linux puo stare in `workstation_host_linux` e in `workstation_dev_fedora`, a seconda del layering che vuoi comporre.
 
 Lo stato attuale del profilo workstation include:
 
@@ -141,42 +138,18 @@ Lo stato attuale del profilo workstation include:
 - installazione pacchetti base Fedora via dnf per il ramo workstation nativo
 - installazione e configurazione di Docker dal repository ufficiale
 - gestione dei dotfiles workstation e rendering dei template dev condivisi
-- installazione di Google Chrome su Ubuntu e Fedora, `VS Code` su Fedora via repository RPM Microsoft, `IntelliJ IDEA Ultimate` su Fedora via COPR RPM, e applicazioni workstation residue su Fedora via Flatpak
-- installazione di applicazioni workstation su Ubuntu nativa via Snap, oltre alle estensioni GNOME sul solo host Linux nativo
-- configurazione del ramo Windows 11 host con app installate dal playbook via `winget`, con backend predefinito `winget_psrp`, tema scuro, pin della taskbar gestiti via policy locale e profilo predefinito di Windows Terminal impostato su `Ubuntu`
+- installazione di Google Chrome su Fedora, `VS Code` su Fedora via repository RPM Microsoft, `IntelliJ IDEA Ultimate` su Fedora via COPR RPM, e applicazioni workstation residue su Fedora via Flatpak
+- estensioni GNOME sul solo host Linux nativo
 - preparazione del ramo WSL Ubuntu con `systemd` per il toolchain di sviluppo
-- attivazione del firewall UFW su Ubuntu nativa e `firewalld` su Fedora nativa
+- attivazione del firewall `firewalld` su Fedora nativa
 - gestione di `gsettings` GNOME host-specifici su `deadalus-fedora`, inclusi shell, Files/Nautilus, file chooser GTK e GNOME Text Editor, allineati allo stato reale della macchina
 
-Workflow Windows + WSL previsto:
+Workflow WSL previsto:
 
-Prima di eseguire il bootstrap Windows, apri PowerShell come amministratore e verifica la policy di esecuzione:
-
-```powershell
-Get-ExecutionPolicy -List
-```
-
-Se necessario, abilita l'esecuzione degli script per l'utente corrente:
-
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-```
-
-Se Windows ha bloccato il file di bootstrap, sbloccalo esplicitamente:
-
-```powershell
-Unblock-File .\scripts\bootstrap_windows_workstation.ps1
-```
-
-1. eseguire `scripts/bootstrap_windows_workstation.ps1` su Windows come amministratore
-2. riavviare Windows se richiesto dalle feature WSL
-3. avviare Ubuntu WSL almeno una volta e completare la creazione dell'utente Linux
-4. installare Ansible dentro WSL Ubuntu
-5. lanciare il playbook da WSL su `deadalus-wsl` per configurare l'ambiente dev locale
-6. lanciare da WSL anche il playbook su `deadalus-win` via `psrp` per configurare l'host Windows; per default il backend pacchetti Windows e `winget_psrp`
-7. usare VS Code con le estensioni Remote (`WSL`, `SSH`, `Dev Containers`) dal lato Windows
-
-Per il remoting Windows il repository usa di default `PSRP` con `Negotiate` su `HTTPS/5986`. L'utente di default puo essere un `MicrosoftAccount\...`, con host, utente e password forniti via vault o extra vars. Il backend pacchetti Windows e configurabile con `windows_package_backend` oppure `vault_windows_package_backend`; il default e `winget_psrp`.
+1. avviare Ubuntu WSL almeno una volta e completare la creazione dell'utente Linux
+2. installare Ansible dentro WSL Ubuntu
+3. lanciare il playbook da WSL su `deadalus-wsl` per configurare l'ambiente dev locale
+4. usare VS Code con le estensioni Remote (`WSL`, `SSH`, `Dev Containers`) dal lato Windows
 
 ---
 
@@ -281,7 +254,6 @@ I principali ruoli attualmente presenti sono:
 | profile_workstation_dev_common | configurazione dev workstation condivisa |
 | profile_workstation_gnome | configurazione host workstation GNOME |
 | profile_workstation_dev_wsl | configurazione WSL Ubuntu per sviluppo |
-| profile_workstation_host_windows | configurazione host Windows 11 workstation |
 | profile_server            | configurazione server               |
 | dotfiles_common           | distribuzione dotfiles comuni       |
 | dotfiles                  | distribuzione configurazioni utente |
@@ -290,25 +262,22 @@ I principali ruoli attualmente presenti sono:
 
 # Stato attuale del playbook principale
 
-Il playbook `ansible/site.yml` e attualmente composto da sette blocchi:
+Il playbook `ansible/site.yml` e attualmente composto da sei blocchi:
 
 ```text
-all:!workstation_host_windows -> dotfiles_common
+all -> dotfiles_common
 void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_host
-workstation_dev_ubuntu -> packages_ubuntu + services_systemd + profile_workstation_dev_common
 workstation_dev_fedora -> packages_fedora + services_systemd + profile_workstation_dev_common
 workstation_host_linux -> profile_workstation_gnome
 workstation_dev_wsl -> packages_ubuntu + services_systemd + profile_workstation_dev_common + profile_workstation_dev_wsl
-workstation_host_windows -> profile_workstation_host_windows
 ubuntu_server -> packages_ubuntu + services_systemd + profile_server
 ```
 
 Questo significa che, allo stato attuale:
 
 - i desktop Void (`ikaros`, `nymph`) restano il target operativo piu completo
-- la workstation Ubuntu (`deadalus-ubuntu`) e gestita separando ambiente dev e layer host GNOME
-- la workstation Fedora (`deadalus-fedora`) usa lo stesso principio di composizione a gruppi con il ramo Fedora dedicato e con `gsettings` host-specifici dichiarati in inventory
-- il ramo Windows + WSL e predisposto con bootstrap PowerShell e play Windows/WSL dedicati
+- la workstation Fedora (`deadalus-fedora`) usa il principio di composizione a gruppi con il ramo Fedora dedicato e con `gsettings` host-specifici dichiarati in inventory
+- il ramo WSL (`deadalus-wsl`) e predisposto con play dev dedicato
 - il server Ubuntu (`prometheus`) e gestito con pacchetti, servizi, dotfiles server e firewall
 - lo stack container server include `navidrome`, `postgres`, `gitea`, `nginx-proxy-manager` e `syncthing`, con GUI Syncthing raggiungibile tramite la rete Docker `web`
 
@@ -366,7 +335,6 @@ Gestione segreti:
 - `secrets/vault.yml.example` funge da template/esempio
 - se `secrets/vault.yml` non e presente, il playbook continua comunque senza caricare variabili locali opzionali
 - se `secrets/.vault_pass.gpg` esiste viene usato automaticamente per sbloccare i vault tramite `gpg`; in alternativa resta supportato `secrets/.vault_pass` come fallback legacy locale; se nessuno dei due file esiste Ansible richiede la password in modo interattivo
-- per il ramo Windows puoi anche definire `vault_windows_package_backend`, con valori supportati `winget_psrp` e `winget_wsl_local`; il default e `winget_psrp`
 
 ---
 
@@ -382,11 +350,9 @@ Allo stato attuale questo comando:
 
 - distribuisce i dotfiles comuni a tutti gli host
 - per gli host Void applica bootstrap desktop condiviso, sessione i3 e override specifici per host
-- per `workstation_dev_ubuntu` applica pacchetti Ubuntu, servizi systemd e profilo dev comune
 - per `workstation_dev_fedora` applica pacchetti Fedora, servizi systemd e profilo dev comune
 - per `workstation_host_linux` applica il layer host Linux GNOME
 - per `workstation_dev_wsl` applica pacchetti Ubuntu, servizi systemd, profilo dev comune e tweak WSL dedicati
-- per `workstation_host_windows` applica il layer host Windows 11 via PSRP, con installazione pacchetti Windows eseguita di default tramite `winget_psrp`
 - per gli host `ubuntu_server` applica pacchetti Ubuntu, servizi systemd, profilo server, UFW, dotfiles e template dedicati
 - non riavvia automaticamente `emptty`; le modifiche al display manager vanno applicate manualmente da SSH o da una TTY separata
 - carica `secrets/vault.yml` solo se presente
@@ -398,7 +364,6 @@ Per validare prima di applicare:
 ansible-playbook ansible/site.yml --syntax-check
 ansible-playbook ansible/site.yml --limit ikaros --check --diff
 ansible-playbook ansible/site.yml --limit nymph --check --diff
-ansible-playbook ansible/site.yml --limit deadalus-ubuntu --check --diff
 ansible-playbook ansible/site.yml --limit deadalus-fedora --check --diff
 ansible-playbook ansible/site.yml --limit deadalus-wsl --check --diff
 ansible-playbook ansible/site.yml --limit prometheus --check --diff
@@ -435,7 +400,7 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 
 | Tag | Scopo | Ambito principale |
 | --- | --- | --- |
-| `always` | pre-task sempre eseguiti, inclusi caricamento vault e validazioni preliminari | common, Windows |
+| `always` | pre-task sempre eseguiti, inclusi caricamento vault e validazioni preliminari | common |
 | `dotfiles` | distribuzione/configurazione dotfiles | tutti i profili |
 | `dotfiles:common` | dotfiles comuni condivisi | common, workstation, server |
 | `dotfiles:desktop` | dotfiles desktop | desktop Void |
@@ -450,9 +415,9 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `npm` | installazione pacchetti npm globali | desktop Void, workstation Linux, WSL |
 | `nvidia` | componenti NVIDIA desktop | desktop Void |
 | `packages` | installazione e aggiornamento pacchetti | tutti i profili |
-| `services` | gestione servizi runit/systemd/Windows | tutti i profili |
-| `vscode` | installazione/configurazione VS Code | Fedora, host Linux, Windows |
-| `wsl` | bootstrap e configurazione WSL | WSL, Windows |
+| `services` | gestione servizi runit/systemd | tutti i profili |
+| `vscode` | installazione/configurazione VS Code | Fedora, host Linux |
+| `wsl` | bootstrap e configurazione WSL | WSL |
 
 Esempi pratici:
 

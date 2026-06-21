@@ -53,11 +53,3 @@
     group: "{{ user_group }}"
     mode: "0755"
     force: false
-
-- name: Wrap alacritty with prime-run for NVIDIA PRIME offload
-  tags: [nvidia, dotfiles, dotfiles:desktop, dotfiles:host]
-  ansible.builtin.lineinfile:
-    path: "{{ user_home }}/.config/i3/config"
-    regexp: '^bindsym \$mod\+Return exec --no-startup-id /usr/bin/alacritty'
-    line: 'bindsym $mod+Return exec --no-startup-id ~/.local/bin/prime-run /usr/bin/alacritty'
-  when: "'i3' in (desktop_sessions_enabled | default([]))"

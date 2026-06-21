@@ -33,10 +33,5 @@ host_sshd_allow_users:
 
 host_authorized_ssh_keys: "{{ vault_ikaros_authorized_ssh_keys | default([]) }}"
 
-host_i3_dotfiles:
-  - src: .config/autorandr/
-    dest: .config/autorandr/
-    mode: preserve
-
 host_enabled_services:
   - sshd

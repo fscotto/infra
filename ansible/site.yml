@@ -24,7 +24,6 @@
     - packages_void
     - services_runit
     - profile_desktop_common
-    - profile_desktop_i3
     - profile_desktop_sway
     - profile_desktop_hyprland
     - profile_desktop_host

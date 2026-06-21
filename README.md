@@ -90,7 +90,7 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 - pacchetti Void Linux e servizi runit; le liste pacchetti Void desktop sono separate per criterio:
   - `void_packages_base` per il runtime sistema (init, kernel, audio core, networking, firewall, hw daemons)
   - `desktop_common_packages` per l'infrastruttura GUI WM-agnostic (tema, polkit, keyring, NM-applet, blueman, audio GUI, file manager backend, portal, flatpak, printing/scanning)
-  - `desktop_i3_packages`, `desktop_sway_packages` e `desktop_hyprland_packages` per i binari specifici di ciascuna sessione
+  - `desktop_sway_packages` e `desktop_hyprland_packages` per i binari specifici di ciascuna sessione
 - `turnstile` per i servizi utente, inclusi `emacs` e `ssh-agent`
 - `ssh-agent` con socket stabile condiviso tra shell, SSH ed Emacs in `~/.local/state/ssh-agent/socket`
 - `.emacs.d` distribuito da un task dedicato Ansible con tag `emacs`
@@ -98,7 +98,7 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 - Flatpak con remoto Flathub
 - GNOME Keyring e bootstrap della posta via script dedicato
 - `udiskie` come backend per automount/LUKS
-- `autorandr` per profili monitor X11 host-specifici (`nymph` ha profili `dual` e `solo`); sotto sway il multi-monitor è gestito da `kanshi` (config host-specifica in `host_sway_dotfiles` su `nymph`); sotto Hyprland gli override monitor vivono in `host_hyprland_dotfiles`
+- multi-monitor: sotto sway è gestito da `kanshi` (config host-specifica in `host_sway_dotfiles` su `nymph`); sotto Hyprland gli override monitor vivono in `host_hyprland_dotfiles`
 - override NVIDIA Optimus su `nymph`: parametri kernel GRUB iniettati in modo idempotente in `GRUB_CMDLINE_LINUX`, wrapper `prime-run` e config WirePlumber per priorità telecamera
 
 ---
@@ -247,7 +247,6 @@ I principali ruoli attualmente presenti sono:
 | services_runit            | gestione servizi runit              |
 | services_systemd          | gestione servizi systemd            |
 | profile_desktop_common    | bootstrap desktop Void condiviso    |
-| profile_desktop_i3        | sessione desktop i3 (X11)           |
 | profile_desktop_sway      | sessione desktop sway / SwayFX (Wayland) |
 | profile_desktop_hyprland  | sessione desktop Hyprland (Wayland) |
 | profile_desktop_host      | override desktop specifici per host |
@@ -266,7 +265,7 @@ Il playbook `ansible/site.yml` e attualmente composto da sei blocchi:
 
 ```text
 all -> dotfiles_common
-void -> packages_void + services_runit + profile_desktop_common + profile_desktop_i3 + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_host
+void -> packages_void + services_runit + profile_desktop_common + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_host
 workstation_dev_fedora -> packages_fedora + services_systemd + profile_workstation_dev_common
 workstation_host_linux -> profile_workstation_gnome
 workstation_dev_wsl -> packages_ubuntu + services_systemd + profile_workstation_dev_common + profile_workstation_dev_wsl
@@ -349,7 +348,7 @@ ansible-playbook ansible/site.yml
 Allo stato attuale questo comando:
 
 - distribuisce i dotfiles comuni a tutti gli host
-- per gli host Void applica bootstrap desktop condiviso, sessione i3 e override specifici per host
+- per gli host Void applica bootstrap desktop condiviso, sessioni sway/Hyprland e override specifici per host
 - per `workstation_dev_fedora` applica pacchetti Fedora, servizi systemd e profilo dev comune
 - per `workstation_host_linux` applica il layer host Linux GNOME
 - per `workstation_dev_wsl` applica pacchetti Ubuntu, servizi systemd, profilo dev comune e tweak WSL dedicati
@@ -409,7 +408,6 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `dotfiles:workstation` | dotfiles dedicati alle workstation | workstation Linux, WSL |
 | `emptty` | gestione display manager `emptty` | desktop Void |
 | `gnome` | configurazione host GNOME | workstation host Linux, parte desktop |
-| `i3` | sessione/configurazione i3 (X11) | desktop Void |
 | `sway` | sessione/configurazione sway / SwayFX (Wayland) | desktop Void |
 | `hyprland` | sessione/configurazione Hyprland (Wayland) | desktop Void |
 | `npm` | installazione pacchetti npm globali | desktop Void, workstation Linux, WSL |
@@ -422,7 +420,7 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 Esempi pratici:
 
 ```bash
-ansible-playbook ansible/site.yml --limit nymph --tags dotfiles:desktop,i3 --check --diff
+ansible-playbook ansible/site.yml --limit nymph --tags dotfiles:desktop,sway --check --diff
 ansible-playbook ansible/site.yml --limit ikaros --tags sway,portal --check --diff
 ansible-playbook ansible/site.yml --limit ikaros --tags hyprland,portal --check --diff
 ansible-playbook ansible/site.yml --limit deadalus-fedora --tags packages,vscode --check --diff

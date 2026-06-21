@@ -115,11 +115,6 @@
             else []
           )
         + (desktop_common_packages | default([]))
-        + (
-            (desktop_i3_packages | default([]))
-            if 'i3' in (desktop_sessions_enabled | default([]))
-            else []
-          )
         + (host_packages | default([]))
         )
         | difference(

@@ -57,11 +57,6 @@
         + (profile_packages | default([]))
         + (desktop_common_packages | default([]))
         + (
-            (desktop_i3_packages | default([]))
-            if 'i3' in (desktop_sessions_enabled | default([]))
-            else []
-          )
-        + (
             (desktop_sway_packages | default([]))
             if 'sway' in (desktop_sessions_enabled | default([]))
             else []

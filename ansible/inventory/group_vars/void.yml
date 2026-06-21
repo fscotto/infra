@@ -3,13 +3,6 @@ void_xbps_repositories:
   - name: hyprland-void
     url: https://raw.githubusercontent.com/sofijacom/hyprland-void/repository-x86_64-glibc
 
-desktop_void_source_tools:
-  - name: st
-    repo: https://codeberg.org/fscotto/st
-    build_cmd: make
-    binary_name: st
-    install_name: st
-
 void_packages_base:
   - 7zip
   - NetworkManager
@@ -132,31 +125,6 @@ desktop_common_packages:
   - xdg-desktop-portal-gtk
   - xdg-user-dirs
   - xfce-polkit
-
-desktop_i3_packages:
-  - arandr
-  - autorandr
-  - feh
-  - i3
-  - i3blocks
-  - i3blocks-blocklets
-  - i3lock-color
-  - i3status
-  - dunst
-  - picom
-  - polybar
-  - rofi
-  - scrot
-  - setxkbmap
-  - volumeicon
-  - xclip
-  - xfce4-clipman-plugin
-  - xfce4-screenshooter
-  - xkbutils
-  - xorg-fonts
-  - xorg-minimal
-  - xss-lock
-  - xdotool
 
 desktop_sway_packages:
   - cliphist

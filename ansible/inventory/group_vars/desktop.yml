@@ -4,6 +4,11 @@ desktop_protonmail_bridge_cert_path: ~/.var/app/ch.protonmail.protonmail-bridge/
 desktop_environment: minimal
 desktop_allow_display_manager_switch: false
 
+desktop_display_manager_by_environment:
+  minimal: emptty
+  xfce: lightdm
+  kde: sddm
+
 desktop_sessions_enabled:
   - sway
   - hyprland
@@ -235,6 +240,30 @@ desktop_hyprland_dotfiles:
     src: .config/foot/
     dest: .config/foot/
     mode: preserve
+
+desktop_xfce_dotfiles:
+  - name: XFCE configuration
+    src: .config/xfce4/
+    dest: .config/xfce4/
+    mode: preserve
+  - name: XFCE Thunar custom actions
+    src: .config/Thunar/uca.xfce.xml
+    dest: .config/Thunar/uca.xml
+    mode: "0644"
+  - name: XFCE dark desktop background
+    src: .local/share/backgrounds/xfce-dark.svg
+    dest: .local/share/backgrounds/xfce-dark.svg
+    mode: "0644"
+
+desktop_xfce_managed_paths:
+  - .config/xfce4
+  - .local/share/backgrounds/xfce-dark.svg
+
+xfce_theme_gtk: Yaru-blue-dark
+xfce_theme_icons: Papirus-Dark
+xfce_theme_wm: Greybird-dark
+xfce_font_ui: Liberation Sans 10
+xfce_font_monospace: Liberation Mono 11
 
 desktop_flatpak_packages:
   - be.alexandervanhee.gradia

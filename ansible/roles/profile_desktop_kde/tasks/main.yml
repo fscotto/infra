@@ -21,7 +21,11 @@
   ansible.builtin.file:
     path: "{{ user_home }}/{{ item }}"
     state: absent
-  loop: "{{ desktop_minimal_managed_paths | default([]) }}"
+  loop: >-
+    {{
+      (desktop_minimal_managed_paths | default([]))
+      + (desktop_xfce_managed_paths | default([]))
+    }}
   loop_control:
     label: "{{ item }}"
   when:
@@ -36,6 +40,7 @@
   loop:
     - /etc/xdg/xdg-desktop-portal/hyprland-portals.conf
     - /etc/xdg/xdg-desktop-portal/sway-portals.conf
+    - /etc/xdg/xdg-desktop-portal/xfce-portals.conf
   when:
     - (desktop_environment | default('minimal')) == 'kde'
     - profile_desktop_kde_sddm_service.stat.exists
@@ -47,6 +52,7 @@
     state: absent
   loop:
     - /etc/emptty
+    - /etc/lightdm/lightdm.conf.d/50-xfce.conf
     - /usr/local/bin/start-hyprland-session
     - /usr/local/bin/start-sway
   when:

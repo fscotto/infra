@@ -1,0 +1,223 @@
+---
+- name: Inspect configured desktop display manager for XFCE cleanup gates
+  tags: [always, packages, services, xfce, display-manager]
+  ansible.builtin.stat:
+    path: "/var/service/{{ desktop_display_manager_by_environment[desktop_environment | default('minimal')] }}"
+  register: profile_desktop_xfce_selected_display_manager
+
+- name: Ensure XFCE user configuration directories exist
+  tags: [dotfiles, dotfiles:desktop, xfce]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+  loop:
+    - "{{ user_home }}/.config/xfce4"
+    - "{{ user_home }}/.config/xfce4/terminal"
+    - "{{ user_home }}/.config/xfce4/xfconf"
+    - "{{ user_home }}/.config/xfce4/xfconf/xfce-perchannel-xml"
+    - "{{ user_home }}/.config/Thunar"
+    - "{{ user_home }}/.local/share/backgrounds"
+  when: (desktop_environment | default('minimal')) == 'xfce'
+
+- name: Copy XFCE desktop dotfiles
+  tags: [dotfiles, dotfiles:desktop, xfce]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/{{ item.src }}"
+    dest: "{{ user_home }}/{{ item.dest }}"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ desktop_xfce_dotfiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+  when: (desktop_environment | default('minimal')) == 'xfce'
+
+- name: Render XFCE themed configuration
+  tags: [dotfiles, dotfiles:desktop, xfce]
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ user_home }}/{{ item.dest }}"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0644"
+  loop:
+    - src: xsettings.xml.j2
+      dest: .config/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
+    - src: xfwm4.xml.j2
+      dest: .config/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
+    - src: xfce4-desktop.xml.j2
+      dest: .config/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
+    - src: terminalrc.j2
+      dest: .config/xfce4/terminal/terminalrc
+  loop_control:
+    label: "{{ item.dest }}"
+  when: (desktop_environment | default('minimal')) == 'xfce'
+
+- name: Copy XFCE MIME application defaults
+  tags: [dotfiles, dotfiles:desktop, xfce]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/.config/mimeapps.list"
+    dest: "{{ user_home }}/.config/mimeapps.list"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0644"
+  when: (desktop_environment | default('minimal')) == 'xfce'
+
+- name: Make Thunderbird the XFCE mail handler
+  tags: [dotfiles, dotfiles:desktop, xfce]
+  community.general.ini_file:
+    path: "{{ user_home }}/.config/mimeapps.list"
+    section: "{{ item.section }}"
+    option: x-scheme-handler/mailto
+    value: "{{ item.value }}"
+    no_extra_spaces: true
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0644"
+  loop:
+    - section: Default Applications
+      value: org.mozilla.Thunderbird.desktop
+    - section: Added Associations
+      value: org.mozilla.Thunderbird.desktop;
+  when: (desktop_environment | default('minimal')) == 'xfce'
+
+- name: Ensure LightDM configuration directories exist
+  tags: [packages, services, xfce, display-manager]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /etc/lightdm
+    - /etc/lightdm/lightdm.conf.d
+  when: (desktop_environment | default('minimal')) == 'xfce'
+
+- name: Configure LightDM for the XFCE session
+  tags: [packages, services, xfce, display-manager]
+  ansible.builtin.template:
+    src: lightdm-xfce.conf.j2
+    dest: /etc/lightdm/lightdm.conf.d/50-xfce.conf
+    owner: root
+    group: root
+    mode: "0644"
+  register: profile_desktop_xfce_lightdm_config
+  when: (desktop_environment | default('minimal')) == 'xfce'
+
+- name: Configure the LightDM GTK greeter
+  tags: [packages, services, xfce, display-manager]
+  ansible.builtin.template:
+    src: lightdm-gtk-greeter.conf.j2
+    dest: /etc/lightdm/lightdm-gtk-greeter.conf
+    owner: root
+    group: root
+    mode: "0644"
+  register: profile_desktop_xfce_lightdm_greeter_config
+  when: (desktop_environment | default('minimal')) == 'xfce'
+
+- name: Report deferred LightDM configuration activation
+  tags: [packages, services, xfce, display-manager]
+  ansible.builtin.debug:
+    msg: >-
+      LightDM configuration changed. Apply the display-manager switch or restart
+      LightDM from a TTY or SSH session; it is not restarted automatically.
+  when:
+    - (desktop_environment | default('minimal')) == 'xfce'
+    - >-
+      profile_desktop_xfce_lightdm_config is changed
+      or profile_desktop_xfce_lightdm_greeter_config is changed
+
+- name: Manage gnome-keyring auth hook for LightDM
+  tags: [packages, services, xfce]
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/lightdm
+    insertafter: EOF
+    line: "auth optional pam_gnome_keyring.so"
+    state: present
+  when: (desktop_environment | default('minimal')) == 'xfce'
+
+- name: Manage gnome-keyring session hook for LightDM
+  tags: [packages, services, xfce]
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/lightdm
+    insertafter: EOF
+    line: "session optional pam_gnome_keyring.so auto_start"
+    state: present
+  when: (desktop_environment | default('minimal')) == 'xfce'
+
+- name: Ensure XFCE portal configuration directory exists
+  tags: [packages, services, xfce, portal]
+  ansible.builtin.file:
+    path: /etc/xdg/xdg-desktop-portal
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: (desktop_environment | default('minimal')) == 'xfce'
+
+- name: Configure xdg-desktop-portal preferences for XFCE
+  tags: [packages, services, xfce, portal]
+  ansible.builtin.copy:
+    dest: /etc/xdg/xdg-desktop-portal/xfce-portals.conf
+    content: |
+      [preferred]
+      default=gtk
+    owner: root
+    group: root
+    mode: "0644"
+  when: (desktop_environment | default('minimal')) == 'xfce'
+
+- name: Remove minimal desktop user configuration after switching to XFCE
+  tags: [dotfiles, dotfiles:desktop, xfce]
+  ansible.builtin.file:
+    path: "{{ user_home }}/{{ item }}"
+    state: absent
+  loop: "{{ desktop_minimal_managed_paths | default([]) | difference(['.config/Thunar']) }}"
+  loop_control:
+    label: "{{ item }}"
+  when:
+    - (desktop_environment | default('minimal')) == 'xfce'
+    - profile_desktop_xfce_selected_display_manager.stat.exists
+
+- name: Remove minimal portal preferences and session launchers after switching to XFCE
+  tags: [packages, services, xfce, portal, display-manager]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/xdg/xdg-desktop-portal/hyprland-portals.conf
+    - /etc/xdg/xdg-desktop-portal/sway-portals.conf
+    - /etc/emptty
+    - /usr/local/bin/start-hyprland-session
+    - /usr/local/bin/start-sway
+  when:
+    - (desktop_environment | default('minimal')) == 'xfce'
+    - profile_desktop_xfce_selected_display_manager.stat.exists
+
+- name: Remove XFCE user configuration after switching to another profile
+  tags: [dotfiles, dotfiles:desktop, xfce]
+  ansible.builtin.file:
+    path: "{{ user_home }}/{{ item }}"
+    state: absent
+  loop: "{{ desktop_xfce_managed_paths | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  when:
+    - (desktop_environment | default('minimal')) != 'xfce'
+    - profile_desktop_xfce_selected_display_manager.stat.exists
+
+- name: Remove inactive XFCE portal and LightDM profile configuration
+  tags: [packages, services, xfce, portal, display-manager]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/xdg/xdg-desktop-portal/xfce-portals.conf
+    - /etc/lightdm/lightdm.conf.d/50-xfce.conf
+  when:
+    - (desktop_environment | default('minimal')) != 'xfce'
+    - profile_desktop_xfce_selected_display_manager.stat.exists

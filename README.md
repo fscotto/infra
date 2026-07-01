@@ -73,6 +73,7 @@ Sistema operativo:
 Modalita desktop:
 
 - `minimal`: sway (Wayland) + Hyprland (Wayland), gestite da `emptty`
+- `xfce`: XFCE puro con look scuro e sobrio, gestito da LightDM
 - `kde`: KDE Plasma, gestito da SDDM
 
 Macchine:
@@ -80,18 +81,20 @@ Macchine:
 - `ikaros`
 - `nymph`
 
-Queste macchine condividono la stessa configurazione base desktop e vengono mantenute allineate tramite Ansible. `desktop_environment` seleziona in modo esclusivo `minimal` (default) oppure `kde`. Nella modalita minimale Sway/SwayFX e Hyprland sono installate in parallelo e selezionabili da `emptty`; `desktop_default_session` decide quale sessione viene preselezionata al login.
+Queste macchine condividono la stessa configurazione base desktop e vengono mantenute allineate tramite Ansible. `desktop_environment` seleziona in modo esclusivo `minimal` (default), `xfce` oppure `kde`. Nella modalita minimale Sway/SwayFX e Hyprland sono installate in parallelo e selezionabili da `emptty`; `desktop_default_session` decide quale sessione viene preselezionata al login. XFCE usa direttamente la sessione `xfce` tramite LightDM.
 
 Lo stato attuale del profilo desktop include, tra le altre cose:
 
 - dotfiles comuni e desktop
 - sessioni sway e Hyprland su entrambi gli host in modalita `minimal`
 - KDE Plasma con applicazioni KDE curate e SDDM disponibile come alternativa esclusiva
+- XFCE con pannello, keybinding, terminale, tema e workspace dichiarativi, LightDM e Thunderbird come client grafico principale
 - `emptty` con default host-specific in modalita `minimal`, con session file Wayland esposti per `sway` e `hyprland`
 - pacchetti Void Linux e servizi runit; le liste pacchetti Void desktop sono separate per criterio:
   - `void_packages_base` per il runtime sistema (init, kernel, audio core, networking, firewall, hw daemons)
-  - `desktop_common_packages` per l'infrastruttura condivisa dalle due modalita
+  - `desktop_common_packages` per l'infrastruttura condivisa dalle modalita
   - `desktop_minimal_packages` per applicazioni GTK/XFCE e `emptty`
+  - `desktop_xfce_packages` per XFCE, LightDM e le relative integrazioni
   - `desktop_kde_packages` per Plasma, SDDM e le applicazioni KDE equivalenti
   - `desktop_sway_packages` e `desktop_hyprland_packages` per i binari specifici di ciascuna sessione
 - `turnstile` per i servizi utente, inclusi `emacs` e `ssh-agent`
@@ -355,7 +358,7 @@ Allo stato attuale questo comando:
 - per `workstation_host_linux` applica il layer host Linux GNOME
 - per `workstation_dev_wsl` applica pacchetti Ubuntu, servizi systemd, profilo dev comune e tweak WSL dedicati
 - per gli host `ubuntu_server` applica pacchetti Ubuntu, servizi systemd, profilo server, UFW, dotfiles e template dedicati
-- non riavvia automaticamente `emptty`; le modifiche al display manager vanno applicate manualmente da SSH o da una TTY separata
+- non riavvia automaticamente il display manager; i passaggi tra `emptty`, LightDM e SDDM vanno applicati da SSH o da una TTY separata
 - carica `secrets/vault.yml` solo se presente
 - carica `secrets/vault.local.yml` solo se presente, dopo `vault.yml`, cosi gli override locali hanno precedenza
 
@@ -397,13 +400,13 @@ Per vedere l'elenco reale aggiornato dei tag disponibili:
 ansible-playbook ansible/site.yml --list-tags
 ```
 
-Per attivare KDE su un host, impostare `desktop_environment: kde` nei relativi `host_vars` ed eseguire prima un dry run. Il primo play configura KDE ma, se `emptty` e ancora attivo, rinvia il cambio del display manager. Da una TTY o sessione SSH separata, applicare quindi il passaggio esplicito:
+Per attivare XFCE o KDE su un host, impostare rispettivamente `desktop_environment: xfce` o `desktop_environment: kde` nei relativi `host_vars` ed eseguire prima un dry run. Il primo play configura il profilo ma, se un altro display manager e ancora attivo, rinvia il cambio. Da una TTY o sessione SSH separata, con la sessione grafica chiusa, applicare quindi il passaggio esplicito:
 
 ```bash
 ansible-playbook ansible/site.yml --limit <host> -e desktop_allow_display_manager_switch=true
 ```
 
-La stessa procedura vale in senso inverso per tornare a `minimal`.
+La stessa procedura vale per ogni passaggio tra `minimal`, `xfce` e `kde`. Gli XML XFCE sono autorevoli: applicare i relativi aggiornamenti mentre XFCE e disconnesso evita che `xfconfd` ripristini lo stato in memoria.
 
 Allo stato attuale `ansible/site.yml` espone questi tag:
 
@@ -417,8 +420,9 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `dotfiles:server` | dotfiles dedicati al profilo server | server |
 | `dotfiles:workstation` | dotfiles dedicati alle workstation | workstation Linux, WSL |
 | `emptty` | gestione display manager `emptty` | desktop Void |
-| `display-manager` | selezione protetta tra `emptty` e SDDM | desktop Void |
+| `display-manager` | selezione protetta tra `emptty`, LightDM e SDDM | desktop Void |
 | `kde` | profilo KDE Plasma e relativa pulizia | desktop Void |
+| `xfce` | profilo XFCE, LightDM e relativa pulizia | desktop Void |
 | `gnome` | configurazione host GNOME | workstation host Linux, parte desktop |
 | `sway` | sessione/configurazione sway / SwayFX (Wayland) | desktop Void |
 | `hyprland` | sessione/configurazione Hyprland (Wayland) | desktop Void |

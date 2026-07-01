@@ -46,21 +46,20 @@
     update_cache: false
     upgrade: true
 
-- name: Install packages on Void Linux
+- name: Select packages for the configured desktop environment
   tags: [packages]
-  community.general.xbps:
-    name: >-
+  ansible.builtin.set_fact:
+    packages_void_selected_desktop_packages: >-
       {{
         (
-          (common_packages | default([]))
-        + (void_packages_base | default([]))
-        + (profile_packages | default([]))
-        + (desktop_common_packages | default([]))
-        + (
-            (desktop_minimal_packages | default([]))
-            if (desktop_environment | default('minimal')) == 'minimal'
+          (desktop_minimal_packages | default([]))
+          if (desktop_environment | default('minimal')) == 'minimal'
+          else (
+            (desktop_xfce_packages | default([]))
+            if (desktop_environment | default('minimal')) == 'xfce'
             else (desktop_kde_packages | default([]))
           )
+        )
         + (
             (desktop_sway_packages | default([]))
             if (
@@ -77,6 +76,37 @@
             )
             else []
           )
+        | unique
+      }}
+
+- name: Calculate packages owned only by inactive desktop environments
+  tags: [packages]
+  ansible.builtin.set_fact:
+    packages_void_inactive_desktop_packages: >-
+      {{
+        (
+          (desktop_minimal_packages | default([]))
+          + (desktop_sway_packages | default([]))
+          + (desktop_hyprland_packages | default([]))
+          + (desktop_xfce_packages | default([]))
+          + (desktop_kde_packages | default([]))
+        )
+        | unique
+        | difference(packages_void_selected_desktop_packages)
+        | difference(desktop_display_manager_by_environment.values() | list)
+      }}
+
+- name: Install packages on Void Linux
+  tags: [packages]
+  community.general.xbps:
+    name: >-
+      {{
+        (
+          (common_packages | default([]))
+        + (void_packages_base | default([]))
+        + (profile_packages | default([]))
+        + (desktop_common_packages | default([]))
+        + (packages_void_selected_desktop_packages | default([]))
         + (host_packages | default([]))
         )
         | unique
@@ -87,36 +117,20 @@
 - name: Check whether the selected display manager is active
   tags: [packages, display-manager]
   ansible.builtin.stat:
-    path: >-
-      /var/service/{{ 'sddm' if (desktop_environment | default('minimal')) == 'kde' else 'emptty' }}
+    path: "/var/service/{{ desktop_display_manager_by_environment[desktop_environment | default('minimal')] }}"
   register: packages_void_selected_display_manager
 
 - name: Remove packages managed by the inactive desktop environment
   tags: [packages]
   community.general.xbps:
-    name: >-
-      {{
-        (
-          (
-            (desktop_minimal_packages | default([]))
-            | reject('equalto', 'emptty')
-            | list
-          )
-          + (desktop_sway_packages | default([]))
-          + (desktop_hyprland_packages | default([]))
-        )
-        if (desktop_environment | default('minimal')) == 'kde'
-        else (
-          (desktop_kde_packages | default([]))
-          | reject('equalto', 'sddm')
-          | list
-        )
-      }}
+    name: "{{ packages_void_inactive_desktop_packages }}"
     state: absent
     update_cache: false
-  when: >-
-    packages_void_selected_display_manager.stat.exists
-    or (desktop_allow_display_manager_switch | default(false))
+  when:
+    - (packages_void_inactive_desktop_packages | default([])) | length > 0
+    - >-
+      packages_void_selected_display_manager.stat.exists
+      or (desktop_allow_display_manager_switch | default(false))
 
 - name: Remove host-absent packages on Void Linux
   tags: [packages]

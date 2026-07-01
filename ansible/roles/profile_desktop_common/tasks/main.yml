@@ -3,18 +3,18 @@
   tags: [always]
   ansible.builtin.assert:
     that:
-      - (desktop_environment | default('minimal')) in ['minimal', 'kde']
+      - (desktop_environment | default('minimal')) in ['minimal', 'xfce', 'kde']
       - >-
-        (desktop_environment | default('minimal')) == 'kde'
+        (desktop_environment | default('minimal')) != 'minimal'
         or (desktop_sessions_enabled | default([]) | length > 0)
       - >-
-        (desktop_environment | default('minimal')) == 'kde'
+        (desktop_environment | default('minimal')) != 'minimal'
         or (desktop_sessions_enabled | default([]) | difference(['sway', 'hyprland']) | length == 0)
       - >-
-        (desktop_environment | default('minimal')) == 'kde'
+        (desktop_environment | default('minimal')) != 'minimal'
         or desktop_default_session in (desktop_sessions_enabled | default([]))
     fail_msg: >-
-      desktop_environment must be minimal or kde. Minimal desktops also require
+      desktop_environment must be minimal, xfce, or kde. Minimal desktops also require
       desktop_default_session to be included in desktop_sessions_enabled.
 
 - name: Configure elogind to suspend on lid close
@@ -475,7 +475,7 @@
     owner: root
     group: root
     mode: "0644"
-  when: (desktop_environment | default('minimal')) == 'minimal'
+  when: (desktop_environment | default('minimal')) in ['minimal', 'xfce']
 
 - name: Remove minimal Qt theme override for KDE
   tags: [theme]

@@ -12,6 +12,7 @@
   'core/performance
   'core/editor
   'core/keybindings
+  'core/modal
   'core/buffer
 
   ;; Tools

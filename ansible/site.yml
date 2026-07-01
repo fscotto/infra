@@ -27,6 +27,7 @@
     - profile_desktop_sway
     - profile_desktop_hyprland
     - profile_desktop_kde
+    - profile_desktop_xfce
     - profile_desktop_host
 
 - hosts: workstation_dev_fedora

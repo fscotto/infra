@@ -19,47 +19,70 @@
   tags: [services, packages, display-manager]
   ansible.builtin.set_fact:
     services_runit_desktop_display_manager_service: >-
-      {{ 'sddm' if (desktop_environment | default('minimal')) == 'kde' else 'emptty' }}
-    services_runit_inactive_display_manager_service: >-
-      {{ 'emptty' if (desktop_environment | default('minimal')) == 'kde' else 'sddm' }}
+      {{ desktop_display_manager_by_environment[desktop_environment | default('minimal')] }}
+    services_runit_inactive_display_manager_services: >-
+      {{
+        desktop_display_manager_by_environment.values()
+        | list
+        | difference([desktop_display_manager_by_environment[desktop_environment | default('minimal')]])
+      }}
   when: "'desktop' in group_names"
 
-- name: Inspect desktop display manager services
+- name: Inspect selected desktop display manager service
+  tags: [services, packages, display-manager]
+  ansible.builtin.stat:
+    path: "/var/service/{{ services_runit_desktop_display_manager_service }}"
+  register: services_runit_selected_display_manager_link
+  when: "'desktop' in group_names"
+
+- name: Inspect inactive desktop display manager services
   tags: [services, packages, display-manager]
   ansible.builtin.stat:
     path: "/var/service/{{ item }}"
-  loop:
-    - "{{ services_runit_desktop_display_manager_service }}"
-    - "{{ services_runit_inactive_display_manager_service }}"
+  loop: "{{ services_runit_inactive_display_manager_services }}"
   loop_control:
     label: "{{ item }}"
-  register: services_runit_display_manager_links
+  register: services_runit_inactive_display_manager_links
+  when: "'desktop' in group_names"
+
+- name: Record active inactive desktop display managers
+  tags: [services, packages, display-manager]
+  ansible.builtin.set_fact:
+    services_runit_active_inactive_display_managers: >-
+      {{
+        services_runit_inactive_display_manager_links.results
+        | selectattr('stat.exists')
+        | map(attribute='item')
+        | list
+      }}
   when: "'desktop' in group_names"
 
 - name: Report deferred desktop display manager switch
   tags: [services, packages, display-manager]
   ansible.builtin.debug:
     msg: >-
-      {{ desktop_environment }} is configured, but {{ services_runit_inactive_display_manager_service }}
-      is still active. Re-run from a TTY or SSH session with
+      {{ desktop_environment }} is configured, but
+      {{ services_runit_active_inactive_display_managers | join(', ') }} is still active.
+      Re-run from a TTY or SSH session with
       -e desktop_allow_display_manager_switch=true to switch safely to
       {{ services_runit_desktop_display_manager_service }}.
   when:
     - "'desktop' in group_names"
-    - services_runit_display_manager_links.results[1].stat.exists
-    - not (services_runit_display_manager_links.results[0].stat.exists)
+    - (services_runit_active_inactive_display_managers | length) > 0
     - not (desktop_allow_display_manager_switch | default(false))
 
-- name: Disable inactive desktop display manager
+- name: Disable inactive desktop display managers
   tags: [services, packages, display-manager]
   ansible.builtin.file:
-    path: "/var/service/{{ services_runit_inactive_display_manager_service }}"
+    path: "/var/service/{{ item }}"
     state: absent
+  loop: "{{ services_runit_active_inactive_display_managers }}"
+  loop_control:
+    label: "{{ item }}"
   register: services_runit_display_manager_disabled
   when:
     - "'desktop' in group_names"
-    - services_runit_display_manager_links.results[1].stat.exists
-    - not (services_runit_display_manager_links.results[0].stat.exists)
+    - (services_runit_active_inactive_display_managers | length) > 0
     - desktop_allow_display_manager_switch | default(false)
 
 - name: Enable selected desktop display manager
@@ -71,22 +94,25 @@
   register: services_runit_display_manager_enabled
   when:
     - "'desktop' in group_names"
-    - not (services_runit_display_manager_links.results[0].stat.exists)
+    - not services_runit_selected_display_manager_link.stat.exists
     - >-
-      not (services_runit_display_manager_links.results[1].stat.exists)
+      (services_runit_active_inactive_display_managers | length) == 0
       or (desktop_allow_display_manager_switch | default(false))
 
-- name: Remove inactive desktop display manager package after switching
+- name: Remove inactive desktop display manager packages after switching
   tags: [services, packages, display-manager]
   community.general.xbps:
-    name: "{{ services_runit_inactive_display_manager_service }}"
+    name: "{{ item }}"
     state: absent
     update_cache: false
+  loop: "{{ services_runit_inactive_display_manager_services }}"
+  loop_control:
+    label: "{{ item }}"
   when:
     - "'desktop' in group_names"
     - >-
-      services_runit_display_manager_links.results[0].stat.exists
+      services_runit_selected_display_manager_link.stat.exists
       or (services_runit_display_manager_enabled is defined and services_runit_display_manager_enabled is changed)
     - >-
-      not (services_runit_display_manager_links.results[1].stat.exists)
-      or (services_runit_display_manager_disabled is defined and services_runit_display_manager_disabled is changed)
+      (services_runit_active_inactive_display_managers | length) == 0
+      or (desktop_allow_display_manager_switch | default(false))

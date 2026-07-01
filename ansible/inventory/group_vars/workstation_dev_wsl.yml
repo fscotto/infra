@@ -6,6 +6,7 @@ workstation_dev_wsl_packages:
   - lazygit
   - pinentry-curses
   - python3-pip
+  - tmux
 workstation_dev_wsl_excluded_packages:
   - pcscd
   - pinentry-gnome3
@@ -25,3 +26,6 @@ workstation_dev_wsl_dotfiles:
   - src: .gnupg/gpg-agent.conf
     dest: .gnupg/gpg-agent.conf
     mode: "0600"
+  - src: .tmux.conf
+    dest: .tmux.conf
+    mode: "0644"

@@ -18,4 +18,3 @@
   loop: "{{ host_enabled_services | default([]) }}"
   loop_control:
     label: "{{ item }}"
-

@@ -1,0 +1,24 @@
+---
+machine_role: personal_workstation
+role_profile: personal_workstation
+role_stability: stable
+
+personal_workstation_directories:
+  - path: "{{ user_home }}/Documents"
+    mode: "0755"
+  - path: "{{ user_home }}/Downloads"
+    mode: "0755"
+  - path: "{{ user_home }}/Org"
+    mode: "0755"
+  - path: "{{ user_home }}/Remotes"
+    mode: "0755"
+
+personal_workstation_dotfiles:
+  - src: .gitignore_global
+    dest: .gitignore_global
+    mode: "0644"
+  - src: .themes.gitignore
+    dest: .themes.gitignore
+    mode: "0644"
+
+personal_workstation_flatpak_packages: []

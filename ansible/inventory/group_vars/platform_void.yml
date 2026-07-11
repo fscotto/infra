@@ -1,0 +1,5 @@
+---
+platform_profile: void
+platform_family: void
+platform_package_manager: xbps
+platform_service_manager: runit

@@ -56,6 +56,43 @@ Il repository è diviso in due componenti principali:
 # Macchine gestite
 
 Il repository modella attualmente tre tipologie di profilo, con i filoni workstation Linux nativa e WSL.
+La nuova direzione del repository separa tre assi indipendenti:
+
+```text
+common user environment
++ host-specific platform
++ role-specific software
++ independently selectable desktop
++ host hardware overrides
+```
+
+Matrice target:
+
+| Host           | Platform   | Role                 | Desktop                           |
+| -------------- | ---------- | -------------------- | --------------------------------- |
+| ikaros         | Linux Mint | Personal workstation | Cinnamon                          |
+| nymph          | FreeBSD    | Lab                  | Hyprland                          |
+| void-reference | Void Linux | Lab/reference        | Current preserved desktop profile |
+
+Regola operativa:
+
+```text
+ikaros must be boring
+nymph is allowed to break
+```
+
+Durante il refactoring strutturale iniziale `ikaros` e `nymph` restano in
+`platform_void` per preservare il comportamento esistente. I gruppi legacy
+`void` e `desktop` restano alias di compatibilita mentre i nuovi assi sono
+`platform_*`, `role_*` e `desktop_*`.
+
+Prima di una migrazione reale degli host e consigliato creare uno snapshot
+logico, per esempio:
+
+```bash
+git switch -c refactor/platform-role-desktop
+git tag void-desktop-before-platform-refactor
+```
 
 Nota sullo stato attuale del playbook principale:
 
@@ -214,21 +251,29 @@ La configurazione finale di una macchina è ottenuta combinando più livelli.
 
 ```text
 common configuration
-+ OS configuration
-+ profile configuration
++ platform configuration
++ role configuration
++ desktop configuration
 + host overrides
 ```
 
-Esempio per `ikaros`:
+Esempio corrente per `ikaros` nella fase conservativa:
 
 ```text
-common + void + desktop + ikaros
+common + platform_void + graphical_desktop + role_personal_workstation + desktop_hyprland/desktop_sway + ikaros
 ```
 
-Esempio per `nymph`:
+Esempio corrente per `nymph` nella fase conservativa:
 
 ```text
-common + void + desktop + nymph
+common + platform_void + graphical_desktop + role_lab + desktop_hyprland/desktop_sway + nymph
+```
+
+Esempi target, da attivare con un cambio inventory separato:
+
+```text
+ikaros -> platform_mint + role_personal_workstation + desktop_cinnamon
+nymph  -> platform_freebsd + role_lab + desktop_hyprland
 ```
 
 Questo approccio consente di:
@@ -236,6 +281,8 @@ Questo approccio consente di:
 - mantenere configurazioni condivise
 - applicare override specifici per host
 - evitare duplicazioni
+- riutilizzare il profilo Void corrente su un host futuro assegnandolo a
+  `platform_void + graphical_desktop + role_lab + desktop_hyprland`
 
 ---
 
@@ -247,14 +294,21 @@ I principali ruoli attualmente presenti sono:
 | ------------------------- | ----------------------------------- |
 | base                      | configurazione base comune          |
 | packages_void             | installazione pacchetti su Void     |
+| packages_mint             | installazione pacchetti su Linux Mint via APT |
+| packages_freebsd          | installazione pacchetti su FreeBSD via pkg |
 | packages_ubuntu           | installazione pacchetti su Ubuntu   |
 | packages_fedora           | installazione pacchetti su Fedora   |
 | services_runit            | gestione servizi runit              |
 | services_systemd          | gestione servizi systemd            |
+| services_freebsd          | gestione servizi FreeBSD rc.conf/rc.d |
 | profile_desktop_common    | bootstrap desktop Void condiviso    |
 | profile_desktop_sway      | sessione desktop sway / SwayFX (Wayland) |
 | profile_desktop_hyprland  | sessione desktop Hyprland (Wayland) |
+| profile_desktop_hyprland_freebsd | adattamenti FreeBSD per Hyprland |
+| profile_desktop_cinnamon  | impostazioni Cinnamon circoscritte |
 | profile_desktop_host      | override desktop specifici per host |
+| profile_personal_workstation | layer stabile per workstation personale |
+| profile_lab               | layer sperimentale/lab              |
 | profile_workstation_dev_common | configurazione dev workstation condivisa |
 | profile_workstation_gnome | configurazione host workstation GNOME |
 | profile_workstation_dev_wsl | configurazione WSL Ubuntu per sviluppo |
@@ -266,11 +320,18 @@ I principali ruoli attualmente presenti sono:
 
 # Stato attuale del playbook principale
 
-Il playbook `ansible/site.yml` e attualmente composto da sei blocchi:
+Il playbook `ansible/site.yml` e attualmente composto da blocchi per asse:
 
 ```text
 all -> dotfiles_common
-void -> packages_void + services_runit + profile_desktop_common + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_host
+platform_void -> packages_void + services_runit
+platform_void & graphical_desktop -> profile_desktop_common + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_kde + profile_desktop_xfce + profile_desktop_host
+platform_mint -> packages_mint + services_systemd
+platform_mint & role_personal_workstation -> profile_personal_workstation
+platform_mint & desktop_cinnamon -> profile_desktop_cinnamon
+platform_freebsd -> packages_freebsd + services_freebsd
+platform_freebsd & role_lab -> profile_lab
+platform_freebsd & desktop_hyprland -> profile_desktop_hyprland_freebsd
 workstation_dev_fedora -> packages_fedora + services_systemd + profile_workstation_dev_common
 workstation_host_linux -> profile_workstation_gnome
 workstation_dev_wsl -> packages_ubuntu + services_systemd + profile_workstation_dev_common + profile_workstation_dev_wsl
@@ -279,7 +340,8 @@ ubuntu_server -> packages_ubuntu + services_systemd + profile_server
 
 Questo significa che, allo stato attuale:
 
-- i desktop Void (`ikaros`, `nymph`) restano il target operativo piu completo
+- i desktop Void (`ikaros`, `nymph`) restano il target operativo piu completo tramite `platform_void + graphical_desktop`
+- Linux Mint/Cinnamon e FreeBSD/Hyprland sono scaffolding selezionabile tramite gruppi, ma non ricevono host reali nel refactoring strutturale iniziale
 - la workstation Fedora (`deadalus-fedora`) usa il principio di composizione a gruppi con il ramo Fedora dedicato e con `gsettings` host-specifici dichiarati in inventory
 - il ramo WSL (`deadalus-wsl`) e predisposto con play dev dedicato
 - il server Ubuntu (`prometheus`) e gestito con pacchetti, servizi, dotfiles server e firewall
@@ -353,7 +415,9 @@ ansible-playbook ansible/site.yml
 Allo stato attuale questo comando:
 
 - distribuisce i dotfiles comuni a tutti gli host
-- per gli host Void applica bootstrap desktop condiviso, sessioni sway/Hyprland e override specifici per host
+- per `platform_void` applica pacchetti Void e servizi runit
+- per `platform_void + graphical_desktop` applica bootstrap desktop condiviso, sessioni sway/Hyprland e override specifici per host
+- per `platform_mint` e `platform_freebsd` applica solo host presenti esplicitamente in quei gruppi; nell'inventory principale iniziale questi gruppi sono vuoti
 - per `workstation_dev_fedora` applica pacchetti Fedora, servizi systemd e profilo dev comune
 - per `workstation_host_linux` applica il layer host Linux GNOME
 - per `workstation_dev_wsl` applica pacchetti Ubuntu, servizi systemd, profilo dev comune e tweak WSL dedicati
@@ -366,6 +430,7 @@ Per validare prima di applicare:
 
 ```bash
 ansible-playbook ansible/site.yml --syntax-check
+ansible-playbook ansible/site.yml --limit ikaros,nymph --check --diff
 ansible-playbook ansible/site.yml --limit ikaros --check --diff
 ansible-playbook ansible/site.yml --limit nymph --check --diff
 ansible-playbook ansible/site.yml --limit deadalus-fedora --check --diff
@@ -423,6 +488,7 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `display-manager` | selezione protetta tra `emptty`, LightDM e SDDM | desktop Void |
 | `kde` | profilo KDE Plasma e relativa pulizia | desktop Void |
 | `xfce` | profilo XFCE, LightDM e relativa pulizia | desktop Void |
+| `cinnamon` | impostazioni Cinnamon circoscritte | Linux Mint desktop |
 | `gnome` | configurazione host GNOME | workstation host Linux, parte desktop |
 | `sway` | sessione/configurazione sway / SwayFX (Wayland) | desktop Void |
 | `hyprland` | sessione/configurazione Hyprland (Wayland) | desktop Void |
@@ -457,6 +523,22 @@ ansible-playbook ansible/site.yml
 ```
 
 Dopo l'esecuzione del playbook la macchina verra configurata secondo il profilo definito e i ruoli attualmente orchestrati.
+
+Per aggiungere un nuovo host Void che riusa il profilo desktop preservato:
+
+1. aggiungere l'host a `platform_void`;
+2. aggiungerlo a `graphical_desktop`;
+3. scegliere il ruolo, per esempio `role_lab`;
+4. scegliere il desktop, per esempio `desktop_hyprland`;
+5. lasciare eventuali dettagli hardware in `host_vars/<host>.yml`.
+
+I gruppi legacy `void` e `desktop` sono parent di compatibilita, quindi un host
+in `platform_void` e `graphical_desktop` continua a ricevere anche le variabili
+Void e desktop esistenti.
+
+Per prove in VM sono disponibili gruppi di esempio in
+`ansible/inventory/examples/platform-test-hosts.yml`, da passare esplicitamente
+con `-i` insieme all'inventory principale.
 
 Per il flusso mail desktop esiste inoltre uno script dedicato:
 

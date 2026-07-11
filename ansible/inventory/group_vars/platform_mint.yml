@@ -1,0 +1,65 @@
+---
+platform_profile: mint
+platform_family: debian
+platform_package_manager: apt
+platform_service_manager: systemd
+
+mint_manage_flatpak: true
+mint_flatpak_remote_name: flathub
+mint_flatpak_remote_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+
+mint_packages_base:
+  - ca-certificates
+  - curl
+  - flatpak
+  - gpg
+  - htop
+  - make
+  - python3-pip
+  - ripgrep
+  - rsync
+  - shellcheck
+
+mint_development_packages:
+  - build-essential
+  - clang
+  - clang-tools
+  - cmake
+  - gdb
+  - golang
+  - nodejs
+  - npm
+  - pkg-config
+  - python3-venv
+
+mint_desktop_common_packages:
+  - dconf-cli
+  - deja-dup
+  - emacs
+  - firefox
+  - fonts-liberation
+  - fonts-noto-color-emoji
+  - gnome-keyring
+  - libsecret-tools
+  - mpv
+  - pinentry-gnome3
+  - rclone
+  - thunderbird
+  - xdg-user-dirs
+
+mint_cinnamon_packages:
+  - cinnamon
+  - cinnamon-control-center
+  - cinnamon-screensaver
+  - lightdm
+  - slick-greeter
+  - xdg-desktop-portal
+  - xdg-desktop-portal-gtk
+
+mint_personal_workstation_packages:
+  - libreoffice
+  - meld
+  - pdfarranger
+  - vim
+
+mint_flatpak_packages: []

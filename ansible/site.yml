@@ -1,28 +1,40 @@
 ---
-- hosts: all
+- name: Configure common user environment
+  hosts: all
   become: true
   pre_tasks:
     - name: Load local vault variables when available
       tags: [always]
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../secrets/vault.yml"
-      when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.yml', errors='ignore', wantlist=True) | length > 0
+      when: >-
+        lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.yml',
+        errors='ignore', wantlist=True) | length > 0
 
     - name: Load machine-local vault variables when available
       tags: [always]
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../secrets/vault.local.yml"
-      when: lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.local.yml', errors='ignore', wantlist=True) | length > 0
+      when: >-
+        lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.local.yml',
+        errors='ignore', wantlist=True) | length > 0
 
   roles:
     - dotfiles_common
 
-- hosts: void
+- name: Configure Void platform
+  hosts: platform_void
   become: true
 
   roles:
     - packages_void
     - services_runit
+
+- name: Configure Void graphical desktop
+  hosts: platform_void:&graphical_desktop
+  become: true
+
+  roles:
     - profile_desktop_common
     - profile_desktop_sway
     - profile_desktop_hyprland
@@ -30,7 +42,52 @@
     - profile_desktop_xfce
     - profile_desktop_host
 
-- hosts: workstation_dev_fedora
+- name: Configure Linux Mint platform
+  hosts: platform_mint
+  become: true
+
+  roles:
+    - packages_mint
+    - services_systemd
+
+- name: Configure personal workstation role on Linux Mint
+  hosts: platform_mint:&role_personal_workstation
+  become: true
+
+  roles:
+    - profile_personal_workstation
+
+- name: Configure Cinnamon desktop on Linux Mint
+  hosts: platform_mint:&desktop_cinnamon
+  become: true
+
+  roles:
+    - profile_desktop_cinnamon
+
+- name: Configure FreeBSD platform
+  hosts: platform_freebsd
+  become: true
+
+  roles:
+    - packages_freebsd
+    - services_freebsd
+
+- name: Configure lab role on FreeBSD
+  hosts: platform_freebsd:&role_lab
+  become: true
+
+  roles:
+    - profile_lab
+
+- name: Configure Hyprland desktop on FreeBSD
+  hosts: platform_freebsd:&desktop_hyprland
+  become: true
+
+  roles:
+    - profile_desktop_hyprland_freebsd
+
+- name: Configure Fedora workstation development layer
+  hosts: workstation_dev_fedora
   become: true
 
   roles:
@@ -38,13 +95,15 @@
     - services_systemd
     - profile_workstation_dev_common
 
-- hosts: workstation_host_linux
+- name: Configure native Linux workstation host layer
+  hosts: workstation_host_linux
   become: true
 
   roles:
     - profile_workstation_gnome
 
-- hosts: workstation_dev_wsl
+- name: Configure WSL workstation development layer
+  hosts: workstation_dev_wsl
   become: true
 
   roles:
@@ -53,7 +112,8 @@
     - profile_workstation_dev_common
     - profile_workstation_dev_wsl
 
-- hosts: ubuntu_server
+- name: Configure Ubuntu server
+  hosts: ubuntu_server
   become: true
 
   roles:

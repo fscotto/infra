@@ -1,0 +1,58 @@
+---
+- name: Ensure FreeBSD Hyprland user config directories exist
+  tags: [dotfiles, dotfiles:desktop, hyprland]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+  loop:
+    - "{{ user_home }}/.config"
+    - "{{ user_home }}/.config/alacritty"
+    - "{{ user_home }}/.config/dunst"
+    - "{{ user_home }}/.config/foot"
+    - "{{ user_home }}/.config/hypr"
+    - "{{ user_home }}/.config/rofi"
+    - "{{ user_home }}/.config/waybar"
+    - "{{ user_home }}/.local"
+    - "{{ user_home }}/.local/bin"
+
+- name: Copy common Hyprland desktop dotfiles on FreeBSD
+  tags: [dotfiles, dotfiles:desktop, hyprland]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/{{ item.src }}"
+    dest: "{{ user_home }}/{{ item.dest }}"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ desktop_hyprland_dotfiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+
+- name: Render FreeBSD Hyprland session launcher
+  tags: [packages, services, hyprland]
+  ansible.builtin.template:
+    src: start-hyprland-session.j2
+    dest: /usr/local/bin/start-hyprland-session
+    owner: root
+    group: wheel
+    mode: "0755"
+
+- name: Ensure FreeBSD xdg-desktop-portal config directory exists
+  tags: [packages, services, hyprland, portal]
+  ansible.builtin.file:
+    path: "{{ freebsd_xdg_config_dir | default('/usr/local/etc/xdg') }}/xdg-desktop-portal"
+    state: directory
+    owner: root
+    group: wheel
+    mode: "0755"
+
+- name: Configure xdg-desktop-portal backend preferences for FreeBSD Hyprland
+  tags: [packages, services, hyprland, portal]
+  ansible.builtin.copy:
+    src: hyprland-portals.conf
+    dest: "{{ freebsd_xdg_config_dir | default('/usr/local/etc/xdg') }}/xdg-desktop-portal/hyprland-portals.conf"
+    owner: root
+    group: wheel
+    mode: "0644"

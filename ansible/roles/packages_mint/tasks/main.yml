@@ -1,0 +1,80 @@
+---
+- name: Refresh apt package cache on Linux Mint
+  tags: [packages]
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install packages on Linux Mint
+  tags: [packages]
+  ansible.builtin.apt:
+    name: >-
+      {{
+        (
+          (common_packages | default([]))
+          + (mint_packages_base | default([]))
+          + (mint_development_packages | default([]))
+          + (
+              (mint_desktop_common_packages | default([]))
+              if 'graphical_desktop' in group_names
+              else []
+            )
+          + (
+              (mint_cinnamon_packages | default([]))
+              if 'desktop_cinnamon' in group_names
+              else []
+            )
+          + (
+              (mint_personal_workstation_packages | default([]))
+              if 'role_personal_workstation' in group_names
+              else []
+            )
+          + (host_packages | default([]))
+        )
+        | unique
+      }}
+    state: present
+
+- name: Ensure Flathub remote is configured on Linux Mint
+  tags: [packages]
+  community.general.flatpak_remote:
+    name: "{{ mint_flatpak_remote_name | default('flathub') }}"
+    state: present
+    flatpakrepo_url: "{{ mint_flatpak_remote_url | default('https://dl.flathub.org/repo/flathub.flatpakrepo') }}"
+  when:
+    - mint_manage_flatpak | default(true)
+    - >-
+      (
+        (mint_flatpak_packages | default([]))
+        + (personal_workstation_flatpak_packages | default([]))
+      ) | length > 0
+
+- name: Install Linux Mint Flatpak applications
+  tags: [packages]
+  community.general.flatpak:
+    name: >-
+      {{
+        (
+          (mint_flatpak_packages | default([]))
+          + (
+              (personal_workstation_flatpak_packages | default([]))
+              if 'role_personal_workstation' in group_names
+              else []
+            )
+        )
+        | unique
+      }}
+    state: present
+    remote: "{{ mint_flatpak_remote_name | default('flathub') }}"
+    method: system
+  when:
+    - mint_manage_flatpak | default(true)
+    - >-
+      (
+        (mint_flatpak_packages | default([]))
+        + (
+            (personal_workstation_flatpak_packages | default([]))
+            if 'role_personal_workstation' in group_names
+            else []
+          )
+      ) | length > 0

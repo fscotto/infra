@@ -79,12 +79,12 @@
   roles:
     - profile_lab
 
-- name: Configure Hyprland desktop on FreeBSD
-  hosts: platform_freebsd:&desktop_hyprland
+- name: Configure Niri desktop on FreeBSD
+  hosts: platform_freebsd:&desktop_niri
   become: true
 
   roles:
-    - profile_desktop_hyprland_freebsd
+    - profile_desktop_niri_freebsd
 
 - name: Configure Fedora workstation development layer
   hosts: workstation_dev_fedora

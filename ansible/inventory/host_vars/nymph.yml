@@ -1,44 +1,7 @@
 ---
 hostname: nymph
 
-desktop_emptty_session_error_logging: rotate
-
-host_packages:
-  - nvidia580
-  - linux-mainline-headers
-  - mesa-dri
-  - vulkan-loader
-  - mesa-vulkan-intel
-  - intel-video-accel
-  - power-profiles-daemon
-  - tlp
-  - tlp-rdw
-  - upower
-
-host_enabled_services:
-  - tlp
-
-host_sway_dotfiles:
-  - src: .config/sway/host.conf
-    dest: .config/sway/host.conf
-    mode: "0644"
-  - src: .config/sway/session-env
-    dest: .config/sway/session-env
-    mode: "0644"
-  - src: .config/kanshi/
-    dest: .config/kanshi/
-    mode: preserve
-  - src: .config/wireplumber/wireplumber.conf.d/60-camera-priority.conf
-    dest: .config/wireplumber/wireplumber.conf.d/60-camera-priority.conf
-    mode: "0644"
-
-host_hyprland_dotfiles:
-  - src: .config/hypr/host.conf
-    dest: .config/hypr/host.conf
-    mode: "0644"
-  - src: .config/hypr/session-env
-    dest: .config/hypr/session-env
-    mode: "0644"
-  - src: .config/wireplumber/wireplumber.conf.d/60-camera-priority.conf
-    dest: .config/wireplumber/wireplumber.conf.d/60-camera-priority.conf
-    mode: "0644"
+# FreeBSD/Niri laptop target. Keep host-specific packages empty until hardware
+# support is verified on the installed system.
+host_packages: []
+host_enabled_services: []

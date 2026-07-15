@@ -100,12 +100,14 @@ desktop_common_packages:
   - cups-pk-helper
   - flatpak
   - libsecret
-  - pinentry-emacs
   - sane
   - sane-airscan
   - turnstile
   - xdg-desktop-portal
   - xdg-user-dirs
+
+desktop_emacs_packages:
+  - pinentry-emacs
 
 desktop_minimal_packages:
   - alacritty
@@ -228,7 +230,6 @@ profile_packages:
   - deluge-gtk
   - delve
   - dnsmasq
-  - emacs-pgtk
   - poppler-glib
   - poppler-utils
   - fontconfig-devel
@@ -270,3 +271,6 @@ profile_packages:
   - yaru
   - yaru-plus
   - zstd
+
+profile_emacs_packages:
+  - emacs-pgtk

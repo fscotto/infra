@@ -315,6 +315,7 @@
     group: "{{ user_group }}"
     mode: "{{ item.mode }}"
   loop: "{{ desktop_emacs_dotfiles | default([]) }}"
+  when: emacs_enabled | default(false) | bool
   loop_control:
     label: "{{ item.dest }}"
 
@@ -564,7 +565,7 @@
     label: "{{ item.name }}"
 
 - name: Install desktop Python tools with uv
-  tags: [packages, emacs]
+  tags: [packages]
   ansible.builtin.command:
     cmd: "uv tool install --upgrade {{ item }}"
   become: true

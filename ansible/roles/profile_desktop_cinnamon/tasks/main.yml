@@ -40,6 +40,7 @@
     owner: "{{ username }}"
     group: "{{ user_group }}"
     mode: "0755"
+  when: emacs_enabled | default(false) | bool
 
 - name: Ensure GnuPG directory exists
   tags: [dotfiles, dotfiles:desktop, git]
@@ -71,6 +72,7 @@
     group: "{{ user_group }}"
     mode: "{{ item.mode }}"
   loop: "{{ desktop_emacs_dotfiles | default([]) }}"
+  when: emacs_enabled | default(false) | bool
   loop_control:
     label: "{{ item.dest }}"
 

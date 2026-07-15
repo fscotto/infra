@@ -18,6 +18,11 @@
               else []
             )
           + (
+              (freebsd_niri_packages | default([]))
+              if 'desktop_niri' in group_names
+              else []
+            )
+          + (
               (freebsd_lab_packages | default([]))
               if 'role_lab' in group_names
               else []

@@ -71,7 +71,7 @@ Matrice target:
 | Host           | Platform   | Role                 | Desktop                           |
 | -------------- | ---------- | -------------------- | --------------------------------- |
 | ikaros         | Linux Mint | Personal workstation | Cinnamon                          |
-| nymph          | FreeBSD    | Lab                  | Hyprland                          |
+| nymph          | FreeBSD    | Lab                  | Niri                              |
 | void-reference | Void Linux | Lab/reference        | Current preserved desktop profile |
 
 Regola operativa:
@@ -81,10 +81,10 @@ ikaros must be boring
 nymph is allowed to break
 ```
 
-Durante il refactoring strutturale iniziale `ikaros` e `nymph` restano in
-`platform_void` per preservare il comportamento esistente. I gruppi legacy
-`void` e `desktop` restano alias di compatibilita mentre i nuovi assi sono
-`platform_*`, `role_*` e `desktop_*`.
+`ikaros` usa il target stabile Linux Mint/Cinnamon; `nymph` usa il target
+FreeBSD/Niri per il workflow laptop scrollable-tiling. I gruppi legacy `void` e
+`desktop` restano alias di compatibilita per eventuali host Void futuri mentre i
+nuovi assi sono `platform_*`, `role_*` e `desktop_*`.
 
 Prima di una migrazione reale degli host e consigliato creare uno snapshot
 logico, per esempio:
@@ -96,34 +96,27 @@ git tag void-desktop-before-platform-refactor
 
 Nota sullo stato attuale del playbook principale:
 
-- `ansible/site.yml` applica oggi in automatico il profilo desktop su host Void Linux
+- `ansible/site.yml` applica oggi in automatico Cinnamon su Linux Mint e Niri su FreeBSD
 - `ansible/site.yml` applica la workstation Linux nativa separando il layer dev comune dal layer host GNOME
 - `ansible/site.yml` applica anche il ramo `workstation_dev_wsl` per il modello dev in WSL
 - `ansible/site.yml` applica anche il profilo `ubuntu_server` con baseline apt, systemd, dotfiles server e firewall UFW
 
 ## Desktop
 
-Sistema operativo:
+Target operativi:
 
-- Void Linux
+- `ikaros`: Linux Mint + Cinnamon, desktop personale stabile/floating.
+- `nymph`: FreeBSD + Niri, laptop scrollable-tiling per sfruttare meglio lo schermo piccolo.
 
-Modalita desktop:
-
-- `minimal`: sway (Wayland) + Hyprland (Wayland), gestite da `emptty`
-- `xfce`: XFCE puro con look scuro e sobrio, gestito da LightDM
-- `kde`: KDE Plasma, gestito da SDDM
-
-Macchine:
-
-- `ikaros`
-- `nymph`
-
-Queste macchine condividono la stessa configurazione base desktop e vengono mantenute allineate tramite Ansible. `desktop_environment` seleziona in modo esclusivo `minimal` (default), `xfce` oppure `kde`. Nella modalita minimale Sway/SwayFX e Hyprland sono installate in parallelo e selezionabili da `emptty`; `desktop_default_session` decide quale sessione viene preselezionata al login. XFCE usa direttamente la sessione `xfce` tramite LightDM.
+Il profilo Void desktop resta disponibile come modello riutilizzabile per host
+futuri. `desktop_environment` continua a selezionare in modo esclusivo
+`minimal`, `xfce` oppure `kde` per i desktop Void; Niri e Cinnamon sono profili
+desktop indipendenti via gruppi `desktop_niri` e `desktop_cinnamon`.
 
 Lo stato attuale del profilo desktop include, tra le altre cose:
 
 - dotfiles comuni e desktop
-- sessioni sway e Hyprland su entrambi gli host in modalita `minimal`
+- sessioni sway e Hyprland per eventuali host Void in modalita `minimal`
 - KDE Plasma con applicazioni KDE curate e SDDM disponibile come alternativa esclusiva
 - XFCE con pannello, keybinding, terminale, tema e workspace dichiarativi, LightDM e Thunderbird come client grafico principale
 - `emptty` con default host-specific in modalita `minimal`, con session file Wayland esposti per `sway` e `hyprland`
@@ -134,14 +127,13 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
   - `desktop_xfce_packages` per XFCE, LightDM e le relative integrazioni
   - `desktop_kde_packages` per Plasma, SDDM e le applicazioni KDE equivalenti
   - `desktop_sway_packages` e `desktop_hyprland_packages` per i binari specifici di ciascuna sessione
-- `turnstile` per i servizi utente, inclusi `emacs` e `ssh-agent`
-- `ssh-agent` con socket stabile condiviso tra shell, SSH ed Emacs in `~/.local/state/ssh-agent/socket`
-- `.emacs.d` distribuito da un task dedicato Ansible con tag `emacs`
+- `turnstile` per i servizi utente Void, incluso `ssh-agent`
+- `ssh-agent` con socket stabile condiviso tra shell e SSH in `~/.local/state/ssh-agent/socket`
+- Emacs e i relativi dotfile restano nel repo ma sono disabilitati di default tramite `emacs_enabled: false`
 - `tmux` con plugin gestiti da TPM al bootstrap del profilo desktop
 - Flatpak con remoto Flathub
 - GNOME Keyring e `udiskie` nella modalita minimale; KWallet e integrazione UDisks di Plasma nella modalita KDE
-- multi-monitor: sotto sway è gestito da `kanshi` (config host-specifica in `host_sway_dotfiles` su `nymph`); sotto Hyprland gli override monitor vivono in `host_hyprland_dotfiles`
-- override NVIDIA Optimus su `nymph`: parametri kernel GRUB iniettati in modo idempotente in `GRUB_CMDLINE_LINUX`, wrapper `prime-run` e config WirePlumber per priorità telecamera
+- multi-monitor Void: sotto sway è gestito da `kanshi`; sotto Hyprland gli override monitor vivono in `host_hyprland_dotfiles`
 
 ---
 
@@ -240,11 +232,10 @@ ansible-playbook ansible/site.yml --limit prometheus -e server_username=myuser -
 
 # Composizione della configurazione
 
-Deploy mirato della configurazione Emacs sui desktop Void:
+Emacs è disabilitato di default. Per riattivare temporaneamente il deploy Emacs:
 
 ```bash
-ansible-playbook ansible/site.yml --limit ikaros --tags emacs
-ansible-playbook ansible/site.yml --limit nymph --tags emacs
+ansible-playbook ansible/site.yml --limit <host> --tags emacs -e emacs_enabled=true
 ```
 
 La configurazione finale di una macchina è ottenuta combinando più livelli.
@@ -257,23 +248,11 @@ common configuration
 + host overrides
 ```
 
-Esempio corrente per `ikaros` nella fase conservativa:
+Esempi correnti:
 
 ```text
-common + platform_void + graphical_desktop + role_personal_workstation + desktop_hyprland/desktop_sway + ikaros
-```
-
-Esempio corrente per `nymph` nella fase conservativa:
-
-```text
-common + platform_void + graphical_desktop + role_lab + desktop_hyprland/desktop_sway + nymph
-```
-
-Esempi target, da attivare con un cambio inventory separato:
-
-```text
-ikaros -> platform_mint + role_personal_workstation + desktop_cinnamon
-nymph  -> platform_freebsd + role_lab + desktop_hyprland
+ikaros -> common + platform_mint + role_personal_workstation + desktop_cinnamon + ikaros
+nymph  -> common + platform_freebsd + role_lab + desktop_niri + nymph
 ```
 
 Questo approccio consente di:
@@ -304,7 +283,7 @@ I principali ruoli attualmente presenti sono:
 | profile_desktop_common    | bootstrap desktop Void condiviso    |
 | profile_desktop_sway      | sessione desktop sway / SwayFX (Wayland) |
 | profile_desktop_hyprland  | sessione desktop Hyprland (Wayland) |
-| profile_desktop_hyprland_freebsd | adattamenti FreeBSD per Hyprland |
+| profile_desktop_niri_freebsd | adattamenti FreeBSD per Niri |
 | profile_desktop_cinnamon  | impostazioni Cinnamon circoscritte |
 | profile_desktop_host      | override desktop specifici per host |
 | profile_personal_workstation | layer stabile per workstation personale |
@@ -331,7 +310,7 @@ platform_mint & role_personal_workstation -> profile_personal_workstation
 platform_mint & desktop_cinnamon -> profile_desktop_cinnamon
 platform_freebsd -> packages_freebsd + services_freebsd
 platform_freebsd & role_lab -> profile_lab
-platform_freebsd & desktop_hyprland -> profile_desktop_hyprland_freebsd
+platform_freebsd & desktop_niri -> profile_desktop_niri_freebsd
 workstation_dev_fedora -> packages_fedora + services_systemd + profile_workstation_dev_common
 workstation_host_linux -> profile_workstation_gnome
 workstation_dev_wsl -> packages_ubuntu + services_systemd + profile_workstation_dev_common + profile_workstation_dev_wsl
@@ -340,8 +319,9 @@ ubuntu_server -> packages_ubuntu + services_systemd + profile_server
 
 Questo significa che, allo stato attuale:
 
-- i desktop Void (`ikaros`, `nymph`) restano il target operativo piu completo tramite `platform_void + graphical_desktop`
-- Linux Mint/Cinnamon e FreeBSD/Hyprland sono scaffolding selezionabile tramite gruppi, ma non ricevono host reali nel refactoring strutturale iniziale
+- `ikaros` riceve Linux Mint/Cinnamon come target stabile
+- `nymph` riceve FreeBSD/Niri come target laptop scrollable-tiling
+- il profilo Void resta selezionabile tramite `platform_void + graphical_desktop` per host futuri
 - la workstation Fedora (`deadalus-fedora`) usa il principio di composizione a gruppi con il ramo Fedora dedicato e con `gsettings` host-specifici dichiarati in inventory
 - il ramo WSL (`deadalus-wsl`) e predisposto con play dev dedicato
 - il server Ubuntu (`prometheus`) e gestito con pacchetti, servizi, dotfiles server e firewall
@@ -492,6 +472,7 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `gnome` | configurazione host GNOME | workstation host Linux, parte desktop |
 | `sway` | sessione/configurazione sway / SwayFX (Wayland) | desktop Void |
 | `hyprland` | sessione/configurazione Hyprland (Wayland) | desktop Void |
+| `niri` | sessione/configurazione Niri (Wayland) | FreeBSD laptop |
 | `npm` | installazione pacchetti npm globali | desktop Void, workstation Linux, WSL |
 | `nvidia` | componenti NVIDIA desktop | desktop Void |
 | `packages` | installazione e aggiornamento pacchetti | tutti i profili |
@@ -502,9 +483,8 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 Esempi pratici:
 
 ```bash
-ansible-playbook ansible/site.yml --limit nymph --tags dotfiles:desktop,sway --check --diff
-ansible-playbook ansible/site.yml --limit ikaros --tags sway,portal --check --diff
-ansible-playbook ansible/site.yml --limit ikaros --tags hyprland,portal --check --diff
+ansible-playbook ansible/site.yml --limit nymph --tags dotfiles:desktop,niri --check --diff
+ansible-playbook ansible/site.yml --limit ikaros --tags cinnamon --check --diff
 ansible-playbook ansible/site.yml --limit deadalus-fedora --tags packages,vscode --check --diff
 ansible-playbook ansible/site.yml --limit prometheus --tags services,dotfiles:server --check --diff
 ```

@@ -1,0 +1,24 @@
+#!/bin/sh
+
+[ -r /etc/profile ] && . /etc/profile
+[ -r "$HOME/.profile" ] && . "$HOME/.profile"
+
+export XDG_CURRENT_DESKTOP=niri
+export XDG_SESSION_DESKTOP=niri
+export XDG_SESSION_TYPE=wayland
+
+export MOZ_ENABLE_WAYLAND=1
+export QT_QPA_PLATFORM='wayland;xcb'
+export _JAVA_AWT_WM_NONREPARENTING=1
+export SDL_VIDEODRIVER=wayland
+export GDK_BACKEND='wayland,x11'
+
+export SSH_AUTH_SOCK="$HOME/.local/state/ssh-agent/socket"
+
+[ -r "$HOME/.config/niri/session-env" ] && . "$HOME/.config/niri/session-env"
+
+if command -v dbus-run-session >/dev/null 2>&1; then
+  exec dbus-run-session niri --session
+fi
+
+exec niri --session

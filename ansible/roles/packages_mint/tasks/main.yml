@@ -20,6 +20,14 @@
               else []
             )
           + (
+              (mint_emacs_packages | default([]))
+              if (
+                'graphical_desktop' in group_names
+                and (emacs_enabled | default(false) | bool)
+              )
+              else []
+            )
+          + (
               (mint_cinnamon_packages | default([]))
               if 'desktop_cinnamon' in group_names
               else []

@@ -75,6 +75,19 @@ freebsd_hyprland_packages:
   - xdg-desktop-portal-hyprland
   - xwayland
 
+freebsd_niri_packages:
+  - cliphist
+  - dunst
+  - foot
+  - grim
+  - niri
+  - rofi-wayland
+  - seatd
+  - slurp
+  - waybar
+  - wl-clipboard
+  - xdg-desktop-portal-gtk
+
 freebsd_lab_packages:
   - lldb
   - llvm

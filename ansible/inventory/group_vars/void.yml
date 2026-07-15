@@ -23,7 +23,6 @@ void_packages_base:
   - go
   - hugo
   - ImageMagick
-  - isync
   - libtool
   - linux
   - linux-headers
@@ -33,8 +32,6 @@ void_packages_base:
   - lm_sensors
   - man-pages-devel
   - man-pages-posix
-  - msmtp
-  - mu4e
   - nodejs
   - ntfs-3g
   - pipewire

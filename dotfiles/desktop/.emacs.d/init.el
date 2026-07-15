@@ -42,7 +42,6 @@
   'misc/doom-modeline
   'misc/which-key
   'misc/gptel
-  'misc/email
   'misc/rss
   'misc/terminal
   'misc/vcs

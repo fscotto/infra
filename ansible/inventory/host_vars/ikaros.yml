@@ -2,12 +2,10 @@
 hostname: ikaros
 
 host_packages:
-  - openssh
-  - mesa-dri
-  - vulkan-loader
-  - mesa-vulkan-radeon
-  - mesa-vaapi
-  - xf86-video-amdgpu
+  - openssh-client
+  - openssh-server
+  - mesa-vulkan-drivers
+  - xserver-xorg-video-amdgpu
 
 host_ufw_rules:
   - rule: allow
@@ -27,4 +25,4 @@ host_sshd_allow_users:
 host_authorized_ssh_keys: "{{ vault_ikaros_authorized_ssh_keys | default([]) }}"
 
 host_enabled_services:
-  - sshd
+  - ssh

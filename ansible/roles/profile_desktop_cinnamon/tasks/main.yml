@@ -11,6 +11,12 @@
     - "{{ user_home }}/.config"
     - "{{ user_home }}/.local"
     - "{{ user_home }}/.local/share"
+    - "{{ user_home }}/.local/bin"
+    - "{{ user_home }}/.local/state"
+    - "{{ user_home }}/.bashrc.d"
+    - "{{ user_home }}/.tmux"
+    - "{{ user_home }}/.tmux/bin"
+    - "{{ user_home }}/.tmux/plugins"
 
 - name: Apply Cinnamon dconf settings
   tags: [cinnamon]
@@ -25,3 +31,197 @@
   loop: "{{ cinnamon_dconf_settings | default([]) }}"
   loop_control:
     label: "{{ item.key }}"
+
+- name: Ensure Emacs config directory exists
+  tags: [dotfiles, dotfiles:desktop, emacs]
+  ansible.builtin.file:
+    path: "{{ user_home }}/.emacs.d"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+
+- name: Ensure GnuPG directory exists
+  tags: [dotfiles, dotfiles:desktop, git]
+  ansible.builtin.file:
+    path: "{{ user_home }}/.gnupg"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0700"
+
+- name: Ensure private user directories exist
+  tags: [dotfiles, dotfiles:desktop]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0700"
+  loop:
+    - "{{ user_home }}/.ssh"
+    - "{{ user_home }}/.local/state/ssh/sockets"
+
+- name: Copy Emacs desktop dotfiles
+  tags: [dotfiles, dotfiles:desktop, emacs]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/{{ item.src }}"
+    dest: "{{ user_home }}/{{ item.dest }}"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ desktop_emacs_dotfiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+
+- name: Copy WM-agnostic common desktop dotfiles
+  tags: [dotfiles, dotfiles:desktop]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/{{ item.src }}"
+    dest: "{{ user_home }}/{{ item.dest }}"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop: >-
+    {{
+      desktop_common_dotfiles
+      | default([])
+      | rejectattr('name', 'in', cinnamon_desktop_dotfiles_exclude | default([]))
+      | list
+    }}
+  loop_control:
+    label: "{{ item.dest }}"
+
+- name: Copy gpg-agent configuration
+  tags: [dotfiles, dotfiles:desktop, git]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/.gnupg/gpg-agent.conf"
+    dest: "{{ user_home }}/.gnupg/gpg-agent.conf"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0600"
+
+- name: Render git configuration with private values
+  tags: [dotfiles, dotfiles:desktop, git]
+  ansible.builtin.template:
+    src: desktop/.gitconfig.j2
+    dest: "{{ user_home }}/.gitconfig"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0644"
+
+- name: Bootstrap tmux plugin manager checkout
+  tags: [dotfiles, dotfiles:desktop, tmux]
+  ansible.builtin.git:
+    repo: https://github.com/tmux-plugins/tpm
+    dest: "{{ user_home }}/.tmux/plugins/tpm"
+    version: master
+    update: true
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+
+- name: Install tmux plugins through TPM
+  tags: [dotfiles, dotfiles:desktop, tmux]
+  ansible.builtin.command:
+    cmd: "{{ user_home }}/.tmux/plugins/tpm/bin/install_plugins"
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  register: cinnamon_tmux_plugin_install
+  changed_when: >-
+    (cinnamon_tmux_plugin_install.stdout | default('')) is search('download success') or
+    (cinnamon_tmux_plugin_install.stderr | default('')) is search('download success')
+
+- name: Install desktop npm packages
+  tags: [packages, npm]
+  community.general.npm:
+    name: "{{ item.name }}"
+    global: true
+    state: "{{ item.state | default('present') }}"
+  become: true
+  loop: "{{ desktop_npm_packages | default([]) }}"
+  when: desktop_npm_packages | length > 0
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Ensure /usr/src is writable for source builds
+  tags: [packages]
+  ansible.builtin.file:
+    path: /usr/src
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+
+- name: Build and install the gf debugger frontend from source
+  tags: [packages]
+  ansible.builtin.include_tasks:
+    file: "{{ role_path }}/../profile_desktop_common/tasks/source_tool.yml"
+    apply:
+      tags: [packages]
+  loop: >-
+    {{
+      desktop_source_tools
+      | default([])
+      | selectattr('name', 'equalto', 'gf')
+      | list
+    }}
+  loop_control:
+    loop_var: source_tool
+    label: "{{ source_tool.name }}"
+
+- name: Ensure Nerd Fonts base directory exists
+  tags: [packages, fonts]
+  ansible.builtin.file:
+    path: /usr/local/share/fonts/nerd-fonts
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+
+- name: Ensure per-font Nerd Fonts directories exist
+  tags: [packages, fonts]
+  ansible.builtin.file:
+    path: "/usr/local/share/fonts/nerd-fonts/{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+  loop: "{{ mint_nerd_fonts | default([]) }}"
+
+- name: Download Nerd Font archives
+  tags: [packages, fonts]
+  ansible.builtin.get_url:
+    url: "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ mint_nerd_fonts_version }}/{{ item }}.zip"
+    dest: "/usr/local/share/fonts/nerd-fonts/{{ item }}.zip"
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  loop: "{{ mint_nerd_fonts | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Extract Nerd Font archives
+  tags: [packages, fonts]
+  ansible.builtin.unarchive:
+    src: "/usr/local/share/fonts/nerd-fonts/{{ item }}.zip"
+    dest: "/usr/local/share/fonts/nerd-fonts/{{ item }}"
+    remote_src: true
+    owner: root
+    group: root
+  become: true
+  loop: "{{ mint_nerd_fonts | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  register: cinnamon_nerd_fonts_extract
+
+- name: Refresh system font cache after installing Nerd Fonts
+  tags: [packages, fonts]
+  ansible.builtin.command: fc-cache -f
+  become: true
+  changed_when: false
+  when: cinnamon_nerd_fonts_extract is changed

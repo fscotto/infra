@@ -4,6 +4,11 @@ platform_family: debian
 platform_package_manager: apt
 platform_service_manager: systemd
 
+# syncthing runs per-user via the packaged system unit template
+# (Debian/Mint ship syncthing@.service, parametrised by username).
+enabled_services:
+  - "syncthing@{{ username }}.service"
+
 mint_manage_flatpak: true
 mint_flatpak_remote_name: flathub
 mint_flatpak_remote_url: https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -39,13 +44,20 @@ mint_desktop_common_packages:
   - firefox
   - fonts-liberation
   - fonts-noto-color-emoji
+  - git-delta
   - gnome-keyring
+  - libfreetype-dev
   - libsecret-tools
+  - libx11-dev
   - mpv
   - pinentry-gnome3
+  - pinentry-gtk2
   - rclone
+  - syncthing
   - thunderbird
+  - tmux
   - xdg-user-dirs
+  - yt-dlp
 
 mint_cinnamon_packages:
   - cinnamon
@@ -62,4 +74,19 @@ mint_personal_workstation_packages:
   - pdfarranger
   - vim
 
-mint_flatpak_packages: []
+mint_flatpak_packages:
+  - ch.protonmail.protonmail-bridge
+  - com.calibre_ebook.calibre
+  - com.spotify.Client
+  - org.telegram.desktop
+
+# Nerd Fonts referenced by the desktop configs deployed on Mint (fontconfig
+# symbols, Emacs UI/vterm). Debian has no equivalent of Void's nerd-fonts-ttf
+# package, so they are fetched from the upstream ryanoasis/nerd-fonts release.
+mint_nerd_fonts_version: v3.3.0
+mint_nerd_fonts:
+  - Hack
+  # Archive is named UbuntuSans; it ships the "UbuntuSansMono Nerd Font" faces
+  # referenced by the Emacs UI config.
+  - UbuntuSans
+  - NerdFontsSymbolsOnly

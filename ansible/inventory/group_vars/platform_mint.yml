@@ -38,6 +38,10 @@ mint_development_packages:
   - python3-venv
 
 mint_desktop_common_packages:
+  # autoconf/automake/libtool-bin build the Emacs pdf-tools (epdfinfo) and
+  # vterm native modules; the lib*-dev headers below are their link deps.
+  - autoconf
+  - automake
   - dconf-cli
   - deja-dup
   - emacs
@@ -46,8 +50,19 @@ mint_desktop_common_packages:
   - fonts-noto-color-emoji
   - git-delta
   - gnome-keyring
+  # hunspell CLI + Italian dictionary for Emacs spell checking (spell.el sets
+  # ispell-really-hunspell); hunspell-en-us is pulled in as a dependency.
+  - hunspell
+  - hunspell-it
   - libfreetype-dev
+  # pdf-tools epdfinfo build deps (poppler); libpng-dev/zlib1g-dev are already
+  # satisfied by other packages.
+  - libpoppler-glib-dev
+  - libpoppler-private-dev
   - libsecret-tools
+  - libtool-bin
+  # vterm/multi-vterm native module (compiled against system libvterm).
+  - libvterm-dev
   - libx11-dev
   - mpv
   - pinentry-gnome3

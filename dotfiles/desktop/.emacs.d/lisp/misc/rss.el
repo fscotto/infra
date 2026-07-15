@@ -29,6 +29,20 @@
   :hook
   (elfeed-show-mode . visual-line-mode))
 
+(use-package evil-collection
+  :ensure t
+  :after (evil elfeed)
+  :config
+  ;; Enable Vim-style keybindings only for elfeed (search + entry views),
+  ;; leaving the rest of the configuration on evil's defaults.
+  (evil-collection-init (list 'elfeed))
+  ;; Restore the custom "v" -> mpv binding, which evil's normal-state visual
+  ;; selection would otherwise shadow inside elfeed buffers.
+  (evil-collection-define-key 'normal 'elfeed-search-mode-map
+    "v" #'elfeed-play-with-mpv)
+  (evil-collection-define-key 'normal 'elfeed-show-mode-map
+    "v" #'elfeed-play-with-mpv))
+
 (use-package elfeed-org
   :ensure t
   :after elfeed

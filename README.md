@@ -71,7 +71,7 @@ Matrice target:
 | Host           | Platform   | Role                 | Desktop                           |
 | -------------- | ---------- | -------------------- | --------------------------------- |
 | ikaros         | Linux Mint | Personal workstation | Cinnamon                          |
-| nymph          | Void Linux | Lab                  | Niri                              |
+| nymph          | Fedora     | Desktop laptop       | GNOME                             |
 | void-reference | Void Linux | Lab/reference        | Current preserved desktop profile |
 
 Regola operativa:
@@ -82,9 +82,9 @@ nymph is allowed to break
 ```
 
 `ikaros` usa il target stabile Linux Mint/Cinnamon; `nymph` usa il target
-Void/Niri per il workflow laptop scrollable-tiling. I gruppi legacy `void` e
-`desktop` restano alias di compatibilita per eventuali host Void futuri mentre i
-nuovi assi sono `platform_*`, `role_*` e `desktop_*`.
+Fedora Workstation/GNOME. I gruppi legacy `void` e `desktop` restano alias di
+compatibilita per eventuali host Void futuri mentre i nuovi assi sono
+`platform_*`, `role_*` e `desktop_*`.
 
 Prima di una migrazione reale degli host e consigliato creare uno snapshot
 logico, per esempio:
@@ -106,12 +106,12 @@ Nota sullo stato attuale del playbook principale:
 Target operativi:
 
 - `ikaros`: Linux Mint + Cinnamon, desktop personale stabile/floating.
-- `nymph`: Void Linux + Niri, laptop scrollable-tiling per sfruttare meglio lo schermo piccolo.
+- `nymph`: Fedora Workstation + GNOME, laptop desktop con GNOME non personalizzato da Ansible per ora.
 
 Il profilo Void desktop resta disponibile come modello riutilizzabile per host
 futuri. `desktop_environment` continua a selezionare in modo esclusivo
-`minimal`, `xfce` oppure `kde` per i desktop Void; Niri e Cinnamon sono profili
-desktop indipendenti via gruppi `desktop_niri` e `desktop_cinnamon`.
+`minimal`, `xfce` oppure `kde` per i desktop Void; Niri, GNOME e Cinnamon sono profili
+desktop indipendenti via gruppi `desktop_niri`, `desktop_gnome` e `desktop_cinnamon`.
 
 Lo stato attuale del profilo desktop include, tra le altre cose:
 
@@ -252,7 +252,7 @@ Esempi correnti:
 
 ```text
 ikaros -> common + platform_mint + role_personal_workstation + desktop_cinnamon + ikaros
-nymph  -> common + platform_void + role_lab + desktop_niri + nymph
+nymph  -> common + platform_fedora + graphical_desktop + desktop_gnome + nymph
 ```
 
 Questo approccio consente di:
@@ -311,7 +311,8 @@ platform_mint & desktop_cinnamon -> profile_desktop_cinnamon
 platform_freebsd -> packages_freebsd + services_freebsd
 platform_freebsd & role_lab -> profile_lab
 platform_freebsd & desktop_niri -> profile_desktop_niri_freebsd
-workstation_dev_fedora -> packages_fedora + services_systemd + profile_workstation_dev_common
+platform_fedora -> packages_fedora + services_systemd
+workstation_dev_fedora -> profile_workstation_dev_common
 workstation_host_linux -> profile_workstation_gnome
 workstation_dev_wsl -> packages_ubuntu + services_systemd + profile_workstation_dev_common + profile_workstation_dev_wsl
 ubuntu_server -> packages_ubuntu + services_systemd + profile_server
@@ -320,7 +321,7 @@ ubuntu_server -> packages_ubuntu + services_systemd + profile_server
 Questo significa che, allo stato attuale:
 
 - `ikaros` riceve Linux Mint/Cinnamon come target stabile
-- `nymph` riceve Void Linux/Niri come target laptop scrollable-tiling
+- `nymph` riceve Fedora Workstation/GNOME come target laptop
 - il profilo Void resta selezionabile tramite `platform_void + graphical_desktop` per host futuri
 - la workstation Fedora (`deadalus-fedora`) usa il principio di composizione a gruppi con il ramo Fedora dedicato e con `gsettings` host-specifici dichiarati in inventory
 - il ramo WSL (`deadalus-wsl`) e predisposto con play dev dedicato
@@ -396,9 +397,10 @@ Allo stato attuale questo comando:
 
 - distribuisce i dotfiles comuni a tutti gli host
 - per `platform_void` applica pacchetti Void e servizi runit
-- per `platform_void + graphical_desktop` applica bootstrap desktop condiviso, sessioni sway/Hyprland e override specifici per host
+- per `platform_void + graphical_desktop` applica bootstrap desktop condiviso, sessioni sway/Hyprland/Niri e override specifici per host
 - per `platform_mint` e `platform_freebsd` applica solo host presenti esplicitamente in quei gruppi; nell'inventory principale iniziale questi gruppi sono vuoti
-- per `workstation_dev_fedora` applica pacchetti Fedora, servizi systemd e profilo dev comune
+- per `platform_fedora` applica pacchetti Fedora e servizi systemd
+- per `workstation_dev_fedora` applica il profilo dev comune
 - per `workstation_host_linux` applica il layer host Linux GNOME
 - per `workstation_dev_wsl` applica pacchetti Ubuntu, servizi systemd, profilo dev comune e tweak WSL dedicati
 - per gli host `ubuntu_server` applica pacchetti Ubuntu, servizi systemd, profilo server, UFW, dotfiles e template dedicati

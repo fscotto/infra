@@ -1,0 +1,5 @@
+---
+platform_profile: fedora
+platform_family: redhat
+platform_package_manager: dnf
+platform_service_manager: systemd

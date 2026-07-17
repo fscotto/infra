@@ -2,7 +2,8 @@
 hostname: deadalus-fedora
 
 host_packages: []
-host_enabled_services: []
+host_enabled_services:
+  - docker
 workstation_firewall_backend: firewalld
 
 workstation_host_vscode_extensions:

@@ -27,7 +27,6 @@ fedora_docker_packages:
   - docker-compose-plugin
 
 enabled_services:
-  - docker
   - firewalld
 
 fedora_dotfiles:

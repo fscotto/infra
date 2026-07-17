@@ -94,13 +94,19 @@
   roles:
     - profile_desktop_niri_freebsd
 
-- name: Configure Fedora workstation development layer
-  hosts: workstation_dev_fedora
+- name: Configure Fedora platform
+  hosts: platform_fedora
   become: true
 
   roles:
     - packages_fedora
     - services_systemd
+
+- name: Configure Fedora workstation development layer
+  hosts: workstation_dev_fedora
+  become: true
+
+  roles:
     - profile_workstation_dev_common
 
 - name: Configure native Linux workstation host layer

@@ -26,7 +26,9 @@
     gpgcheck: true
     gpgkey: https://download.docker.com/linux/fedora/gpg
     state: present
-  when: fedora_manage_docker_repo | default(false)
+  when:
+    - "'workstation_dev_fedora' in group_names"
+    - fedora_manage_docker_repo | default(false)
 
 - name: Configure Google Chrome repository on Fedora
   tags: [packages]
@@ -82,14 +84,22 @@
         (
           (common_packages | default([]))
         + (fedora_packages_base | default([]))
-        + (fedora_docker_packages | default([]))
+        + (
+            (fedora_docker_packages | default([]))
+            if 'workstation_dev_fedora' in group_names
+            else []
+          )
         + (
             ['google-chrome-stable']
             if workstation_manage_google_chrome | default(false)
             else []
           )
         + (profile_packages | default([]))
-        + (fedora_workstation_dev_packages | default(workstation_dev_packages | default([])))
+        + (
+            (fedora_workstation_dev_packages | default(workstation_dev_packages | default([])))
+            if 'workstation_dev_fedora' in group_names
+            else []
+          )
         + (
             (workstation_host_linux_packages_fedora | default(workstation_host_linux_packages | default([])))
             if 'workstation_host_linux' in group_names
@@ -115,7 +125,9 @@
     name: "{{ effective_username }}"
     groups: docker
     append: true
-  when: (fedora_docker_packages | default([])) | length > 0
+  when:
+    - "'workstation_dev_fedora' in group_names"
+    - (fedora_docker_packages | default([])) | length > 0
 
 - name: Ensure Flathub remote is configured for Fedora workstation
   tags: [packages]

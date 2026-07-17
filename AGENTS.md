@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Ansible-driven personal infrastructure repo for Void desktops, Linux Mint and FreeBSD transition targets, Linux workstations, WSL, and an Ubuntu server.
+Ansible-driven personal infrastructure repo for Fedora and Void desktops, Linux Mint and FreeBSD transition targets, Linux workstations, WSL, and an Ubuntu server.
 
 ## Source Of Truth
 - Main orchestration: `ansible/site.yml`
@@ -12,7 +12,7 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux Mint and Fr
 
 ## Topology
 - Current personal desktop: `ikaros = platform_mint + role_personal_workstation + desktop_cinnamon`
-- Current laptop/lab: `nymph = platform_void + role_lab + desktop_niri`
+- Current laptop: `nymph = platform_fedora + graphical_desktop + desktop_gnome`
 - Void desktop profile is also the base for other future/reference hosts via `platform_void + graphical_desktop`
 - Native Linux workstation: `deadalus-fedora`
 - WSL dev: `deadalus-wsl`
@@ -38,7 +38,7 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux Mint and Fr
   - `yamllint ansible/`
 - Host-focused dry runs:
   - Mint desktop work: `ansible-playbook ansible/site.yml --limit ikaros --check --diff`
-  - Void laptop work: `ansible-playbook ansible/site.yml --limit nymph --check --diff`
+  - Fedora laptop work: `ansible-playbook ansible/site.yml --limit nymph --check --diff`
   - Fedora workstation: `ansible-playbook ansible/site.yml --limit deadalus-fedora --check --diff`
   - WSL dev: `ansible-playbook ansible/site.yml --limit deadalus-wsl --check --diff`
   - Server: `ansible-playbook ansible/site.yml --limit prometheus --check --diff`
@@ -56,8 +56,8 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux Mint and Fr
 - Use `no_log: true` for secret-bearing task inputs or outputs.
 
 ## Desktop Notes
-- `desktop_profile` names independently selectable desktop groups such as `desktop_hyprland`, `desktop_sway`, `desktop_niri`, and `desktop_cinnamon`. Keep platform-specific session bootstrap in platform-specific roles.
-- `desktop_environment` selects the mutually exclusive `minimal` (default), `xfce`, or `kde` desktop mode. `profile_desktop_common` owns shared bootstrap; the minimal mode uses `profile_desktop_sway`, `profile_desktop_hyprland`, and `profile_desktop_niri`, `profile_desktop_xfce` owns the reproducible XFCE setup, and `profile_desktop_kde` owns KDE-specific defaults and cleanup. `desktop_sessions_enabled` and `desktop_default_session` apply only to the minimal mode.
+- `desktop_profile` names independently selectable desktop groups such as `desktop_gnome`, `desktop_hyprland`, `desktop_sway`, `desktop_niri`, and `desktop_cinnamon`. Keep platform-specific session bootstrap in platform-specific roles.
+- `desktop_environment` selects the mutually exclusive `minimal` (default), `gnome`, `xfce`, or `kde` desktop mode. `profile_desktop_common` owns shared bootstrap; the minimal mode uses `profile_desktop_sway`, `profile_desktop_hyprland`, and `profile_desktop_niri`, `profile_desktop_xfce` owns the reproducible XFCE setup, and `profile_desktop_kde` owns KDE-specific defaults and cleanup. `desktop_sessions_enabled` and `desktop_default_session` apply only to the minimal mode.
 - Emacs packages and `.emacs.d` deploy are disabled by default via `emacs_enabled: false`; keep the dotfiles in the repo for reversible opt-in only.
 - NTFS filesystem support is provided by `ntfs-3g` in `ansible/inventory/group_vars/void.yml`.
 - Void user services are managed by `turnstile` and live under `dotfiles/desktop/.config/service/`.
@@ -66,10 +66,11 @@ Ansible-driven personal infrastructure repo for Void desktops, Linux Mint and Fr
   - `dotfiles/desktop/.config/sway/config` plus `host.conf` and `session-env` deployed via `host_sway_dotfiles` (sway / Wayland)
   - `dotfiles/desktop/.config/hypr/hyprland.conf` plus `host.conf` and `session-env` deployed via `host_hyprland_dotfiles` (Hyprland / Wayland)
   - `dotfiles/desktop/.config/niri/config.kdl` and `session-env` deployed via `desktop_niri_dotfiles` (Niri / Wayland)
-- Void Niri (the `nymph` target) lives in `profile_desktop_niri`, gated on `'niri' in desktop_sessions_enabled`; it installs the `emptty` `niri.desktop` session, the `/usr/local/bin/start-niri` launcher, and the xdg-desktop-portal config, mirroring `profile_desktop_sway`.
+- Void Niri lives in `profile_desktop_niri`, gated on `'niri' in desktop_sessions_enabled`; it installs the `emptty` `niri.desktop` session, the `/usr/local/bin/start-niri` launcher, and the xdg-desktop-portal config, mirroring `profile_desktop_sway`.
+- Fedora GNOME (`desktop_gnome`) currently assumes GNOME comes from the Fedora Workstation base install; Ansible does not customize GNOME for `nymph` yet.
 - FreeBSD Niri (dormant; `platform_freebsd` currently has no hosts) must keep FreeBSD-specific package, rc, DBus, seat, portal, and launcher behavior in `profile_desktop_niri_freebsd` or FreeBSD platform vars.
 - Do not switch or restart a display manager during a playbook run from an active graphical session. Changing among `emptty`, LightDM, and SDDM requires an explicit run from another TTY/SSH session with `desktop_allow_display_manager_switch=true`. Apply managed XFCE XML while logged out of XFCE so `xfconfd` cannot overwrite it from its in-memory state.
-- `nymph` is the Void/Niri laptop target; prefer minimal scrollable-tiling defaults first, then host-specific tuning after real use.
+- `nymph` is the Fedora/GNOME laptop target; keep GNOME unmanaged for now and add host-specific tuning only after real use.
 
 ## Void Package And Dotfile Bucket Rules
 `platform_void` is the reusable Void platform selection. The legacy `void` group remains a compatibility parent so existing `group_vars/void.yml` and `when: "'void' in group_names"` checks keep working during the transition.

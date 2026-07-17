@@ -3,5 +3,24 @@ hostname: nymph
 
 # Void Linux/Niri laptop target. Keep host-specific packages empty until hardware
 # support is verified on the installed system.
-host_packages: []
+
+# DankLinux / DankMaterialShell (DMS) repositories.
+# https://danklinux.com/docs/dankmaterialshell/installation (Void Linux)
+# The packages_void role writes each entry to /etc/xbps.d/<name>.conf as
+# "repository=<url>" and refreshes the cache with accept_pubkey: true, which
+# auto-trusts the DankLinux signing key on first sync.
+host_xbps_repositories:
+  - name: dms
+    url: https://void.danklinux.com/dms/current
+  - name: danklinux
+    url: https://void.danklinux.com/danklinux/current
+
+# DankMaterialShell. Installing dms pulls in quickshell, dgop, matugen, etc.
+# The remainder are the optional features documented for DMS.
+host_packages:
+  - dms
+  - cava
+  - dankcalendar
+  - danksearch
+  - qt6-multimedia
 host_enabled_services: []

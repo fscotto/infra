@@ -106,7 +106,7 @@ Nota sullo stato attuale del playbook principale:
 Target operativi:
 
 - `ikaros`: Linux Mint + Cinnamon, desktop personale stabile/floating.
-- `nymph`: Fedora Workstation + GNOME, laptop desktop con GNOME non personalizzato da Ansible per ora.
+- `nymph`: Fedora Workstation + GNOME, laptop desktop con dotfiles desktop condivisi e GNOME lasciato al default Fedora.
 
 Il profilo Void desktop resta disponibile come modello riutilizzabile per host
 futuri. `desktop_environment` continua a selezionare in modo esclusivo
@@ -281,6 +281,7 @@ I principali ruoli attualmente presenti sono:
 | services_systemd          | gestione servizi systemd            |
 | services_freebsd          | gestione servizi FreeBSD rc.conf/rc.d |
 | profile_desktop_common    | bootstrap desktop Void condiviso    |
+| profile_desktop_gnome     | dotfiles desktop condivisi per Fedora/GNOME |
 | profile_desktop_sway      | sessione desktop sway / SwayFX (Wayland) |
 | profile_desktop_hyprland  | sessione desktop Hyprland (Wayland) |
 | profile_desktop_niri_freebsd | adattamenti FreeBSD per Niri |
@@ -312,6 +313,7 @@ platform_freebsd -> packages_freebsd + services_freebsd
 platform_freebsd & role_lab -> profile_lab
 platform_freebsd & desktop_niri -> profile_desktop_niri_freebsd
 platform_fedora -> packages_fedora + services_systemd
+platform_fedora & desktop_gnome -> profile_desktop_gnome
 workstation_dev_fedora -> profile_workstation_dev_common
 workstation_host_linux -> profile_workstation_gnome
 workstation_dev_wsl -> packages_ubuntu + services_systemd + profile_workstation_dev_common + profile_workstation_dev_wsl

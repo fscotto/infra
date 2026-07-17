@@ -102,6 +102,13 @@
     - packages_fedora
     - services_systemd
 
+- name: Configure Fedora GNOME desktop
+  hosts: platform_fedora:&desktop_gnome
+  become: true
+
+  roles:
+    - profile_desktop_gnome
+
 - name: Configure Fedora workstation development layer
   hosts: workstation_dev_fedora
   become: true

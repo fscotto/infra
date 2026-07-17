@@ -1,0 +1,82 @@
+---
+- name: Ensure GNOME desktop user config directories exist
+  tags: [dotfiles, dotfiles:desktop, gnome]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+  loop:
+    - "{{ user_home }}/.config"
+    - "{{ user_home }}/.config/autostart"
+    - "{{ user_home }}/.local"
+    - "{{ user_home }}/.local/bin"
+    - "{{ user_home }}/.bashrc.d"
+    - "{{ user_home }}/.tmux"
+    - "{{ user_home }}/.tmux/bin"
+    - "{{ user_home }}/.tmux/plugins"
+
+- name: Ensure GNOME desktop private directories exist
+  tags: [dotfiles, dotfiles:desktop, gnome]
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ user_home }}/.gnupg"
+      mode: "0700"
+    - path: "{{ user_home }}/.ssh"
+      mode: "0700"
+    - path: "{{ user_home }}/.local/state/ssh/sockets"
+      mode: "0700"
+
+- name: Copy GNOME desktop dotfiles
+  tags: [dotfiles, dotfiles:desktop, gnome]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/{{ item.src }}"
+    dest: "{{ user_home }}/{{ item.dest }}"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ desktop_common_dotfiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+
+- name: Copy GNOME Emacs desktop dotfiles
+  tags: [dotfiles, dotfiles:desktop, emacs, gnome]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/{{ item.src }}"
+    dest: "{{ user_home }}/{{ item.dest }}"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ desktop_emacs_dotfiles | default([]) }}"
+  when: emacs_enabled | default(false) | bool
+  loop_control:
+    label: "{{ item.dest }}"
+
+- name: Configure GNOME gpg-agent for Fedora
+  tags: [dotfiles, dotfiles:desktop, git, gnome]
+  ansible.builtin.copy:
+    dest: "{{ user_home }}/.gnupg/gpg-agent.conf"
+    content: |
+      pinentry-program /usr/bin/pinentry-gnome3
+      enable-ssh-support
+      default-cache-ttl 600
+      max-cache-ttl 7200
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0600"
+  notify: Reload GNOME gpg-agent
+
+- name: Render GNOME git configuration with private values
+  tags: [dotfiles, dotfiles:desktop, git, gnome]
+  ansible.builtin.template:
+    src: desktop/.gitconfig.j2
+    dest: "{{ user_home }}/.gitconfig"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0644"

@@ -2,6 +2,12 @@
 hostname: nymph
 
 # Fedora Workstation/GNOME laptop target. GNOME is provided by the base Fedora
-# Workstation install and is intentionally not customized by Ansible yet.
-host_packages: []
+# Workstation install; Ansible deploys shared desktop dotfiles but leaves GNOME
+# settings unmanaged for now.
+host_packages:
+  - rclone
+  - syncthing
+host_flatpak_packages:
+  - com.spotify.Client
+  - org.telegram.desktop
 host_enabled_services: []

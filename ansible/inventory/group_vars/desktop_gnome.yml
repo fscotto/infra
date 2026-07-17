@@ -32,6 +32,7 @@ fedora_desktop_packages:
   - meld
   - mpv
   - pdfarranger
+  - pinentry-gnome3
   - playerctl
   - qemu
   - qemu-img

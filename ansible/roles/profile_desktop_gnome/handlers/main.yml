@@ -1,0 +1,11 @@
+---
+- name: Reload GNOME gpg-agent
+  ansible.builtin.command:
+    argv:
+      - gpgconf
+      - --kill
+      - gpg-agent
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  changed_when: false

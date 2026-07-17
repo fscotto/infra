@@ -76,6 +76,14 @@
             )
             else []
           )
+        + (
+            (desktop_niri_packages | default([]))
+            if (
+              (desktop_environment | default('minimal')) == 'minimal'
+              and 'niri' in (desktop_sessions_enabled | default([]))
+            )
+            else []
+          )
         | unique
       }}
 
@@ -88,6 +96,7 @@
           (desktop_minimal_packages | default([]))
           + (desktop_sway_packages | default([]))
           + (desktop_hyprland_packages | default([]))
+          + (desktop_niri_packages | default([]))
           + (desktop_xfce_packages | default([]))
           + (desktop_kde_packages | default([]))
         )
@@ -109,6 +118,7 @@
         + (desktop_common_packages | default([]))
         + ((desktop_emacs_packages | default([])) if (emacs_enabled | default(false) | bool) else [])
         + (packages_void_selected_desktop_packages | default([]))
+        + ((void_lab_packages | default([])) if 'role_lab' in group_names else [])
         + (host_packages | default([]))
         )
         | unique

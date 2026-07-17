@@ -221,6 +221,28 @@ desktop_hyprland_packages:
   - xdg-desktop-portal-hyprland
   - xorg-server-xwayland
 
+desktop_niri_packages:
+  - cliphist
+  - dunst
+  - foot
+  - foot-terminfo
+  - gtklock
+  - grim
+  - niri
+  - rofi
+  - slurp
+  - SwayOSD
+  - Waybar
+  - wl-clipboard
+  - xdg-desktop-portal-gtk
+  - xorg-server-xwayland
+
+void_lab_packages:
+  - llvm
+  - podman
+  - qemu
+  - smartmontools
+
 profile_packages:
   - bash-language-server
   - bluez

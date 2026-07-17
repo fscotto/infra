@@ -1,7 +1,7 @@
 ---
 hostname: nymph
 
-# FreeBSD/Niri laptop target. Keep host-specific packages empty until hardware
+# Void Linux/Niri laptop target. Keep host-specific packages empty until hardware
 # support is verified on the installed system.
 host_packages: []
 host_enabled_services: []

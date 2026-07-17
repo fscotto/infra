@@ -38,9 +38,17 @@
     - profile_desktop_common
     - profile_desktop_sway
     - profile_desktop_hyprland
+    - profile_desktop_niri
     - profile_desktop_kde
     - profile_desktop_xfce
     - profile_desktop_host
+
+- name: Configure lab role on Void
+  hosts: platform_void:&role_lab
+  become: true
+
+  roles:
+    - profile_lab
 
 - name: Configure Linux Mint platform
   hosts: platform_mint

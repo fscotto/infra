@@ -9,7 +9,7 @@
         or (desktop_sessions_enabled | default([]) | length > 0)
       - >-
         (desktop_environment | default('minimal')) != 'minimal'
-        or (desktop_sessions_enabled | default([]) | difference(['sway', 'hyprland']) | length == 0)
+        or (desktop_sessions_enabled | default([]) | difference(['sway', 'hyprland', 'niri']) | length == 0)
       - >-
         (desktop_environment | default('minimal')) != 'minimal'
         or desktop_default_session in (desktop_sessions_enabled | default([]))

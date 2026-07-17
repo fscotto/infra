@@ -71,7 +71,7 @@ Matrice target:
 | Host           | Platform   | Role                 | Desktop                           |
 | -------------- | ---------- | -------------------- | --------------------------------- |
 | ikaros         | Linux Mint | Personal workstation | Cinnamon                          |
-| nymph          | FreeBSD    | Lab                  | Niri                              |
+| nymph          | Void Linux | Lab                  | Niri                              |
 | void-reference | Void Linux | Lab/reference        | Current preserved desktop profile |
 
 Regola operativa:
@@ -82,7 +82,7 @@ nymph is allowed to break
 ```
 
 `ikaros` usa il target stabile Linux Mint/Cinnamon; `nymph` usa il target
-FreeBSD/Niri per il workflow laptop scrollable-tiling. I gruppi legacy `void` e
+Void/Niri per il workflow laptop scrollable-tiling. I gruppi legacy `void` e
 `desktop` restano alias di compatibilita per eventuali host Void futuri mentre i
 nuovi assi sono `platform_*`, `role_*` e `desktop_*`.
 
@@ -106,7 +106,7 @@ Nota sullo stato attuale del playbook principale:
 Target operativi:
 
 - `ikaros`: Linux Mint + Cinnamon, desktop personale stabile/floating.
-- `nymph`: FreeBSD + Niri, laptop scrollable-tiling per sfruttare meglio lo schermo piccolo.
+- `nymph`: Void Linux + Niri, laptop scrollable-tiling per sfruttare meglio lo schermo piccolo.
 
 Il profilo Void desktop resta disponibile come modello riutilizzabile per host
 futuri. `desktop_environment` continua a selezionare in modo esclusivo
@@ -252,7 +252,7 @@ Esempi correnti:
 
 ```text
 ikaros -> common + platform_mint + role_personal_workstation + desktop_cinnamon + ikaros
-nymph  -> common + platform_freebsd + role_lab + desktop_niri + nymph
+nymph  -> common + platform_void + role_lab + desktop_niri + nymph
 ```
 
 Questo approccio consente di:
@@ -320,7 +320,7 @@ ubuntu_server -> packages_ubuntu + services_systemd + profile_server
 Questo significa che, allo stato attuale:
 
 - `ikaros` riceve Linux Mint/Cinnamon come target stabile
-- `nymph` riceve FreeBSD/Niri come target laptop scrollable-tiling
+- `nymph` riceve Void Linux/Niri come target laptop scrollable-tiling
 - il profilo Void resta selezionabile tramite `platform_void + graphical_desktop` per host futuri
 - la workstation Fedora (`deadalus-fedora`) usa il principio di composizione a gruppi con il ramo Fedora dedicato e con `gsettings` host-specifici dichiarati in inventory
 - il ramo WSL (`deadalus-wsl`) e predisposto con play dev dedicato

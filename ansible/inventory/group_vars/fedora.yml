@@ -63,8 +63,11 @@ workstation_host_linux_packages_fedora:
   - rclone
   - yubikey-manager
 
-workstation_flatpak_remote_name: flathub
-workstation_flatpak_remote_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+fedora_flatpak_remote_name: flathub
+fedora_flatpak_remote_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+
+workstation_flatpak_remote_name: "{{ fedora_flatpak_remote_name }}"
+workstation_flatpak_remote_url: "{{ fedora_flatpak_remote_url }}"
 workstation_flatpak_packages:
   - com.getpostman.Postman
   - com.spotify.Client

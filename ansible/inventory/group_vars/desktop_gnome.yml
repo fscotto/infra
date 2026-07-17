@@ -3,3 +3,55 @@ desktop_profile: gnome
 desktop_environment: gnome
 desktop_sessions_enabled: []
 desktop_default_session: gnome
+
+# Fedora Workstation/GNOME desktop applications. Keep this profile separate from
+# workstation_* so nymph can remain a desktop laptop rather than a dev workstation.
+fedora_desktop_packages:
+  # Fedora equivalents of the development/tooling packages previously pulled by
+  # the Void desktop profile.
+  - nodejs-bash-language-server
+  - bluez
+  - bridge-utils
+  - ctags
+  - delve
+  - dnsmasq
+  - poppler-glib
+  - poppler-utils
+  - fontconfig-devel
+  - freetype-devel
+  - golang
+  - golangci-lint
+  - gopls
+  - hunspell
+  - libvirt
+  - libreoffice
+  - liberation-fonts
+  - libvterm-devel
+  - libX11-devel
+  - libXft-devel
+  - meld
+  - mpv
+  - pdfarranger
+  - playerctl
+  - qemu
+  - qemu-img
+  - qemu-tools
+  - remmina
+  - rustup
+  - rsync
+  - shfmt
+  - ruff
+  - terminus-fonts
+  - texlive
+  - ty
+  - uv
+  - virt-manager
+  - virt-install
+  - wireplumber
+  - zstd
+
+fedora_flatpak_packages:
+  - ch.protonmail.protonmail-bridge
+  - org.mozilla.thunderbird
+
+fedora_npm_packages: "{{ ai_agents_npm_packages }}"

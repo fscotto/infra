@@ -96,6 +96,11 @@
           )
         + (profile_packages | default([]))
         + (
+            (fedora_desktop_packages | default([]))
+            if 'graphical_desktop' in group_names
+            else []
+          )
+        + (
             (fedora_workstation_dev_packages | default(workstation_dev_packages | default([])))
             if 'workstation_dev_fedora' in group_names
             else []
@@ -129,23 +134,47 @@
     - "'workstation_dev_fedora' in group_names"
     - (fedora_docker_packages | default([])) | length > 0
 
-- name: Ensure Flathub remote is configured for Fedora workstation
+- name: Install Fedora npm packages
+  tags: [packages, npm, ai_agents]
+  community.general.npm:
+    name: "{{ item.name }}"
+    global: true
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ fedora_npm_packages | default([]) }}"
+  when: (fedora_npm_packages | default([])) | length > 0
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Define Fedora Flatpak applications
+  tags: [packages]
+  ansible.builtin.set_fact:
+    packages_fedora_flatpak_packages: >-
+      {{
+        (
+          (fedora_flatpak_packages | default([]))
+          + (host_flatpak_packages | default([]))
+          + (
+              (workstation_flatpak_packages | default([]))
+              if 'workstation_host_linux' in group_names
+              else []
+            )
+        )
+        | unique
+      }}
+
+- name: Ensure Flathub remote is configured on Fedora
   tags: [packages]
   community.general.flatpak_remote:
-    name: "{{ workstation_flatpak_remote_name | default('flathub') }}"
+    name: "{{ fedora_flatpak_remote_name | default('flathub') }}"
     state: present
-    flatpakrepo_url: "{{ workstation_flatpak_remote_url | default('https://dl.flathub.org/repo/flathub.flatpakrepo') }}"
-  when:
-    - "'workstation_host_linux' in group_names"
-    - (workstation_flatpak_packages | default([])) | length > 0
+    flatpakrepo_url: "{{ fedora_flatpak_remote_url | default('https://dl.flathub.org/repo/flathub.flatpakrepo') }}"
+  when: (packages_fedora_flatpak_packages | default([])) | length > 0
 
-- name: Install Fedora workstation Flatpak applications
+- name: Install Fedora Flatpak applications
   tags: [packages]
   community.general.flatpak:
-    name: "{{ workstation_flatpak_packages }}"
+    name: "{{ packages_fedora_flatpak_packages }}"
     state: present
-    remote: "{{ workstation_flatpak_remote_name | default('flathub') }}"
+    remote: "{{ fedora_flatpak_remote_name | default('flathub') }}"
     method: system
-  when:
-    - "'workstation_host_linux' in group_names"
-    - (workstation_flatpak_packages | default([])) | length > 0
+  when: (packages_fedora_flatpak_packages | default([])) | length > 0

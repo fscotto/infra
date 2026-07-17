@@ -23,7 +23,6 @@ void_packages_base:
   - go
   - hugo
   - ImageMagick
-  - isync
   - libtool
   - linux
   - linux-headers
@@ -33,8 +32,6 @@ void_packages_base:
   - lm_sensors
   - man-pages-devel
   - man-pages-posix
-  - msmtp
-  - mu4e
   - nodejs
   - ntfs-3g
   - pipewire
@@ -103,12 +100,14 @@ desktop_common_packages:
   - cups-pk-helper
   - flatpak
   - libsecret
-  - pinentry-emacs
   - sane
   - sane-airscan
   - turnstile
   - xdg-desktop-portal
   - xdg-user-dirs
+
+desktop_emacs_packages:
+  - pinentry-emacs
 
 desktop_minimal_packages:
   - alacritty
@@ -222,6 +221,28 @@ desktop_hyprland_packages:
   - xdg-desktop-portal-hyprland
   - xorg-server-xwayland
 
+desktop_niri_packages:
+  - cliphist
+  - dunst
+  - foot
+  - foot-terminfo
+  - gtklock
+  - grim
+  - niri
+  - rofi
+  - slurp
+  - SwayOSD
+  - Waybar
+  - wl-clipboard
+  - xdg-desktop-portal-gtk
+  - xorg-server-xwayland
+
+void_lab_packages:
+  - llvm
+  - podman
+  - qemu
+  - smartmontools
+
 profile_packages:
   - bash-language-server
   - bluez
@@ -231,7 +252,6 @@ profile_packages:
   - deluge-gtk
   - delve
   - dnsmasq
-  - emacs-pgtk
   - poppler-glib
   - poppler-utils
   - fontconfig-devel
@@ -273,3 +293,6 @@ profile_packages:
   - yaru
   - yaru-plus
   - zstd
+
+profile_emacs_packages:
+  - emacs-pgtk

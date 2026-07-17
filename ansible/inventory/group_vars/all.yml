@@ -7,6 +7,7 @@ user_shell: /bin/bash
 effective_username: "{{ username }}"
 effective_user_group: "{{ user_group }}"
 effective_user_home: "{{ user_home }}"
+emacs_enabled: false
 
 xdg_user_directories:
   - Desktop

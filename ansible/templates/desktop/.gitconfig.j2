@@ -29,8 +29,18 @@
 [mergetool]
   prompt = false
 
+[mergetool "meld"]
+  cmd = meld "$LOCAL" "$BASE" "$REMOTE" --output "$MERGED"
+  trustExitCode = false
+
 [diff]
   tool = meld
+
+[difftool]
+  prompt = false
+
+[difftool "meld"]
+  cmd = meld "$LOCAL" "$REMOTE"
 
 [color]
   ui = always

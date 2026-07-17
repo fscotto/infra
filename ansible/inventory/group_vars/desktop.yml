@@ -1,6 +1,4 @@
 ---
-desktop_protonmail_bridge_cert_path: ~/.var/app/ch.protonmail.protonmail-bridge/config/protonmail/bridge-v3/cert.pem
-
 desktop_environment: minimal
 desktop_allow_display_manager_switch: false
 
@@ -96,10 +94,6 @@ desktop_common_dotfiles:
     src: .bashrc.d/20-editor-desktop.sh
     dest: .bashrc.d/20-editor-desktop.sh
     mode: "0644"
-  - name: Bash Emacs client fragment
-    src: .bashrc.d/25-emacs-client-desktop.sh
-    dest: .bashrc.d/25-emacs-client-desktop.sh
-    mode: "0644"
   - name: Bash VM helper fragment
     src: .bashrc.d/30-runvm.sh
     dest: .bashrc.d/30-runvm.sh
@@ -172,6 +166,10 @@ desktop_minimal_managed_paths:
   - .local/bin/udiskie-password
 
 desktop_emacs_dotfiles:
+  - name: Bash Emacs client fragment
+    src: .bashrc.d/25-emacs-client-desktop.sh
+    dest: .bashrc.d/25-emacs-client-desktop.sh
+    mode: "0644"
   - name: Emacs config
     src: .emacs.d/
     dest: .emacs.d/
@@ -239,6 +237,28 @@ desktop_hyprland_dotfiles:
   - name: foot config
     src: .config/foot/
     dest: .config/foot/
+    mode: preserve
+
+desktop_niri_dotfiles:
+  - name: foot config
+    src: .config/foot/
+    dest: .config/foot/
+    mode: preserve
+  - name: dunst config
+    src: .config/dunst/
+    dest: .config/dunst/
+    mode: preserve
+  - name: rofi config
+    src: .config/rofi/
+    dest: .config/rofi/
+    mode: preserve
+  - name: waybar config
+    src: .config/waybar/
+    dest: .config/waybar/
+    mode: preserve
+  - name: niri config
+    src: .config/niri/
+    dest: .config/niri/
     mode: preserve
 
 desktop_xfce_dotfiles:

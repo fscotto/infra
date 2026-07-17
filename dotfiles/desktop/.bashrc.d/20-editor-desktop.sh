@@ -1,2 +1,2 @@
 export EDITOR=vim
-export VISUAL=emacs
+export VISUAL=vim

@@ -59,12 +59,6 @@
 (with-eval-after-load 'vterm
   (define-key vterm-mode-map (kbd "C-c C-t") #'vterm-copy-mode))
 
-;; -------- mu4e --------
-(autoload 'mu4e "mu4e" nil t)
-(autoload 'mu4e-compose-new "mu4e" nil t)
-(global-set-key (kbd "C-x m") #'mu4e-compose-new)
-(define-key fscotto/open (kbd "m") #'mu4e)
-
 ;; -------- elfeed --------
 (autoload 'elfeed "elfeed" nil t)
 (define-key fscotto/open (kbd "f") #'fscotto/elfeed-load-db-and-open)

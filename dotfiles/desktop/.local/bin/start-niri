@@ -1,0 +1,27 @@
+#!/bin/sh
+
+[ -r /etc/profile ]    && . /etc/profile
+[ -r "$HOME/.profile" ] && . "$HOME/.profile"
+
+export XDG_CURRENT_DESKTOP=niri
+export XDG_SESSION_DESKTOP=niri
+export XDG_SESSION_TYPE=wayland
+
+export MOZ_ENABLE_WAYLAND=1
+export QT_QPA_PLATFORM='wayland;xcb'
+export _JAVA_AWT_WM_NONREPARENTING=1
+export SDL_VIDEODRIVER=wayland
+export GDK_BACKEND='wayland,x11'
+
+export SSH_AUTH_SOCK="$HOME/.local/state/ssh-agent/socket"
+
+# Per-host session environment (GPU / Wayland tuning, etc.)
+[ -r "$HOME/.config/niri/session-env" ] && . "$HOME/.config/niri/session-env"
+
+exec dbus-run-session sh -eu -c '
+  umask 077
+  printf "%s\n" "$DBUS_SESSION_BUS_ADDRESS" > "$HOME/.dbus-session-bus-address"
+  gpgconf --launch gpg-agent
+  "$HOME/.local/bin/update-turnstile-env"
+  exec niri --session
+'

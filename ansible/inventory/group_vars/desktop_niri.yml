@@ -1,0 +1,5 @@
+---
+desktop_profile: niri
+desktop_sessions_enabled:
+  - niri
+desktop_default_session: niri

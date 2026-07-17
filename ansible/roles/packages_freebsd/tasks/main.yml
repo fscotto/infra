@@ -1,0 +1,34 @@
+---
+- name: Install packages on FreeBSD
+  tags: [packages]
+  community.general.pkgng:
+    name: >-
+      {{
+        (
+          (freebsd_packages_base | default([]))
+          + (freebsd_development_packages | default([]))
+          + (
+              (freebsd_desktop_common_packages | default([]))
+              if 'graphical_desktop' in group_names
+              else []
+            )
+          + (
+              (freebsd_hyprland_packages | default([]))
+              if 'desktop_hyprland' in group_names
+              else []
+            )
+          + (
+              (freebsd_niri_packages | default([]))
+              if 'desktop_niri' in group_names
+              else []
+            )
+          + (
+              (freebsd_lab_packages | default([]))
+              if 'role_lab' in group_names
+              else []
+            )
+          + (host_packages | default([]))
+        )
+        | unique
+      }}
+    state: present

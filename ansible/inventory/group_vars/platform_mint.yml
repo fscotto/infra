@@ -1,0 +1,100 @@
+---
+platform_profile: mint
+platform_family: debian
+platform_package_manager: apt
+platform_service_manager: systemd
+
+# syncthing runs per-user via the packaged system unit template
+# (Debian/Mint ship syncthing@.service, parametrised by username).
+enabled_services:
+  - "syncthing@{{ username }}.service"
+
+mint_manage_flatpak: true
+mint_flatpak_remote_name: flathub
+mint_flatpak_remote_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+
+mint_packages_base:
+  - ca-certificates
+  - curl
+  - flatpak
+  - gpg
+  - htop
+  - make
+  - python3-pip
+  - ripgrep
+  - rsync
+  - shellcheck
+
+mint_development_packages:
+  - build-essential
+  - clang
+  - clang-tools
+  - cmake
+  - gdb
+  - golang
+  - nodejs
+  - npm
+  - pkg-config
+  - python3-venv
+
+mint_desktop_common_packages:
+  - dconf-cli
+  - deja-dup
+  - firefox
+  - fonts-liberation
+  - fonts-noto-color-emoji
+  - git-delta
+  - gnome-keyring
+  - libsecret-tools
+  - mpv
+  - pinentry-gnome3
+  - pinentry-gtk2
+  - rclone
+  - syncthing
+  - thunderbird
+  - tmux
+  - xdg-user-dirs
+  - yt-dlp
+
+mint_emacs_packages:
+  - autoconf
+  - automake
+  - emacs
+  - hunspell
+  - hunspell-it
+  - libfreetype-dev
+  - libpoppler-glib-dev
+  - libpoppler-private-dev
+  - libtool-bin
+  - libvterm-dev
+  - libx11-dev
+
+mint_cinnamon_packages:
+  - cinnamon
+  - cinnamon-control-center
+  - cinnamon-screensaver
+  - lightdm
+  - slick-greeter
+  - xdg-desktop-portal
+  - xdg-desktop-portal-gtk
+
+mint_personal_workstation_packages:
+  - libreoffice
+  - meld
+  - pdfarranger
+  - vim
+
+mint_flatpak_packages:
+  - ch.protonmail.protonmail-bridge
+  - com.calibre_ebook.calibre
+  - com.spotify.Client
+  - org.telegram.desktop
+
+# Nerd Fonts referenced by the desktop configs deployed on Mint. Debian has no
+# equivalent of Void's nerd-fonts-ttf package, so they are fetched from the
+# upstream ryanoasis/nerd-fonts release.
+mint_nerd_fonts_version: v3.3.0
+mint_nerd_fonts:
+  - Hack
+  - UbuntuSans
+  - NerdFontsSymbolsOnly

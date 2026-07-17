@@ -1,0 +1,34 @@
+---
+# Optional inventory overlay for VM tests. It is not loaded by ansible.cfg.
+all:
+  children:
+    platform_mint:
+      hosts:
+        minttest:
+          ansible_connection: local
+
+    platform_freebsd:
+      hosts:
+        freebsdtest:
+          ansible_connection: local
+
+    graphical_desktop:
+      hosts:
+        minttest:
+        freebsdtest:
+
+    role_personal_workstation:
+      hosts:
+        minttest:
+
+    role_lab:
+      hosts:
+        freebsdtest:
+
+    desktop_cinnamon:
+      hosts:
+        minttest:
+
+    desktop_hyprland:
+      hosts:
+        freebsdtest:

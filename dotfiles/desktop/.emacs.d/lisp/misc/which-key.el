@@ -24,7 +24,7 @@
     "C-c p" "Project"
     "C-c d" "Debug"
     "C-c g" "Git"
-    "C-c e" "Email / Elfeed")
+    "C-c e" "Elfeed")
 
   ;; --------------------------------------------------------------------------
   ;; Open (C-c o …)
@@ -33,7 +33,6 @@
     "C-c o d" "Dirvish"
     "C-c o f" "RSS (Elfeed)"
     "C-c o l" "LLM chat (gptel)"
-    "C-c o m" "mu4e (Email Client)"
     "C-c o T" "Terminal (multi-vterm)"
     "C-c o z" "Ztree diff")
 

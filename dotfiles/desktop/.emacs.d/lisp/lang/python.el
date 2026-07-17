@@ -1,6 +1,8 @@
 ;;; python.el -*- lexical-binding: t; -*-
 
-(require 'reformatter)
+(use-package reformatter
+  :ensure t
+  :demand t)
 
 (with-eval-after-load 'project
   (add-to-list 'project-vc-extra-root-markers "pyproject.toml")

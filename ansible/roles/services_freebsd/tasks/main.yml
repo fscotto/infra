@@ -1,0 +1,20 @@
+---
+- name: Configure FreeBSD rc.conf values
+  tags: [services, packages]
+  community.general.sysrc:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+  loop: "{{ freebsd_rc_conf | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Enable FreeBSD rc services
+  tags: [services, packages]
+  ansible.builtin.service:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop: "{{ freebsd_enabled_services | default([]) + host_enabled_services | default([]) }}"
+  loop_control:
+    label: "{{ item }}"

@@ -9,7 +9,7 @@
         or (desktop_sessions_enabled | default([]) | length > 0)
       - >-
         (desktop_environment | default('minimal')) != 'minimal'
-        or (desktop_sessions_enabled | default([]) | difference(['sway', 'hyprland']) | length == 0)
+        or (desktop_sessions_enabled | default([]) | difference(['sway', 'hyprland', 'niri']) | length == 0)
       - >-
         (desktop_environment | default('minimal')) != 'minimal'
         or desktop_default_session in (desktop_sessions_enabled | default([]))
@@ -315,32 +315,18 @@
     group: "{{ user_group }}"
     mode: "{{ item.mode }}"
   loop: "{{ desktop_emacs_dotfiles | default([]) }}"
+  when: emacs_enabled | default(false) | bool
   loop_control:
     label: "{{ item.dest }}"
 
-- name: Render desktop templates with private values
-  tags: [dotfiles, dotfiles:desktop]
+- name: Render git configuration with private values
+  tags: [dotfiles, dotfiles:desktop, git]
   ansible.builtin.template:
-    src: "{{ item.src }}"
-    dest: "{{ user_home }}/{{ item.dest }}"
+    src: desktop/.gitconfig.j2
+    dest: "{{ user_home }}/.gitconfig"
     owner: "{{ username }}"
     group: "{{ user_group }}"
-    mode: "{{ item.mode }}"
-  loop:
-    - src: desktop/.gitconfig.j2
-      dest: .gitconfig
-      mode: "0644"
-    - src: desktop/.mbsyncrc.j2
-      dest: .mbsyncrc
-      mode: "0600"
-    - src: desktop/.msmtprc.j2
-      dest: .msmtprc
-      mode: "0600"
-    - src: desktop/email.el.j2
-      dest: .emacs.d/lisp/misc/email.el
-      mode: "0644"
-  loop_control:
-    label: "{{ item.dest }}"
+    mode: "0644"
 
 - name: Define managed tmux plugin directories
   tags: [dotfiles, dotfiles:desktop, tmux]
@@ -450,19 +436,6 @@
       mode: "0755"
     - path: /usr/src
       mode: "0755"
-
-- name: Ensure maildir directories exist
-  tags: [dotfiles, dotfiles:desktop]
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: directory
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
-    mode: "0700"
-  loop:
-    - "{{ user_home }}/Maildir"
-    - "{{ user_home }}/Maildir/iCloudAccount"
-    - "{{ user_home }}/Maildir/ProtonMailAccount"
 
 - name: Make Qt apps follow the GTK theme
   tags: [theme]
@@ -592,7 +565,7 @@
     label: "{{ item.name }}"
 
 - name: Install desktop Python tools with uv
-  tags: [packages, emacs]
+  tags: [packages]
   ansible.builtin.command:
     cmd: "uv tool install --upgrade {{ item }}"
   become: true

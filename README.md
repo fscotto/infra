@@ -70,7 +70,7 @@ Matrice target:
 
 | Host           | Platform   | Role                 | Desktop                           |
 | -------------- | ---------- | -------------------- | --------------------------------- |
-| ikaros         | Linux Mint | Personal workstation | Cinnamon                          |
+| ikaros         | Fedora     | Personal workstation | GNOME                             |
 | nymph          | Fedora     | Desktop laptop       | GNOME                             |
 | void-reference | Void Linux | Lab/reference        | Current preserved desktop profile |
 
@@ -81,8 +81,8 @@ ikaros must be boring
 nymph is allowed to break
 ```
 
-`ikaros` usa il target stabile Linux Mint/Cinnamon; `nymph` usa il target
-Fedora Workstation/GNOME. I gruppi legacy `void` e `desktop` restano alias di
+`ikaros` usa Fedora Workstation/GNOME come desktop personale stabile; `nymph` usa lo stesso
+target Fedora Workstation/GNOME come laptop. I gruppi legacy `void` e `desktop` restano alias di
 compatibilita per eventuali host Void futuri mentre i nuovi assi sono
 `platform_*`, `role_*` e `desktop_*`.
 
@@ -96,8 +96,7 @@ git tag void-desktop-before-platform-refactor
 
 Nota sullo stato attuale del playbook principale:
 
-- `ansible/site.yml` applica oggi in automatico Cinnamon su Linux Mint e Niri su FreeBSD
-- `ansible/site.yml` applica la workstation Linux nativa separando il layer dev comune dal layer host GNOME
+- `ansible/site.yml` applica oggi in automatico GNOME su Fedora e Niri su FreeBSD
 - `ansible/site.yml` applica anche il ramo `workstation_dev_wsl` per il modello dev in WSL
 - `ansible/site.yml` applica anche il profilo `ubuntu_server` con baseline apt, systemd, dotfiles server e firewall UFW
 
@@ -105,7 +104,7 @@ Nota sullo stato attuale del playbook principale:
 
 Target operativi:
 
-- `ikaros`: Linux Mint + Cinnamon, desktop personale stabile/floating.
+- `ikaros`: Fedora Workstation + GNOME, desktop personale stabile/floating.
 - `nymph`: Fedora Workstation + GNOME, laptop desktop con dotfiles desktop condivisi e GNOME lasciato al default Fedora.
 
 Il profilo Void desktop resta disponibile come modello riutilizzabile per host
@@ -150,8 +149,7 @@ Desktop environment host Linux:
 
 Macchine attuali:
 
-- `deadalus-fedora` come workstation Fedora nativa
-- `deadalus-wsl` come ambiente dev Ubuntu in WSL
+- `deadalus-wsl` come ambiente dev Ubuntu in WSL sulla workstation Windows `deadalus`
 
 Questo profilo è pensato per sviluppo e lavoro, con separazione tra layer host e layer dev.
 
@@ -160,8 +158,8 @@ Nel modello Ansible usato qui, un singolo inventory host puo appartenere intenzi
 Il profilo workstation e agganciato al playbook principale e ora distingue:
 
 - layer dev Ubuntu condiviso tra WSL e server
-- layer dev Fedora nativo
-- layer host Linux GNOME
+- layer dev Fedora nativo disponibile per host futuri
+- layer host Linux GNOME disponibile per host futuri
 - layer WSL dedicato per sviluppo con `systemd`
 
 Per esempio, lo stesso host Linux puo stare in `workstation_host_linux` e in `workstation_dev_fedora`, a seconda del layering che vuoi comporre.
@@ -175,8 +173,7 @@ Lo stato attuale del profilo workstation include:
 - installazione di Google Chrome su Fedora, `VS Code` su Fedora via repository RPM Microsoft, `IntelliJ IDEA Ultimate` su Fedora via COPR RPM, e applicazioni workstation residue su Fedora via Flatpak
 - estensioni GNOME sul solo host Linux nativo
 - preparazione del ramo WSL Ubuntu con `systemd` per il toolchain di sviluppo
-- attivazione del firewall `firewalld` su Fedora nativa
-- gestione di `gsettings` GNOME host-specifici su `deadalus-fedora`, inclusi shell, Files/Nautilus, file chooser GTK e GNOME Text Editor, allineati allo stato reale della macchina
+- attivazione del firewall `firewalld` su Fedora
 
 Workflow WSL previsto:
 
@@ -251,7 +248,7 @@ common configuration
 Esempi correnti:
 
 ```text
-ikaros -> common + platform_mint + role_personal_workstation + desktop_cinnamon + ikaros
+ikaros -> common + platform_fedora + role_personal_workstation + graphical_desktop + desktop_gnome + ikaros
 nymph  -> common + platform_fedora + graphical_desktop + desktop_gnome + nymph
 ```
 
@@ -313,6 +310,7 @@ platform_freebsd -> packages_freebsd + services_freebsd
 platform_freebsd & role_lab -> profile_lab
 platform_freebsd & desktop_niri -> profile_desktop_niri_freebsd
 platform_fedora -> packages_fedora + services_systemd
+platform_fedora & role_personal_workstation -> profile_personal_workstation
 platform_fedora & desktop_gnome -> profile_desktop_gnome
 workstation_dev_fedora -> profile_workstation_dev_common
 workstation_host_linux -> profile_workstation_gnome
@@ -322,10 +320,9 @@ ubuntu_server -> packages_ubuntu + services_systemd + profile_server
 
 Questo significa che, allo stato attuale:
 
-- `ikaros` riceve Linux Mint/Cinnamon come target stabile
+- `ikaros` riceve Fedora Workstation/GNOME come target desktop personale stabile
 - `nymph` riceve Fedora Workstation/GNOME come target laptop
 - il profilo Void resta selezionabile tramite `platform_void + graphical_desktop` per host futuri
-- la workstation Fedora (`deadalus-fedora`) usa il principio di composizione a gruppi con il ramo Fedora dedicato e con `gsettings` host-specifici dichiarati in inventory
 - il ramo WSL (`deadalus-wsl`) e predisposto con play dev dedicato
 - il server Ubuntu (`prometheus`) e gestito con pacchetti, servizi, dotfiles server e firewall
 - lo stack container server include `navidrome`, `postgres`, `gitea`, `nginx-proxy-manager` e `syncthing`, con GUI Syncthing raggiungibile tramite la rete Docker `web`
@@ -417,7 +414,6 @@ ansible-playbook ansible/site.yml --syntax-check
 ansible-playbook ansible/site.yml --limit ikaros,nymph --check --diff
 ansible-playbook ansible/site.yml --limit ikaros --check --diff
 ansible-playbook ansible/site.yml --limit nymph --check --diff
-ansible-playbook ansible/site.yml --limit deadalus-fedora --check --diff
 ansible-playbook ansible/site.yml --limit deadalus-wsl --check --diff
 ansible-playbook ansible/site.yml --limit prometheus --check --diff
 ansible-lint ansible/site.yml
@@ -488,8 +484,7 @@ Esempi pratici:
 
 ```bash
 ansible-playbook ansible/site.yml --limit nymph --tags dotfiles:desktop,niri --check --diff
-ansible-playbook ansible/site.yml --limit ikaros --tags cinnamon --check --diff
-ansible-playbook ansible/site.yml --limit deadalus-fedora --tags packages,vscode --check --diff
+ansible-playbook ansible/site.yml --limit ikaros --tags gnome --check --diff
 ansible-playbook ansible/site.yml --limit prometheus --tags services,dotfiles:server --check --diff
 ```
 

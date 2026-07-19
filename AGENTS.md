@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Ansible-driven personal infrastructure repo for Fedora and Void desktops, Linux Mint and FreeBSD transition targets, Linux workstations, WSL, and an Ubuntu server.
+Ansible-driven personal infrastructure repo for Fedora and Void desktops, Linux Mint and FreeBSD transition targets, WSL, and an Ubuntu server.
 
 ## Source Of Truth
 - Main orchestration: `ansible/site.yml`
@@ -11,11 +11,10 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Linux 
 - Codex config is rendered from `dotfiles/common/.codex/config.toml.j2` so `model_instructions_file` points to the deployed `~/.config/ai/bootstrap.md`.
 
 ## Topology
-- Current personal desktop: `ikaros = platform_mint + role_personal_workstation + desktop_cinnamon`
+- Current personal desktop: `ikaros = platform_fedora + role_personal_workstation + graphical_desktop + desktop_gnome`
 - Current laptop: `nymph = platform_fedora + graphical_desktop + desktop_gnome`
 - Void desktop profile is also the base for other future/reference hosts via `platform_void + graphical_desktop`
-- Native Linux workstation: `deadalus-fedora`
-- WSL dev: `deadalus-wsl`
+- Workstation: `deadalus` is Windows + WSL; Ansible target is `deadalus-wsl`
 - Ubuntu server: `prometheus`
 - Hosts intentionally belong to multiple groups; trust `ansible/site.yml` over hostname assumptions.
 - Inventory axes are independent: `platform_*`, `role_*`, and `desktop_*`. Legacy `void` and `desktop` remain compatibility parents.
@@ -37,9 +36,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Linux 
   - `ansible-lint ansible/roles`
   - `yamllint ansible/`
 - Host-focused dry runs:
-  - Mint desktop work: `ansible-playbook ansible/site.yml --limit ikaros --check --diff`
+  - Fedora desktop work: `ansible-playbook ansible/site.yml --limit ikaros --check --diff`
   - Fedora laptop work: `ansible-playbook ansible/site.yml --limit nymph --check --diff`
-  - Fedora workstation: `ansible-playbook ansible/site.yml --limit deadalus-fedora --check --diff`
   - WSL dev: `ansible-playbook ansible/site.yml --limit deadalus-wsl --check --diff`
   - Server: `ansible-playbook ansible/site.yml --limit prometheus --check --diff`
 - Focused checks:
@@ -67,7 +65,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Linux 
   - `dotfiles/desktop/.config/hypr/hyprland.conf` plus `host.conf` and `session-env` deployed via `host_hyprland_dotfiles` (Hyprland / Wayland)
   - `dotfiles/desktop/.config/niri/config.kdl` and `session-env` deployed via `desktop_niri_dotfiles` (Niri / Wayland)
 - Void Niri lives in `profile_desktop_niri`, gated on `'niri' in desktop_sessions_enabled`; it installs the `emptty` `niri.desktop` session, the `/usr/local/bin/start-niri` launcher, and the xdg-desktop-portal config, mirroring `profile_desktop_sway`.
-- Fedora GNOME (`desktop_gnome`) assumes GNOME comes from the Fedora Workstation base install; Ansible only deploys shared desktop dotfiles and git/GPG config for `nymph`, not GNOME settings.
+- Fedora GNOME (`desktop_gnome`) assumes GNOME comes from the Fedora Workstation base install; Ansible deploys shared desktop dotfiles and git/GPG config for `ikaros` and `nymph`, not GNOME settings.
 - FreeBSD Niri (dormant; `platform_freebsd` currently has no hosts) must keep FreeBSD-specific package, rc, DBus, seat, portal, and launcher behavior in `profile_desktop_niri_freebsd` or FreeBSD platform vars.
 - Do not switch or restart a display manager during a playbook run from an active graphical session. Changing among `emptty`, LightDM, and SDDM requires an explicit run from another TTY/SSH session with `desktop_allow_display_manager_switch=true`. Apply managed XFCE XML while logged out of XFCE so `xfconfd` cannot overwrite it from its in-memory state.
 - `nymph` is the Fedora/GNOME laptop target; keep GNOME settings unmanaged for now and add host-specific tuning only after real use.
@@ -83,8 +81,8 @@ The Void desktop package lists in `ansible/inventory/group_vars/void.yml` are ke
 The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-independent content, `desktop_minimal_dotfiles` carries Thunar, Udiskie, and minimal MIME defaults, and `desktop_xfce_dotfiles` carries XFCE state. KDE uses its own MIME defaults. `desktop_void_dotfiles` remains reserved for files that need the Void runtime.
 
 ## Workstation Notes
-- Native Linux workstation hosts can combine `workstation_host_linux` with an OS-specific dev group.
-- `deadalus-fedora` keeps GNOME managed settings in `ansible/inventory/host_vars/deadalus-fedora.yml`.
+- `deadalus` is modeled as Windows + WSL; keep Linux dev automation on `deadalus-wsl`.
+- Native Linux workstation groups remain available for future hosts but have no current host in the main inventory.
 
 ## Coding Agent Notes
 - Shared agent packages live in `ai_agents_npm_packages` in `ansible/inventory/group_vars/all.yml`.

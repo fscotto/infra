@@ -102,6 +102,13 @@
     - packages_fedora
     - services_systemd
 
+- name: Configure personal workstation role on Fedora
+  hosts: platform_fedora:&role_personal_workstation
+  become: true
+
+  roles:
+    - profile_personal_workstation
+
 - name: Configure Fedora GNOME desktop
   hosts: platform_fedora:&desktop_gnome
   become: true

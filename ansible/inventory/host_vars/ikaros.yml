@@ -2,16 +2,12 @@
 hostname: ikaros
 
 host_packages:
-  - openssh-client
+  - openssh-clients
   - openssh-server
   - mesa-vulkan-drivers
-  - xserver-xorg-video-amdgpu
 
-host_ufw_rules:
-  - rule: allow
-    port: "22"
-    proto: tcp
-    src: "192.168.0.0/24"
+host_firewalld_rich_rules:
+  - rule family="ipv4" source address="192.168.0.0/24" service name="ssh" accept
 
 host_sshd_settings:
   PermitRootLogin: "no"
@@ -25,4 +21,4 @@ host_sshd_allow_users:
 host_authorized_ssh_keys: "{{ vault_ikaros_authorized_ssh_keys | default([]) }}"
 
 host_enabled_services:
-  - ssh
+  - sshd

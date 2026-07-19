@@ -190,12 +190,27 @@
   loop: "{{ desktop_ufw_rules_effective }}"
   loop_control:
     label: "{{ item.name | default(item.port) }}"
+  when: workstation_firewall_backend | default('ufw') == 'ufw'
 
 - name: Enable UFW firewall on desktop when host rules are defined
   tags: [services, packages]
   community.general.ufw:
     state: enabled
-  when: (desktop_ufw_rules_effective | default([])) | length > 0
+  when:
+    - workstation_firewall_backend | default('ufw') == 'ufw'
+    - (desktop_ufw_rules_effective | default([])) | length > 0
+
+- name: Apply host firewalld rich rules on desktop
+  tags: [services, packages]
+  ansible.posix.firewalld:
+    rich_rule: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop: "{{ host_firewalld_rich_rules | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  when: workstation_firewall_backend | default('ufw') == 'firewalld'
 
 - name: Check whether libvirt service directory exists
   tags: [packages, services]

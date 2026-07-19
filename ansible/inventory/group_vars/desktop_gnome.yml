@@ -19,6 +19,7 @@ fedora_desktop_packages:
   - poppler-utils
   - fontconfig-devel
   - freetype-devel
+  - gh
   - golang
   - golangci-lint
   - gopls

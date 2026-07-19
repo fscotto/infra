@@ -36,7 +36,6 @@ infra/
 │   ├── workstation/
 │   ├── workstation_host_linux/
 │   ├── workstation_dev_wsl/
-│   ├── ikaros/
 │   └── nymph/
 │
 ├── scripts/
@@ -55,8 +54,8 @@ Il repository è diviso in due componenti principali:
 
 # Macchine gestite
 
-Il repository modella attualmente tre tipologie di profilo, con i filoni workstation Linux nativa e WSL.
-La nuova direzione del repository separa tre assi indipendenti:
+Il repository modella attualmente host Fedora/GNOME, un ambiente WSL di sviluppo e un server Ubuntu.
+La composizione resta separata in assi indipendenti:
 
 ```text
 common user environment
@@ -86,17 +85,9 @@ target Fedora Workstation/GNOME come laptop. I gruppi legacy `void` e `desktop` 
 compatibilita per eventuali host Void futuri mentre i nuovi assi sono
 `platform_*`, `role_*` e `desktop_*`.
 
-Prima di una migrazione reale degli host e consigliato creare uno snapshot
-logico, per esempio:
-
-```bash
-git switch -c refactor/platform-role-desktop
-git tag void-desktop-before-platform-refactor
-```
-
 Nota sullo stato attuale del playbook principale:
 
-- `ansible/site.yml` applica oggi in automatico GNOME su Fedora e Niri su FreeBSD
+- `ansible/site.yml` applica oggi in automatico Fedora/GNOME su `ikaros` e `nymph`
 - `ansible/site.yml` applica anche il ramo `workstation_dev_wsl` per il modello dev in WSL
 - `ansible/site.yml` applica anche il profilo `ubuntu_server` con baseline apt, systemd, dotfiles server e firewall UFW
 
@@ -140,10 +131,10 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 
 Sistemi operativi supportati:
 
-- Fedora Workstation nativa
-- Ubuntu WSL
+- Ubuntu WSL, attualmente usato da `deadalus-wsl`
+- Fedora Workstation nativa, disponibile per host futuri tramite gruppi dedicati
 
-Desktop environment host Linux:
+Desktop environment host Linux, per eventuali workstation native:
 
 - GNOME
 
@@ -167,13 +158,13 @@ Per esempio, lo stesso host Linux puo stare in `workstation_host_linux` e in `wo
 Lo stato attuale del profilo workstation include:
 
 - installazione pacchetti base Ubuntu via apt
-- installazione pacchetti base Fedora via dnf per il ramo workstation nativo
+- installazione pacchetti base Fedora via dnf per eventuali workstation native
 - installazione e configurazione di Docker dal repository ufficiale
 - gestione dei dotfiles workstation e rendering dei template dev condivisi
-- installazione di Google Chrome su Fedora, `VS Code` su Fedora via repository RPM Microsoft, `IntelliJ IDEA Ultimate` su Fedora via COPR RPM, e applicazioni workstation residue su Fedora via Flatpak
-- estensioni GNOME sul solo host Linux nativo
+- installazione opzionale di Google Chrome, VS Code, IntelliJ IDEA Ultimate e applicazioni Flatpak per eventuali workstation Fedora native
+- estensioni GNOME per eventuali host Linux nativi
 - preparazione del ramo WSL Ubuntu con `systemd` per il toolchain di sviluppo
-- attivazione del firewall `firewalld` su Fedora
+- attivazione del firewall `firewalld` sui target Fedora che dichiarano regole host-specifiche
 
 Workflow WSL previsto:
 
@@ -281,6 +272,7 @@ I principali ruoli attualmente presenti sono:
 | profile_desktop_gnome     | dotfiles desktop condivisi per Fedora/GNOME |
 | profile_desktop_sway      | sessione desktop sway / SwayFX (Wayland) |
 | profile_desktop_hyprland  | sessione desktop Hyprland (Wayland) |
+| profile_desktop_niri     | sessione desktop Niri su Void (Wayland) |
 | profile_desktop_niri_freebsd | adattamenti FreeBSD per Niri |
 | profile_desktop_cinnamon  | impostazioni Cinnamon circoscritte |
 | profile_desktop_host      | override desktop specifici per host |
@@ -302,7 +294,7 @@ Il playbook `ansible/site.yml` e attualmente composto da blocchi per asse:
 ```text
 all -> dotfiles_common
 platform_void -> packages_void + services_runit
-platform_void & graphical_desktop -> profile_desktop_common + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_kde + profile_desktop_xfce + profile_desktop_host
+platform_void & graphical_desktop -> profile_desktop_common + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_niri + profile_desktop_kde + profile_desktop_xfce + profile_desktop_host
 platform_mint -> packages_mint + services_systemd
 platform_mint & role_personal_workstation -> profile_personal_workstation
 platform_mint & desktop_cinnamon -> profile_desktop_cinnamon
@@ -341,7 +333,6 @@ dotfiles/
 ├── workstation
 ├── workstation_host_linux
 ├── workstation_dev_wsl
-├── ikaros
 └── nymph
 ```
 
@@ -397,11 +388,11 @@ Allo stato attuale questo comando:
 - distribuisce i dotfiles comuni a tutti gli host
 - per `platform_void` applica pacchetti Void e servizi runit
 - per `platform_void + graphical_desktop` applica bootstrap desktop condiviso, sessioni sway/Hyprland/Niri e override specifici per host
-- per `platform_mint` e `platform_freebsd` applica solo host presenti esplicitamente in quei gruppi; nell'inventory principale iniziale questi gruppi sono vuoti
-- per `platform_fedora` applica pacchetti Fedora e servizi systemd
-- per `workstation_dev_fedora` applica il profilo dev comune
-- per `workstation_host_linux` applica il layer host Linux GNOME
-- per `workstation_dev_wsl` applica pacchetti Ubuntu, servizi systemd, profilo dev comune e tweak WSL dedicati
+- per `platform_mint`, `platform_freebsd`, `workstation_dev_fedora` e `workstation_host_linux` non applica nulla finche quei gruppi restano senza host
+- per `platform_fedora` applica pacchetti Fedora e servizi systemd a `ikaros` e `nymph`
+- per `platform_fedora & role_personal_workstation` applica il layer personale a `ikaros`
+- per `platform_fedora & desktop_gnome` applica il profilo GNOME a `ikaros` e `nymph`
+- per `workstation_dev_wsl` applica pacchetti Ubuntu, servizi systemd, profilo dev comune e tweak WSL dedicati a `deadalus-wsl`
 - per gli host `ubuntu_server` applica pacchetti Ubuntu, servizi systemd, profilo server, UFW, dotfiles e template dedicati
 - non riavvia automaticamente il display manager; i passaggi tra `emptty`, LightDM e SDDM vanno applicati da SSH o da una TTY separata
 - carica `secrets/vault.yml` solo se presente
@@ -460,30 +451,30 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `always` | pre-task sempre eseguiti, inclusi caricamento vault e validazioni preliminari | common |
 | `dotfiles` | distribuzione/configurazione dotfiles | tutti i profili |
 | `dotfiles:common` | dotfiles comuni condivisi | common, workstation, server |
-| `dotfiles:desktop` | dotfiles desktop | desktop Void |
+| `dotfiles:desktop` | dotfiles desktop | desktop Void, Fedora/GNOME, FreeBSD/Niri |
 | `dotfiles:host` | override host-specifici desktop | desktop Void |
 | `dotfiles:server` | dotfiles dedicati al profilo server | server |
-| `dotfiles:workstation` | dotfiles dedicati alle workstation | workstation Linux, WSL |
+| `dotfiles:workstation` | dotfiles dedicati alle workstation | personal workstation, WSL, workstation Linux future |
 | `emptty` | gestione display manager `emptty` | desktop Void |
 | `display-manager` | selezione protetta tra `emptty`, LightDM e SDDM | desktop Void |
 | `kde` | profilo KDE Plasma e relativa pulizia | desktop Void |
 | `xfce` | profilo XFCE, LightDM e relativa pulizia | desktop Void |
 | `cinnamon` | impostazioni Cinnamon circoscritte | Linux Mint desktop |
-| `gnome` | configurazione host GNOME | workstation host Linux, parte desktop |
+| `gnome` | configurazione host GNOME | Fedora/GNOME desktop, workstation host Linux future |
 | `sway` | sessione/configurazione sway / SwayFX (Wayland) | desktop Void |
 | `hyprland` | sessione/configurazione Hyprland (Wayland) | desktop Void |
-| `niri` | sessione/configurazione Niri (Wayland) | FreeBSD laptop |
-| `npm` | installazione pacchetti npm globali | desktop Void, workstation Linux, WSL |
+| `niri` | sessione/configurazione Niri (Wayland) | Void o FreeBSD con `desktop_niri` |
+| `npm` | installazione pacchetti npm globali | Fedora/GNOME, desktop Void, workstation Linux, WSL |
 | `nvidia` | componenti NVIDIA desktop | desktop Void |
 | `packages` | installazione e aggiornamento pacchetti | tutti i profili |
 | `services` | gestione servizi runit/systemd | tutti i profili |
-| `vscode` | installazione/configurazione VS Code | Fedora, host Linux |
+| `vscode` | installazione/configurazione VS Code | workstation Fedora future, host Linux |
 | `wsl` | bootstrap e configurazione WSL | WSL |
 
 Esempi pratici:
 
 ```bash
-ansible-playbook ansible/site.yml --limit nymph --tags dotfiles:desktop,niri --check --diff
+ansible-playbook ansible/site.yml --limit nymph --tags dotfiles:desktop,gnome --check --diff
 ansible-playbook ansible/site.yml --limit ikaros --tags gnome --check --diff
 ansible-playbook ansible/site.yml --limit prometheus --tags services,dotfiles:server --check --diff
 ```

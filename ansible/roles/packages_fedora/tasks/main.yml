@@ -178,3 +178,54 @@
     remote: "{{ fedora_flatpak_remote_name | default('flathub') }}"
     method: system
   when: (packages_fedora_flatpak_packages | default([])) | length > 0
+
+- name: Ensure Fedora Nerd Fonts base directory exists
+  tags: [packages, fonts]
+  ansible.builtin.file:
+    path: /usr/local/share/fonts/nerd-fonts
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: (fedora_nerd_fonts | default([])) | length > 0
+
+- name: Ensure Fedora per-font Nerd Fonts directories exist
+  tags: [packages, fonts]
+  ansible.builtin.file:
+    path: "/usr/local/share/fonts/nerd-fonts/{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ fedora_nerd_fonts | default([]) }}"
+
+- name: Download Fedora Nerd Font archives
+  tags: [packages, fonts]
+  ansible.builtin.get_url:
+    url: "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ fedora_nerd_fonts_version }}/{{ item }}.zip"
+    dest: "/usr/local/share/fonts/nerd-fonts/{{ item }}.zip"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ fedora_nerd_fonts | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Extract Fedora Nerd Font archives
+  tags: [packages, fonts]
+  ansible.builtin.unarchive:
+    src: "/usr/local/share/fonts/nerd-fonts/{{ item }}.zip"
+    dest: "/usr/local/share/fonts/nerd-fonts/{{ item }}"
+    remote_src: true
+    owner: root
+    group: root
+  loop: "{{ fedora_nerd_fonts | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  register: fedora_nerd_fonts_extract
+
+- name: Refresh system font cache after installing Fedora Nerd Fonts
+  tags: [packages, fonts]
+  ansible.builtin.command: fc-cache -f
+  changed_when: false
+  when: fedora_nerd_fonts_extract is changed

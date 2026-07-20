@@ -99,18 +99,34 @@
       or (host_sshd_allow_users | default([])) | length > 0
     - not gnome_ssh_host_ed25519_key.stat.exists
 
-- name: Require authorized SSH keys before disabling password authentication on GNOME desktop
+- name: Define safe GNOME SSH daemon settings
   tags: [services, gnome]
-  ansible.builtin.assert:
-    that:
-      - (host_authorized_ssh_keys | default([])) | length > 0
-    fail_msg: >-
-      SSH password authentication is disabled for this host, but no authorized SSH
-      keys are defined. Set host_authorized_ssh_keys via vault variables before
-      applying this configuration.
+  ansible.builtin.set_fact:
+    gnome_sshd_settings_effective: >-
+      {{
+        host_sshd_settings | default({})
+        if (
+          (host_authorized_ssh_keys | default([])) | length > 0
+          or (host_sshd_settings | default({})).PasswordAuthentication | default('yes') != 'no'
+        )
+        else (
+          host_sshd_settings | default({}) | dict2items
+          | rejectattr('key', 'in', ['PasswordAuthentication', 'KbdInteractiveAuthentication'])
+          | items2dict
+        )
+      }}
+
+- name: Warn when keeping SSH password authentication enabled on GNOME desktop
+  tags: [services, gnome]
+  ansible.builtin.debug:
+    msg: >-
+      SSH password authentication hardening was skipped because no authorized SSH
+      keys are defined for this host. Set host_authorized_ssh_keys via vault
+      variables, then re-run the playbook to disable password authentication.
   when:
     - "'sshd' in (host_enabled_services | default([]))"
     - (host_sshd_settings | default({})).PasswordAuthentication | default('yes') == 'no'
+    - (host_authorized_ssh_keys | default([])) | length == 0
 
 - name: Ensure GNOME desktop user authorized_keys file exists
   tags: [services, dotfiles, gnome]
@@ -141,10 +157,10 @@
     state: present
     validate: "sshd -t -f %s"
   notify: Reload SSH service
-  loop: "{{ host_sshd_settings | default({}) | dict2items }}"
+  loop: "{{ gnome_sshd_settings_effective | default({}) | dict2items }}"
   loop_control:
     label: "{{ item.key }}"
-  when: (host_sshd_settings | default({})) | length > 0
+  when: (gnome_sshd_settings_effective | default({})) | length > 0
 
 - name: Restrict SSH login to allowed GNOME desktop users
   tags: [services, gnome]

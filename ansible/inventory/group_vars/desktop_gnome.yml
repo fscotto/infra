@@ -9,12 +9,14 @@ desktop_default_session: gnome
 fedora_desktop_packages:
   # Fedora equivalents of the development/tooling packages previously pulled by
   # the Void desktop profile.
+  - 7zip
   - nodejs-bash-language-server
   - bluez
   - bridge-utils
   - ctags
   - delve
   - dnsmasq
+  - fastfetch
   - poppler-glib
   - poppler-utils
   - fontconfig-devel
@@ -34,26 +36,42 @@ fedora_desktop_packages:
   - mpv
   - pdfarranger
   - pinentry-gnome3
+  - plocate
   - playerctl
+  - podman-compose
   - qemu
   - qemu-img
   - qemu-tools
+  - rclone
   - remmina
+  - ruff
   - rustup
   - rsync
   - shfmt
-  - ruff
+  - syncthing
+  - tealdeer
   - terminus-fonts
   - texlive
+  - tmux
   - ty
   - uv
   - virt-manager
   - virt-install
   - wireplumber
+  - yt-dlp
   - zstd
 
+fedora_nerd_fonts_version: v3.3.0
+fedora_nerd_fonts:
+  - Hack
+  - UbuntuSans
+  - NerdFontsSymbolsOnly
+
 fedora_flatpak_packages:
+  - be.alexandervanhee.gradia
   - ch.protonmail.protonmail-bridge
+  - com.spotify.Client
   - org.mozilla.thunderbird
+  - org.telegram.desktop
 
 fedora_npm_packages: "{{ ai_agents_npm_packages }}"

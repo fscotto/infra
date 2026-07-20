@@ -13,6 +13,8 @@ fedora_desktop_packages:
   - nodejs-bash-language-server
   - bluez
   - bridge-utils
+  - cmake
+  - cscope
   - ctags
   - delve
   - dnsmasq
@@ -29,6 +31,7 @@ fedora_desktop_packages:
   - libvirt
   - libreoffice
   - liberation-fonts
+  - libasan
   - libvterm-devel
   - libX11-devel
   - libXft-devel
@@ -55,6 +58,7 @@ fedora_desktop_packages:
   - tmux
   - ty
   - uv
+  - valgrind
   - virt-manager
   - virt-install
   - wireplumber

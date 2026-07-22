@@ -89,7 +89,7 @@ nnoremap <silent> <leader>h :set hlsearch!<CR>
 " ----------------------------------------------------------
 
 set updatetime=250
-set timeoutlen=400
+set timeoutlen=800
 set ttimeoutlen=10
 set shortmess+=c
 
@@ -217,12 +217,12 @@ function! s:FzfVersionOk() abort
     return 0
   endif
 
-  let l:version = matchstr(get(systemlist(l:fzf . " --version"), 0, ""), "^\d\+\.\d\+\.\d\+")
+  let l:version = matchstr(get(systemlist(l:fzf . " --version"), 0, ""), '^\d\+\.\d\+\.\d\+')
   if empty(l:version)
     return 0
   endif
 
-  let l:parts = map(split(l:version, "\."), "str2nr(v:val)")
+  let l:parts = map(split(l:version, '\.'), 'str2nr(v:val)')
   return l:parts[0] > s:fzf_min_version[0]
         \ || (l:parts[0] == s:fzf_min_version[0] && l:parts[1] > s:fzf_min_version[1])
         \ || (l:parts[0] == s:fzf_min_version[0] && l:parts[1] == s:fzf_min_version[1]

@@ -150,6 +150,125 @@ nnoremap <silent> <leader>g :silent grep! <C-R><C-W> .<CR>:copen<CR>
 nnoremap          <leader>/ :silent grep!<Space>
 
 " ----------------------------------------------------------
+" Optional plugins
+" ----------------------------------------------------------
+
+" Plugins are installed out-of-band by Ansible when available.  Keep this
+" vimrc usable as a standalone onefile: load optional packages only when they
+" exist and keep builtin fallbacks for the mappings below.
+let s:fzf_min_version = [0, 54, 0]
+
+function! s:PackAdd(package) abort
+  silent! execute "packadd " . a:package
+endfunction
+
+function! s:PackAddForCommand(package, command) abort
+  if exists(":" . a:command) == 2
+    return 1
+  endif
+
+  call s:PackAdd(a:package)
+  return exists(":" . a:command) == 2
+endfunction
+
+function! s:PackAddByRuntimeFile(runtime_file, command) abort
+  if exists(":" . a:command) == 2
+    return 1
+  endif
+
+  " Distro packages and source installs do not always use the same Vim package
+  " directory name.  Look for a package containing the expected runtime file and
+  " load it by its actual directory name.
+  for l:packpath in split(&packpath, ",")
+    let l:packages = glob(l:packpath . "/pack/*/opt/*", 0, 1)
+          \ + glob(l:packpath . "/pack/*/start/*", 0, 1)
+    for l:package_dir in l:packages
+      if filereadable(l:package_dir . "/" . a:runtime_file)
+        call s:PackAdd(fnamemodify(l:package_dir, ":t"))
+        if exists(":" . a:command) == 2
+          return 1
+        endif
+      endif
+    endfor
+  endfor
+
+  return 0
+endfunction
+
+let s:has_fzf = s:PackAddForCommand("fzf", "FZF")
+      \ || s:PackAddByRuntimeFile("plugin/fzf.vim", "FZF")
+let s:has_fzf_vim = s:has_fzf
+      \ && (s:PackAddForCommand("fzf.vim", "Files")
+      \     || s:PackAddByRuntimeFile("autoload/fzf/vim.vim", "Files"))
+let s:has_vim_fugitive = s:PackAddForCommand("vim-fugitive", "Git")
+      \ || s:PackAddByRuntimeFile("autoload/fugitive.vim", "Git")
+
+function! s:FzfExecutable() abort
+  if executable("fzf")
+    return "fzf"
+  endif
+
+  return ""
+endfunction
+
+function! s:FzfVersionOk() abort
+  let l:fzf = s:FzfExecutable()
+  if empty(l:fzf)
+    return 0
+  endif
+
+  let l:version = matchstr(get(systemlist(l:fzf . " --version"), 0, ""), "^\d\+\.\d\+\.\d\+")
+  if empty(l:version)
+    return 0
+  endif
+
+  let l:parts = map(split(l:version, "\."), "str2nr(v:val)")
+  return l:parts[0] > s:fzf_min_version[0]
+        \ || (l:parts[0] == s:fzf_min_version[0] && l:parts[1] > s:fzf_min_version[1])
+        \ || (l:parts[0] == s:fzf_min_version[0] && l:parts[1] == s:fzf_min_version[1]
+        \     && l:parts[2] >= s:fzf_min_version[2])
+endfunction
+
+if s:has_fzf_vim && s:FzfVersionOk()
+  let g:fzf_layout = {"down": "40%"}
+  let g:fzf_vim = get(g:, "fzf_vim", {})
+  let g:fzf_vim.preview_window = ["right,50%", "ctrl-/"]
+endif
+
+function! s:FzfCommand(command) abort
+  if s:has_fzf_vim && s:FzfVersionOk() && exists(":" . a:command) == 2
+    execute a:command
+  elseif a:command ==# "Files" || a:command ==# "GFiles" || a:command ==# "GitFiles"
+    edit .
+  elseif a:command ==# "Buffers"
+    ls
+  elseif a:command ==# "Rg"
+    silent grep! <cword> .
+    copen
+  endif
+endfunction
+
+function! s:GitStatus() abort
+  if s:has_vim_fugitive && exists(":Git") == 2
+    Git
+  elseif executable("git")
+    botright new
+    setlocal buftype=nofile bufhidden=wipe noswapfile nobuflisted
+    silent read !git status --short --branch
+    1delete _
+    file git-status
+  else
+    echohl WarningMsg | echom "git executable not found" | echohl None
+  endif
+endfunction
+
+nnoremap <silent> <leader>ff :call <SID>FzfCommand("Files")<CR>
+nnoremap <silent> <leader>fg :call <SID>FzfCommand("GFiles")<CR>
+nnoremap <silent> <leader>fb :call <SID>FzfCommand("Buffers")<CR>
+nnoremap <silent> <leader>fr :call <SID>FzfCommand("Rg")<CR>
+nnoremap <silent> <leader>gs :call <SID>GitStatus()<CR>
+
+" ----------------------------------------------------------
 " Quickfix / location list
 " ----------------------------------------------------------
 

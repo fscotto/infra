@@ -7,6 +7,7 @@ effective_user_group: "{{ server_user_group }}"
 effective_user_home: "{{ server_user_home }}"
 server_container_stack_dir: /opt/docker/server
 ai_agents_enabled: false
+vim_plugins_enabled: false
 
 profile_packages:
   - avahi-daemon

@@ -33,6 +33,18 @@ common_packages:
   - zip
   - zoxide
 
+vim_plugins_enabled: true
+vim_plugin_distro_packages:
+  - fzf
+  - vim-fugitive
+vim_plugin_source_plugins:
+  - name: fzf
+    repo: https://github.com/junegunn/fzf.git
+    version: v0.72.0
+  - name: fzf.vim
+    repo: https://github.com/junegunn/fzf.vim.git
+    version: 34a564c81f36047f50e593c1656f4580ff75ccca
+
 common_dotfiles:
   - name: .bashrc
     src: .bashrc

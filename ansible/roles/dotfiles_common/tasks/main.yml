@@ -50,6 +50,53 @@
   loop_control:
     label: "{{ item.dest }}"
 
+- name: Install distro packages for Vim plugins
+  tags: [packages, vim, fzf]
+  ansible.builtin.package:
+    name: "{{ vim_plugin_distro_packages | default([]) }}"
+    state: present
+  when:
+    - vim_plugins_enabled | default(false)
+    - (vim_plugin_distro_packages | default([])) | length > 0
+
+- name: Ensure git package is installed for source Vim plugins
+  tags: [packages, vim, fzf]
+  ansible.builtin.package:
+    name: git
+    state: present
+  when:
+    - vim_plugins_enabled | default(false)
+    - (vim_plugin_source_plugins | default([])) | length > 0
+
+- name: Ensure Vim plugin pack directory exists
+  tags: [dotfiles, dotfiles:common, vim, fzf]
+  ansible.builtin.file:
+    path: "{{ effective_user_home }}/.vim/pack/plugins/opt"
+    state: directory
+    owner: "{{ effective_username }}"
+    group: "{{ effective_user_group }}"
+    mode: "0755"
+  when:
+    - vim_plugins_enabled | default(false)
+    - (vim_plugin_source_plugins | default([])) | length > 0
+
+- name: Install source Vim plugins
+  tags: [dotfiles, dotfiles:common, vim, fzf]
+  ansible.builtin.git:
+    repo: "{{ item.repo }}"
+    dest: "{{ effective_user_home }}/.vim/pack/plugins/opt/{{ item.name }}"
+    version: "{{ item.version }}"
+    update: false
+  become_user: "{{ effective_username }}"
+  environment:
+    HOME: "{{ effective_user_home }}"
+  loop: "{{ vim_plugin_source_plugins | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - vim_plugins_enabled | default(false)
+    - (vim_plugin_source_plugins | default([])) | length > 0
+
 - name: Ensure AI config directories exist
   tags: [dotfiles, dotfiles:common]
   ansible.builtin.file:

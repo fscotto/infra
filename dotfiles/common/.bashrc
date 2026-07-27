@@ -227,10 +227,31 @@ bind '"\e[5C": forward-word'
 bind '"\e[5D": backward-word'
 
 # =========================
-# fzf history on Ctrl-r
+# fzf: Ptyxis Linux Minimal
 # =========================
 
 if command -v fzf >/dev/null 2>&1; then
+  FZF_PTYXIS_LINUX_OPTS="
+    --layout=reverse
+    --border=rounded
+    --height=40%
+    --info=inline
+    --prompt='› '
+    --pointer='›'
+    --marker='✓'
+    --separator='─'
+    --scrollbar='│'
+    --color=bg:#000000,bg+:#000000,gutter:#000000
+    --color=fg:#d7d7d7,fg+:#ffffff,hl:#55ff55,hl+:#55ff55
+    --color=prompt:#55ff55,pointer:#5555ff,marker:#ffff55,spinner:#5555ff
+    --color=info:#808080,header:#808080,border:#303030
+  "
+  export FZF_DEFAULT_OPTS="${FZF_DEFAULT_OPTS:+$FZF_DEFAULT_OPTS }$FZF_PTYXIS_LINUX_OPTS"
+
+# =========================
+# fzf history on Ctrl-r
+# =========================
+
   __fzf_history() {
     local selected history_data
 
@@ -252,7 +273,7 @@ if command -v fzf >/dev/null 2>&1; then
       )"
     fi
 
-    selected="$(printf '%s\n' "$history_data" | fzf --height 40% --layout=reverse --border --prompt='history> ')" || return
+    selected="$(printf '%s\n' "$history_data" | fzf --prompt='history> ')" || return
 
     READLINE_LINE=$selected
     READLINE_POINT=${#READLINE_LINE}

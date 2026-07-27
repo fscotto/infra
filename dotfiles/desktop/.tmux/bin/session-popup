@@ -4,6 +4,24 @@ set -eu
 
 default_dir=${1:-$HOME}
 
+# tmux popups are launched by the tmux server and may not inherit ~/.bashrc.
+# Keep fzf visually aligned with the shared Ptyxis Linux Minimal style.
+FZF_PTYXIS_LINUX_OPTS="
+  --layout=reverse
+  --border=rounded
+  --info=inline
+  --prompt='› '
+  --pointer='›'
+  --marker='✓'
+  --separator='─'
+  --scrollbar='│'
+  --color=bg:#000000,bg+:#000000,gutter:#000000
+  --color=fg:#d7d7d7,fg+:#ffffff,hl:#55ff55,hl+:#55ff55
+  --color=prompt:#55ff55,pointer:#5555ff,marker:#ffff55,spinner:#5555ff
+  --color=info:#808080,header:#808080,border:#303030
+"
+export FZF_DEFAULT_OPTS="${FZF_DEFAULT_OPTS:+$FZF_DEFAULT_OPTS }$FZF_PTYXIS_LINUX_OPTS"
+
 new_session() {
   printf 'New session name: '
   IFS= read -r session_name
@@ -22,9 +40,7 @@ while :; do
   selection=$(
     tmux list-sessions -F '#{session_name}' |
       fzf \
-        --layout=reverse \
         --height=100% \
-        --border \
         --prompt='sessions> ' \
         --header='Enter switch  Ctrl-n new  Ctrl-k kill' \
         --preview 'tmux list-windows -t {} -F "#{window_index}: #{window_name}#{?window_active, [active],}"' \

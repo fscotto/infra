@@ -56,6 +56,7 @@ fedora_desktop_packages:
   - terminus-fonts
   - texlive
   - tmux
+  - wl-clipboard
   - ty
   - uv
   - valgrind

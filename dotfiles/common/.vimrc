@@ -231,6 +231,20 @@ endfunction
 
 if s:has_fzf_vim && s:FzfVersionOk()
   let g:fzf_layout = {"down": "40%"}
+  let g:fzf_colors = {
+        \ "fg": ["fg", "Normal"],
+        \ "bg": ["bg", "Normal"],
+        \ "hl": ["fg", "Search"],
+        \ "fg+": ["fg", "Normal"],
+        \ "bg+": ["bg", "Normal"],
+        \ "hl+": ["fg", "Search"],
+        \ "info": ["fg", "Comment"],
+        \ "prompt": ["fg", "String"],
+        \ "pointer": ["fg", "Statement"],
+        \ "marker": ["fg", "WarningMsg"],
+        \ "spinner": ["fg", "Statement"],
+        \ "header": ["fg", "Comment"],
+        \ }
   let g:fzf_vim = get(g:, "fzf_vim", {})
   let g:fzf_vim.preview_window = ["right,50%", "ctrl-/"]
 endif

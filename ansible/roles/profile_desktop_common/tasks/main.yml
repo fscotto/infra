@@ -352,6 +352,7 @@
       - tmux-autoreload
       - tmux-resurrect
       - tmux-continuum
+      - tmux-yank
 
 - name: Check whether tmux plugin directories are git checkouts
   tags: [dotfiles, dotfiles:desktop, tmux]

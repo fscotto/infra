@@ -68,6 +68,8 @@ fedora_desktop_packages:
 fedora_nerd_fonts_version: v3.3.0
 fedora_nerd_fonts:
   - Hack
+  - JetBrainsMono
+  - Iosevka
   - UbuntuSans
   - NerdFontsSymbolsOnly
 

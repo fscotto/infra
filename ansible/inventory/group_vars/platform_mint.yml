@@ -96,5 +96,7 @@ mint_flatpak_packages:
 mint_nerd_fonts_version: v3.3.0
 mint_nerd_fonts:
   - Hack
+  - JetBrainsMono
+  - Iosevka
   - UbuntuSans
   - NerdFontsSymbolsOnly

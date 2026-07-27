@@ -81,6 +81,58 @@
     group: "{{ user_group }}"
     mode: "0644"
 
+- name: Gather GNOME desktop user account data
+  tags: [gnome]
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ username }}"
+  when: (gnome_gsettings_settings | default([])) | length > 0
+
+- name: Set GNOME desktop session environment
+  tags: [gnome]
+  ansible.builtin.set_fact:
+    gnome_user_uid: "{{ ansible_facts.getent_passwd[username][1] }}"
+    gnome_gsettings_environment:
+      HOME: "{{ user_home }}"
+      XDG_RUNTIME_DIR: "/run/user/{{ ansible_facts.getent_passwd[username][1] }}"
+      DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ ansible_facts.getent_passwd[username][1] }}/bus"
+  when: (gnome_gsettings_settings | default([])) | length > 0
+
+- name: Read current GNOME managed settings
+  tags: [gnome]
+  ansible.builtin.command:
+    argv:
+      - gsettings
+      - get
+      - "{{ item.schema }}{{ ':' ~ item.path if item.path is defined else '' }}"
+      - "{{ item.key }}"
+  become_user: "{{ username }}"
+  environment: "{{ gnome_gsettings_environment }}"
+  loop: "{{ gnome_gsettings_settings | default([]) }}"
+  loop_control:
+    label: >-
+      {{ item.schema }}{{ ':' ~ item.path if item.path is defined else '' }} {{ item.key }}
+  register: gnome_gsettings_current
+  changed_when: false
+
+- name: Apply GNOME managed settings
+  tags: [gnome]
+  ansible.builtin.command:
+    argv:
+      - gsettings
+      - set
+      - "{{ item.item.schema }}{{ ':' ~ item.item.path if item.item.path is defined else '' }}"
+      - "{{ item.item.key }}"
+      - "{{ item.item.value }}"
+  become_user: "{{ username }}"
+  environment: "{{ gnome_gsettings_environment }}"
+  loop: "{{ gnome_gsettings_current.results | default([]) }}"
+  loop_control:
+    label: >-
+      {{ item.item.schema }}{{ ':' ~ item.item.path if item.item.path is defined else '' }} {{ item.item.key }}
+  changed_when: true
+  when: item.stdout | trim != item.item.value
+
 - name: Check whether SSH host ed25519 key exists on GNOME desktop
   tags: [services, gnome]
   ansible.builtin.stat:

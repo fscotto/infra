@@ -22,3 +22,256 @@ host_authorized_ssh_keys: "{{ vault_ikaros_authorized_ssh_keys | default([]) }}"
 
 host_enabled_services:
   - sshd
+
+# Host-local GNOME preferences captured from ikaros' live session. Keep these
+# here rather than in desktop_gnome so nymph remains unmanaged for GNOME
+# settings until it has its own real-use tuning.
+gnome_gsettings_settings:
+  - schema: org.gnome.GWeather4
+    key: temperature-unit
+    value: "'centigrade'"
+  - schema: org.gnome.Ptyxis
+    key: cursor-shape
+    value: "'block'"
+  - schema: org.gnome.Ptyxis
+    key: default-columns
+    value: "uint32 140"
+  - schema: org.gnome.Ptyxis
+    key: default-profile-uuid
+    value: "'caa3c49ba73a208b4c4b64b56a5cd0af'"
+  - schema: org.gnome.Ptyxis
+    key: default-rows
+    value: "uint32 35"
+  - schema: org.gnome.Ptyxis
+    key: font-name
+    value: "'JetBrainsMono Nerd Font 14'"
+  - schema: org.gnome.Ptyxis
+    key: new-tab-position
+    value: "'last'"
+  - schema: org.gnome.Ptyxis
+    key: profile-uuids
+    value: "['caa3c49ba73a208b4c4b64b56a5cd0af']"
+  - schema: org.gnome.Ptyxis
+    key: restore-session
+    value: "false"
+  - schema: org.gnome.Ptyxis
+    key: restore-window-size
+    value: "false"
+  - schema: org.gnome.Ptyxis
+    key: use-system-font
+    value: "false"
+  - schema: org.gnome.Ptyxis.Profile
+    path: /org/gnome/Ptyxis/Profiles/caa3c49ba73a208b4c4b64b56a5cd0af/
+    key: bold-is-bright
+    value: "true"
+  - schema: org.gnome.Ptyxis.Profile
+    path: /org/gnome/Ptyxis/Profiles/caa3c49ba73a208b4c4b64b56a5cd0af/
+    key: label
+    value: "'Default'"
+  - schema: org.gnome.Ptyxis.Profile
+    path: /org/gnome/Ptyxis/Profiles/caa3c49ba73a208b4c4b64b56a5cd0af/
+    key: palette
+    value: "'linux'"
+  - schema: org.gnome.Ptyxis.Profile
+    path: /org/gnome/Ptyxis/Profiles/caa3c49ba73a208b4c4b64b56a5cd0af/
+    key: scroll-on-output
+    value: "true"
+  - schema: org.gnome.TextEditor
+    key: highlight-current-line
+    value: "true"
+  - schema: org.gnome.TextEditor
+    key: indent-style
+    value: "'space'"
+  - schema: org.gnome.TextEditor
+    key: indent-width
+    value: "-1"
+  - schema: org.gnome.TextEditor
+    key: right-margin-position
+    value: "uint32 120"
+  - schema: org.gnome.TextEditor
+    key: show-line-numbers
+    value: "true"
+  - schema: org.gnome.TextEditor
+    key: show-right-margin
+    value: "true"
+  - schema: org.gnome.TextEditor
+    key: tab-width
+    value: "uint32 4"
+  - schema: org.gnome.desktop.background
+    key: picture-options
+    value: "'zoom'"
+  - schema: org.gnome.desktop.background
+    key: picture-uri
+    value: "'file:///usr/share/backgrounds/gnome/morphogenesis-l.svg'"
+  - schema: org.gnome.desktop.background
+    key: picture-uri-dark
+    value: "'file:///usr/share/backgrounds/gnome/morphogenesis-d.svg'"
+  - schema: org.gnome.desktop.datetime
+    key: automatic-timezone
+    value: "true"
+  - schema: org.gnome.desktop.input-sources
+    key: sources
+    value: "[('xkb', 'us+alt-intl')]"
+  - schema: org.gnome.desktop.interface
+    key: accent-color
+    value: "'blue'"
+  - schema: org.gnome.desktop.interface
+    key: color-scheme
+    value: "'prefer-dark'"
+  - schema: org.gnome.desktop.peripherals.touchpad
+    key: two-finger-scrolling-enabled
+    value: "true"
+  - schema: org.gnome.desktop.privacy
+    key: remove-old-temp-files
+    value: "true"
+  - schema: org.gnome.desktop.privacy
+    key: remove-old-trash-files
+    value: "true"
+  - schema: org.gnome.desktop.privacy
+    key: report-technical-problems
+    value: "false"
+  - schema: org.gnome.desktop.screensaver
+    key: picture-options
+    value: "'zoom'"
+  - schema: org.gnome.desktop.screensaver
+    key: picture-uri
+    value: "'file:///usr/share/backgrounds/gnome/morphogenesis-l.svg'"
+  - schema: org.gnome.desktop.search-providers
+    key: sort-order
+    value: "['org.gnome.Settings.desktop', 'org.gnome.Contacts.desktop', 'org.gnome.Nautilus.desktop']"
+  - schema: org.gnome.desktop.wm.keybindings
+    key: switch-to-workspace-1
+    value: "['<Super>1']"
+  - schema: org.gnome.desktop.wm.keybindings
+    key: switch-to-workspace-2
+    value: "['<Super>2']"
+  - schema: org.gnome.desktop.wm.keybindings
+    key: switch-to-workspace-3
+    value: "['<Super>3']"
+  - schema: org.gnome.desktop.wm.keybindings
+    key: switch-to-workspace-4
+    value: "['<Super>4']"
+  - schema: org.gnome.desktop.wm.keybindings
+    key: switch-to-workspace-5
+    value: "['<Super>5']"
+  - schema: org.gnome.desktop.wm.keybindings
+    key: switch-to-workspace-6
+    value: "['<Super>6']"
+  - schema: org.gnome.desktop.wm.keybindings
+    key: switch-to-workspace-7
+    value: "['<Super>7']"
+  - schema: org.gnome.desktop.wm.keybindings
+    key: switch-to-workspace-8
+    value: "['<Super>8']"
+  - schema: org.gnome.desktop.wm.keybindings
+    key: switch-to-workspace-9
+    value: "['<Super>9']"
+  - schema: org.gnome.desktop.wm.keybindings
+    key: switch-to-workspace-10
+    value: "['<Super>0']"
+  - schema: org.gnome.meld
+    key: highlight-current-line
+    value: "true"
+  - schema: org.gnome.meld
+    key: highlight-syntax
+    value: "true"
+  - schema: org.gnome.meld
+    key: indent-width
+    value: "4"
+  - schema: org.gnome.meld
+    key: insert-spaces-instead-of-tabs
+    value: "true"
+  - schema: org.gnome.meld
+    key: prefer-dark-theme
+    value: "true"
+  - schema: org.gnome.meld
+    key: show-line-numbers
+    value: "true"
+  - schema: org.gnome.meld
+    key: style-scheme
+    value: "'meld-dark'"
+  - schema: org.gnome.meld
+    key: wrap-mode
+    value: "'none'"
+  - schema: org.gnome.nautilus.list-view
+    key: default-zoom-level
+    value: "'large'"
+  - schema: org.gnome.nautilus.list-view
+    key: use-tree-view
+    value: "false"
+  - schema: org.gnome.nautilus.preferences
+    key: default-folder-viewer
+    value: "'list-view'"
+  - schema: org.gnome.nautilus.preferences
+    key: show-create-link
+    value: "true"
+  - schema: org.gnome.nautilus.preferences
+    key: show-delete-permanently
+    value: "true"
+  - schema: org.gnome.settings-daemon.plugins.color
+    key: night-light-enabled
+    value: "true"
+  - schema: org.gnome.settings-daemon.plugins.media-keys
+    key: custom-keybindings
+    value: "['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/']"
+  - schema: org.gnome.settings-daemon.plugins.media-keys.custom-keybinding
+    path: /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/
+    key: binding
+    value: "'<Super>Return'"
+  - schema: org.gnome.settings-daemon.plugins.media-keys.custom-keybinding
+    path: /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/
+    key: command
+    value: "'ptyxis'"
+  - schema: org.gnome.settings-daemon.plugins.media-keys.custom-keybinding
+    path: /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/
+    key: name
+    value: "'Launch Terminal'"
+  - schema: org.gnome.shell
+    key: app-picker-layout
+    value: >-
+      [{'org.fedoraproject.MediaWriter.desktop': <{'position': <0>}>, 'org.gnome.Contacts.desktop': <{'position': <1>}>, 'org.gnome.Weather.desktop': <{'position': <2>}>, 'org.gnome.clocks.desktop': <{'position': <3>}>, 'org.gnome.Maps.desktop': <{'position': <4>}>, 'org.gnome.SimpleScan.desktop': <{'position': <5>}>, 'org.gnome.Settings.desktop': <{'position': <6>}>, 'org.gnome.Boxes.desktop': <{'position': <7>}>, 'org.gnome.Showtime.desktop': <{'position': <8>}>, 'org.gnome.Snapshot.desktop': <{'position': <9>}>, 'org.gnome.Characters.desktop': <{'position': <10>}>, 'Utilities': <{'position': <11>}>, 'System': <{'position': <12>}>, 'org.gnome.Tour.desktop': <{'position': <13>}>, 'org.gnome.Yelp.desktop': <{'position': <14>}>, 'htop.desktop': <{'position': <15>}>, 'libreoffice-writer.desktop': <{'position': <16>}>, 'libreoffice-calc.desktop': <{'position': <17>}>, 'libreoffice-impress.desktop': <{'position': <18>}>, 'libreoffice-draw.desktop': <{'position': <19>}>, 'libreoffice-math.desktop': <{'position': <20>}>, 'libreoffice-base.desktop': <{'position': <21>}>, 'org.gnome.Meld.desktop': <{'position': <22>}>, 'mpv.desktop': <{'position': <23>}>}, {'com.github.jeromerobert.pdfarranger.desktop': <{'position': <0>}>, 'org.remmina.Remmina.desktop': <{'position': <1>}>, 'ch.protonmail.protonmail-bridge.desktop': <{'position': <2>}>, 'org.gnome.TextEditor.desktop': <{'position': <3>}>, 'org.gnome.Software.desktop': <{'position': <4>}>, 'org.gnome.Calculator.desktop': <{'position': <5>}>, 'org.gnome.Calendar.desktop': <{'position': <6>}>, 'com.mattjakeman.ExtensionManager.desktop': <{'position': <7>}>, 'be.alexandervanhee.gradia.desktop': <{'position': <8>}>, 'syncthing-start.desktop': <{'position': <9>}>, 'syncthing-ui.desktop': <{'position': <10>}>}]
+  - schema: org.gnome.shell
+    key: disabled-extensions
+    value: >-
+      ['window-list@gnome-shell-extensions.gcampax.github.com', 'background-logo@fedorahosted.org', 'apps-menu@gnome-shell-extensions.gcampax.github.com', 'places-menu@gnome-shell-extensions.gcampax.github.com', 'maximize-new-windows@VitalyOstanin']
+  - schema: org.gnome.shell
+    key: enabled-extensions
+    value: >-
+      ['status-icons@gnome-shell-extensions.gcampax.github.com', 'gnome-ui-tune@itstime.tech', 'appindicatorsupport@rgcjonas.gmail.com', 'bluetooth-battery-monitor@v8v88v8v88.com', 'clipboard-indicator@tudmotu.com', 'status-area-horizontal-spacing@mathematical.coffee.gmail.com', 'MaximizeWindowIntoNewWorkspace@kyleross.com']
+  - schema: org.gnome.shell
+    key: favorite-apps
+    value: >-
+      ['org.gnome.Nautilus.desktop', 'org.mozilla.firefox.desktop', 'com.spotify.Client.desktop', 'org.mozilla.thunderbird.desktop', 'org.telegram.desktop.desktop', 'org.gnome.Ptyxis.desktop', 'virt-manager.desktop']
+  - schema: org.gnome.shell
+    key: remember-mount-password
+    value: "true"
+  - schema: org.gnome.shell.keybindings
+    key: switch-to-application-1
+    value: "@as []"
+  - schema: org.gnome.shell.keybindings
+    key: switch-to-application-2
+    value: "@as []"
+  - schema: org.gnome.shell.keybindings
+    key: switch-to-application-3
+    value: "@as []"
+  - schema: org.gnome.shell.keybindings
+    key: switch-to-application-4
+    value: "@as []"
+  - schema: org.gnome.shell.keybindings
+    key: switch-to-application-5
+    value: "@as []"
+  - schema: org.gnome.shell.keybindings
+    key: switch-to-application-6
+    value: "@as []"
+  - schema: org.gnome.shell.keybindings
+    key: switch-to-application-7
+    value: "@as []"
+  - schema: org.gnome.shell.keybindings
+    key: switch-to-application-8
+    value: "@as []"
+  - schema: org.gnome.shell.keybindings
+    key: switch-to-application-9
+    value: "@as []"
+  - schema: org.gnome.system.location
+    key: enabled
+    value: "true"

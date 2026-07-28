@@ -28,3 +28,8 @@ workstation_dev_wsl_dotfiles:
   - src: .tmux.conf
     dest: .tmux.conf
     mode: "0644"
+    source_dir: desktop
+  - src: .tmux/bin/
+    dest: .tmux/bin/
+    mode: preserve
+    source_dir: desktop

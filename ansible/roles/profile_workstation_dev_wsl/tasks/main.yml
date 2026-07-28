@@ -1,8 +1,21 @@
 ---
+- name: Ensure WSL tmux directories exist
+  tags: [dotfiles, dotfiles:workstation, tmux, wsl]
+  ansible.builtin.file:
+    path: "{{ user_home }}/{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+  loop:
+    - .tmux
+    - .tmux/bin
+    - .tmux/plugins
+
 - name: Copy workstation WSL dotfiles
   tags: [dotfiles, dotfiles:workstation, wsl]
   ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../dotfiles/workstation_dev_wsl/{{ item.src }}"
+    src: "{{ playbook_dir }}/../dotfiles/{{ item.source_dir | default('workstation_dev_wsl') }}/{{ item.src }}"
     dest: "{{ user_home }}/{{ item.dest }}"
     owner: "{{ username }}"
     group: "{{ user_group }}"

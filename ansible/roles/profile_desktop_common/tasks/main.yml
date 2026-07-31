@@ -387,8 +387,10 @@
 
 - name: Install tmux plugins through TPM
   tags: [dotfiles, dotfiles:desktop, tmux]
-  ansible.builtin.command:
-    cmd: "{{ user_home }}/.tmux/plugins/tpm/bin/install_plugins"
+  ansible.builtin.shell: |
+    set -e
+    tmux start-server \; set-environment -g TMUX_PLUGIN_MANAGER_PATH "{{ user_home }}/.tmux/plugins/"
+    "{{ user_home }}/.tmux/plugins/tpm/bin/install_plugins"
   become_user: "{{ username }}"
   environment:
     HOME: "{{ user_home }}"

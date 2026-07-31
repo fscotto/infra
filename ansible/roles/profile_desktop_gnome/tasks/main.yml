@@ -81,6 +81,62 @@
     group: "{{ user_group }}"
     mode: "0644"
 
+- name: Define GNOME managed tmux plugin directories
+  tags: [dotfiles, dotfiles:desktop, tmux, gnome]
+  ansible.builtin.set_fact:
+    gnome_tmux_managed_plugin_names:
+      - tpm
+      - tmux-sensible
+      - tmux-autoreload
+      - tmux-resurrect
+      - tmux-continuum
+      - tmux-yank
+
+- name: Check whether GNOME tmux plugin directories are git checkouts
+  tags: [dotfiles, dotfiles:desktop, tmux, gnome]
+  ansible.builtin.stat:
+    path: "{{ user_home }}/.tmux/plugins/{{ item }}/.git"
+  loop: "{{ gnome_tmux_managed_plugin_names }}"
+  loop_control:
+    label: "{{ item }}"
+  register: gnome_tmux_plugin_git_state
+
+- name: Remove stale vendored GNOME tmux plugin directories
+  tags: [dotfiles, dotfiles:desktop, tmux, gnome]
+  ansible.builtin.file:
+    path: "{{ user_home }}/.tmux/plugins/{{ item.item }}"
+    state: absent
+  loop: "{{ gnome_tmux_plugin_git_state.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when:
+    - item.stat.exists == false
+
+- name: Bootstrap GNOME tmux plugin manager checkout
+  tags: [dotfiles, dotfiles:desktop, tmux, gnome]
+  ansible.builtin.git:
+    repo: https://github.com/tmux-plugins/tpm
+    dest: "{{ user_home }}/.tmux/plugins/tpm"
+    version: master
+    update: true
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+
+- name: Install GNOME tmux plugins through TPM
+  tags: [dotfiles, dotfiles:desktop, tmux, gnome]
+  ansible.builtin.shell: |
+    set -e
+    tmux start-server \; set-environment -g TMUX_PLUGIN_MANAGER_PATH "{{ user_home }}/.tmux/plugins/"
+    "{{ user_home }}/.tmux/plugins/tpm/bin/install_plugins"
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  register: gnome_tmux_plugin_install
+  changed_when: >-
+    (gnome_tmux_plugin_install.stdout | default('')) is search('download success') or
+    (gnome_tmux_plugin_install.stderr | default('')) is search('download success')
+
 - name: Gather GNOME desktop user account data
   tags: [gnome]
   ansible.builtin.getent:

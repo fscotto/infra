@@ -28,14 +28,18 @@ mint_packages_base:
 mint_development_packages:
   - build-essential
   - clang
+  - clang-format
   - clang-tools
   - cmake
   - gdb
+  - libasan8
+  - libubsan1
   - golang
   - nodejs
   - npm
   - pkg-config
   - python3-venv
+  - valgrind
 
 mint_desktop_common_packages:
   - dconf-cli

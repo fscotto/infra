@@ -13,6 +13,7 @@ fedora_desktop_packages:
   - nodejs-bash-language-server
   - bluez
   - bridge-utils
+  - clang-tools-extra
   - cmake
   - cscope
   - ctags
@@ -32,6 +33,7 @@ fedora_desktop_packages:
   - libreoffice
   - liberation-fonts
   - libasan
+  - libubsan
   - libvterm-devel
   - libX11-devel
   - libXft-devel

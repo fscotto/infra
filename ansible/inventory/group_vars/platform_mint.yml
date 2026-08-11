@@ -42,6 +42,7 @@ mint_development_packages:
   - valgrind
 
 mint_desktop_common_packages:
+  - croc
   - dconf-cli
   - deja-dup
   - firefox

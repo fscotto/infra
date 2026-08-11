@@ -1,5 +1,6 @@
 ---
 workstation_host_linux_packages:
+  - croc
   - gnome-shell-extension-manager
   - gnome-shell-extensions
   - gnome-tweaks

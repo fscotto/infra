@@ -55,6 +55,7 @@ freebsd_development_packages:
   - shellcheck
 
 freebsd_desktop_common_packages:
+  - croc
   - dbus
   - dconf
   - firefox

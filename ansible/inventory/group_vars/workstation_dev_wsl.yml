@@ -3,6 +3,7 @@ enabled_services:
   - docker
 
 workstation_dev_wsl_packages:
+  - croc
   - lazygit
   - pinentry-curses
   - python3-pip

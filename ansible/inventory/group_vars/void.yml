@@ -98,6 +98,7 @@ desktop_common_packages:
   - cups
   - cups-filters
   - cups-pk-helper
+  - croc
   - flatpak
   - libsecret
   - sane

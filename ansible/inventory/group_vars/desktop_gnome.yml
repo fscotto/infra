@@ -17,6 +17,7 @@ fedora_desktop_packages:
   - cmake
   - cscope
   - ctags
+  - croc
   - delve
   - dnsmasq
   - fastfetch

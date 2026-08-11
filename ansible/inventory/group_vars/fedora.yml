@@ -37,6 +37,7 @@ fedora_dotfiles:
 workstation_firewall_backend: firewalld
 
 fedora_workstation_dev_packages:
+  - croc
   - distrobox
   - gnupg
   - gnupg2-gpg-agent
@@ -47,6 +48,7 @@ fedora_workstation_dev_packages:
 
 workstation_host_linux_packages_fedora:
   - code
+  - croc
   - firewall-config
   - gnome-extensions-app
   - gnome-shell-extension-appindicator

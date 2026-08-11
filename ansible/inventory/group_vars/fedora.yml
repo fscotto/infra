@@ -19,6 +19,9 @@ fedora_intellij_copr_owner: coder966
 fedora_intellij_copr_project: intellij-idea-ultimate
 fedora_intellij_package_name: intellij-idea-ultimate
 
+fedora_emacs_packages:
+  - emacs-pgtk
+
 fedora_docker_packages:
   - docker-ce
   - docker-ce-cli

@@ -101,6 +101,14 @@
             else []
           )
         + (
+            (fedora_emacs_packages | default([]))
+            if (
+              'graphical_desktop' in group_names
+              and (emacs_enabled | default(false) | bool)
+            )
+            else []
+          )
+        + (
             (fedora_workstation_dev_packages | default(workstation_dev_packages | default([])))
             if 'workstation_dev_fedora' in group_names
             else []

@@ -234,10 +234,10 @@ if s:has_fzf_vim && s:FzfVersionOk()
   let g:fzf_colors = {
         \ "fg": ["fg", "Normal"],
         \ "bg": ["bg", "Normal"],
-        \ "hl": ["fg", "Search"],
+        \ "hl": ["fg", "FzfMatch"],
         \ "fg+": ["fg", "Normal"],
         \ "bg+": ["bg", "Normal"],
-        \ "hl+": ["fg", "Search"],
+        \ "hl+": ["fg", "FzfMatch"],
         \ "info": ["fg", "Comment"],
         \ "prompt": ["fg", "String"],
         \ "pointer": ["fg", "Statement"],
@@ -557,10 +557,10 @@ set statusline+=\ %p%%\
 
 " ==========================================================
 "  Embedded colorscheme: sysdev_black
-"  Self-contained — no external files needed
+"  Self-contained — kept available as a custom theme.
 " ==========================================================
 
-if &t_Co>=256
+function! s:ApplySysdevBlackColors() abort
 
   highlight clear
   if exists("syntax_on")
@@ -617,5 +617,20 @@ if &t_Co>=256
   hi ErrorMsg       ctermfg=255  ctermbg=160
   hi WarningMsg     ctermfg=214
   hi Todo           ctermfg=16   ctermbg=220  cterm=bold
+  hi FzfMatch      ctermfg=82   ctermbg=NONE cterm=bold
+endfunction
 
+command! SysdevBlack call s:ApplySysdevBlackColors()
+
+" ==========================================================
+"  Default colorscheme: zaibatsu
+" ==========================================================
+
+set background=dark
+silent! colorscheme zaibatsu
+if !exists("g:colors_name") || g:colors_name !=# "zaibatsu"
+  call s:ApplySysdevBlackColors()
 endif
+
+" Keep fzf.vim matches readable on the dark terminal theme.
+hi FzfMatch      ctermfg=82   ctermbg=NONE cterm=bold

@@ -1,6 +1,5 @@
 ---
 workstation_dev_packages:
-  - croc
   - distrobox
   - gnupg
   - gpg-agent

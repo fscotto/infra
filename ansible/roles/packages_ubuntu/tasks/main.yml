@@ -167,6 +167,108 @@
     append: true
   when: (ubuntu_docker_packages | default([])) | length > 0
 
+- name: Ensure architecture is supported for croc GitHub release
+  tags: [packages]
+  ansible.builtin.fail:
+    msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for croc GitHub release"
+  when:
+    - workstation_manage_croc | default(false)
+    - ansible_facts['architecture'] not in ['x86_64', 'aarch64', 'arm64']
+
+- name: Read installed croc version
+  tags: [packages]
+  ansible.builtin.command: /usr/local/bin/croc --version
+  register: croc_version_check
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: workstation_manage_croc | default(false)
+
+- name: Ensure temporary croc extraction directory is absent
+  tags: [packages]
+  ansible.builtin.file:
+    path: "/tmp/croc_{{ workstation_croc_version }}"
+    state: absent
+  when:
+    - workstation_manage_croc | default(false)
+    - workstation_croc_version not in (croc_version_check.stdout | default(''))
+
+- name: Create temporary croc extraction directory
+  tags: [packages]
+  ansible.builtin.file:
+    path: "/tmp/croc_{{ workstation_croc_version }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when:
+    - workstation_manage_croc | default(false)
+    - workstation_croc_version not in (croc_version_check.stdout | default(''))
+
+- name: Download croc GitHub release archive
+  tags: [packages]
+  ansible.builtin.get_url:
+    url: >-
+      {{
+        'https://github.com/schollz/croc/releases/download/'
+        ~ workstation_croc_version
+        ~ '/croc_'
+        ~ workstation_croc_version
+        ~ '_Linux-'
+        ~ (
+          '64bit' if ansible_facts['architecture'] == 'x86_64'
+          else 'ARM64' if ansible_facts['architecture'] in ['aarch64', 'arm64']
+          else ansible_facts['architecture']
+        )
+        ~ '.tar.gz'
+      }}
+    dest: "/tmp/croc_{{ workstation_croc_version }}.tar.gz"
+    mode: "0644"
+  when:
+    - workstation_manage_croc | default(false)
+    - workstation_croc_version not in (croc_version_check.stdout | default(''))
+
+- name: Extract croc GitHub release archive
+  tags: [packages]
+  ansible.builtin.unarchive:
+    src: "/tmp/croc_{{ workstation_croc_version }}.tar.gz"
+    dest: "/tmp/croc_{{ workstation_croc_version }}"
+    remote_src: true
+  when:
+    - workstation_manage_croc | default(false)
+    - workstation_croc_version not in (croc_version_check.stdout | default(''))
+
+- name: Install croc binary
+  tags: [packages]
+  ansible.builtin.copy:
+    src: "/tmp/croc_{{ workstation_croc_version }}/croc"
+    dest: /usr/local/bin/croc
+    owner: root
+    group: root
+    mode: "0755"
+    remote_src: true
+  when:
+    - workstation_manage_croc | default(false)
+    - workstation_croc_version not in (croc_version_check.stdout | default(''))
+
+- name: Remove downloaded croc archive
+  tags: [packages]
+  ansible.builtin.file:
+    path: "/tmp/croc_{{ workstation_croc_version }}.tar.gz"
+    state: absent
+  when:
+    - workstation_manage_croc | default(false)
+    - workstation_croc_version not in (croc_version_check.stdout | default(''))
+
+- name: Remove temporary croc extraction directory
+  tags: [packages]
+  ansible.builtin.file:
+    path: "/tmp/croc_{{ workstation_croc_version }}"
+    state: absent
+  when:
+    - workstation_manage_croc | default(false)
+    - workstation_croc_version not in (croc_version_check.stdout | default(''))
+
 - name: Remove workstation snap packages
   tags: [packages]
   community.general.snap:

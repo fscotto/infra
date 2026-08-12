@@ -3,7 +3,6 @@ enabled_services:
   - docker
 
 workstation_dev_wsl_packages:
-  - croc
   - lazygit
   - pinentry-curses
   - python3-pip
@@ -18,6 +17,8 @@ workstation_dev_wsl_excluded_packages:
   - yubikey-manager
 workstation_is_wsl: true
 workstation_manage_google_chrome: false
+workstation_manage_croc: true
+workstation_croc_version: v11.0.3
 workstation_removed_snap_packages: []
 workstation_snap_packages: []
 workstation_dev_wsl_python_packages: []

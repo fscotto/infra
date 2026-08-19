@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Ansible-driven personal infrastructure repo for Fedora and Void desktops, Linux Mint and FreeBSD transition targets, WSL, and an Ubuntu server.
+Ansible-driven personal infrastructure repo for Fedora and Void desktops, FreeBSD transition targets, WSL, and an Ubuntu server.
 
 ## Source Of Truth
 - Main orchestration: `ansible/site.yml`
@@ -54,8 +54,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Linux 
 - Use `no_log: true` for secret-bearing task inputs or outputs.
 
 ## Desktop Notes
-- `desktop_profile` names independently selectable desktop groups such as `desktop_gnome`, `desktop_hyprland`, `desktop_sway`, `desktop_niri`, and `desktop_cinnamon`. Keep platform-specific session bootstrap in platform-specific roles.
-- `desktop_environment` selects the mutually exclusive `minimal` (default), `gnome`, `xfce`, or `kde` desktop mode. `profile_desktop_common` owns shared Void bootstrap; the minimal mode uses `profile_desktop_sway`, `profile_desktop_hyprland`, and `profile_desktop_niri`, `profile_desktop_xfce` owns the reproducible XFCE setup, `profile_desktop_kde` owns KDE-specific defaults and cleanup, and `profile_desktop_gnome` copies shared desktop dotfiles for Fedora/GNOME without managing GNOME settings. `desktop_sessions_enabled` and `desktop_default_session` apply only to the minimal mode.
+- `desktop_profile` names independently selectable desktop groups such as `desktop_gnome`, `desktop_hyprland`, `desktop_sway`, and `desktop_niri`. Keep platform-specific session bootstrap in platform-specific roles.
+- `desktop_environment` is fixed to `minimal` for Void desktops. `profile_desktop_common` owns shared Void bootstrap; `profile_desktop_sway`, `profile_desktop_hyprland`, and `profile_desktop_niri` manage the enabled sessions, while `profile_desktop_gnome` copies shared desktop dotfiles for Fedora/GNOME without managing GNOME settings. `desktop_sessions_enabled` and `desktop_default_session` apply to the minimal mode.
 - Emacs packages and `.emacs.d` deploy are disabled by default via `emacs_enabled: false`; keep the dotfiles in the repo for reversible opt-in only.
 - NTFS filesystem support is provided by `ntfs-3g` in `ansible/inventory/group_vars/void.yml`.
 - Void user services are managed by `turnstile` and live under `dotfiles/desktop/.config/service/`.
@@ -67,18 +67,18 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Linux 
 - Void Niri lives in `profile_desktop_niri`, gated on `'niri' in desktop_sessions_enabled`; it installs the `emptty` `niri.desktop` session, the `/usr/local/bin/start-niri` launcher, and the xdg-desktop-portal config, mirroring `profile_desktop_sway`.
 - Fedora GNOME (`desktop_gnome`) assumes GNOME comes from the Fedora Workstation base install; Ansible deploys shared desktop dotfiles and git/GPG config for `ikaros` and `nymph`, not GNOME settings.
 - FreeBSD Niri (dormant; `platform_freebsd` currently has no hosts) must keep FreeBSD-specific package, rc, DBus, seat, portal, and launcher behavior in `profile_desktop_niri_freebsd` or FreeBSD platform vars.
-- Do not switch or restart a display manager during a playbook run from an active graphical session. Changing among `emptty`, LightDM, and SDDM requires an explicit run from another TTY/SSH session with `desktop_allow_display_manager_switch=true`. Apply managed XFCE XML while logged out of XFCE so `xfconfd` cannot overwrite it from its in-memory state.
+- Do not switch or restart the display manager during a playbook run from an active graphical session.
 - `nymph` is the Fedora/GNOME laptop target; keep GNOME settings unmanaged for now and add host-specific tuning only after real use.
 
 ## Void Package And Dotfile Bucket Rules
 `platform_void` is the reusable Void platform selection. The legacy `void` group remains a compatibility parent so existing `group_vars/void.yml` and `when: "'void' in group_names"` checks keep working during the transition.
 The Void desktop package lists in `ansible/inventory/group_vars/void.yml` are kept disjoint by role:
 - `void_packages_base` — system runtime only (init/services, kernel, audio core, networking, filesystem, firewall, hardware daemons, runit logging).
-- `desktop_common_packages` — GUI infrastructure shared by all desktop modes.
-- `desktop_minimal_packages` / `desktop_xfce_packages` / `desktop_kde_packages` — mutually exclusive applications, integration components, and display managers. Packages required by more than one exclusive mode may be repeated; cleanup subtracts the selected mode before removing inactive packages.
+- `desktop_common_packages` — GUI infrastructure shared by the minimal desktop mode.
+- `desktop_minimal_packages` — applications, integration components, and the `emptty` display manager.
 - `desktop_sway_packages` / `desktop_hyprland_packages` — binaries specific to each session. Cross-WM packages used by both (such as `dunst`, `rofi`, and `foot`) are intentionally duplicated in the two lists.
 `profile_packages` in the same file is cross-distro and is overridden by `group_vars/server.yml` and the workstation group vars; do not move desktop-specific Void entries through it.
-The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-independent content, `desktop_minimal_dotfiles` carries Thunar, Udiskie, and minimal MIME defaults, and `desktop_xfce_dotfiles` carries XFCE state. KDE uses its own MIME defaults. `desktop_void_dotfiles` remains reserved for files that need the Void runtime.
+The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-independent content and `desktop_minimal_dotfiles` carries Thunar, Udiskie, and MIME defaults. `desktop_void_dotfiles` remains reserved for files that need the Void runtime.
 
 ## Workstation Notes
 - `deadalus` is modeled as Windows + WSL; keep Linux dev automation on `deadalus-wsl`.

@@ -39,38 +39,7 @@
     - profile_desktop_sway
     - profile_desktop_hyprland
     - profile_desktop_niri
-    - profile_desktop_kde
-    - profile_desktop_xfce
     - profile_desktop_host
-
-- name: Configure lab role on Void
-  hosts: platform_void:&role_lab
-  become: true
-
-  roles:
-    - profile_lab
-
-- name: Configure Linux Mint platform
-  hosts: platform_mint
-  become: true
-
-  roles:
-    - packages_mint
-    - services_systemd
-
-- name: Configure personal workstation role on Linux Mint
-  hosts: platform_mint:&role_personal_workstation
-  become: true
-
-  roles:
-    - profile_personal_workstation
-
-- name: Configure Cinnamon desktop on Linux Mint
-  hosts: platform_mint:&desktop_cinnamon
-  become: true
-
-  roles:
-    - profile_desktop_cinnamon
 
 - name: Configure FreeBSD platform
   hosts: platform_freebsd
@@ -79,13 +48,6 @@
   roles:
     - packages_freebsd
     - services_freebsd
-
-- name: Configure lab role on FreeBSD
-  hosts: platform_freebsd:&role_lab
-  become: true
-
-  roles:
-    - profile_lab
 
 - name: Configure Niri desktop on FreeBSD
   hosts: platform_freebsd:&desktop_niri

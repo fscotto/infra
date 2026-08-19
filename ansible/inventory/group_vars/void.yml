@@ -141,45 +141,6 @@ desktop_minimal_packages:
   - xfce-polkit
   - xournalpp
 
-desktop_kde_packages:
-  - ark
-  - dolphin
-  - ffmpegthumbs
-  - gwenview
-  - kate
-  - kde-plasma
-  - kleopatra
-  - konsole
-  - okular
-  - polkit-kde-agent
-  - print-manager
-  - sddm
-  - skanpage
-  - spectacle
-
-desktop_xfce_packages:
-  - blueman
-  - gnome-keyring
-  - greybird-themes
-  - gvfs
-  - gvfs-cdda
-  - gvfs-mtp
-  - gvfs-smb
-  - lightdm
-  - lightdm-gtk-greeter
-  - network-manager-applet
-  - papirus-icon-theme
-  - seahorse
-  - thunar-archive-plugin
-  - xarchiver
-  - xdg-desktop-portal-gtk
-  - xfce4
-  - xfce4-clipman-plugin
-  - xfce4-pulseaudio-plugin
-  - xfce4-screenshooter
-  - xfce4-whiskermenu-plugin
-  - xorg
-
 desktop_sway_packages:
   - cliphist
   - dunst
@@ -237,12 +198,6 @@ desktop_niri_packages:
   - wl-clipboard
   - xdg-desktop-portal-gtk
   - xorg-server-xwayland
-
-void_lab_packages:
-  - llvm
-  - podman
-  - qemu
-  - smartmontools
 
 profile_packages:
   - bash-language-server

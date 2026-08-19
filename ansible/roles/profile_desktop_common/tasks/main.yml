@@ -3,18 +3,12 @@
   tags: [always]
   ansible.builtin.assert:
     that:
-      - (desktop_environment | default('minimal')) in ['minimal', 'xfce', 'kde']
-      - >-
-        (desktop_environment | default('minimal')) != 'minimal'
-        or (desktop_sessions_enabled | default([]) | length > 0)
-      - >-
-        (desktop_environment | default('minimal')) != 'minimal'
-        or (desktop_sessions_enabled | default([]) | difference(['sway', 'hyprland', 'niri']) | length == 0)
-      - >-
-        (desktop_environment | default('minimal')) != 'minimal'
-        or desktop_default_session in (desktop_sessions_enabled | default([]))
+      - (desktop_environment | default('minimal')) == 'minimal'
+      - (desktop_sessions_enabled | default([]) | length > 0)
+      - (desktop_sessions_enabled | default([]) | difference(['sway', 'hyprland', 'niri']) | length == 0)
+      - desktop_default_session in (desktop_sessions_enabled | default([]))
     fail_msg: >-
-      desktop_environment must be minimal, xfce, or kde. Minimal desktops also require
+      desktop_environment must be minimal. Minimal desktops also require
       desktop_default_session to be included in desktop_sessions_enabled.
 
 - name: Configure elogind to suspend on lid close
@@ -466,14 +460,7 @@
     owner: root
     group: root
     mode: "0644"
-  when: (desktop_environment | default('minimal')) in ['minimal', 'xfce']
-
-- name: Remove minimal Qt theme override for KDE
-  tags: [theme]
-  ansible.builtin.file:
-    path: /etc/profile.d/10-qt-theme.sh
-    state: absent
-  when: (desktop_environment | default('minimal')) == 'kde'
+  when: (desktop_environment | default('minimal')) == 'minimal'
 
 - name: Ensure flathub remote is configured
   tags: [packages]

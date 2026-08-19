@@ -71,7 +71,7 @@ Matrice target:
 | -------------- | ---------- | -------------------- | --------------------------------- |
 | ikaros         | Fedora     | Personal workstation | GNOME                             |
 | nymph          | Fedora     | Desktop laptop       | GNOME                             |
-| void-reference | Void Linux | Lab/reference        | Current preserved desktop profile |
+| void-reference | Void Linux | Reference            | Current preserved desktop profile |
 
 Regola operativa:
 
@@ -99,30 +99,25 @@ Target operativi:
 - `nymph`: Fedora Workstation + GNOME, laptop desktop con dotfiles desktop condivisi e GNOME lasciato al default Fedora.
 
 Il profilo Void desktop resta disponibile come modello riutilizzabile per host
-futuri. `desktop_environment` continua a selezionare in modo esclusivo
-`minimal`, `xfce` oppure `kde` per i desktop Void; Niri, GNOME e Cinnamon sono profili
-desktop indipendenti via gruppi `desktop_niri`, `desktop_gnome` e `desktop_cinnamon`.
+futuri e usa esclusivamente `desktop_environment: minimal`. Niri e GNOME sono
+profili desktop indipendenti via gruppi `desktop_niri` e `desktop_gnome`.
 
 Lo stato attuale del profilo desktop include, tra le altre cose:
 
 - dotfiles comuni e desktop
 - sessioni sway e Hyprland per eventuali host Void in modalita `minimal`
-- KDE Plasma con applicazioni KDE curate e SDDM disponibile come alternativa esclusiva
-- XFCE con pannello, keybinding, terminale, tema e workspace dichiarativi, LightDM e Thunderbird come client grafico principale
 - `emptty` con default host-specific in modalita `minimal`, con session file Wayland esposti per `sway` e `hyprland`
 - pacchetti Void Linux e servizi runit; le liste pacchetti Void desktop sono separate per criterio:
   - `void_packages_base` per il runtime sistema (init, kernel, audio core, networking, firewall, hw daemons)
-  - `desktop_common_packages` per l'infrastruttura condivisa dalle modalita
-  - `desktop_minimal_packages` per applicazioni GTK/XFCE e `emptty`
-  - `desktop_xfce_packages` per XFCE, LightDM e le relative integrazioni
-  - `desktop_kde_packages` per Plasma, SDDM e le applicazioni KDE equivalenti
+  - `desktop_common_packages` per l'infrastruttura condivisa
+  - `desktop_minimal_packages` per applicazioni GTK e `emptty`
   - `desktop_sway_packages` e `desktop_hyprland_packages` per i binari specifici di ciascuna sessione
 - `turnstile` per i servizi utente Void, incluso `ssh-agent`
 - `ssh-agent` con socket stabile condiviso tra shell e SSH in `~/.local/state/ssh-agent/socket`
 - Emacs e i relativi dotfile restano nel repo ma sono disabilitati di default tramite `emacs_enabled: false`
 - `tmux` con plugin gestiti da TPM al bootstrap del profilo desktop
 - Flatpak con remoto Flathub
-- GNOME Keyring e `udiskie` nella modalita minimale; KWallet e integrazione UDisks di Plasma nella modalita KDE
+- GNOME Keyring e `udiskie` nella modalita minimale
 - multi-monitor Void: sotto sway è gestito da `kanshi`; sotto Hyprland gli override monitor vivono in `host_hyprland_dotfiles`
 
 ---
@@ -249,7 +244,7 @@ Questo approccio consente di:
 - applicare override specifici per host
 - evitare duplicazioni
 - riutilizzare il profilo Void corrente su un host futuro assegnandolo a
-  `platform_void + graphical_desktop + role_lab + desktop_hyprland`
+  `platform_void + graphical_desktop + desktop_hyprland`
 
 ---
 
@@ -261,7 +256,6 @@ I principali ruoli attualmente presenti sono:
 | ------------------------- | ----------------------------------- |
 | base                      | configurazione base comune          |
 | packages_void             | installazione pacchetti su Void     |
-| packages_mint             | installazione pacchetti su Linux Mint via APT |
 | packages_freebsd          | installazione pacchetti su FreeBSD via pkg |
 | packages_ubuntu           | installazione pacchetti su Ubuntu   |
 | packages_fedora           | installazione pacchetti su Fedora   |
@@ -274,10 +268,8 @@ I principali ruoli attualmente presenti sono:
 | profile_desktop_hyprland  | sessione desktop Hyprland (Wayland) |
 | profile_desktop_niri     | sessione desktop Niri su Void (Wayland) |
 | profile_desktop_niri_freebsd | adattamenti FreeBSD per Niri |
-| profile_desktop_cinnamon  | impostazioni Cinnamon circoscritte |
 | profile_desktop_host      | override desktop specifici per host |
 | profile_personal_workstation | layer stabile per workstation personale |
-| profile_lab               | layer sperimentale/lab              |
 | profile_workstation_dev_common | configurazione dev workstation condivisa |
 | profile_workstation_gnome | configurazione host workstation GNOME |
 | profile_workstation_dev_wsl | configurazione WSL Ubuntu per sviluppo |
@@ -294,12 +286,8 @@ Il playbook `ansible/site.yml` e attualmente composto da blocchi per asse:
 ```text
 all -> dotfiles_common
 platform_void -> packages_void + services_runit
-platform_void & graphical_desktop -> profile_desktop_common + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_niri + profile_desktop_kde + profile_desktop_xfce + profile_desktop_host
-platform_mint -> packages_mint + services_systemd
-platform_mint & role_personal_workstation -> profile_personal_workstation
-platform_mint & desktop_cinnamon -> profile_desktop_cinnamon
+platform_void & graphical_desktop -> profile_desktop_common + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_niri + profile_desktop_host
 platform_freebsd -> packages_freebsd + services_freebsd
-platform_freebsd & role_lab -> profile_lab
 platform_freebsd & desktop_niri -> profile_desktop_niri_freebsd
 platform_fedora -> packages_fedora + services_systemd
 platform_fedora & role_personal_workstation -> profile_personal_workstation
@@ -388,13 +376,13 @@ Allo stato attuale questo comando:
 - distribuisce i dotfiles comuni a tutti gli host
 - per `platform_void` applica pacchetti Void e servizi runit
 - per `platform_void + graphical_desktop` applica bootstrap desktop condiviso, sessioni sway/Hyprland/Niri e override specifici per host
-- per `platform_mint`, `platform_freebsd`, `workstation_dev_fedora` e `workstation_host_linux` non applica nulla finche quei gruppi restano senza host
+- per `platform_freebsd`, `workstation_dev_fedora` e `workstation_host_linux` non applica nulla finche quei gruppi restano senza host
 - per `platform_fedora` applica pacchetti Fedora e servizi systemd a `ikaros` e `nymph`
 - per `platform_fedora & role_personal_workstation` applica il layer personale a `ikaros`
 - per `platform_fedora & desktop_gnome` applica il profilo GNOME a `ikaros` e `nymph`
 - per `workstation_dev_wsl` applica pacchetti Ubuntu, servizi systemd, profilo dev comune e tweak WSL dedicati a `deadalus-wsl`
 - per gli host `ubuntu_server` applica pacchetti Ubuntu, servizi systemd, profilo server, UFW, dotfiles e template dedicati
-- non riavvia automaticamente il display manager; i passaggi tra `emptty`, LightDM e SDDM vanno applicati da SSH o da una TTY separata
+- non riavvia automaticamente il display manager
 - carica `secrets/vault.yml` solo se presente
 - carica `secrets/vault.local.yml` solo se presente, dopo `vault.yml`, cosi gli override locali hanno precedenza
 
@@ -436,14 +424,6 @@ Per vedere l'elenco reale aggiornato dei tag disponibili:
 ansible-playbook ansible/site.yml --list-tags
 ```
 
-Per attivare XFCE o KDE su un host, impostare rispettivamente `desktop_environment: xfce` o `desktop_environment: kde` nei relativi `host_vars` ed eseguire prima un dry run. Il primo play configura il profilo ma, se un altro display manager e ancora attivo, rinvia il cambio. Da una TTY o sessione SSH separata, con la sessione grafica chiusa, applicare quindi il passaggio esplicito:
-
-```bash
-ansible-playbook ansible/site.yml --limit <host> -e desktop_allow_display_manager_switch=true
-```
-
-La stessa procedura vale per ogni passaggio tra `minimal`, `xfce` e `kde`. Gli XML XFCE sono autorevoli: applicare i relativi aggiornamenti mentre XFCE e disconnesso evita che `xfconfd` ripristini lo stato in memoria.
-
 Allo stato attuale `ansible/site.yml` espone questi tag:
 
 | Tag | Scopo | Ambito principale |
@@ -456,10 +436,7 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `dotfiles:server` | dotfiles dedicati al profilo server | server |
 | `dotfiles:workstation` | dotfiles dedicati alle workstation | personal workstation, WSL, workstation Linux future |
 | `emptty` | gestione display manager `emptty` | desktop Void |
-| `display-manager` | selezione protetta tra `emptty`, LightDM e SDDM | desktop Void |
-| `kde` | profilo KDE Plasma e relativa pulizia | desktop Void |
-| `xfce` | profilo XFCE, LightDM e relativa pulizia | desktop Void |
-| `cinnamon` | impostazioni Cinnamon circoscritte | Linux Mint desktop |
+| `display-manager` | gestione del display manager `emptty` | desktop Void |
 | `gnome` | configurazione host GNOME | Fedora/GNOME desktop, workstation host Linux future |
 | `sway` | sessione/configurazione sway / SwayFX (Wayland) | desktop Void |
 | `hyprland` | sessione/configurazione Hyprland (Wayland) | desktop Void |
@@ -498,9 +475,8 @@ Per aggiungere un nuovo host Void che riusa il profilo desktop preservato:
 
 1. aggiungere l'host a `platform_void`;
 2. aggiungerlo a `graphical_desktop`;
-3. scegliere il ruolo, per esempio `role_lab`;
-4. scegliere il desktop, per esempio `desktop_hyprland`;
-5. lasciare eventuali dettagli hardware in `host_vars/<host>.yml`.
+3. scegliere il desktop, per esempio `desktop_hyprland`;
+4. lasciare eventuali dettagli hardware in `host_vars/<host>.yml`.
 
 I gruppi legacy `void` e `desktop` sono parent di compatibilita, quindi un host
 in `platform_void` e `graphical_desktop` continua a ricevere anche le variabili

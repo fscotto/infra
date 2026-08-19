@@ -22,11 +22,6 @@
               if 'desktop_niri' in group_names
               else []
             )
-          + (
-              (freebsd_lab_packages | default([]))
-              if 'role_lab' in group_names
-              else []
-            )
           + (host_packages | default([]))
         )
         | unique

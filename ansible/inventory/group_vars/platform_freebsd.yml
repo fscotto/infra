@@ -102,13 +102,6 @@ freebsd_niri_packages:
   - wl-clipboard
   - xdg-desktop-portal-gtk
 
-freebsd_lab_packages:
-  - lldb
-  - llvm
-  - podman
-  - qemu
-  - smartmontools
-
 freebsd_rc_conf:
   - name: dbus_enable
     value: "YES"

@@ -67,11 +67,12 @@ common user environment
 
 Matrice target:
 
-| Host           | Platform   | Role                 | Desktop                           |
-| -------------- | ---------- | -------------------- | --------------------------------- |
-| ikaros         | Fedora     | Personal workstation | GNOME                             |
-| nymph          | Fedora     | Desktop laptop       | GNOME                             |
-| void-reference | Void Linux | Reference            | Current preserved desktop profile |
+| Host         | Platform | Role                 | Desktop |
+| ------------ | -------- | -------------------- | ------- |
+| ikaros       | Fedora   | Personal workstation | GNOME   |
+| nymph        | Fedora   | Desktop laptop       | GNOME   |
+| deadalus-wsl | Ubuntu   | Workstation dev      | —       |
+| prometheus   | Ubuntu   | Server               | —       |
 
 Regola operativa:
 
@@ -99,13 +100,14 @@ Target operativi:
 - `nymph`: Fedora Workstation + GNOME, laptop desktop con dotfiles desktop condivisi e GNOME lasciato al default Fedora.
 
 Il profilo Void desktop resta disponibile come modello riutilizzabile per host
-futuri e usa esclusivamente `desktop_environment: minimal`. Niri e GNOME sono
-profili desktop indipendenti via gruppi `desktop_niri` e `desktop_gnome`.
+futuri e usa esclusivamente `desktop_environment: minimal`: Sway e il default,
+mentre Niri si seleziona con il gruppo `desktop_niri`. GNOME e disponibile solo
+sui target Fedora tramite `desktop_gnome`.
 
 Lo stato attuale del profilo desktop include, tra le altre cose:
 
 - dotfiles comuni e desktop
-- sessioni sway e Hyprland per eventuali host Void in modalita `minimal`
+- sessioni Sway e Niri per eventuali host Void in modalita `minimal`
 - `emptty` con default host-specific in modalita `minimal` e session file Wayland per `sway`
 - pacchetti Void Linux e servizi runit; le liste pacchetti Void desktop sono separate per criterio:
   - `void_packages_base` per il runtime sistema (init, kernel, audio core, networking, firewall, hw daemons)
@@ -143,7 +145,7 @@ Nel modello Ansible usato qui, un singolo inventory host puo appartenere intenzi
 
 Il profilo workstation e agganciato al playbook principale e ora distingue:
 
-- layer dev Ubuntu condiviso tra WSL e server
+- layer dev condiviso tra WSL e workstation Fedora future
 - layer dev Fedora nativo disponibile per host futuri
 - layer host Linux GNOME disponibile per host futuri
 - layer WSL dedicato per sviluppo con `systemd`
@@ -261,7 +263,7 @@ I principali ruoli attualmente presenti sono:
 | packages_fedora           | installazione pacchetti su Fedora   |
 | services_runit            | gestione servizi runit              |
 | services_systemd          | gestione servizi systemd            |
-| services_freebsd          | gestione servizi FreeBSD rc.conf/rc.d |
+| services_freebsd          | gestione servizi FreeBSD dichiarati per host |
 | profile_desktop_common    | bootstrap desktop Void condiviso    |
 | profile_desktop_gnome     | dotfiles desktop condivisi per Fedora/GNOME |
 | profile_desktop_sway      | sessione desktop sway / SwayFX (Wayland) |
@@ -372,7 +374,7 @@ Allo stato attuale questo comando:
 
 - distribuisce i dotfiles comuni a tutti gli host
 - per `platform_void` applica pacchetti Void e servizi runit
-- per `platform_void + graphical_desktop` applica bootstrap desktop condiviso, sessioni sway/Hyprland/Niri e override specifici per host
+- per `platform_void + graphical_desktop` applica bootstrap desktop condiviso, sessioni Sway/Niri e override specifici per host
 - per `platform_freebsd`, `workstation_dev_fedora` e `workstation_host_linux` non applica nulla finche quei gruppi restano senza host
 - per `platform_fedora` applica pacchetti Fedora e servizi systemd a `ikaros` e `nymph`
 - per `platform_fedora & role_personal_workstation` applica il layer personale a `ikaros`
@@ -426,6 +428,7 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | Tag | Scopo | Ambito principale |
 | --- | --- | --- |
 | `always` | pre-task sempre eseguiti, inclusi caricamento vault e validazioni preliminari | common |
+| `ai_agents` | installazione agenti AI condivisi | Fedora, WSL |
 | `dotfiles` | distribuzione/configurazione dotfiles | tutti i profili |
 | `dotfiles:common` | dotfiles comuni condivisi | common, workstation, server |
 | `dotfiles:desktop` | dotfiles desktop | desktop Void, Fedora/GNOME |
@@ -434,13 +437,21 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `dotfiles:workstation` | dotfiles dedicati alle workstation | personal workstation, WSL, workstation Linux future |
 | `emptty` | gestione display manager `emptty` | desktop Void |
 | `display-manager` | gestione del display manager `emptty` | desktop Void |
+| `emacs` | deploy opzionale di Emacs | desktop Fedora/Void |
+| `fonts` | installazione font | Fedora |
+| `fzf` | configurazione FZF | dotfiles comuni |
+| `git` | configurazione Git e GPG desktop | Fedora/GNOME, desktop Void |
 | `gnome` | configurazione host GNOME | Fedora/GNOME desktop, workstation host Linux future |
 | `sway` | sessione/configurazione sway / SwayFX (Wayland) | desktop Void |
 | `niri` | sessione/configurazione Niri (Wayland) | desktop Void |
 | `npm` | installazione pacchetti npm globali | Fedora/GNOME, desktop Void, workstation Linux, WSL |
 | `nvidia` | componenti NVIDIA desktop | desktop Void |
 | `packages` | installazione e aggiornamento pacchetti | tutti i profili |
+| `portal` | configurazione xdg-desktop-portal | desktop Void |
 | `services` | gestione servizi runit/systemd | tutti i profili |
+| `theme` | configurazione del tema GTK/Qt | desktop Void |
+| `tmux` | configurazione e plugin tmux | desktop Fedora/Void, WSL |
+| `vim` | configurazione Vim | dotfiles comuni |
 | `vscode` | installazione/configurazione VS Code | workstation Fedora future, host Linux |
 | `wsl` | bootstrap e configurazione WSL | WSL |
 
@@ -471,7 +482,7 @@ Per aggiungere un nuovo host Void che riusa il profilo desktop preservato:
 
 1. aggiungere l'host a `platform_void`;
 2. aggiungerlo a `graphical_desktop`;
-3. scegliere il desktop, per esempio `desktop_sway`;
+3. usare Sway, oppure aggiungerlo a `desktop_niri` per selezionare Niri;
 4. lasciare eventuali dettagli hardware in `host_vars/<host>.yml`.
 
 I gruppi legacy `void` e `desktop` sono parent di compatibilita, quindi un host

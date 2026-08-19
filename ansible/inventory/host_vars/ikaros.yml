@@ -233,11 +233,11 @@ gnome_gsettings_settings:
   - schema: org.gnome.shell
     key: disabled-extensions
     value: >-
-      ['window-list@gnome-shell-extensions.gcampax.github.com', 'background-logo@fedorahosted.org', 'apps-menu@gnome-shell-extensions.gcampax.github.com', 'places-menu@gnome-shell-extensions.gcampax.github.com', 'maximize-new-windows@VitalyOstanin']
+      ['window-list@gnome-shell-extensions.gcampax.github.com', 'background-logo@fedorahosted.org', 'apps-menu@gnome-shell-extensions.gcampax.github.com', 'places-menu@gnome-shell-extensions.gcampax.github.com']
   - schema: org.gnome.shell
     key: enabled-extensions
     value: >-
-      ['status-icons@gnome-shell-extensions.gcampax.github.com', 'gnome-ui-tune@itstime.tech', 'appindicatorsupport@rgcjonas.gmail.com', 'bluetooth-battery-monitor@v8v88v8v88.com', 'clipboard-indicator@tudmotu.com', 'status-area-horizontal-spacing@mathematical.coffee.gmail.com', 'MaximizeWindowIntoNewWorkspace@kyleross.com']
+      ['status-icons@gnome-shell-extensions.gcampax.github.com', 'gnome-ui-tune@itstime.tech', 'appindicatorsupport@rgcjonas.gmail.com', 'bluetooth-battery-monitor@v8v88v8v88.com', 'clipboard-indicator@tudmotu.com', 'status-area-horizontal-spacing@mathematical.coffee.gmail.com', 'MaximizeWindowIntoNewWorkspace@kyleross.com', 'maximize-new-windows@VitalyOstanin']
   - schema: org.gnome.shell
     key: favorite-apps
     value: >-

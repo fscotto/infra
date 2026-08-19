@@ -54,7 +54,7 @@ Dotfiles under `dotfiles/` mirror the same layer split: `common/`, `desktop/`, `
 
 - `void_packages_base` — system runtime (init, kernel, audio core, networking, firewall, hw daemons)
 - `desktop_common_packages` — WM-agnostic GUI infra (GTK theme, polkit, keyring, portals, flatpak, printing)
-- `desktop_sway_packages` / `desktop_hyprland_packages` — session-specific binaries; cross-WM packages used by both (`dunst`, `rofi`, `alacritty`) are intentionally duplicated
+- `desktop_sway_packages` — Sway-specific binaries
 - `profile_packages` — cross-distro; do not move desktop-only Void entries into it
 
 Dotfile var split follows the same logic: `desktop_common_dotfiles` (WM-agnostic), `desktop_void_dotfiles` (Void runtime — turnstile services, bash fragments).

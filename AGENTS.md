@@ -54,19 +54,17 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, FreeBS
 - Use `no_log: true` for secret-bearing task inputs or outputs.
 
 ## Desktop Notes
-- `desktop_profile` names independently selectable desktop groups such as `desktop_gnome`, `desktop_hyprland`, `desktop_sway`, and `desktop_niri`. Keep platform-specific session bootstrap in platform-specific roles.
-- `desktop_environment` is fixed to `minimal` for Void desktops. `profile_desktop_common` owns shared Void bootstrap; `profile_desktop_sway`, `profile_desktop_hyprland`, and `profile_desktop_niri` manage the enabled sessions, while `profile_desktop_gnome` copies shared desktop dotfiles for Fedora/GNOME without managing GNOME settings. `desktop_sessions_enabled` and `desktop_default_session` apply to the minimal mode.
+- `desktop_profile` names independently selectable desktop groups such as `desktop_gnome`, `desktop_sway`, and `desktop_niri`. Keep platform-specific session bootstrap in platform-specific roles.
+- `desktop_environment` is fixed to `minimal` for Void desktops. `profile_desktop_common` owns shared Void bootstrap; `profile_desktop_sway` and `profile_desktop_niri` manage the enabled sessions, while `profile_desktop_gnome` copies shared desktop dotfiles for Fedora/GNOME without managing GNOME settings. `desktop_sessions_enabled` and `desktop_default_session` apply to the minimal mode.
 - Emacs packages and `.emacs.d` deploy are disabled by default via `emacs_enabled: false`; keep the dotfiles in the repo for reversible opt-in only.
 - NTFS filesystem support is provided by `ntfs-3g` in `ansible/inventory/group_vars/void.yml`.
 - Void user services are managed by `turnstile` and live under `dotfiles/desktop/.config/service/`.
 - `ssh-agent` keeps the stable socket `~/.local/state/ssh-agent/socket`.
 - Critical session entrypoints:
   - `dotfiles/desktop/.config/sway/config` plus `host.conf` and `session-env` deployed via `host_sway_dotfiles` (sway / Wayland)
-  - `dotfiles/desktop/.config/hypr/hyprland.conf` plus `host.conf` and `session-env` deployed via `host_hyprland_dotfiles` (Hyprland / Wayland)
   - `dotfiles/desktop/.config/niri/config.kdl` and `session-env` deployed via `desktop_niri_dotfiles` (Niri / Wayland)
 - Void Niri lives in `profile_desktop_niri`, gated on `'niri' in desktop_sessions_enabled`; it installs the `emptty` `niri.desktop` session, the `/usr/local/bin/start-niri` launcher, and the xdg-desktop-portal config, mirroring `profile_desktop_sway`.
 - Fedora GNOME (`desktop_gnome`) assumes GNOME comes from the Fedora Workstation base install; Ansible deploys shared desktop dotfiles and git/GPG config for `ikaros` and `nymph`, not GNOME settings.
-- FreeBSD Niri (dormant; `platform_freebsd` currently has no hosts) must keep FreeBSD-specific package, rc, DBus, seat, portal, and launcher behavior in `profile_desktop_niri_freebsd` or FreeBSD platform vars.
 - Do not switch or restart the display manager during a playbook run from an active graphical session.
 - `nymph` is the Fedora/GNOME laptop target; keep GNOME settings unmanaged for now and add host-specific tuning only after real use.
 
@@ -76,7 +74,7 @@ The Void desktop package lists in `ansible/inventory/group_vars/void.yml` are ke
 - `void_packages_base` — system runtime only (init/services, kernel, audio core, networking, filesystem, firewall, hardware daemons, runit logging).
 - `desktop_common_packages` — GUI infrastructure shared by the minimal desktop mode.
 - `desktop_minimal_packages` — applications, integration components, and the `emptty` display manager.
-- `desktop_sway_packages` / `desktop_hyprland_packages` — binaries specific to each session. Cross-WM packages used by both (such as `dunst`, `rofi`, and `foot`) are intentionally duplicated in the two lists.
+- `desktop_sway_packages` — binaries specific to the Sway session.
 `profile_packages` in the same file is cross-distro and is overridden by `group_vars/server.yml` and the workstation group vars; do not move desktop-specific Void entries through it.
 The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-independent content and `desktop_minimal_dotfiles` carries Thunar, Udiskie, and MIME defaults. `desktop_void_dotfiles` remains reserved for files that need the Void runtime.
 

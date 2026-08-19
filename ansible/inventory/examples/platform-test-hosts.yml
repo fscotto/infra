@@ -6,11 +6,3 @@ all:
       hosts:
         freebsdtest:
           ansible_connection: local
-
-    graphical_desktop:
-      hosts:
-        freebsdtest:
-
-    desktop_niri:
-      hosts:
-        freebsdtest:

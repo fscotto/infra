@@ -3,9 +3,8 @@ desktop_environment: minimal
 
 desktop_sessions_enabled:
   - sway
-  - hyprland
 
-desktop_default_session: hyprland
+desktop_default_session: sway
 desktop_default_session_env: wayland
 desktop_prompt_for_session: true
 
@@ -150,7 +149,6 @@ desktop_minimal_managed_paths:
   - .config/flameshot
   - .config/foot
   - .config/gtklock
-  - .config/hypr
   - .config/kanshi
   - .config/rofi
   - .config/sway
@@ -205,32 +203,6 @@ desktop_sway_dotfiles:
   - name: gtklock config
     src: .config/gtklock/
     dest: .config/gtklock/
-    mode: preserve
-
-desktop_hyprland_dotfiles:
-  - name: alacritty config
-    src: .config/alacritty/
-    dest: .config/alacritty/
-    mode: preserve
-  - name: dunst config
-    src: .config/dunst/
-    dest: .config/dunst/
-    mode: preserve
-  - name: rofi config
-    src: .config/rofi/
-    dest: .config/rofi/
-    mode: preserve
-  - name: hyprland config
-    src: .config/hypr/
-    dest: .config/hypr/
-    mode: preserve
-  - name: waybar config
-    src: .config/waybar/
-    dest: .config/waybar/
-    mode: preserve
-  - name: foot config
-    src: .config/foot/
-    dest: .config/foot/
     mode: preserve
 
 desktop_niri_dotfiles:

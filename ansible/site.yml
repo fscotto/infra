@@ -37,7 +37,6 @@
   roles:
     - profile_desktop_common
     - profile_desktop_sway
-    - profile_desktop_hyprland
     - profile_desktop_niri
     - profile_desktop_host
 
@@ -48,13 +47,6 @@
   roles:
     - packages_freebsd
     - services_freebsd
-
-- name: Configure Niri desktop on FreeBSD
-  hosts: platform_freebsd:&desktop_niri
-  become: true
-
-  roles:
-    - profile_desktop_niri_freebsd
 
 - name: Configure Fedora platform
   hosts: platform_fedora

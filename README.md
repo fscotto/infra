@@ -106,19 +106,19 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 
 - dotfiles comuni e desktop
 - sessioni sway e Hyprland per eventuali host Void in modalita `minimal`
-- `emptty` con default host-specific in modalita `minimal`, con session file Wayland esposti per `sway` e `hyprland`
+- `emptty` con default host-specific in modalita `minimal` e session file Wayland per `sway`
 - pacchetti Void Linux e servizi runit; le liste pacchetti Void desktop sono separate per criterio:
   - `void_packages_base` per il runtime sistema (init, kernel, audio core, networking, firewall, hw daemons)
   - `desktop_common_packages` per l'infrastruttura condivisa
   - `desktop_minimal_packages` per applicazioni GTK e `emptty`
-  - `desktop_sway_packages` e `desktop_hyprland_packages` per i binari specifici di ciascuna sessione
+  - `desktop_sway_packages` per i binari specifici della sessione Sway
 - `turnstile` per i servizi utente Void, incluso `ssh-agent`
 - `ssh-agent` con socket stabile condiviso tra shell e SSH in `~/.local/state/ssh-agent/socket`
 - Emacs e i relativi dotfile restano nel repo ma sono disabilitati di default tramite `emacs_enabled: false`
 - `tmux` con plugin gestiti da TPM al bootstrap del profilo desktop
 - Flatpak con remoto Flathub
 - GNOME Keyring e `udiskie` nella modalita minimale
-- multi-monitor Void: sotto sway è gestito da `kanshi`; sotto Hyprland gli override monitor vivono in `host_hyprland_dotfiles`
+- multi-monitor Void: sotto Sway è gestito da `kanshi`
 
 ---
 
@@ -244,7 +244,7 @@ Questo approccio consente di:
 - applicare override specifici per host
 - evitare duplicazioni
 - riutilizzare il profilo Void corrente su un host futuro assegnandolo a
-  `platform_void + graphical_desktop + desktop_hyprland`
+  `platform_void + graphical_desktop + desktop_sway`
 
 ---
 
@@ -265,9 +265,7 @@ I principali ruoli attualmente presenti sono:
 | profile_desktop_common    | bootstrap desktop Void condiviso    |
 | profile_desktop_gnome     | dotfiles desktop condivisi per Fedora/GNOME |
 | profile_desktop_sway      | sessione desktop sway / SwayFX (Wayland) |
-| profile_desktop_hyprland  | sessione desktop Hyprland (Wayland) |
 | profile_desktop_niri     | sessione desktop Niri su Void (Wayland) |
-| profile_desktop_niri_freebsd | adattamenti FreeBSD per Niri |
 | profile_desktop_host      | override desktop specifici per host |
 | profile_personal_workstation | layer stabile per workstation personale |
 | profile_workstation_dev_common | configurazione dev workstation condivisa |
@@ -286,9 +284,8 @@ Il playbook `ansible/site.yml` e attualmente composto da blocchi per asse:
 ```text
 all -> dotfiles_common
 platform_void -> packages_void + services_runit
-platform_void & graphical_desktop -> profile_desktop_common + profile_desktop_sway + profile_desktop_hyprland + profile_desktop_niri + profile_desktop_host
+platform_void & graphical_desktop -> profile_desktop_common + profile_desktop_sway + profile_desktop_niri + profile_desktop_host
 platform_freebsd -> packages_freebsd + services_freebsd
-platform_freebsd & desktop_niri -> profile_desktop_niri_freebsd
 platform_fedora -> packages_fedora + services_systemd
 platform_fedora & role_personal_workstation -> profile_personal_workstation
 platform_fedora & desktop_gnome -> profile_desktop_gnome
@@ -431,7 +428,7 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `always` | pre-task sempre eseguiti, inclusi caricamento vault e validazioni preliminari | common |
 | `dotfiles` | distribuzione/configurazione dotfiles | tutti i profili |
 | `dotfiles:common` | dotfiles comuni condivisi | common, workstation, server |
-| `dotfiles:desktop` | dotfiles desktop | desktop Void, Fedora/GNOME, FreeBSD/Niri |
+| `dotfiles:desktop` | dotfiles desktop | desktop Void, Fedora/GNOME |
 | `dotfiles:host` | override host-specifici desktop | desktop Void |
 | `dotfiles:server` | dotfiles dedicati al profilo server | server |
 | `dotfiles:workstation` | dotfiles dedicati alle workstation | personal workstation, WSL, workstation Linux future |
@@ -439,8 +436,7 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `display-manager` | gestione del display manager `emptty` | desktop Void |
 | `gnome` | configurazione host GNOME | Fedora/GNOME desktop, workstation host Linux future |
 | `sway` | sessione/configurazione sway / SwayFX (Wayland) | desktop Void |
-| `hyprland` | sessione/configurazione Hyprland (Wayland) | desktop Void |
-| `niri` | sessione/configurazione Niri (Wayland) | Void o FreeBSD con `desktop_niri` |
+| `niri` | sessione/configurazione Niri (Wayland) | desktop Void |
 | `npm` | installazione pacchetti npm globali | Fedora/GNOME, desktop Void, workstation Linux, WSL |
 | `nvidia` | componenti NVIDIA desktop | desktop Void |
 | `packages` | installazione e aggiornamento pacchetti | tutti i profili |
@@ -475,7 +471,7 @@ Per aggiungere un nuovo host Void che riusa il profilo desktop preservato:
 
 1. aggiungere l'host a `platform_void`;
 2. aggiungerlo a `graphical_desktop`;
-3. scegliere il desktop, per esempio `desktop_hyprland`;
+3. scegliere il desktop, per esempio `desktop_sway`;
 4. lasciare eventuali dettagli hardware in `host_vars/<host>.yml`.
 
 I gruppi legacy `void` e `desktop` sono parent di compatibilita, quindi un host

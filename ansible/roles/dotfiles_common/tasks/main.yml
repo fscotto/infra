@@ -34,7 +34,9 @@
     group: "{{ effective_user_group }}"
     mode: "0755"
   loop: "{{ emacs_authoring_directories | default([]) }}"
-  when: emacs_enabled | default(false) | bool
+  when:
+    - emacs_enabled | default(false) | bool
+    - not (workstation_is_wsl | default(false) | bool)
 
 - name: Deploy the shared Emacs authoring configuration
   tags: [dotfiles, dotfiles:common, emacs]
@@ -47,7 +49,9 @@
   loop: "{{ emacs_dotfiles | default([]) }}"
   loop_control:
     label: "{{ item.dest }}"
-  when: emacs_enabled | default(false) | bool
+  when:
+    - emacs_enabled | default(false) | bool
+    - not (workstation_is_wsl | default(false) | bool)
 
 - name: Deploy Emacs authoring assets
   tags: [dotfiles, dotfiles:common, emacs]
@@ -60,7 +64,9 @@
   loop: "{{ emacs_authoring_files | default([]) }}"
   loop_control:
     label: "{{ item.dest }}"
-  when: emacs_enabled | default(false) | bool
+  when:
+    - emacs_enabled | default(false) | bool
+    - not (workstation_is_wsl | default(false) | bool)
 
 - name: Ensure SSH socket directory exists
   tags: [dotfiles, dotfiles:common]

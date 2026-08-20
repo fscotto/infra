@@ -1,4 +1,35 @@
 ---
+- name: Ensure Windows Emacs authoring directories exist
+  tags: [dotfiles, dotfiles:workstation, emacs, wsl]
+  ansible.builtin.file:
+    path: "{{ workstation_wsl_windows_user_home }}/{{ item }}"
+    state: directory
+  become_user: "{{ username }}"
+  loop:
+    - Org
+    - Org/documentation
+    - Org/meetings
+    - Org/projects
+  when: emacs_enabled | default(false) | bool
+
+- name: Deploy shared Emacs configuration to the Windows home
+  tags: [dotfiles, dotfiles:workstation, emacs, wsl]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/.emacs.d/"
+    dest: "{{ workstation_wsl_windows_user_home }}/.emacs.d/"
+    mode: preserve
+  become_user: "{{ username }}"
+  when: emacs_enabled | default(false) | bool
+
+- name: Deploy Org HTML stylesheet to the Windows home
+  tags: [dotfiles, dotfiles:workstation, emacs, wsl]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/.emacs.d/templates/org/org.css"
+    dest: "{{ workstation_wsl_windows_user_home }}/Org/org.css"
+    mode: "0644"
+  become_user: "{{ username }}"
+  when: emacs_enabled | default(false) | bool
+
 - name: Ensure WSL tmux directories exist
   tags: [dotfiles, dotfiles:workstation, tmux, wsl]
   ansible.builtin.file:

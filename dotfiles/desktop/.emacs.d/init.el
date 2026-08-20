@@ -1,52 +1,20 @@
-(message "Welcome to Emacs")
-(message "Loading user configuration...")
-(message "Emacs profile: %s" fscotto/emacs-profile)
+(message "Loading authoring configuration...")
 
-;;=====================================================================================
-;; Load modules
-;;=====================================================================================
 (fscotto/load-modules
-  ;; Core
-  'core/packages
-  'core/ui
-  'core/performance
-  'core/editor
-  'core/keybindings
-  'core/modal
-  'core/buffer
+ 'core/packages
+ 'core/ui
+ 'core/performance
+ 'core/editor
+ 'core/keybindings
+ 'core/buffer
+ 'tools/spell
+ 'tools/completion
+ 'lang/org
+ 'authoring
+ 'quality-of-life
+ 'misc/dashboard
+ 'misc/which-key
+ 'misc/vcs
+ 'misc/rss)
 
-  ;; Tools
-  'tools/completion
-  'tools/dired
-  'tools/project
-  'tools/spell
-  'tools/tramp
-  'tools/lsp
-  'tools/dap
-  'tools/treesitter
-
-  ;; Languages
-  'lang/c
-  'lang/docker
-  'lang/golang
-  'lang/json
-  'lang/markdown
-  'lang/org
-  'lang/python
-  'lang/shell
-  'lang/yaml
-
-  ;; Misc
-  'misc/dashboard
-  'misc/custom-functions
-  'misc/doom-modeline
-  'misc/which-key
-  'misc/gptel
-  'misc/rss
-  'misc/terminal
-  'misc/vcs
-  'misc/documents
-  'misc/i3-config
-  'misc/xclip)
-
-(message "...user configuration loaded")
+(message "Authoring configuration loaded")

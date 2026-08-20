@@ -21,6 +21,11 @@ fedora_intellij_package_name: intellij-idea-ultimate
 
 fedora_emacs_packages:
   - emacs-pgtk
+  - pandoc
+  - latexmk
+  - texlive-latex
+  - texlive-luatex
+  - texlive-collection-latexrecommended
 
 fedora_docker_packages:
   - docker-ce
@@ -55,7 +60,6 @@ fedora_workstation_dev_packages:
   - gnupg2-gpg-agent
   - libfido2
   - openssh-clients
-  - pandoc
   - shellcheck
 
 workstation_host_linux_packages_fedora:

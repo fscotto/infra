@@ -1,19 +1,9 @@
-;;; core-editor
+;;; editor.el --- General editing defaults -*- lexical-binding: t; -*-
 
-(require 'ansi-color)
-
-(setq standard-indent 4)
-(setq tab-stop-list nil)
-(setq indent-tabs-mode nil)
-
-;; Setting variables
-(setq vc-follow-symlinks 't)
-(setq vc-handled-backends nil)
+(setq standard-indent 4
+      indent-tabs-mode nil
+      vc-follow-symlinks t
+      custom-file (null-device))
 (prefer-coding-system 'utf-8-unix)
-(setq custom-file (null-device))
 
-(add-hook 'compilation-filter-hook #'ansi-color-compilation-filter)
-
-(provide 'editor)
-
-;;; editor.el ends here
+(provide 'core/editor)

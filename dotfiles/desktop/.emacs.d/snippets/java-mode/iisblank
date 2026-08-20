@@ -1,4 +1,0 @@
-#name : static import of isBlank
-# --
-import static org.apache.commons.lang.StringUtils.isBlank;
-$0

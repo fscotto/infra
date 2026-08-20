@@ -1,3 +1,0 @@
-#name : get ObjectLoader
-# --
-$0ObjectLoader objectLoader = IOAPI.getAPI().getObjectLoader();

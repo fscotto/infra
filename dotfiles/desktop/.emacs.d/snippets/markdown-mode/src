@@ -1,6 +1,0 @@
-#name : src code snippet
-# --
-
-\`\`\`${1:text}
-$0
-\`\`\`

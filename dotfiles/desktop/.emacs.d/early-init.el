@@ -18,6 +18,3 @@
 (defun fscotto/load-modules (&rest modules)
   "Load MODULES."
   (mapc #'fscotto/load-module modules))
-
-(defvar fscotto/emacs-profile
-  (or (getenv "EMACS_PROFILE") "full"))

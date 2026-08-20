@@ -136,6 +136,11 @@
         + (ubuntu_packages_base | default([]))
         + (ubuntu_docker_packages | default([]))
         + (profile_packages | default([]))
+        + (
+            (ubuntu_emacs_packages | default([]))
+            if (emacs_enabled | default(false) | bool)
+            else []
+          )
         + (workstation_dev_packages | default([]))
         + (
             (workstation_host_linux_packages | default([]))

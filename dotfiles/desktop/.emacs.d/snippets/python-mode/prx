@@ -1,4 +1,0 @@
-#name : prx
-# --
-print(etree.tostring($1, encoding='unicode'))
-$0

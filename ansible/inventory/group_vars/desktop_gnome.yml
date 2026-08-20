@@ -36,7 +36,6 @@ fedora_desktop_packages:
   - liberation-fonts
   - libasan
   - libubsan
-  - libvterm-devel
   - libX11-devel
   - libXft-devel
   - meld
@@ -58,7 +57,6 @@ fedora_desktop_packages:
   - syncthing
   - tealdeer
   - terminus-fonts
-  - texlive
   - tmux
   - wl-clipboard
   - ty

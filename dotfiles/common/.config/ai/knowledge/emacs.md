@@ -1,5 +1,5 @@
 # Emacs
 
-- Primary editor
-- LSP for C, Go, Python
-- Modular configuration
+- Authoring environment for Org Mode, notes, documentation, CVs and exports
+- One shared configuration for desktop and workstation
+- Native Emacs keybindings; Vim remains the primary development editor

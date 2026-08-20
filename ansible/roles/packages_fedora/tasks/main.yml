@@ -103,8 +103,7 @@
         + (
             (fedora_emacs_packages | default([]))
             if (
-              'graphical_desktop' in group_names
-              and (emacs_enabled | default(false) | bool)
+              emacs_enabled | default(false) | bool
             )
             else []
           )

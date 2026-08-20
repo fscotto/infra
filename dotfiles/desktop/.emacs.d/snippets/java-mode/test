@@ -1,4 +1,0 @@
-@Test
-void ${1:can}() throws Exception {
-  $0
-}

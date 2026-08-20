@@ -56,7 +56,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, FreeBS
 ## Desktop Notes
 - `desktop_profile` names independently selectable desktop groups such as `desktop_gnome`, `desktop_sway`, and `desktop_niri`. Keep platform-specific session bootstrap in platform-specific roles.
 - `desktop_environment` is fixed to `minimal` for Void desktops. `profile_desktop_common` owns shared Void bootstrap; `profile_desktop_sway` and `profile_desktop_niri` manage the enabled sessions, while `profile_desktop_gnome` copies shared desktop dotfiles for Fedora/GNOME without managing GNOME settings. `desktop_sessions_enabled` and `desktop_default_session` apply to the minimal mode.
-- Emacs packages and `.emacs.d` deploy are disabled by default via `emacs_enabled: false`; keep the dotfiles in the repo for reversible opt-in only.
+- Emacs has one authoring-oriented `.emacs.d`, deployed by `dotfiles_common` when `emacs_enabled` is true. Fedora/GNOME desktops and workstation profiles enable it; keep platform dependencies in package group vars rather than branching in Emacs Lisp.
 - NTFS filesystem support is provided by `ntfs-3g` in `ansible/inventory/group_vars/void.yml`.
 - Void user services are managed by `turnstile` and live under `dotfiles/desktop/.config/service/`.
 - `ssh-agent` keeps the stable socket `~/.local/state/ssh-agent/socket`.

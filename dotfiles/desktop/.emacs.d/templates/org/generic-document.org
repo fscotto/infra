@@ -1,0 +1,10 @@
+#+title: Document title
+#+author: Your Name
+#+date: \today
+#+options: toc:t num:t
+
+* Introduction
+
+* Main content
+
+* Conclusion

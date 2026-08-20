@@ -1,3 +1,0 @@
-#name : incvar
-# --
-<xi:include href="local-variables.ebk" xpointer="${1:l-product-um}"/>$0

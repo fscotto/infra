@@ -116,7 +116,7 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
   - `desktop_sway_packages` per i binari specifici della sessione Sway
 - `turnstile` per i servizi utente Void, incluso `ssh-agent`
 - `ssh-agent` con socket stabile condiviso tra shell e SSH in `~/.local/state/ssh-agent/socket`
-- Emacs e i relativi dotfile restano nel repo ma sono disabilitati di default tramite `emacs_enabled: false`
+- Emacs usa una sola configurazione orientata a Org e authoring, condivisa da desktop Fedora/GNOME e workstation; Vim resta l'editor di sviluppo
 - `tmux` con plugin gestiti da TPM al bootstrap del profilo desktop
 - Flatpak con remoto Flathub
 - GNOME Keyring e `udiskie` nella modalita minimale
@@ -217,7 +217,7 @@ ansible-playbook ansible/site.yml --limit prometheus -e server_username=myuser -
 
 # Composizione della configurazione
 
-Emacs è disabilitato di default. Per riattivare temporaneamente il deploy Emacs:
+Emacs è abilitato sui profili Fedora/GNOME e workstation; la configurazione canonica è distribuita da `dotfiles_common`, con Org in `~/Org/`, template versionati e export PDF/HTML/Markdown/DOCX/ODT. Per abilitarlo temporaneamente su un altro profilo:
 
 ```bash
 ansible-playbook ansible/site.yml --limit <host> --tags emacs -e emacs_enabled=true
@@ -437,7 +437,7 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `dotfiles:workstation` | dotfiles dedicati alle workstation | personal workstation, WSL, workstation Linux future |
 | `emptty` | gestione display manager `emptty` | desktop Void |
 | `display-manager` | gestione del display manager `emptty` | desktop Void |
-| `emacs` | deploy opzionale di Emacs | desktop Fedora/Void |
+| `emacs` | configurazione Emacs condivisa e dipendenze di authoring | desktop Fedora/GNOME e workstation |
 | `fonts` | installazione font | Fedora |
 | `fzf` | configurazione FZF | dotfiles comuni |
 | `git` | configurazione Git e GPG desktop | Fedora/GNOME, desktop Void |

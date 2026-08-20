@@ -195,7 +195,6 @@ profile_packages:
   - libspa-bluetooth
   - libreoffice
   - liberation-fonts-ttf
-  - libvterm-devel
   - libX11-devel
   - libXft-devel
   - meld

@@ -1,4 +1,6 @@
 ---
+emacs_enabled: true
+
 workstation_host_linux_packages:
   - croc
   - gnome-shell-extension-manager

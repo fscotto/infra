@@ -315,19 +315,6 @@
   loop_control:
     label: "{{ item.dest }}"
 
-- name: Copy Emacs desktop dotfiles
-  tags: [dotfiles, dotfiles:desktop, emacs]
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../dotfiles/desktop/{{ item.src }}"
-    dest: "{{ user_home }}/{{ item.dest }}"
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
-    mode: "{{ item.mode }}"
-  loop: "{{ desktop_emacs_dotfiles | default([]) }}"
-  when: emacs_enabled | default(false) | bool
-  loop_control:
-    label: "{{ item.dest }}"
-
 - name: Render git configuration with private values
   tags: [dotfiles, dotfiles:desktop, git]
   ansible.builtin.template:

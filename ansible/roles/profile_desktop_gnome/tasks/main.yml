@@ -45,19 +45,6 @@
   loop_control:
     label: "{{ item.dest }}"
 
-- name: Copy GNOME Emacs desktop dotfiles
-  tags: [dotfiles, dotfiles:desktop, emacs, gnome]
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../dotfiles/desktop/{{ item.src }}"
-    dest: "{{ user_home }}/{{ item.dest }}"
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
-    mode: "{{ item.mode }}"
-  loop: "{{ desktop_emacs_dotfiles | default([]) }}"
-  when: emacs_enabled | default(false) | bool
-  loop_control:
-    label: "{{ item.dest }}"
-
 - name: Configure GNOME gpg-agent for Fedora
   tags: [dotfiles, dotfiles:desktop, git, gnome]
   ansible.builtin.copy:

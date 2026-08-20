@@ -1,8 +1,0 @@
-#name : sec
-# --
-<section xml:id="t_${1:$(replace-regexp-in-string " " "_" (downcase text))}">
-  <title>${1:My Title}</title>
-  <para>
-    $0
-  </para>
-</section>

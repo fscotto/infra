@@ -1,4 +1,0 @@
-#name : xlink
-# --
-<link xlink:href="${1:https://example.com}">$2</link>
-$0

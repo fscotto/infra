@@ -1,5 +1,0 @@
-#name : with
-# --
-{% with $1 = $2 %}
-  $0
-{% endwith %}

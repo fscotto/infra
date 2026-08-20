@@ -11,6 +11,15 @@ ubuntu_packages_base:
 
 ubuntu_manage_docker_repo: true
 
+ubuntu_emacs_packages:
+  - emacs
+  - pandoc
+  - latexmk
+  - texlive-luatex
+  - texlive-latex-base
+  - texlive-latex-recommended
+  - texlive-fonts-recommended
+
 ubuntu_docker_packages:
   - docker-ce
   - docker-ce-cli

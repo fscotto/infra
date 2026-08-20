@@ -157,16 +157,6 @@ desktop_minimal_managed_paths:
   - .config/wlogout
   - .local/bin/udiskie-password
 
-desktop_emacs_dotfiles:
-  - name: Bash Emacs client fragment
-    src: .bashrc.d/25-emacs-client-desktop.sh
-    dest: .bashrc.d/25-emacs-client-desktop.sh
-    mode: "0644"
-  - name: Emacs config
-    src: .emacs.d/
-    dest: .emacs.d/
-    mode: preserve
-
 desktop_sway_dotfiles:
   - name: alacritty config
     src: .config/alacritty/

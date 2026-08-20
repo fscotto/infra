@@ -9,6 +9,29 @@ effective_user_group: "{{ user_group }}"
 effective_user_home: "{{ user_home }}"
 emacs_enabled: false
 
+emacs_dotfiles:
+  - name: Bash Emacs client fragment
+    src: .bashrc.d/25-emacs-client-desktop.sh
+    dest: .bashrc.d/25-emacs-client-desktop.sh
+    mode: "0644"
+  - name: Emacs authoring configuration
+    src: .emacs.d/
+    dest: .emacs.d/
+    mode: preserve
+
+emacs_authoring_directories:
+  - .bashrc.d
+  - Org
+  - Org/documentation
+  - Org/meetings
+  - Org/projects
+
+emacs_authoring_files:
+  - name: Org HTML stylesheet
+    src: .emacs.d/templates/org/org.css
+    dest: Org/org.css
+    mode: "0644"
+
 xdg_user_directories:
   - Desktop
   - Documents

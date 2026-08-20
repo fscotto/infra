@@ -25,6 +25,43 @@
     group: "{{ effective_user_group }}"
   when: "'desktop' in group_names"
 
+- name: Ensure Emacs authoring directories exist
+  tags: [dotfiles, dotfiles:common, emacs]
+  ansible.builtin.file:
+    path: "{{ effective_user_home }}/{{ item }}"
+    state: directory
+    owner: "{{ effective_username }}"
+    group: "{{ effective_user_group }}"
+    mode: "0755"
+  loop: "{{ emacs_authoring_directories | default([]) }}"
+  when: emacs_enabled | default(false) | bool
+
+- name: Deploy the shared Emacs authoring configuration
+  tags: [dotfiles, dotfiles:common, emacs]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/{{ item.src }}"
+    dest: "{{ effective_user_home }}/{{ item.dest }}"
+    owner: "{{ effective_username }}"
+    group: "{{ effective_user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ emacs_dotfiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+  when: emacs_enabled | default(false) | bool
+
+- name: Deploy Emacs authoring assets
+  tags: [dotfiles, dotfiles:common, emacs]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/desktop/{{ item.src }}"
+    dest: "{{ effective_user_home }}/{{ item.dest }}"
+    owner: "{{ effective_username }}"
+    group: "{{ effective_user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ emacs_authoring_files | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+  when: emacs_enabled | default(false) | bool
+
 - name: Ensure SSH socket directory exists
   tags: [dotfiles, dotfiles:common]
   ansible.builtin.file:

@@ -1,11 +1,12 @@
 ---
+emacs_enabled: true
+
 workstation_dev_packages:
   - distrobox
   - gnupg
   - gpg-agent
   - libfido2-1
   - openssh-client
-  - pandoc
   - shellcheck
 
 workstation_user_directories:

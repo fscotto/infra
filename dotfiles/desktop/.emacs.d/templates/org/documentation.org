@@ -1,0 +1,10 @@
+#+title: Technical documentation
+#+author: Your Name
+#+date: \today
+#+options: toc:t num:t
+
+* Overview
+
+* Usage
+
+* References

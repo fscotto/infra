@@ -99,6 +99,8 @@ ai_agents_npm_packages:
     state: latest
   - name: "@google/gemini-cli"
     state: latest
+  - name: "@github/copilot"
+    state: latest
 
 ai_agents_enabled: true
 

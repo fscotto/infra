@@ -14,7 +14,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, FreeBS
 - Current personal desktop: `ikaros = platform_fedora + role_personal_workstation + graphical_desktop + desktop_gnome`
 - Current laptop: `nymph = platform_fedora + graphical_desktop + desktop_gnome`
 - Void desktop profile is also the base for other future/reference hosts via `platform_void + graphical_desktop`
-- Workstation: `deadalus` is Windows + WSL; Ansible target is `deadalus-wsl`
+- Workstation: `deadalus` is Windows + WSL; Ansible targets are `deadalus-wsl` (Ubuntu) and `deadalus-fedora-wsl` (Fedora)
 - Ubuntu server: `prometheus`
 - Hosts intentionally belong to multiple groups; trust `ansible/site.yml` over hostname assumptions.
 - Inventory axes are independent: `platform_*`, `role_*`, and `desktop_*`. Legacy `void` and `desktop` remain compatibility parents.
@@ -38,7 +38,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, FreeBS
 - Host-focused dry runs:
   - Fedora desktop work: `ansible-playbook ansible/site.yml --limit ikaros --check --diff`
   - Fedora laptop work: `ansible-playbook ansible/site.yml --limit nymph --check --diff`
-  - WSL dev: `ansible-playbook ansible/site.yml --limit deadalus-wsl --check --diff`
+  - Ubuntu WSL dev: `ansible-playbook ansible/site.yml --limit deadalus-wsl --check --diff`
+  - Fedora WSL dev: `ansible-playbook ansible/site.yml --limit deadalus-fedora-wsl --check --diff`
   - Server: `ansible-playbook ansible/site.yml --limit prometheus --check --diff`
 - Focused checks:
   - Emacs is disabled by default; temporary Emacs check: `ansible-playbook ansible/site.yml --limit <host> --tags emacs --check --diff -e emacs_enabled=true`
@@ -79,7 +80,8 @@ The Void desktop package lists in `ansible/inventory/group_vars/void.yml` are ke
 The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-independent content and `desktop_minimal_dotfiles` carries Thunar, Udiskie, and MIME defaults. `desktop_void_dotfiles` remains reserved for files that need the Void runtime.
 
 ## Workstation Notes
-- `deadalus` is modeled as Windows + WSL; keep Linux dev automation on `deadalus-wsl`.
+- `deadalus` is modeled as Windows + WSL; keep Linux dev automation on `deadalus-wsl` (Ubuntu) and `deadalus-fedora-wsl` (Fedora).
+- Fedora WSL belongs to `platform_fedora`, `workstation_dev_fedora`, and the shared WSL layer. It must not receive Flatpak or Snap runtimes.
 - Native Linux workstation groups remain available for future hosts but have no current host in the main inventory.
 
 ## Coding Agent Notes

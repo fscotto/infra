@@ -1,0 +1,11 @@
+---
+# Fedora WSL mirrors the Ubuntu WSL development profile without installing
+# alternative application runtimes.
+fedora_excluded_packages:
+  - flatpak
+  - lazygit
+fedora_removed_packages:
+  - flatpak
+  - snapd
+fedora_manage_lazygit: true
+fedora_lazygit_version: 0.64.1

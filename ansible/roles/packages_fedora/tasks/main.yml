@@ -1,9 +1,4 @@
 ---
-- name: Gather installed package facts
-  tags: [packages]
-  ansible.builtin.package_facts:
-    manager: auto
-
 - name: Copy Fedora dotfiles
   tags: [dotfiles, dotfiles:common]
   ansible.builtin.copy:
@@ -113,6 +108,11 @@
             else []
           )
         + (
+            (workstation_dev_wsl_packages | default([]))
+            if 'workstation_dev_wsl' in group_names
+            else []
+          )
+        + (
             (workstation_host_linux_packages_fedora | default(workstation_host_linux_packages | default([])))
             if 'workstation_host_linux' in group_names
             else []
@@ -127,9 +127,111 @@
           )
         + (host_packages | default([]))
         )
+        | difference(fedora_excluded_packages | default([]))
         | unique
       }}
     state: present
+
+- name: Remove excluded Fedora packages
+  tags: [packages]
+  ansible.builtin.dnf:
+    name: "{{ fedora_removed_packages | default([]) }}"
+    state: absent
+  when: (fedora_removed_packages | default([])) | length > 0
+
+- name: Ensure architecture is supported for LazyGit release
+  tags: [packages]
+  ansible.builtin.fail:
+    msg: "Unsupported architecture {{ ansible_facts['architecture'] }} for LazyGit release"
+  when:
+    - fedora_manage_lazygit | default(false)
+    - ansible_facts['architecture'] not in ['x86_64', 'aarch64', 'arm64']
+
+- name: Read installed LazyGit version
+  tags: [packages]
+  ansible.builtin.command: /usr/local/bin/lazygit --version
+  register: fedora_lazygit_version_check
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: fedora_manage_lazygit | default(false)
+
+- name: Ensure temporary LazyGit extraction directory is absent
+  tags: [packages]
+  ansible.builtin.file:
+    path: "/tmp/lazygit_{{ fedora_lazygit_version }}"
+    state: absent
+  when:
+    - fedora_manage_lazygit | default(false)
+    - fedora_lazygit_version not in (fedora_lazygit_version_check.stdout | default(''))
+
+- name: Create temporary LazyGit extraction directory
+  tags: [packages]
+  ansible.builtin.file:
+    path: "/tmp/lazygit_{{ fedora_lazygit_version }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when:
+    - fedora_manage_lazygit | default(false)
+    - fedora_lazygit_version not in (fedora_lazygit_version_check.stdout | default(''))
+
+- name: Download LazyGit release archive
+  tags: [packages]
+  ansible.builtin.get_url:
+    url: >-
+      https://github.com/jesseduffield/lazygit/releases/download/v{{ fedora_lazygit_version }}/lazygit_{{
+      fedora_lazygit_version }}_Linux_{{
+      'x86_64' if ansible_facts['architecture'] == 'x86_64'
+      else 'arm64'
+      }}.tar.gz
+    dest: "/tmp/lazygit_{{ fedora_lazygit_version }}.tar.gz"
+    mode: "0644"
+  when:
+    - fedora_manage_lazygit | default(false)
+    - fedora_lazygit_version not in (fedora_lazygit_version_check.stdout | default(''))
+
+- name: Extract LazyGit release archive
+  tags: [packages]
+  ansible.builtin.unarchive:
+    src: "/tmp/lazygit_{{ fedora_lazygit_version }}.tar.gz"
+    dest: "/tmp/lazygit_{{ fedora_lazygit_version }}"
+    remote_src: true
+  when:
+    - fedora_manage_lazygit | default(false)
+    - fedora_lazygit_version not in (fedora_lazygit_version_check.stdout | default(''))
+
+- name: Install LazyGit binary
+  tags: [packages]
+  ansible.builtin.copy:
+    src: "/tmp/lazygit_{{ fedora_lazygit_version }}/lazygit"
+    dest: /usr/local/bin/lazygit
+    owner: root
+    group: root
+    mode: "0755"
+    remote_src: true
+  when:
+    - fedora_manage_lazygit | default(false)
+    - fedora_lazygit_version not in (fedora_lazygit_version_check.stdout | default(''))
+
+- name: Remove downloaded LazyGit archive
+  tags: [packages]
+  ansible.builtin.file:
+    path: "/tmp/lazygit_{{ fedora_lazygit_version }}.tar.gz"
+    state: absent
+  when:
+    - fedora_manage_lazygit | default(false)
+    - fedora_lazygit_version not in (fedora_lazygit_version_check.stdout | default(''))
+
+- name: Remove temporary LazyGit extraction directory
+  tags: [packages]
+  ansible.builtin.file:
+    path: "/tmp/lazygit_{{ fedora_lazygit_version }}"
+    state: absent
+  when:
+    - fedora_manage_lazygit | default(false)
+    - fedora_lazygit_version not in (fedora_lazygit_version_check.stdout | default(''))
 
 - name: Add user to docker group
   tags: [packages]

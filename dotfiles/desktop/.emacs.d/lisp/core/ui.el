@@ -7,8 +7,15 @@
   :config
   (load-theme 'nordic-night t))
 
-(set-frame-font "UbuntuSansMono Nerd Font 14" nil t)
-(add-to-list 'default-frame-alist '(font . "UbuntuSansMono Nerd Font-14"))
+(defconst fscotto/default-font
+  (pcase system-type
+    ('gnu/linux "UbuntuSansMono Nerd Font 14")
+    ('windows-nt "JetBrainsMono NF 12")
+    (_ "monospace 14"))
+  "Default font for graphical Emacs frames on the current platform.")
+
+(set-frame-font fscotto/default-font nil t)
+(add-to-list 'default-frame-alist `(font . ,fscotto/default-font))
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
 
 (tool-bar-mode -1)

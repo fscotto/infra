@@ -1,9 +1,4 @@
 ---
-- name: Gather installed package facts
-  tags: [packages]
-  ansible.builtin.package_facts:
-    manager: auto
-
 - name: Copy Fedora dotfiles
   tags: [dotfiles, dotfiles:common]
   ansible.builtin.copy:
@@ -140,20 +135,9 @@
 - name: Remove excluded Fedora packages
   tags: [packages]
   ansible.builtin.dnf:
-    name: >-
-      {{
-        (fedora_removed_packages | default([]))
-        | select('in', ansible_facts.packages | default({}))
-        | list
-      }}
+    name: "{{ fedora_removed_packages | default([]) }}"
     state: absent
-  when: >-
-    (
-      (fedora_removed_packages | default([]))
-      | select('in', ansible_facts.packages | default({}))
-      | list
-      | length
-    ) > 0
+  when: (fedora_removed_packages | default([])) | length > 0
 
 - name: Add user to docker group
   tags: [packages]

@@ -113,6 +113,11 @@
             else []
           )
         + (
+            (workstation_dev_wsl_packages | default([]))
+            if 'workstation_dev_wsl' in group_names
+            else []
+          )
+        + (
             (workstation_host_linux_packages_fedora | default(workstation_host_linux_packages | default([])))
             if 'workstation_host_linux' in group_names
             else []
@@ -127,9 +132,28 @@
           )
         + (host_packages | default([]))
         )
+        | difference(fedora_excluded_packages | default([]))
         | unique
       }}
     state: present
+
+- name: Remove excluded Fedora packages
+  tags: [packages]
+  ansible.builtin.dnf:
+    name: >-
+      {{
+        (fedora_removed_packages | default([]))
+        | select('in', ansible_facts.packages | default({}))
+        | list
+      }}
+    state: absent
+  when: >-
+    (
+      (fedora_removed_packages | default([]))
+      | select('in', ansible_facts.packages | default({}))
+      | list
+      | length
+    ) > 0
 
 - name: Add user to docker group
   tags: [packages]

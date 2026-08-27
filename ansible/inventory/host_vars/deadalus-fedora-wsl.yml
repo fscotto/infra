@@ -1,0 +1,6 @@
+---
+hostname: deadalus-fedora-wsl
+workstation_wsl_windows_user_home: /mnt/c/Users/FABIOSCOTTODISANTOLO
+
+host_packages: []
+host_enabled_services: []

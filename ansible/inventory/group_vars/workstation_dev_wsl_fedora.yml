@@ -1,0 +1,8 @@
+---
+# Fedora WSL mirrors the Ubuntu WSL development profile without installing
+# alternative application runtimes.
+fedora_excluded_packages:
+  - flatpak
+fedora_removed_packages:
+  - flatpak
+  - snapd

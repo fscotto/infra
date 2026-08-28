@@ -78,27 +78,10 @@
     - profile_workstation_dev_common
 
 - name: Configure Fedora WSL workstation development layer
-  hosts: workstation_dev_wsl_fedora
+  hosts: workstation_dev_wsl
   become: true
 
   roles:
-    - profile_workstation_dev_wsl
-
-- name: Configure native Linux workstation host layer
-  hosts: workstation_host_linux
-  become: true
-
-  roles:
-    - profile_workstation_gnome
-
-- name: Configure WSL workstation development layer
-  hosts: workstation_dev_wsl_ubuntu
-  become: true
-
-  roles:
-    - packages_ubuntu
-    - services_systemd
-    - profile_workstation_dev_common
     - profile_workstation_dev_wsl
 
 - name: Configure Ubuntu server

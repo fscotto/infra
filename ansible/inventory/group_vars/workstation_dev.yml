@@ -1,14 +1,6 @@
 ---
 emacs_enabled: true
 
-workstation_dev_packages:
-  - distrobox
-  - gnupg
-  - gpg-agent
-  - libfido2-1
-  - openssh-client
-  - shellcheck
-
 workstation_user_directories:
   - path: "{{ user_home }}/.config"
     mode: "0755"

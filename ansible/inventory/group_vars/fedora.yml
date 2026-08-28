@@ -12,12 +12,6 @@ fedora_packages_base:
   - ripgrep
 
 fedora_manage_docker_repo: true
-fedora_manage_google_chrome_repo: true
-fedora_manage_intellij_repo: true
-fedora_manage_vscode_repo: true
-fedora_intellij_copr_owner: coder966
-fedora_intellij_copr_project: intellij-idea-ultimate
-fedora_intellij_package_name: intellij-idea-ultimate
 
 fedora_emacs_packages:
   - emacs-pgtk
@@ -53,7 +47,7 @@ fedora_dotfiles:
 
 workstation_firewall_backend: firewalld
 
-fedora_workstation_dev_packages:
+fedora_dev_packages:
   - croc
   - distrobox
   - gnupg
@@ -62,35 +56,5 @@ fedora_workstation_dev_packages:
   - openssh-clients
   - shellcheck
 
-workstation_host_linux_packages_fedora:
-  - code
-  - croc
-  - firewall-config
-  - gnome-extensions-app
-  - gnome-shell-extension-appindicator
-  - gnome-shell-extension-just-perfection
-  - gnome-shell-extension-no-overview
-  - gnome-tweaks
-  - libreoffice
-  - meld
-  - NetworkManager-openconnect-gnome
-  - pcsc-lite
-  - pinentry-gnome3
-  - podman
-  - podman-compose
-  - rclone
-  - yubikey-manager
-
 fedora_flatpak_remote_name: flathub
 fedora_flatpak_remote_url: https://dl.flathub.org/repo/flathub.flatpakrepo
-
-workstation_flatpak_remote_name: "{{ fedora_flatpak_remote_name }}"
-workstation_flatpak_remote_url: "{{ fedora_flatpak_remote_url }}"
-workstation_flatpak_packages:
-  - com.getpostman.Postman
-  - com.spotify.Client
-  - com.github.jeromerobert.pdfarranger
-  - com.github.xournalpp.xournalpp
-  - io.dbeaver.DBeaverCommunity
-  - org.mozilla.Thunderbird
-  - org.telegram.desktop

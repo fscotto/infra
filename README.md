@@ -34,7 +34,6 @@ infra/
 │   ├── ubuntu/
 │   ├── server/
 │   ├── workstation/
-│   ├── workstation_host_linux/
 │   ├── workstation_dev_wsl/
 │   └── nymph/
 │
@@ -54,7 +53,7 @@ Il repository è diviso in due componenti principali:
 
 # Macchine gestite
 
-Il repository modella attualmente host Fedora/GNOME, ambienti WSL di sviluppo Ubuntu e Fedora e un server Ubuntu.
+Il repository modella attualmente host Fedora/GNOME, una workstation Fedora WSL e un server Ubuntu.
 La composizione resta separata in assi indipendenti:
 
 ```text
@@ -71,8 +70,7 @@ Matrice target:
 | ------------ | -------- | -------------------- | ------- |
 | ikaros       | Fedora   | Personal workstation | GNOME   |
 | nymph        | Fedora   | Desktop laptop       | GNOME   |
-| deadalus-wsl | Ubuntu   | Workstation dev      | —       |
-| deadalus-fedora-wsl | Fedora | Workstation dev WSL | —       |
+| deadalus     | Fedora WSL | Workstation dev    | —       |
 | prometheus   | Ubuntu   | Server               | —       |
 
 Regola operativa:
@@ -90,7 +88,7 @@ compatibilita per eventuali host Void futuri mentre i nuovi assi sono
 Nota sullo stato attuale del playbook principale:
 
 - `ansible/site.yml` applica oggi in automatico Fedora/GNOME su `ikaros` e `nymph`
-- `ansible/site.yml` applica i rami WSL Ubuntu e Fedora per il modello dev in WSL
+- `ansible/site.yml` applica il profilo Fedora WSL alla workstation `deadalus`
 - `ansible/site.yml` applica anche il profilo `ubuntu_server` con baseline apt, systemd, dotfiles server e firewall UFW
 
 ## Desktop
@@ -127,51 +125,32 @@ Lo stato attuale del profilo desktop include, tra le altre cose:
 
 ## Workstation
 
-Sistemi operativi supportati:
-
-- Ubuntu WSL, usato da `deadalus-wsl`
-- Fedora WSL, usato da `deadalus-fedora-wsl`
-- Fedora Workstation nativa, disponibile per host futuri tramite gruppi dedicati
-
-Desktop environment host Linux, per eventuali workstation native:
-
-- GNOME
-
-Macchine attuali:
-
-- `deadalus-wsl` come ambiente dev Ubuntu in WSL sulla workstation Windows `deadalus`
-- `deadalus-fedora-wsl` come clone dev Fedora in WSL sulla workstation Windows `deadalus`, senza runtime Flatpak o Snap
-
-Questo profilo è pensato per sviluppo e lavoro, con separazione tra layer host e layer dev.
+La workstation `deadalus` usa Fedora in WSL sulla macchina Windows omonima, senza runtime Flatpak o Snap.
+Il profilo è pensato per sviluppo e lavoro.
 
 Nel modello Ansible usato qui, un singolo inventory host puo appartenere intenzionalmente a piu gruppi e quindi ricevere piu play nello stesso run: l'associazione non e `1 host = 1 play`, ma `host + gruppi = layering finale`.
 
-Il profilo workstation e agganciato al playbook principale e ora distingue:
+Il profilo workstation e agganciato al playbook principale tramite:
 
-- layer dev condiviso tra WSL e workstation Fedora future
-- layer dev Fedora nativo disponibile per host futuri
-- layer host Linux GNOME disponibile per host futuri
+- layer dev Fedora
 - layer WSL dedicato per sviluppo con `systemd`
-
-Per esempio, lo stesso host Linux puo stare in `workstation_host_linux` e in `workstation_dev_fedora`, a seconda del layering che vuoi comporre.
 
 Lo stato attuale del profilo workstation include:
 
-- installazione pacchetti base Ubuntu via apt
-- installazione pacchetti base Fedora via dnf per eventuali workstation native
+- installazione pacchetti base Fedora via dnf
 - installazione e configurazione di Docker dal repository ufficiale
 - gestione dei dotfiles workstation e rendering dei template dev condivisi
-- installazione opzionale di Google Chrome, VS Code, IntelliJ IDEA Ultimate e applicazioni Flatpak per eventuali workstation Fedora native
-- estensioni GNOME per eventuali host Linux nativi
-- preparazione dei rami WSL Ubuntu e Fedora con `systemd` per il toolchain di sviluppo
+- preparazione di Fedora WSL con `systemd` per il toolchain di sviluppo
 - attivazione del firewall `firewalld` sui target Fedora che dichiarano regole host-specifiche
 
 Workflow WSL previsto:
 
-1. avviare la distribuzione WSL scelta almeno una volta e completare la creazione dell'utente Linux
+1. avviare Fedora WSL almeno una volta e completare la creazione dell'utente Linux
 2. installare Ansible dentro la distribuzione WSL
-3. lanciare il playbook dalla distribuzione su `deadalus-wsl` oppure `deadalus-fedora-wsl` per configurare l'ambiente dev locale
+3. lanciare il playbook dalla distribuzione su `deadalus` per configurare l'ambiente dev locale
 4. usare VS Code con le estensioni Remote (`WSL`, `SSH`, `Dev Containers`) dal lato Windows
+
+Le applicazioni Windows sono installate e gestite manualmente; il profilo WSL non installa componenti di remoting Python per esse.
 
 ---
 
@@ -241,7 +220,7 @@ Esempi correnti:
 ```text
 ikaros -> common + platform_fedora + role_personal_workstation + graphical_desktop + desktop_gnome + ikaros
 nymph  -> common + platform_fedora + graphical_desktop + desktop_gnome + nymph
-deadalus-fedora-wsl -> common + platform_fedora + workstation_dev_fedora + workstation_dev_wsl + deadalus-fedora-wsl
+deadalus -> common + platform_fedora + workstation_dev_fedora + workstation_dev_wsl + deadalus
 ```
 
 Questo approccio consente di:
@@ -275,7 +254,6 @@ I principali ruoli attualmente presenti sono:
 | profile_desktop_host      | override desktop specifici per host |
 | profile_personal_workstation | layer stabile per workstation personale |
 | profile_workstation_dev_common | configurazione dev workstation condivisa |
-| profile_workstation_gnome | configurazione host workstation GNOME |
 | profile_workstation_dev_wsl | configurazione WSL condivisa per sviluppo |
 | profile_server            | configurazione server               |
 | dotfiles_common           | distribuzione dotfiles comuni       |
@@ -296,9 +274,7 @@ platform_fedora -> packages_fedora + services_systemd
 platform_fedora & role_personal_workstation -> profile_personal_workstation
 platform_fedora & desktop_gnome -> profile_desktop_gnome
 workstation_dev_fedora -> profile_workstation_dev_common
-workstation_host_linux -> profile_workstation_gnome
-workstation_dev_wsl_ubuntu -> packages_ubuntu + services_systemd + profile_workstation_dev_common + profile_workstation_dev_wsl
-workstation_dev_wsl_fedora -> profile_workstation_dev_wsl (dopo platform_fedora + workstation_dev_fedora)
+workstation_dev_wsl -> profile_workstation_dev_wsl (dopo platform_fedora + workstation_dev_fedora)
 ubuntu_server -> packages_ubuntu + services_systemd + profile_server
 ```
 
@@ -307,7 +283,7 @@ Questo significa che, allo stato attuale:
 - `ikaros` riceve Fedora Workstation/GNOME come target desktop personale stabile
 - `nymph` riceve Fedora Workstation/GNOME come target laptop
 - il profilo Void resta selezionabile tramite `platform_void + graphical_desktop` per host futuri
-- i rami WSL Ubuntu (`deadalus-wsl`) e Fedora (`deadalus-fedora-wsl`) sono predisposti con play dev dedicati
+- `deadalus` riceve il profilo Fedora WSL tramite play dev dedicati
 - il server Ubuntu (`prometheus`) e gestito con pacchetti, servizi, dotfiles server e firewall
 - lo stack container server include `navidrome`, `postgres`, `gitea`, `nginx-proxy-manager` e `syncthing`, con GUI Syncthing raggiungibile tramite la rete Docker `web`
 
@@ -323,7 +299,6 @@ dotfiles/
 ├── fedora
 ├── ubuntu
 ├── workstation
-├── workstation_host_linux
 ├── workstation_dev_wsl
 └── nymph
 ```
@@ -380,12 +355,11 @@ Allo stato attuale questo comando:
 - distribuisce i dotfiles comuni a tutti gli host
 - per `platform_void` applica pacchetti Void e servizi runit
 - per `platform_void + graphical_desktop` applica bootstrap desktop condiviso, sessioni Sway/Niri e override specifici per host
-- per `platform_freebsd` e `workstation_host_linux` non applica nulla finche quei gruppi restano senza host
-- per `platform_fedora` applica pacchetti Fedora e servizi systemd a `ikaros`, `nymph` e `deadalus-fedora-wsl`
+- per `platform_freebsd` non applica nulla finche il gruppo resta senza host
+- per `platform_fedora` applica pacchetti Fedora e servizi systemd a `ikaros`, `nymph` e `deadalus`
 - per `platform_fedora & role_personal_workstation` applica il layer personale a `ikaros`
 - per `platform_fedora & desktop_gnome` applica il profilo GNOME a `ikaros` e `nymph`
-- per `workstation_dev_wsl_ubuntu` applica pacchetti Ubuntu, servizi systemd, profilo dev comune e tweak WSL a `deadalus-wsl`
-- per `workstation_dev_wsl_fedora` applica i tweak WSL dopo il layer Fedora a `deadalus-fedora-wsl`, escludendo Flatpak e Snap
+- per `workstation_dev_wsl` applica i tweak WSL dopo il layer Fedora a `deadalus`, escludendo Flatpak e Snap
 - per gli host `ubuntu_server` applica pacchetti Ubuntu, servizi systemd, profilo server, UFW, dotfiles e template dedicati
 - non riavvia automaticamente il display manager
 - carica `secrets/vault.yml` solo se presente
@@ -398,8 +372,7 @@ ansible-playbook ansible/site.yml --syntax-check
 ansible-playbook ansible/site.yml --limit ikaros,nymph --check --diff
 ansible-playbook ansible/site.yml --limit ikaros --check --diff
 ansible-playbook ansible/site.yml --limit nymph --check --diff
-ansible-playbook ansible/site.yml --limit deadalus-wsl --check --diff
-ansible-playbook ansible/site.yml --limit deadalus-fedora-wsl --check --diff
+ansible-playbook ansible/site.yml --limit deadalus --check --diff
 ansible-playbook ansible/site.yml --limit prometheus --check --diff
 ansible-lint ansible/site.yml
 ansible-lint ansible/roles
@@ -441,17 +414,17 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `dotfiles:desktop` | dotfiles desktop | desktop Void, Fedora/GNOME |
 | `dotfiles:host` | override host-specifici desktop | desktop Void |
 | `dotfiles:server` | dotfiles dedicati al profilo server | server |
-| `dotfiles:workstation` | dotfiles dedicati alle workstation | personal workstation, WSL, workstation Linux future |
+| `dotfiles:workstation` | dotfiles dedicati alle workstation | personal workstation, WSL |
 | `emptty` | gestione display manager `emptty` | desktop Void |
 | `display-manager` | gestione del display manager `emptty` | desktop Void |
 | `emacs` | configurazione Emacs condivisa e dipendenze di authoring | desktop Fedora/GNOME e workstation |
 | `fonts` | installazione font | Fedora |
 | `fzf` | configurazione FZF | dotfiles comuni |
 | `git` | configurazione Git e GPG desktop | Fedora/GNOME, desktop Void |
-| `gnome` | configurazione host GNOME | Fedora/GNOME desktop, workstation host Linux future |
+| `gnome` | configurazione host GNOME | Fedora/GNOME desktop |
 | `sway` | sessione/configurazione sway / SwayFX (Wayland) | desktop Void |
 | `niri` | sessione/configurazione Niri (Wayland) | desktop Void |
-| `npm` | installazione pacchetti npm globali | Fedora/GNOME, desktop Void, workstation Linux, WSL |
+| `npm` | installazione pacchetti npm globali | Fedora/GNOME, desktop Void, WSL |
 | `nvidia` | componenti NVIDIA desktop | desktop Void |
 | `packages` | installazione e aggiornamento pacchetti | tutti i profili |
 | `portal` | configurazione xdg-desktop-portal | desktop Void |
@@ -459,7 +432,6 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `theme` | configurazione del tema GTK/Qt | desktop Void |
 | `tmux` | configurazione e plugin tmux | desktop Fedora/Void, WSL |
 | `vim` | configurazione Vim | dotfiles comuni |
-| `vscode` | installazione/configurazione VS Code | workstation Fedora future, host Linux |
 | `wsl` | bootstrap e configurazione WSL | WSL |
 
 Esempi pratici:

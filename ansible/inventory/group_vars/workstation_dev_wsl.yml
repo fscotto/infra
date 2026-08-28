@@ -3,25 +3,10 @@ enabled_services:
   - docker
 
 workstation_dev_wsl_packages:
-  - lazygit
   - pinentry-curses
   - python3-pip
   - tmux
-workstation_dev_wsl_excluded_packages:
-  - alacritty
-  - pcscd
-  - pinentry-gnome3
-  - podman
-  - podman-compose
-  - ufw
-  - yubikey-manager
 workstation_is_wsl: true
-workstation_manage_google_chrome: false
-workstation_manage_croc: true
-workstation_croc_version: v11.0.3
-workstation_removed_snap_packages: []
-workstation_snap_packages: []
-workstation_dev_wsl_python_packages: []
 workstation_wsl_systemd_enabled: true
 workstation_dev_wsl_dotfiles:
   - src: .gnupg/gpg-agent.conf

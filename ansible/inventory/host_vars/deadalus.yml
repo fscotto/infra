@@ -1,0 +1,13 @@
+---
+hostname: deadalus
+workstation_wsl_windows_user_home: /mnt/c/Users/FABIOSCOTTODISANTOLO
+
+host_packages: []
+host_enabled_services: []
+
+# Fedora WSL must not receive alternative application runtimes.
+fedora_excluded_packages:
+  - flatpak
+fedora_removed_packages:
+  - flatpak
+  - snapd

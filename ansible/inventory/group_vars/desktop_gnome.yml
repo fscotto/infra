@@ -32,7 +32,6 @@ fedora_desktop_packages:
   - gopls
   - hunspell
   - libvirt
-  - libreoffice
   - liberation-fonts
   - libasan
   - libubsan
@@ -80,6 +79,7 @@ fedora_flatpak_packages:
   - be.alexandervanhee.gradia
   - ch.protonmail.protonmail-bridge
   - com.spotify.Client
+  - org.onlyoffice.desktopeditors
   - org.mozilla.thunderbird
   - org.telegram.desktop
 

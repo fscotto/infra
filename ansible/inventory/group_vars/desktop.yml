@@ -225,6 +225,7 @@ desktop_flatpak_packages:
   - com.github.tchx84.Flatseal
   - com.spotify.Client
   - io.github.flattool.Warehouse
+  - org.onlyoffice.desktopeditors
   - org.telegram.desktop
   - org.mozilla.Thunderbird
 

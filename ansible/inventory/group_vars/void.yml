@@ -193,7 +193,6 @@ profile_packages:
   - hunspell
   - libvirt
   - libspa-bluetooth
-  - libreoffice
   - liberation-fonts-ttf
   - libX11-devel
   - libXft-devel

@@ -133,9 +133,9 @@ Cockpit password. Subsequent runs use `atlas_admin_username`. Enable
 `atlas_manage_storage` only after checking the existing pool and mountpoints; enable
 `atlas_manage_firewall` only after checking the LAN subnet and active firewalld zone.
 
-Snapshot retention, Syncthing topology, VPN access, Prometheus pulls, Rclone, USB backup,
-monitoring, and disaster-recovery tests remain follow-up work. The detailed operational backlog is
-kept in `AGENTS.md`.
+Snapshot retention, Syncthing topology, VPN access, Prometheus pulls, encrypted Borg backups to a
+Hetzner Storage Box, USB backup, monitoring, and disaster-recovery tests remain follow-up work. The
+detailed operational backlog is kept in `AGENTS.md`.
 
 ## How layering works
 

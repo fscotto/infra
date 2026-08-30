@@ -224,8 +224,8 @@ password Cockpit in chiaro. Le esecuzioni successive usano `atlas_admin_username
 `atlas_manage_firewall` solo dopo aver verificato subnet LAN e zona firewalld attiva.
 
 Restano da implementare retention delle snapshot, topologia Syncthing, VPN, pull da Prometheus,
-Rclone, backup USB, monitoraggio e test di disaster recovery. Il backlog operativo dettagliato e in
-`AGENTS.md`.
+backup cifrati con Borg su una Hetzner Storage Box, backup USB, monitoraggio e test di disaster
+recovery. Il backlog operativo dettagliato e in `AGENTS.md`.
 
 ---
 

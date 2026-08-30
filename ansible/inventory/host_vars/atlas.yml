@@ -6,7 +6,7 @@ ansible_user: "{{ atlas_connection_username }}"
 ansible_port: 22
 ansible_ssh_private_key_file: CHANGEME_ATLAS_SSH_PRIVATE_KEY_PATH
 
-atlas_admin_username: CHANGEME_ATLAS_ADMIN
+atlas_admin_username: admin
 atlas_connection_username: "{{ atlas_admin_username }}"
 atlas_admin_group: "{{ atlas_admin_username }}"
 atlas_admin_home: "/home/{{ atlas_admin_username }}"

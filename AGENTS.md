@@ -96,7 +96,7 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - Atlas requires `vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash` for Cockpit
   and, when storage is enabled, `vault_atlas_samba_password`. Never print these values.
 - Atlas uses NFSv4 for Linux and SMB for Windows/WSL, restricted to the configured LAN. Snapshot,
-  Rclone, Prometheus pull and USB backup automation are intentionally deferred.
+  Borg/Hetzner offsite backup, Prometheus pull and USB backup automation are intentionally deferred.
 
 ## Atlas NAS TODO
 - Replace every Atlas `CHANGEME` value, provide the required Vault variables and validate the first
@@ -114,14 +114,15 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   services; never expose SSH, Cockpit, NFS, SMB or Syncthing through public port forwarding.
 - Add the least-privilege Prometheus backup flow: remote dump generation, dedicated SSH identity,
   pinned host key, atomic pull, verification, retention and an Atlas systemd service/timer.
-- Add the encrypted Google Drive backup with Rclone Drive plus Crypt remotes, Vault-managed secrets,
-  snapshot-consistent sources, retries, logging, retention policy and a tested restore procedure.
+- Add the encrypted offsite backup with Borg to a Hetzner Storage Box: use a dedicated SSH identity,
+  pin the host key, keep Borg repository credentials and encryption material in Vault, use
+  snapshot-consistent sources, and manage retries, logging, pruning, repository checks and restores.
 - Add the UUID-bound offline USB backup with versioned rsync, locking, capacity checks, verification,
   safe unmounting and a tested restore procedure; never trigger it for an arbitrary USB disk.
 - Add monitoring and alerting for pool health, scrub/resilver, SMART data, temperatures, free space and
   failed backup timers, plus a controlled Rocky kernel/OpenZFS update and reboot procedure.
 - Document and test disaster recovery: rebuild Atlas with Ansible, import the existing pool, restore
-  from snapshot/USB/cloud, preserve Vault and Rclone recovery material offline, and define RPO/RTO.
+  from snapshot/USB/Hetzner, preserve Vault and Borg recovery material offline, and define RPO/RTO.
 - Optionally design iCloud photo ingestion as a separate workflow after the storage and backup layers
   are validated; do not make it a dependency of the Atlas baseline.
 

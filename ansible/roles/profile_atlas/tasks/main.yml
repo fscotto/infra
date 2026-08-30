@@ -1,0 +1,15 @@
+---
+- name: Import Atlas account tasks
+  ansible.builtin.import_tasks: account.yml
+
+- name: Import Atlas 45Drives tasks
+  ansible.builtin.import_tasks: cockpit.yml
+
+- name: Import Atlas storage tasks
+  ansible.builtin.import_tasks: storage.yml
+
+- name: Import Atlas file sharing tasks
+  ansible.builtin.import_tasks: sharing.yml
+
+- name: Import Atlas Syncthing tasks
+  ansible.builtin.import_tasks: syncthing.yml

@@ -1,0 +1,118 @@
+---
+- name: Reject incomplete Atlas account configuration
+  tags: [atlas, services]
+  ansible.builtin.assert:
+    that:
+      - atlas_admin_username != 'CHANGEME_ATLAS_ADMIN'
+      - (atlas_admin_ssh_keys | default([])) | length > 0
+      - atlas_admin_password_hash not in ['', '!', '*']
+    fail_msg: >-
+      Define atlas_admin_username, vault_atlas_authorized_ssh_keys and
+      vault_atlas_admin_password_hash before applying the Atlas profile.
+  no_log: true
+
+- name: Create Atlas administrator group
+  tags: [atlas, services]
+  ansible.builtin.group:
+    name: "{{ atlas_admin_group }}"
+    gid: "{{ atlas_admin_gid }}"
+    state: present
+
+- name: Create Atlas administrator account
+  tags: [atlas, services]
+  ansible.builtin.user:
+    name: "{{ atlas_admin_username }}"
+    uid: "{{ atlas_admin_uid }}"
+    group: "{{ atlas_admin_group }}"
+    home: "{{ atlas_admin_home }}"
+    shell: /bin/bash
+    password: "{{ atlas_admin_password_hash }}"
+    create_home: true
+    state: present
+  no_log: true
+
+- name: Grant Atlas administrator passwordless sudo
+  tags: [atlas, services]
+  ansible.builtin.copy:
+    content: "{{ atlas_admin_username }} ALL=(ALL) NOPASSWD: ALL\n"
+    dest: "/etc/sudoers.d/{{ atlas_admin_username }}"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+
+- name: Manage Atlas administrator authorized SSH keys exclusively
+  tags: [atlas, services]
+  ansible.posix.authorized_key:
+    user: "{{ atlas_admin_username }}"
+    key: "{{ atlas_admin_ssh_keys | join('\n') }}"
+    state: present
+    exclusive: true
+
+- name: Check whether the Atlas SSH host key exists
+  tags: [atlas, services]
+  ansible.builtin.stat:
+    path: /etc/ssh/ssh_host_ed25519_key
+  register: atlas_ssh_host_ed25519_key
+
+- name: Generate missing Atlas SSH host keys
+  tags: [atlas, services]
+  ansible.builtin.command:
+    argv:
+      - ssh-keygen
+      - -A
+  changed_when: true
+  when: not atlas_ssh_host_ed25519_key.stat.exists
+
+- name: Ensure Atlas SSH configuration drop-in directory exists
+  tags: [atlas, services]
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure Atlas SSH drop-ins are loaded before other settings
+  tags: [atlas, services]
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^\s*Include\s+/etc/ssh/sshd_config\.d/\*\.conf\s*$'
+    line: Include /etc/ssh/sshd_config.d/*.conf
+    insertbefore: BOF
+    state: present
+    validate: "sshd -t -f %s"
+
+- name: Render Atlas SSH hardening drop-in
+  tags: [atlas, services]
+  ansible.builtin.template:
+    src: 00-atlas-hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/00-atlas-hardening.conf
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Reload SSH service
+
+- name: Read effective Atlas SSH daemon configuration
+  tags: [atlas, services]
+  ansible.builtin.command:
+    argv:
+      - sshd
+      - -T
+      - -C
+      - "user={{ atlas_admin_username }},host=atlas,addr=127.0.0.1"
+  register: atlas_sshd_effective_configuration
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Verify effective Atlas SSH hardening
+  tags: [atlas, services]
+  ansible.builtin.assert:
+    that:
+      - "'permitrootlogin no' in atlas_sshd_effective_configuration.stdout_lines"
+      - "'pubkeyauthentication yes' in atlas_sshd_effective_configuration.stdout_lines"
+      - "'passwordauthentication no' in atlas_sshd_effective_configuration.stdout_lines"
+      - "'kbdinteractiveauthentication no' in atlas_sshd_effective_configuration.stdout_lines"
+      - "('allowusers ' ~ atlas_admin_username) in atlas_sshd_effective_configuration.stdout_lines"
+    fail_msg: The effective Atlas SSH configuration does not match the required hardening.
+  when: not ansible_check_mode

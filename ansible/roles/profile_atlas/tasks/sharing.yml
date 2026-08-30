@@ -1,0 +1,211 @@
+---
+- name: Render Atlas NFS exports
+  tags: [atlas, sharing]
+  ansible.builtin.template:
+    src: atlas.exports.j2
+    dest: /etc/exports.d/atlas.exports
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload NFS exports
+  when: atlas_manage_storage | bool
+
+- name: Configure Atlas NFSv4-only service
+  tags: [atlas, sharing]
+  ansible.builtin.template:
+    src: atlas-nfs.conf.j2
+    dest: /etc/nfs.conf.d/atlas.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart NFS server
+  when: atlas_manage_storage | bool
+
+- name: Mask Atlas NFSv3 RPC services
+  tags: [atlas, sharing, services]
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: false
+    state: stopped
+    masked: true
+  loop:
+    - rpc-statd.service
+    - rpcbind.service
+    - rpcbind.socket
+  loop_control:
+    label: "{{ item }}"
+  when: atlas_manage_storage | bool
+
+- name: Ensure Atlas NFS mount daemon drop-in directory exists
+  tags: [atlas, sharing, services]
+  ansible.builtin.file:
+    path: /etc/systemd/system/nfs-mountd.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: atlas_manage_storage | bool
+
+- name: Disable Atlas NFSv3 mount daemon listeners
+  tags: [atlas, sharing, services]
+  ansible.builtin.template:
+    src: nfs-mountd-v4only.conf.j2
+    dest: /etc/systemd/system/nfs-mountd.service.d/v4only.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart NFS mount daemon
+  when: atlas_manage_storage | bool
+
+- name: Enable SELinux access for Atlas file sharing
+  tags: [atlas, sharing, services]
+  ansible.posix.seboolean:
+    name: "{{ item }}"
+    state: true
+    persistent: true
+  loop: "{{ atlas_selinux_booleans }}"
+  loop_control:
+    label: "{{ item }}"
+  when:
+    - atlas_manage_storage | bool
+    - (ansible_facts['selinux'] | default({})).get('status', 'disabled') == 'enabled'
+
+- name: Render Atlas Samba configuration
+  tags: [atlas, sharing]
+  ansible.builtin.template:
+    src: smb.conf.j2
+    dest: /etc/samba/smb.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "testparm --suppress-prompt %s"
+  notify: Restart Samba service
+  when: atlas_manage_storage | bool
+
+- name: Require Atlas Samba password
+  tags: [atlas, sharing]
+  ansible.builtin.assert:
+    that:
+      - atlas_samba_password | length > 0
+    fail_msg: Define vault_atlas_samba_password before enabling Atlas storage.
+  no_log: true
+  when: atlas_manage_storage | bool
+
+- name: Read Atlas Samba account
+  tags: [atlas, sharing]
+  ansible.builtin.command:
+    argv:
+      - pdbedit
+      - --list
+      - --user
+      - "{{ atlas_admin_username }}"
+  register: atlas_samba_account
+  changed_when: false
+  failed_when: false
+  when: atlas_manage_storage | bool
+
+- name: Ensure Atlas Samba private state directory exists
+  tags: [atlas, sharing]
+  ansible.builtin.file:
+    path: "{{ atlas_samba_password_marker | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: atlas_manage_storage | bool
+
+- name: Check Atlas Samba password marker
+  tags: [atlas, sharing]
+  ansible.builtin.stat:
+    path: "{{ atlas_samba_password_marker }}"
+  register: atlas_samba_password_marker_stat
+  when: atlas_manage_storage | bool
+
+- name: Read Atlas Samba password marker
+  tags: [atlas, sharing]
+  ansible.builtin.slurp:
+    src: "{{ atlas_samba_password_marker }}"
+  register: atlas_samba_password_marker_content
+  no_log: true
+  when:
+    - atlas_manage_storage | bool
+    - atlas_samba_password_marker_stat.stat.exists
+
+- name: Determine whether Atlas Samba credentials must change
+  tags: [atlas, sharing]
+  ansible.builtin.set_fact:
+    atlas_samba_password_digest: "{{ atlas_samba_password | hash('sha256') }}"
+    atlas_samba_password_update_required: >-
+      {{
+        atlas_samba_account.rc != 0
+        or not atlas_samba_password_marker_stat.stat.exists
+        or (
+          atlas_samba_password_marker_content.content | default('')
+          | b64decode | trim
+        ) != (atlas_samba_password | hash('sha256'))
+      }}
+  no_log: true
+  when: atlas_manage_storage | bool
+
+- name: Set Atlas Samba account password
+  tags: [atlas, sharing]
+  ansible.builtin.command:
+    argv:
+      - smbpasswd
+      - -s
+      - -a
+      - "{{ atlas_admin_username }}"
+    stdin: "{{ atlas_samba_password }}\n{{ atlas_samba_password }}"
+  changed_when: true
+  no_log: true
+  when:
+    - atlas_manage_storage | bool
+    - atlas_samba_password_update_required | bool
+
+- name: Record managed Atlas Samba password digest
+  tags: [atlas, sharing]
+  ansible.builtin.copy:
+    content: "{{ atlas_samba_password_digest }}\n"
+    dest: "{{ atlas_samba_password_marker }}"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  when:
+    - atlas_manage_storage | bool
+    - atlas_samba_password_update_required | bool
+
+- name: Require completed Atlas firewall placeholders
+  tags: [atlas, sharing, services]
+  ansible.builtin.assert:
+    that:
+      - atlas_lan_subnet != 'CHANGEME_LAN_SUBNET'
+      - atlas_firewalld_zone | length > 0
+    fail_msg: Replace the Atlas LAN subnet and firewall zone placeholders.
+  when: atlas_manage_firewall | bool
+
+- name: Apply Atlas firewalld rich rules
+  tags: [atlas, sharing, services]
+  ansible.posix.firewalld:
+    rich_rule: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+    zone: "{{ atlas_firewalld_zone }}"
+  loop: "{{ atlas_firewalld_rich_rules }}"
+  loop_control:
+    label: "{{ item }}"
+  when: atlas_manage_firewall | bool
+
+- name: Remove unrestricted Atlas services from firewalld zone
+  tags: [atlas, sharing, services]
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: disabled
+    zone: "{{ atlas_firewalld_zone }}"
+  loop: "{{ atlas_firewalld_restricted_services }}"
+  loop_control:
+    label: "{{ item }}"
+  when: atlas_manage_firewall | bool

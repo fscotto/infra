@@ -1,0 +1,40 @@
+---
+- name: Create Atlas Syncthing configuration directory
+  tags: [atlas, syncthing]
+  ansible.builtin.file:
+    path: "{{ atlas_syncthing_config_dir }}"
+    state: directory
+    owner: "{{ atlas_admin_username }}"
+    group: "{{ atlas_admin_group }}"
+    mode: "0700"
+  when: atlas_manage_storage | bool
+
+- name: Create Atlas Syncthing default data directory
+  tags: [atlas, syncthing]
+  ansible.builtin.file:
+    path: "{{ atlas_syncthing_default_dir }}"
+    state: directory
+    owner: "{{ atlas_admin_username }}"
+    group: "{{ atlas_admin_group }}"
+    mode: "0770"
+  when: atlas_manage_storage | bool
+
+- name: Render Atlas Syncthing systemd service
+  tags: [atlas, syncthing]
+  ansible.builtin.template:
+    src: atlas-syncthing.service.j2
+    dest: /etc/systemd/system/atlas-syncthing.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Atlas Syncthing service
+  when: atlas_manage_storage | bool
+
+- name: Enable Atlas Syncthing service
+  tags: [atlas, syncthing]
+  ansible.builtin.systemd:
+    name: atlas-syncthing
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: atlas_manage_storage | bool

@@ -1,0 +1,16 @@
+# Managed by Ansible. Do not edit manually.
+[global]
+  workgroup = {{ atlas_samba_workgroup }}
+  security = user
+  map to guest = Never
+  server min protocol = SMB2
+  include = registry
+
+[{{ atlas_samba_share_name }}]
+  path = {{ atlas_work_mountpoint }}
+  browseable = yes
+  read only = no
+  valid users = {{ atlas_samba_valid_users | join(' ') }}
+  force group = {{ atlas_admin_group }}
+  create mask = 0660
+  directory mask = 0770

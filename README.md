@@ -36,7 +36,8 @@ infra/
 
 ## Managed machines
 
-The repo currently covers Fedora/GNOME desktops, one Fedora WSL workstation, and an Ubuntu server. Configuration is layered instead of being tied to host names:
+The repo currently covers Fedora/GNOME desktops, one Fedora WSL workstation, an Ubuntu server, and
+a Rocky Linux 9 NAS. Configuration is layered instead of being tied to host names:
 
 ```text
 common user environment
@@ -52,6 +53,7 @@ common user environment
 | `nymph` | Fedora | Desktop laptop | GNOME |
 | `deadalus` | Fedora WSL | Development workstation | — |
 | `prometheus` | Ubuntu | Server | — |
+| `atlas` | Rocky 9 | NAS | — |
 
 ```text
 ikaros must be boring
@@ -110,6 +112,31 @@ ansible-playbook ansible/site.yml --limit prometheus \
   -e server_user_home=/srv/myuser
 ```
 
+## NAS
+
+`atlas` is a Rocky Linux 9 NAS reached through SSH. Its pool already exists: the profile only
+manages child datasets and must never create, partition, destroy, roll back, or otherwise alter the
+pool itself. Linux clients use NFSv4 and Windows/WSL clients use SMB; both are restricted to the
+configured LAN.
+
+For the first run, replace the Atlas placeholders and provide
+`vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash`, and
+`vault_atlas_samba_password`. Bootstrap the host through its existing administrator:
+
+```bash
+ansible-playbook ansible/site.yml --limit atlas \
+  -e atlas_connection_username=<existing-admin>
+```
+
+`vault_atlas_admin_password_hash` must be an `/etc/shadow`-compatible hash, not a clear-text
+Cockpit password. Subsequent runs use `atlas_admin_username`. Enable
+`atlas_manage_storage` only after checking the existing pool and mountpoints; enable
+`atlas_manage_firewall` only after checking the LAN subnet and active firewalld zone.
+
+Snapshot retention, Syncthing topology, VPN access, Prometheus pulls, Rclone, USB backup,
+monitoring, and disaster-recovery tests remain follow-up work. The detailed operational backlog is
+kept in `AGENTS.md`.
+
 ## How layering works
 
 A host can intentionally belong to more than one inventory group. The final configuration is the combination of the host and its groups, not a one-host/one-play mapping.
@@ -146,6 +173,7 @@ ansible-playbook ansible/site.yml --limit <host> --tags emacs -e emacs_enabled=t
 | `packages_freebsd` | Installs packages on FreeBSD with pkg. |
 | `packages_ubuntu` | Installs packages on Ubuntu. |
 | `packages_fedora` | Installs packages on Fedora. |
+| `packages_rocky` | Installs packages on Rocky Linux 9. |
 | `services_runit` | Manages runit services. |
 | `services_systemd` | Manages systemd services. |
 | `services_freebsd` | Manages declared FreeBSD rc services. |
@@ -158,6 +186,7 @@ ansible-playbook ansible/site.yml --limit <host> --tags emacs -e emacs_enabled=t
 | `profile_workstation_dev_common` | Shared workstation development setup. |
 | `profile_workstation_dev_wsl` | WSL development setup. |
 | `profile_server` | Server setup. |
+| `profile_atlas` | Rocky Linux 9 NAS setup. |
 | `dotfiles_common` | Shared user dotfiles. |
 
 ## What `site.yml` runs
@@ -168,6 +197,8 @@ platform_void -> packages_void + services_runit
 platform_void & graphical_desktop -> profile_desktop_common + profile_desktop_sway + profile_desktop_niri + profile_desktop_host
 platform_freebsd -> packages_freebsd + services_freebsd
 platform_fedora -> packages_fedora + services_systemd
+platform_rocky -> packages_rocky + services_systemd
+atlas -> profile_atlas
 platform_fedora & role_personal_workstation -> profile_personal_workstation
 platform_fedora & desktop_gnome -> profile_desktop_gnome
 workstation_dev_fedora -> profile_workstation_dev_common
@@ -180,6 +211,7 @@ So, in practice:
 - `platform_fedora` configures `ikaros`, `nymph`, and `deadalus`.
 - `deadalus` gets the Fedora development layer followed by the WSL layer.
 - `ubuntu_server` configures `prometheus`.
+- `atlas` receives the Rocky platform layer and the NAS profile through SSH.
 - Empty `platform_void` and `platform_freebsd` groups do nothing until they get a host.
 - The playbook never restarts the display manager during a run.
 - `secrets/vault.yml` and then `secrets/vault.local.yml` are loaded only when present.
@@ -218,6 +250,7 @@ ansible-playbook ansible/site.yml --limit ikaros --check --diff
 ansible-playbook ansible/site.yml --limit nymph --check --diff
 ansible-playbook ansible/site.yml --limit deadalus --check --diff
 ansible-playbook ansible/site.yml --limit prometheus --check --diff
+ansible-playbook ansible/site.yml --limit atlas --check --diff
 ansible-lint ansible/site.yml
 ansible-lint ansible/roles
 yamllint ansible/

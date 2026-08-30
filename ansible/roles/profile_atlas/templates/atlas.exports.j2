@@ -1,0 +1,4 @@
+# Managed by Ansible. Do not edit manually.
+{% for export in atlas_nfs_exports %}
+{{ export.path }} {{ export.clients }}
+{% endfor %}

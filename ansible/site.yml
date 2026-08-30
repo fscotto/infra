@@ -20,7 +20,8 @@
         errors='ignore', wantlist=True) | length > 0
 
   roles:
-    - dotfiles_common
+    - role: dotfiles_common
+      when: "'platform_rocky' not in group_names"
 
 - name: Configure Void platform
   hosts: platform_void
@@ -55,6 +56,21 @@
   roles:
     - packages_fedora
     - services_systemd
+
+- name: Configure Rocky Linux platform
+  hosts: platform_rocky
+  become: true
+
+  roles:
+    - packages_rocky
+    - services_systemd
+
+- name: Configure Atlas NAS profile
+  hosts: atlas
+  become: true
+
+  roles:
+    - profile_atlas
 
 - name: Configure personal workstation role on Fedora
   hosts: platform_fedora:&role_personal_workstation

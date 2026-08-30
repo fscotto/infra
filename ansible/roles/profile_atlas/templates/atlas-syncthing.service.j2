@@ -1,0 +1,16 @@
+[Unit]
+Description=Atlas Syncthing service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User={{ atlas_admin_username }}
+Group={{ atlas_admin_group }}
+WorkingDirectory={{ atlas_syncthing_mountpoint }}
+Environment=HOME={{ atlas_syncthing_mountpoint }}
+ExecStart=/usr/local/bin/syncthing serve --no-browser --no-restart --no-upgrade --home={{ atlas_syncthing_config_dir }}
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

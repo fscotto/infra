@@ -16,6 +16,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, FreeBS
 - Void desktop profile is also the base for other future/reference hosts via `platform_void + graphical_desktop`
 - Workstation: `deadalus` is Windows + Fedora WSL.
 - Ubuntu server: `prometheus`
+- NAS: `atlas` (Rocky Linux 9, reached through SSH)
 - Hosts intentionally belong to multiple groups; trust `ansible/site.yml` over hostname assumptions.
 - Inventory axes are independent: `platform_*`, `role_*`, and `desktop_*`. Legacy `void` and `desktop` remain compatibility parents.
 
@@ -40,6 +41,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, FreeBS
   - Fedora laptop work: `ansible-playbook ansible/site.yml --limit nymph --check --diff`
   - WSL workstation dev: `ansible-playbook ansible/site.yml --limit deadalus --check --diff`
   - Server: `ansible-playbook ansible/site.yml --limit prometheus --check --diff`
+  - Atlas NAS: `ansible-playbook ansible/site.yml --limit atlas --check --diff`
 - Focused checks:
   - Emacs is disabled by default; temporary Emacs check: `ansible-playbook ansible/site.yml --limit <host> --tags emacs --check --diff -e emacs_enabled=true`
   - Mail bootstrap: `sh -n scripts/bootstrap_mail.sh` and `shellcheck scripts/bootstrap_mail.sh`
@@ -82,6 +84,46 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - `deadalus` is modeled as Windows + Fedora WSL and is the sole workstation target.
 - Fedora WSL belongs to `platform_fedora`, `workstation_dev_fedora`, and the shared WSL layer. It must not receive Flatpak or Snap runtimes.
 - Windows applications are installed manually and are not managed from the WSL profile.
+
+## Atlas NAS Notes
+- `atlas` is a remote Rocky Linux 9 NAS. Keep its connection, LAN, pool and mountpoint values in
+  `host_vars/atlas.yml`. Bootstrap it once with `-e atlas_connection_username=<existing-admin>`;
+  subsequent runs use the dedicated Atlas account.
+- The pool is pre-existing: never add pool creation, disk partitioning, RAIDZ creation, rollback,
+  or destruction to the Atlas profile.
+- `atlas_manage_storage` and `atlas_manage_firewall` remain false until their placeholders are
+  replaced; only then may the profile manage datasets, shares and LAN-restricted firewall rules.
+- Atlas requires `vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash` for Cockpit
+  and, when storage is enabled, `vault_atlas_samba_password`. Never print these values.
+- Atlas uses NFSv4 for Linux and SMB for Windows/WSL, restricted to the configured LAN. Snapshot,
+  Rclone, Prometheus pull and USB backup automation are intentionally deferred.
+
+## Atlas NAS TODO
+- Replace every Atlas `CHANGEME` value, provide the required Vault variables and validate the first
+  remote bootstrap on the real Rocky Linux 9 host. Enable `atlas_manage_storage` first and
+  `atlas_manage_firewall` only after confirming the pool, mountpoints, LAN subnet and firewalld zone.
+- Validate the complete baseline on the target: OpenZFS kmod loading, existing pool import, dataset
+  mounts, SSH reconnect, Cockpit and all selected 45Drives plugins, NFSv4, SMB and Syncthing.
+- Finalize dataset properties and the shared UID/GID, group and POSIX ACL model; test the same files
+  through both NFS and SMB before considering multiprotocol access complete.
+- Add Ansible-managed ZFS snapshot retention and scrub timers. Use Cockpit Scheduler for visibility
+  or manual operations, not as the only source of configuration, and never automate snapshot rollback.
+- Manage the Syncthing star topology, device IDs, folders, folder modes, ignore rules and protected GUI
+  or API access for the selected clients.
+- Add Tailscale or WireGuard and corresponding LAN/VPN-only firewalld rules before enabling remote
+  services; never expose SSH, Cockpit, NFS, SMB or Syncthing through public port forwarding.
+- Add the least-privilege Prometheus backup flow: remote dump generation, dedicated SSH identity,
+  pinned host key, atomic pull, verification, retention and an Atlas systemd service/timer.
+- Add the encrypted Google Drive backup with Rclone Drive plus Crypt remotes, Vault-managed secrets,
+  snapshot-consistent sources, retries, logging, retention policy and a tested restore procedure.
+- Add the UUID-bound offline USB backup with versioned rsync, locking, capacity checks, verification,
+  safe unmounting and a tested restore procedure; never trigger it for an arbitrary USB disk.
+- Add monitoring and alerting for pool health, scrub/resilver, SMART data, temperatures, free space and
+  failed backup timers, plus a controlled Rocky kernel/OpenZFS update and reboot procedure.
+- Document and test disaster recovery: rebuild Atlas with Ansible, import the existing pool, restore
+  from snapshot/USB/cloud, preserve Vault and Rclone recovery material offline, and define RPO/RTO.
+- Optionally design iCloud photo ingestion as a separate workflow after the storage and backup layers
+  are validated; do not make it a dependency of the Atlas baseline.
 
 ## Coding Agent Notes
 - Shared agent packages live in `ai_agents_npm_packages` in `ansible/inventory/group_vars/all.yml`.

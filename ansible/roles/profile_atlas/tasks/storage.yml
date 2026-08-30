@@ -1,0 +1,77 @@
+---
+- name: Define Atlas ZFS datasets
+  tags: [atlas, storage]
+  ansible.builtin.set_fact:
+    atlas_zfs_datasets:
+      - name: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_work }}"
+        mountpoint: "{{ atlas_work_mountpoint }}"
+      - name: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_syncthing }}"
+        mountpoint: "{{ atlas_syncthing_mountpoint }}"
+      - name: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_backup_prometheus }}"
+        mountpoint: "{{ atlas_backup_prometheus_mountpoint }}"
+      - name: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_icloud_photos }}"
+        mountpoint: "{{ atlas_icloud_photos_mountpoint }}"
+
+- name: Require completed Atlas storage placeholders
+  tags: [atlas, storage]
+  ansible.builtin.assert:
+    that:
+      - atlas_zfs_pool != 'CHANGEME_ZFS_POOL'
+      - atlas_mount_root != '/CHANGEME_ATLAS_MOUNT_ROOT'
+      - atlas_mount_root.startswith('/')
+      - (atlas_zfs_datasets | map(attribute='name') | unique | list | length) == (atlas_zfs_datasets | length)
+      - (atlas_zfs_datasets | map(attribute='mountpoint') | unique | list | length) == (atlas_zfs_datasets | length)
+    fail_msg: >-
+      Replace the Atlas ZFS pool and mount-root placeholders, then set
+      atlas_manage_storage to true before managing datasets.
+  when: atlas_manage_storage | bool
+
+- name: Check whether the configured Atlas ZFS pool exists
+  tags: [atlas, storage]
+  ansible.builtin.command:
+    argv:
+      - zpool
+      - list
+      - -H
+      - -o
+      - name
+      - "{{ atlas_zfs_pool }}"
+  register: atlas_zfs_pool_check
+  changed_when: false
+  failed_when: false
+  when: atlas_manage_storage | bool
+
+- name: Require the configured Atlas ZFS pool
+  tags: [atlas, storage]
+  ansible.builtin.assert:
+    that:
+      - atlas_zfs_pool_check.rc == 0
+    fail_msg: >-
+      The configured Atlas ZFS pool does not exist. The Atlas profile only
+      manages child datasets and never creates pools.
+  when: atlas_manage_storage | bool
+
+- name: Manage Atlas ZFS datasets declaratively
+  tags: [atlas, storage]
+  community.general.zfs:
+    name: "{{ item.name }}"
+    state: present
+    extra_zfs_properties:
+      mountpoint: "{{ item.mountpoint }}"
+  loop: "{{ atlas_zfs_datasets }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: atlas_manage_storage | bool
+
+- name: Set Atlas dataset ownership
+  tags: [atlas, storage]
+  ansible.builtin.file:
+    path: "{{ item.mountpoint }}"
+    state: directory
+    owner: "{{ atlas_admin_username }}"
+    group: "{{ atlas_admin_group }}"
+    mode: "0770"
+  loop: "{{ atlas_zfs_datasets }}"
+  loop_control:
+    label: "{{ item.mountpoint }}"
+  when: atlas_manage_storage | bool

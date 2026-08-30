@@ -1,0 +1,151 @@
+---
+- name: Require Rocky Linux 9
+  tags: [packages]
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution'] == 'Rocky'
+      - ansible_facts['distribution_major_version'] == '9'
+    fail_msg: This platform role supports Rocky Linux 9 only.
+
+- name: Install DNF configuration plugin
+  tags: [packages]
+  ansible.builtin.dnf:
+    name: dnf-plugins-core
+    state: present
+
+- name: Enable Rocky CodeReady Builder repository
+  tags: [packages]
+  community.general.dnf_config_manager:
+    name:
+      - crb
+    state: enabled
+  when: rocky_enable_crb | default(true) | bool
+
+- name: Install EPEL repository package
+  tags: [packages]
+  ansible.builtin.dnf:
+    name: epel-release
+    state: present
+
+- name: Install official OpenZFS repository package
+  tags: [packages, storage]
+  ansible.builtin.dnf:
+    name: "{{ rocky_openzfs_release_rpm }}"
+    state: present
+
+- name: Disable OpenZFS DKMS repository
+  tags: [packages, storage]
+  community.general.dnf_config_manager:
+    name:
+      - zfs
+    state: disabled
+
+- name: Enable OpenZFS kmod repository
+  tags: [packages, storage]
+  community.general.dnf_config_manager:
+    name:
+      - zfs-kmod
+    state: enabled
+
+- name: Refresh Rocky package metadata
+  tags: [packages]
+  ansible.builtin.dnf:
+    update_cache: true
+
+- name: Install packages on Rocky Linux
+  tags: [packages]
+  ansible.builtin.dnf:
+    name: >-
+      {{
+        (
+          (common_packages | default([]))
+          + (rocky_packages_base | default([]))
+          + (profile_packages | default([]))
+          + (host_packages | default([]))
+        ) | unique
+      }}
+    state: present
+
+- name: Require supported architecture for Syncthing
+  tags: [packages, syncthing]
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['architecture'] == 'x86_64'
+    fail_msg: The pinned Atlas Syncthing binary currently supports x86_64 only.
+
+- name: Read installed Syncthing version
+  tags: [packages, syncthing]
+  ansible.builtin.command:
+    argv:
+      - /usr/local/bin/syncthing
+      - --version
+  register: rocky_syncthing_version_check
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Determine whether Syncthing must be installed
+  tags: [packages, syncthing]
+  ansible.builtin.set_fact:
+    rocky_syncthing_install_required: >-
+      {{
+        ('syncthing v' ~ rocky_syncthing_version ~ ' ')
+        not in (rocky_syncthing_version_check.stdout | default(''))
+      }}
+
+- name: Create temporary Syncthing extraction directory
+  tags: [packages, syncthing]
+  ansible.builtin.file:
+    path: "/tmp/syncthing-{{ rocky_syncthing_version }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: rocky_syncthing_install_required | bool
+
+- name: Download pinned Syncthing release
+  tags: [packages, syncthing]
+  ansible.builtin.get_url:
+    url: "{{ rocky_syncthing_archive_url }}"
+    dest: "/tmp/syncthing-{{ rocky_syncthing_version }}.tar.gz"
+    checksum: "{{ rocky_syncthing_archive_checksum }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: rocky_syncthing_install_required | bool
+
+- name: Extract pinned Syncthing release
+  tags: [packages, syncthing]
+  ansible.builtin.unarchive:
+    src: "/tmp/syncthing-{{ rocky_syncthing_version }}.tar.gz"
+    dest: "/tmp/syncthing-{{ rocky_syncthing_version }}"
+    remote_src: true
+  when: rocky_syncthing_install_required | bool
+
+- name: Install pinned Syncthing binary
+  tags: [packages, syncthing]
+  ansible.builtin.copy:
+    src: >-
+      {{
+        '/tmp/syncthing-' ~ rocky_syncthing_version
+        ~ '/syncthing-linux-amd64-v' ~ rocky_syncthing_version
+        ~ '/syncthing'
+      }}
+    dest: /usr/local/bin/syncthing
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0755"
+  when: rocky_syncthing_install_required | bool
+
+- name: Remove Syncthing release archive
+  tags: [packages, syncthing]
+  ansible.builtin.file:
+    path: "/tmp/syncthing-{{ rocky_syncthing_version }}.tar.gz"
+    state: absent
+
+- name: Remove Syncthing extraction directory
+  tags: [packages, syncthing]
+  ansible.builtin.file:
+    path: "/tmp/syncthing-{{ rocky_syncthing_version }}"
+    state: absent

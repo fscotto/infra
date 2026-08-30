@@ -56,8 +56,8 @@ Il repository è diviso in due componenti principali:
 
 # Macchine gestite
 
-Il repository modella attualmente host Fedora/GNOME, una workstation Fedora WSL e un server Ubuntu.
-La composizione resta separata in assi indipendenti:
+Il repository modella attualmente host Fedora/GNOME, una workstation Fedora WSL, un server Ubuntu e
+un NAS Rocky Linux 9. La composizione resta separata in assi indipendenti:
 
 ```text
 common user environment
@@ -75,6 +75,7 @@ Matrice target:
 | nymph        | Fedora   | Desktop laptop       | GNOME   |
 | deadalus     | Fedora WSL | Workstation dev    | —       |
 | prometheus   | Ubuntu   | Server               | —       |
+| atlas        | Rocky 9 | NAS                  | —       |
 
 Regola operativa:
 
@@ -93,6 +94,7 @@ Nota sullo stato attuale del playbook principale:
 - `ansible/site.yml` applica oggi in automatico Fedora/GNOME su `ikaros` e `nymph`
 - `ansible/site.yml` applica il profilo Fedora WSL alla workstation `deadalus`
 - `ansible/site.yml` applica anche il profilo `ubuntu_server` con baseline apt, systemd, dotfiles server e firewall UFW
+- `ansible/site.yml` applica il profilo NAS Rocky su `atlas` tramite SSH remoto
 
 ## Desktop
 
@@ -200,6 +202,33 @@ ansible-playbook ansible/site.yml --limit prometheus -e server_username=myuser -
 
 ---
 
+## NAS
+
+`atlas` e un NAS Rocky Linux 9 raggiunto tramite SSH. Il pool ZFS esiste gia: il profilo gestisce
+solo i dataset figli e non deve mai creare, partizionare, distruggere, fare rollback o modificare il
+pool. I client Linux usano NFSv4, quelli Windows/WSL SMB; entrambi restano limitati alla LAN
+configurata.
+
+Per il primo avvio sostituire i placeholder Atlas e fornire
+`vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash` e
+`vault_atlas_samba_password`. Eseguire il bootstrap tramite l'amministratore esistente:
+
+```bash
+ansible-playbook ansible/site.yml --limit atlas \
+  -e atlas_connection_username=<existing-admin>
+```
+
+`vault_atlas_admin_password_hash` deve essere un hash compatibile con `/etc/shadow`, non una
+password Cockpit in chiaro. Le esecuzioni successive usano `atlas_admin_username`. Abilitare
+`atlas_manage_storage` solo dopo aver verificato pool e mountpoint esistenti; abilitare
+`atlas_manage_firewall` solo dopo aver verificato subnet LAN e zona firewalld attiva.
+
+Restano da implementare retention delle snapshot, topologia Syncthing, VPN, pull da Prometheus,
+Rclone, backup USB, monitoraggio e test di disaster recovery. Il backlog operativo dettagliato e in
+`AGENTS.md`.
+
+---
+
 # Composizione della configurazione
 
 Emacs è abilitato sui profili Fedora/GNOME e workstation; la configurazione canonica è distribuita da `dotfiles_common`, con Org in `~/Org/`, template versionati e export PDF/HTML/Markdown/DOCX/ODT. Per abilitarlo temporaneamente su un altro profilo:
@@ -247,6 +276,7 @@ I principali ruoli attualmente presenti sono:
 | packages_freebsd          | installazione pacchetti su FreeBSD via pkg |
 | packages_ubuntu           | installazione pacchetti su Ubuntu   |
 | packages_fedora           | installazione pacchetti su Fedora   |
+| packages_rocky            | installazione pacchetti su Rocky Linux 9 |
 | services_runit            | gestione servizi runit              |
 | services_systemd          | gestione servizi systemd            |
 | services_freebsd          | gestione servizi FreeBSD dichiarati per host |
@@ -259,6 +289,7 @@ I principali ruoli attualmente presenti sono:
 | profile_workstation_dev_common | configurazione dev workstation condivisa |
 | profile_workstation_dev_wsl | configurazione WSL condivisa per sviluppo |
 | profile_server            | configurazione server               |
+| profile_atlas             | configurazione NAS Rocky Linux 9    |
 | dotfiles_common           | distribuzione dotfiles comuni       |
 | dotfiles                  | distribuzione configurazioni utente |
 
@@ -274,6 +305,8 @@ platform_void -> packages_void + services_runit
 platform_void & graphical_desktop -> profile_desktop_common + profile_desktop_sway + profile_desktop_niri + profile_desktop_host
 platform_freebsd -> packages_freebsd + services_freebsd
 platform_fedora -> packages_fedora + services_systemd
+platform_rocky -> packages_rocky + services_systemd
+atlas -> profile_atlas
 platform_fedora & role_personal_workstation -> profile_personal_workstation
 platform_fedora & desktop_gnome -> profile_desktop_gnome
 workstation_dev_fedora -> profile_workstation_dev_common
@@ -288,6 +321,7 @@ Questo significa che, allo stato attuale:
 - il profilo Void resta selezionabile tramite `platform_void + graphical_desktop` per host futuri
 - `deadalus` riceve il profilo Fedora WSL tramite play dev dedicati
 - il server Ubuntu (`prometheus`) e gestito con pacchetti, servizi, dotfiles server e firewall
+- il NAS Rocky (`atlas`) usa un pool ZFS gia esistente, condivisioni NFSv4/SMB limitate alla LAN e Cockpit/45Drives
 - lo stack container server include `navidrome`, `postgres`, `gitea`, `nginx-proxy-manager` e `syncthing`, con GUI Syncthing raggiungibile tramite la rete Docker `web`
 
 # Dotfiles
@@ -364,6 +398,7 @@ Allo stato attuale questo comando:
 - per `platform_fedora & desktop_gnome` applica il profilo GNOME a `ikaros` e `nymph`
 - per `workstation_dev_wsl` applica i tweak WSL dopo il layer Fedora a `deadalus`, escludendo Flatpak e Snap
 - per gli host `ubuntu_server` applica pacchetti Ubuntu, servizi systemd, profilo server, UFW, dotfiles e template dedicati
+- per `platform_rocky` applica pacchetti Rocky e servizi systemd ad `atlas`, quindi il profilo NAS dedicato
 - non riavvia automaticamente il display manager
 - carica `secrets/vault.yml` solo se presente
 - carica `secrets/vault.local.yml` solo se presente, dopo `vault.yml`, cosi gli override locali hanno precedenza
@@ -377,6 +412,7 @@ ansible-playbook ansible/site.yml --limit ikaros --check --diff
 ansible-playbook ansible/site.yml --limit nymph --check --diff
 ansible-playbook ansible/site.yml --limit deadalus --check --diff
 ansible-playbook ansible/site.yml --limit prometheus --check --diff
+ansible-playbook ansible/site.yml --limit atlas --check --diff
 ansible-lint ansible/site.yml
 ansible-lint ansible/roles
 yamllint ansible/

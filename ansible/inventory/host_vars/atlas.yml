@@ -1,0 +1,50 @@
+---
+# Replace every CHANGEME value before enabling Atlas storage management.
+hostname: atlas
+ansible_host: CHANGEME_ATLAS_HOST
+ansible_user: "{{ atlas_connection_username }}"
+ansible_port: 22
+ansible_ssh_private_key_file: CHANGEME_ATLAS_SSH_PRIVATE_KEY_PATH
+
+atlas_admin_username: CHANGEME_ATLAS_ADMIN
+atlas_connection_username: "{{ atlas_admin_username }}"
+atlas_admin_group: "{{ atlas_admin_username }}"
+atlas_admin_home: "/home/{{ atlas_admin_username }}"
+atlas_admin_uid: 1000
+atlas_admin_gid: 1000
+atlas_admin_ssh_keys: "{{ vault_atlas_authorized_ssh_keys | default([]) }}"
+atlas_admin_password_hash: "{{ vault_atlas_admin_password_hash | default('!') }}"
+
+atlas_lan_subnet: CHANGEME_LAN_SUBNET
+atlas_manage_firewall: false
+atlas_firewalld_zone: public
+atlas_zfs_pool: CHANGEME_ZFS_POOL
+atlas_zfs_dataset_work: work
+atlas_zfs_dataset_syncthing: syncthing
+atlas_zfs_dataset_backup_prometheus: backup_prometheus
+atlas_zfs_dataset_icloud_photos: icloud_photos
+atlas_mount_root: /CHANGEME_ATLAS_MOUNT_ROOT
+atlas_manage_storage: false
+
+atlas_nfs_exports:
+  - path: "{{ atlas_work_mountpoint }}"
+    clients: "{{ atlas_lan_subnet }}(rw,sync,no_subtree_check,root_squash)"
+
+atlas_samba_share_name: work
+atlas_samba_workgroup: WORKGROUP
+atlas_samba_valid_users:
+  - "{{ atlas_admin_username }}"
+atlas_samba_password: "{{ vault_atlas_samba_password | default('') }}"
+
+atlas_firewalld_rich_rules:
+  - 'rule family="ipv4" source address="{{ atlas_lan_subnet }}" service name="ssh" accept'
+  - 'rule family="ipv4" source address="{{ atlas_lan_subnet }}" service name="cockpit" accept'
+  - 'rule family="ipv4" source address="{{ atlas_lan_subnet }}" port port="2049" protocol="tcp" accept'
+  - 'rule family="ipv4" source address="{{ atlas_lan_subnet }}" service name="samba" accept'
+
+host_enabled_services:
+  - sshd
+  - cockpit.socket
+  - nfs-server
+  - smb
+  - zfs.target

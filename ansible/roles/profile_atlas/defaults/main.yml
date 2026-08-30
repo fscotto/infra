@@ -1,0 +1,51 @@
+---
+atlas_manage_storage: false
+atlas_admin_username: CHANGEME_ATLAS_ADMIN
+atlas_admin_group: "{{ atlas_admin_username }}"
+atlas_admin_home: "/home/{{ atlas_admin_username }}"
+atlas_admin_uid: 1000
+atlas_admin_gid: 1000
+atlas_admin_ssh_keys: []
+atlas_admin_password_hash: "!"
+
+atlas_lan_subnet: CHANGEME_LAN_SUBNET
+atlas_manage_firewall: false
+atlas_firewalld_zone: public
+atlas_zfs_pool: CHANGEME_ZFS_POOL
+atlas_zfs_dataset_work: work
+atlas_zfs_dataset_syncthing: syncthing
+atlas_zfs_dataset_backup_prometheus: backup_prometheus
+atlas_zfs_dataset_icloud_photos: icloud_photos
+atlas_mount_root: /CHANGEME_ATLAS_MOUNT_ROOT
+
+atlas_work_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_work }}"
+atlas_syncthing_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_syncthing }}"
+atlas_backup_prometheus_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_backup_prometheus }}"
+atlas_icloud_photos_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_icloud_photos }}"
+atlas_syncthing_config_dir: "{{ atlas_admin_home }}/.local/state/syncthing"
+atlas_syncthing_default_dir: "{{ atlas_syncthing_mountpoint }}/Sync"
+
+atlas_45drives_repo_url: https://repo.45drives.com/repofiles/rocky/45drives-enterprise.repo
+atlas_45drives_repo_file: /etc/yum.repos.d/45drives-enterprise.repo
+atlas_45drives_packages:
+  - cockpit-file-sharing
+  - cockpit-navigator
+  - cockpit-identities
+  - cockpit-zfs
+  - cockpit-scheduler
+
+atlas_nfs_exports: []
+atlas_samba_share_name: work
+atlas_samba_workgroup: WORKGROUP
+atlas_samba_valid_users: []
+atlas_samba_password: ""
+atlas_samba_password_marker: /var/lib/samba/private/.atlas-password.sha256
+atlas_firewalld_rich_rules: []
+atlas_firewalld_restricted_services:
+  - ssh
+  - cockpit
+  - nfs
+  - samba
+atlas_selinux_booleans:
+  - samba_export_all_rw
+  - nfs_export_all_rw

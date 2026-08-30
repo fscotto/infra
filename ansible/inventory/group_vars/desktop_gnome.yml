@@ -31,6 +31,7 @@ fedora_desktop_packages:
   - golang
   - golangci-lint
   - gopls
+  - gnome-shell-extension-gsconnect
   - hunspell
   - libvirt
   - liberation-fonts
@@ -54,6 +55,7 @@ fedora_desktop_packages:
   - rustup
   - rsync
   - shfmt
+  - seahorse
   - syncthing
   - tealdeer
   - terminus-fonts

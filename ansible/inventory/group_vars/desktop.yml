@@ -227,7 +227,6 @@ desktop_flatpak_packages:
   - io.github.flattool.Warehouse
   - org.onlyoffice.desktopeditors
   - org.telegram.desktop
-  - org.mozilla.Thunderbird
 
 desktop_flatpak_extensions:
   - org.gtk.Gtk3theme.Yaru-Blue-dark//stable

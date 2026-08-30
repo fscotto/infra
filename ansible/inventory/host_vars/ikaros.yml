@@ -241,7 +241,7 @@ gnome_gsettings_settings:
   - schema: org.gnome.shell
     key: favorite-apps
     value: >-
-      ['org.gnome.Nautilus.desktop', 'org.mozilla.firefox.desktop', 'com.spotify.Client.desktop', 'org.mozilla.thunderbird.desktop', 'org.telegram.desktop.desktop', 'org.gnome.Ptyxis.desktop', 'virt-manager.desktop']
+      ['org.gnome.Nautilus.desktop', 'org.mozilla.firefox.desktop', 'com.spotify.Client.desktop', 'org.gnome.Evolution.desktop', 'org.telegram.desktop.desktop', 'org.gnome.Ptyxis.desktop', 'virt-manager.desktop']
   - schema: org.gnome.shell
     key: remember-mount-password
     value: "true"

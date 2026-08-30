@@ -183,6 +183,7 @@ profile_packages:
   - deluge-gtk
   - delve
   - dnsmasq
+  - evolution
   - poppler-glib
   - poppler-utils
   - fontconfig-devel

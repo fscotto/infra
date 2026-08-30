@@ -51,6 +51,7 @@ fedora_desktop_packages:
   - qemu-tools
   - rclone
   - remmina
+  - rpi-imager
   - ruff
   - rustup
   - rsync

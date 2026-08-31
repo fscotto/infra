@@ -1,5 +1,3 @@
 ---
-workstation_manage_opencode: true
 workstation_manage_ibm_bob: true
 workstation_ibm_bob_install_url: "https://bob.ibm.com/download/bobshell.sh"
-workstation_npm_packages: "{{ ai_agents_npm_packages + [] }}"

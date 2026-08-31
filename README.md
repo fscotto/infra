@@ -165,6 +165,43 @@ Emacs is enabled on Fedora/GNOME and workstation profiles. `dotfiles_common` dep
 ansible-playbook ansible/site.yml --limit <host> --tags emacs -e emacs_enabled=true
 ```
 
+## AI coding agents
+
+The shared npm-managed agents are OpenCode, Claude Code, Codex, Gemini CLI, and
+GitHub Copilot; IBM Bob is also managed on `deadalus`. Each agent has its own
+lifecycle flags in `ansible/inventory/group_vars/all.yml`, so one agent can be
+installed, configured, or removed without affecting the others:
+
+```yaml
+ai_agents:
+  opencode:
+    npm_package: opencode-ai
+    install_enabled: true
+    deploy_enabled: true
+    uninstall_enabled: false
+```
+
+Installation uses the npm `latest` state; deployment copies/renders only the
+configuration belonging to each enabled agent. Removal deletes only the selected
+managed npm package or, for IBM Bob, `/usr/local/bin/bob`; it preserves dotfiles,
+instructions, credentials, and user data. Installation and removal are mutually
+exclusive per agent: the playbook fails before making changes when both flags are
+true for the same agent. Servers set `ai_agents: {}` and therefore manage none.
+
+Run a focused dry run with:
+
+```bash
+ansible-playbook ansible/site.yml --limit ikaros --tags ai_agents --check --diff
+ansible-playbook ansible/site.yml --limit deadalus --tags ai_agents --check --diff
+```
+
+To preview removal, set `install_enabled: false` and `uninstall_enabled: true`
+only in the entry for the agent being removed, then run:
+
+```bash
+ansible-playbook ansible/site.yml --limit deadalus --tags ai_agents --check --diff
+```
+
 ## Main roles
 
 | Role | What it does |
@@ -277,7 +314,7 @@ ansible-playbook ansible/site.yml --list-tags
 | Tag | Main scope |
 | --- | --- |
 | `always` | Common pre-tasks, including optional vault loading. |
-| `ai_agents` | Shared AI agent installation on Fedora and WSL. |
+| `ai_agents` | AI coding-agent install, configuration deployment, and managed-binary removal. |
 | `dotfiles` | User configuration across all profiles. |
 | `dotfiles:common` | Shared dotfiles. |
 | `dotfiles:desktop` | Void and Fedora/GNOME desktop dotfiles. |

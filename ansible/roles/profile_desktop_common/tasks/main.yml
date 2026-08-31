@@ -556,6 +556,30 @@
   loop_control:
     label: "{{ item.name }}"
 
+- name: Install shared AI coding agents on Void desktop
+  tags: [packages, npm, ai_agents]
+  community.general.npm:
+    name: "{{ item.value.npm_package }}"
+    global: true
+    state: latest
+  loop: "{{ ai_agents | dict2items | selectattr('value.npm_package', 'defined') | list }}"
+  when:
+    - item.value.install_enabled | bool
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Uninstall shared AI coding agents on Void desktop
+  tags: [packages, npm, ai_agents]
+  community.general.npm:
+    name: "{{ item.value.npm_package }}"
+    global: true
+    state: absent
+  loop: "{{ ai_agents | dict2items | selectattr('value.npm_package', 'defined') | list }}"
+  when:
+    - item.value.uninstall_enabled | bool
+  loop_control:
+    label: "{{ item.key }}"
+
 - name: Install desktop Python tools with uv
   tags: [packages]
   ansible.builtin.command:

@@ -86,12 +86,24 @@
     group: "{{ effective_user_group }}"
     mode: "{{ item.mode }}"
   loop: >-
-    {{
-      (common_dotfiles | default([]))
-      + ((ai_agents_dotfiles | default([])) if (ai_agents_enabled | default(false)) else [])
-    }}
+    {{ common_dotfiles | default([]) }}
   loop_control:
     label: "{{ item.dest }}"
+
+- name: Deploy AI coding-agent dotfiles
+  tags: [dotfiles, dotfiles:common, ai_agents]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/common/{{ item.src }}"
+    dest: "{{ effective_user_home }}/{{ item.dest }}"
+    owner: "{{ effective_username }}"
+    group: "{{ effective_user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ ai_agents_dotfiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+  when:
+    - (item.agents | intersect(ai_agents_deploy_enabled_names)) | length > 0
+    - (ai_agents_dotfiles | default([])) | length > 0
 
 - name: Install distro packages for Vim plugins
   tags: [packages, vim, fzf]
@@ -141,7 +153,7 @@
     - (vim_plugin_source_plugins | default([])) | length > 0
 
 - name: Ensure AI config directories exist
-  tags: [dotfiles, dotfiles:common]
+  tags: [dotfiles, dotfiles:common, ai_agents]
   ansible.builtin.file:
     path: "{{ effective_user_home }}/{{ item }}"
     state: directory
@@ -151,11 +163,11 @@
   loop:
     - .codex
   when:
-    - ai_agents_enabled | default(false)
+    - "'codex' in ai_agents_deploy_enabled_names"
     - (ai_agents_templates | default([])) | length > 0
 
-- name: Render AI agent templates
-  tags: [dotfiles, dotfiles:common]
+- name: Render AI coding-agent templates
+  tags: [dotfiles, dotfiles:common, ai_agents]
   ansible.builtin.template:
     src: "{{ playbook_dir }}/../dotfiles/common/{{ item.src }}"
     dest: "{{ effective_user_home }}/{{ item.dest }}"
@@ -165,7 +177,9 @@
   loop: "{{ ai_agents_templates | default([]) }}"
   loop_control:
     label: "{{ item.dest }}"
-  when: ai_agents_enabled | default(false)
+  when:
+    - (item.agents | intersect(ai_agents_deploy_enabled_names)) | length > 0
+    - (ai_agents_templates | default([])) | length > 0
 
 - name: Refresh bat cache
   tags: [dotfiles, dotfiles:common]

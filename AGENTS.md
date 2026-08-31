@@ -44,6 +44,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, FreeBS
   - Atlas NAS: `ansible-playbook ansible/site.yml --limit atlas --check --diff`
 - Focused checks:
   - Emacs is disabled by default; temporary Emacs check: `ansible-playbook ansible/site.yml --limit <host> --tags emacs --check --diff -e emacs_enabled=true`
+  - AI coding agents: `ansible-playbook ansible/site.yml --limit <host> --tags ai_agents --check --diff`
   - Mail bootstrap: `sh -n scripts/bootstrap_mail.sh` and `shellcheck scripts/bootstrap_mail.sh`
   - Server compose render: `docker compose -f /opt/docker/server/docker-compose.yml config`
 
@@ -127,10 +128,12 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   are validated; do not make it a dependency of the Atlas baseline.
 
 ## Coding Agent Notes
-- Shared agent packages live in `ai_agents_npm_packages` in `ansible/inventory/group_vars/all.yml`.
+- Shared agent definitions and lifecycle flags live in `ai_agents` in `ansible/inventory/group_vars/all.yml`.
 - Shared agent dotfiles live in `ai_agents_dotfiles`; rendered configs live in `ai_agents_templates`.
-- Desktop and WSL profiles consume the shared agent package list; do not duplicate package entries in profile-specific vars.
-- `dotfiles_common` copies common dotfiles plus `ai_agents_dotfiles`, then renders `ai_agents_templates`.
+- Every `ai_agents.<agent>` entry has independent `install_enabled`, `deploy_enabled`, and `uninstall_enabled` flags. Installation and removal must not both be true for the same agent; the common pre-task fails before changes when they conflict.
+- Fedora, Void desktop, and WSL workstation profiles consume the shared agent definitions; do not duplicate package entries in profile-specific vars. IBM Bob on the workstation follows its own flags.
+- `dotfiles_common` deploys `ai_agents_dotfiles` and renders `ai_agents_templates` only when deployment is enabled.
+- Removal is limited to the managed npm packages and `/usr/local/bin/bob`; never remove agent dotfiles, instructions, credentials, or user data.
 - Keep `.config/ai/` as the common instruction source; update agent-specific entrypoints to reference it rather than duplicating instruction text.
 
 ## Tooling Notes

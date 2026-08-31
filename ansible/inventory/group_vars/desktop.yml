@@ -31,8 +31,7 @@ desktop_binary_tools: []
 
 desktop_npm_packages: >-
   {{
-    ai_agents_npm_packages
-    + [
+    [
       {'name': '@mermaid-js/mermaid-cli', 'state': 'latest'},
       {'name': 'vscode-langservers-extracted', 'state': 'latest'}
     ]

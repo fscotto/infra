@@ -35,19 +35,31 @@
   loop_control:
     label: "{{ item.dest }}"
 
-- name: Install workstation npm packages
-  tags: [packages, npm]
+- name: Install shared AI coding agents on workstation
+  tags: [packages, npm, ai_agents]
   community.general.npm:
-    name: "{{ item.name }}"
+    name: "{{ item.value.npm_package }}"
     global: true
-    state: "{{ item.state | default('present') }}"
+    state: latest
   become: true
-  loop: "{{ workstation_npm_packages | default([]) }}"
+  loop: "{{ ai_agents | dict2items | selectattr('value.npm_package', 'defined') | list }}"
   when:
-    - workstation_manage_opencode | default(false)
-    - workstation_npm_packages | length > 0
+    - item.value.install_enabled | bool
   loop_control:
-    label: "{{ item.name }}"
+    label: "{{ item.key }}"
+
+- name: Uninstall shared AI coding agents on workstation
+  tags: [packages, npm, ai_agents]
+  community.general.npm:
+    name: "{{ item.value.npm_package }}"
+    global: true
+    state: absent
+  become: true
+  loop: "{{ ai_agents | dict2items | selectattr('value.npm_package', 'defined') | list }}"
+  when:
+    - item.value.uninstall_enabled | bool
+  loop_control:
+    label: "{{ item.key }}"
 
 - name: Install IBM Bob coding agent
   tags: [packages, ai_agents]
@@ -59,4 +71,15 @@
   become: true
   when:
     - workstation_manage_ibm_bob | default(false)
+    - ai_agents.ibm_bob.install_enabled | bool
     - workstation_ibm_bob_install_url | length > 0
+
+- name: Uninstall IBM Bob coding agent binary
+  tags: [packages, ai_agents]
+  ansible.builtin.file:
+    path: /usr/local/bin/bob
+    state: absent
+  become: true
+  when:
+    - workstation_manage_ibm_bob | default(false)
+    - ai_agents.ibm_bob.uninstall_enabled | bool

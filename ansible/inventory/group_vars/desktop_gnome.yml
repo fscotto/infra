@@ -85,5 +85,3 @@ fedora_flatpak_packages:
   - com.spotify.Client
   - org.onlyoffice.desktopeditors
   - org.telegram.desktop
-
-fedora_npm_packages: "{{ ai_agents_npm_packages }}"

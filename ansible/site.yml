@@ -19,6 +19,18 @@
         lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.local.yml',
         errors='ignore', wantlist=True) | length > 0
 
+    - name: Reject conflicting AI coding-agent lifecycle flags
+      tags: [always, ai_agents]
+      ansible.builtin.assert:
+        that:
+          - not (item.value.install_enabled | bool and item.value.uninstall_enabled | bool)
+        fail_msg: >-
+          {{ item.key }} has both install_enabled and uninstall_enabled set to true.
+          Choose either installation or removal before running the playbook.
+      loop: "{{ ai_agents | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+
   roles:
     - role: dotfiles_common
       when: "'platform_rocky' not in group_names"

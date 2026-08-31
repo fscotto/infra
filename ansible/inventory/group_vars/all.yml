@@ -90,40 +90,75 @@ common_dotfiles:
     dest: .config/bat/
     mode: preserve
 
-ai_agents_npm_packages:
-  - name: "opencode-ai"
-    state: latest
-  - name: "@anthropic-ai/claude-code"
-    state: latest
-  - name: "@openai/codex"
-    state: latest
-  - name: "@google/gemini-cli"
-    state: latest
-  - name: "@github/copilot"
-    state: latest
+# AI coding-agent lifecycle controls are independent for every agent.
+# Installation and removal are mutually exclusive per agent; the common
+# pre-task enforces this before any changes are made.
+ai_agents:
+  opencode:
+    npm_package: opencode-ai
+    install_enabled: true
+    deploy_enabled: true
+    uninstall_enabled: false
+  claude_code:
+    npm_package: "@anthropic-ai/claude-code"
+    install_enabled: false
+    deploy_enabled: false
+    uninstall_enabled: true
+  codex:
+    npm_package: "@openai/codex"
+    install_enabled: true
+    deploy_enabled: true
+    uninstall_enabled: false
+  gemini_cli:
+    npm_package: "@google/gemini-cli"
+    install_enabled: true
+    deploy_enabled: true
+    uninstall_enabled: false
+  github_copilot:
+    npm_package: "@github/copilot"
+    install_enabled: true
+    deploy_enabled: true
+    uninstall_enabled: false
+  ibm_bob:
+    install_enabled: true
+    deploy_enabled: false
+    uninstall_enabled: false
 
-ai_agents_enabled: true
+ai_agents_deploy_enabled_names: >-
+  {{ ai_agents | dict2items | selectattr('value.deploy_enabled') | map(attribute='key') | list }}
 
 ai_agents_dotfiles:
   - name: AI common config
     src: .config/ai/
     dest: .config/ai/
     mode: preserve
+    agents:
+      - opencode
+      - codex
+      - gemini_cli
   - name: Gemini CLI config
     src: .gemini/
     dest: .gemini/
     mode: preserve
+    agents:
+      - gemini_cli
   - name: OpenCode config
     src: .config/opencode/
     dest: .config/opencode/
     mode: preserve
+    agents:
+      - opencode
   - name: Claude Code memory
     src: .claude/
     dest: .claude/
     mode: preserve
+    agents:
+      - claude_code
 
 ai_agents_templates:
   - name: Codex config
     src: .codex/config.toml.j2
     dest: .codex/config.toml
     mode: "0644"
+    agents:
+      - codex

@@ -90,16 +90,31 @@
     - "'workstation_dev_fedora' in group_names"
     - (fedora_docker_packages | default([])) | length > 0
 
-- name: Install Fedora npm packages
+- name: Install shared AI coding agents on Fedora
   tags: [packages, npm, ai_agents]
   community.general.npm:
-    name: "{{ item.name }}"
+    name: "{{ item.value.npm_package }}"
     global: true
-    state: "{{ item.state | default('present') }}"
-  loop: "{{ fedora_npm_packages | default([]) }}"
-  when: (fedora_npm_packages | default([])) | length > 0
+    state: latest
+  loop: "{{ ai_agents | dict2items | selectattr('value.npm_package', 'defined') | list }}"
+  when:
+    - item.value.install_enabled | bool
+    - "'workstation_dev_fedora' not in group_names"
   loop_control:
-    label: "{{ item.name }}"
+    label: "{{ item.key }}"
+
+- name: Uninstall shared AI coding agents on Fedora
+  tags: [packages, npm, ai_agents]
+  community.general.npm:
+    name: "{{ item.value.npm_package }}"
+    global: true
+    state: absent
+  loop: "{{ ai_agents | dict2items | selectattr('value.npm_package', 'defined') | list }}"
+  when:
+    - item.value.uninstall_enabled | bool
+    - "'workstation_dev_fedora' not in group_names"
+  loop_control:
+    label: "{{ item.key }}"
 
 - name: Define Fedora Flatpak applications
   tags: [packages]

@@ -274,13 +274,11 @@ I principali ruoli attualmente presenti sono:
 | ------------------------- | ----------------------------------- |
 | base                      | configurazione base comune          |
 | packages_void             | installazione pacchetti su Void     |
-| packages_freebsd          | installazione pacchetti su FreeBSD via pkg |
 | packages_ubuntu           | installazione pacchetti su Ubuntu   |
 | packages_fedora           | installazione pacchetti su Fedora   |
 | packages_rocky            | installazione pacchetti su Rocky Linux 9 |
 | services_runit            | gestione servizi runit              |
 | services_systemd          | gestione servizi systemd            |
-| services_freebsd          | gestione servizi FreeBSD dichiarati per host |
 | profile_desktop_common    | bootstrap desktop Void condiviso    |
 | profile_desktop_gnome     | dotfiles desktop condivisi per Fedora/GNOME |
 | profile_desktop_sway      | sessione desktop sway / SwayFX (Wayland) |
@@ -304,7 +302,6 @@ Il playbook `ansible/site.yml` e attualmente composto da blocchi per asse:
 all -> dotfiles_common
 platform_void -> packages_void + services_runit
 platform_void & graphical_desktop -> profile_desktop_common + profile_desktop_sway + profile_desktop_niri + profile_desktop_host
-platform_freebsd -> packages_freebsd + services_freebsd
 platform_fedora -> packages_fedora + services_systemd
 platform_rocky -> packages_rocky + services_systemd
 atlas -> profile_atlas
@@ -393,7 +390,6 @@ Allo stato attuale questo comando:
 - distribuisce i dotfiles comuni a tutti gli host
 - per `platform_void` applica pacchetti Void e servizi runit
 - per `platform_void + graphical_desktop` applica bootstrap desktop condiviso, sessioni Sway/Niri e override specifici per host
-- per `platform_freebsd` non applica nulla finche il gruppo resta senza host
 - per `platform_fedora` applica pacchetti Fedora e servizi systemd a `ikaros`, `nymph` e `deadalus`
 - per `platform_fedora & role_personal_workstation` applica il layer personale a `ikaros`
 - per `platform_fedora & desktop_gnome` applica il profilo GNOME a `ikaros` e `nymph`
@@ -507,10 +503,6 @@ Per aggiungere un nuovo host Void che riusa il profilo desktop preservato:
 I gruppi legacy `void` e `desktop` sono parent di compatibilita, quindi un host
 in `platform_void` e `graphical_desktop` continua a ricevere anche le variabili
 Void e desktop esistenti.
-
-Per prove in VM sono disponibili gruppi di esempio in
-`ansible/inventory/examples/platform-test-hosts.yml`, da passare esplicitamente
-con `-i` insieme all'inventory principale.
 
 Per il flusso mail desktop esiste inoltre uno script dedicato:
 

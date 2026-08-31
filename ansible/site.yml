@@ -53,14 +53,6 @@
     - profile_desktop_niri
     - profile_desktop_host
 
-- name: Configure FreeBSD platform
-  hosts: platform_freebsd
-  become: true
-
-  roles:
-    - packages_freebsd
-    - services_freebsd
-
 - name: Configure Fedora platform
   hosts: platform_fedora
   become: true

@@ -207,13 +207,11 @@ ansible-playbook ansible/site.yml --limit deadalus --tags ai_agents --check --di
 | Role | What it does |
 | --- | --- |
 | `packages_void` | Installs packages on Void. |
-| `packages_freebsd` | Installs packages on FreeBSD with pkg. |
 | `packages_ubuntu` | Installs packages on Ubuntu. |
 | `packages_fedora` | Installs packages on Fedora. |
 | `packages_rocky` | Installs packages on Rocky Linux 9. |
 | `services_runit` | Manages runit services. |
 | `services_systemd` | Manages systemd services. |
-| `services_freebsd` | Manages declared FreeBSD rc services. |
 | `profile_desktop_common` | Shared Void desktop bootstrap. |
 | `profile_desktop_gnome` | Shared Fedora/GNOME desktop dotfiles. |
 | `profile_desktop_sway` | Sway / SwayFX Wayland session. |
@@ -232,7 +230,6 @@ ansible-playbook ansible/site.yml --limit deadalus --tags ai_agents --check --di
 all -> dotfiles_common
 platform_void -> packages_void + services_runit
 platform_void & graphical_desktop -> profile_desktop_common + profile_desktop_sway + profile_desktop_niri + profile_desktop_host
-platform_freebsd -> packages_freebsd + services_freebsd
 platform_fedora -> packages_fedora + services_systemd
 platform_rocky -> packages_rocky + services_systemd
 atlas -> profile_atlas
@@ -249,7 +246,7 @@ So, in practice:
 - `deadalus` gets the Fedora development layer followed by the WSL layer.
 - `ubuntu_server` configures `prometheus`.
 - `atlas` receives the Rocky platform layer and the NAS profile through SSH.
-- Empty `platform_void` and `platform_freebsd` groups do nothing until they get a host.
+- Empty `platform_void` groups do nothing until they get a host.
 - The playbook never restarts the display manager during a run.
 - `secrets/vault.yml` and then `secrets/vault.local.yml` are loaded only when present.
 

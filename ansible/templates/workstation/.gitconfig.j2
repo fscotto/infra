@@ -24,19 +24,19 @@
 
 [merge]
   conflictstyle = diff3
-  tool = vscode
+  tool = bobide
 
 [mergetool]
   prompt = false
 
-[mergetool "vscode"]
-  cmd = code --reuse-window --wait $MERGED
+[mergetool "bobide"]
+  cmd = bobide --reuse-window --wait $MERGED
 
 [diff]
-  tool = vscode
+  tool = bobide
 
-[difftool "vscode"]
-  cmd = code --reuse-window --wait --diff $LOCAL $REMOTE
+[difftool "bobide"]
+  cmd = bobide --reuse-window --wait --diff $LOCAL $REMOTE
 
 [color]
   ui = always

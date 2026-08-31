@@ -31,6 +31,10 @@ enabled_services:
   - ufw
   - docker
 
+server_firewall_backend: ufw
+server_sshd_service_name: ssh
+server_compose_selinux_mount_option: ""
+
 ubuntu_dotfiles:
   - src: .bashrc.d/
     dest: .bashrc.d/

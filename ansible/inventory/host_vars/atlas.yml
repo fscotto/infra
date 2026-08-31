@@ -26,6 +26,16 @@ atlas_zfs_dataset_icloud_photos: icloud_photos
 atlas_mount_root: /CHANGEME_ATLAS_MOUNT_ROOT
 atlas_manage_storage: false
 
+rocky_manage_openzfs_repo: true
+rocky_manage_syncthing_binary: true
+
+host_packages:
+  - cockpit
+  - nfs-utils
+  - policycoreutils-python-utils
+  - samba
+  - zfs
+
 atlas_nfs_exports:
   - path: "{{ atlas_work_mountpoint }}"
     clients: "{{ atlas_lan_subnet }}(rw,sync,no_subtree_check,root_squash)"

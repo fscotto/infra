@@ -88,7 +88,7 @@ The workstation receives two layers:
 - Fedora development setup through `workstation_dev_fedora`.
 - WSL setup with `systemd` through `workstation_dev_wsl`.
 
-That gives it Fedora packages through DNF, Docker from the official repository, shared workstation dotfiles and templates, tmux helpers, and WSL systemd configuration. Windows applications are installed manually; the WSL profile does not manage Python remoting components for them.
+That gives it Fedora packages through DNF, Docker from the official repository, Mise from its official COPR repository with a pinned Eclipse Temurin Java 11 JDK, shared workstation dotfiles and templates, tmux helpers, and WSL systemd configuration. Windows applications are installed manually; the WSL profile does not manage Python remoting components for them.
 
 ### WSL workflow
 

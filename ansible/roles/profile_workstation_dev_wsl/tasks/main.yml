@@ -55,6 +55,26 @@
   loop_control:
     label: "{{ item.dest }}"
 
+- name: Check whether the pinned Java version is installed with Mise
+  tags: [packages, mise, java, wsl]
+  ansible.builtin.command:
+    cmd: "mise where java@{{ workstation_mise_java_version }}"
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  register: workstation_mise_java_where
+  changed_when: false
+  failed_when: false
+
+- name: Install the pinned Java version with Mise
+  tags: [packages, mise, java, wsl]
+  ansible.builtin.command:
+    cmd: mise install
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  when: workstation_mise_java_where.rc != 0
+
 - name: Ensure WSL boot configuration file exists
   tags: [packages, services]
   ansible.builtin.file:

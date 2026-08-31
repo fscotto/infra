@@ -25,6 +25,20 @@
     - "'workstation_dev_fedora' in group_names"
     - fedora_manage_docker_repo | default(false)
 
+- name: Install COPR support on Fedora WSL
+  tags: [packages, mise]
+  ansible.builtin.dnf:
+    name: dnf-plugins-core
+    state: present
+  when: "'workstation_dev_wsl' in group_names"
+
+- name: Configure Mise COPR repository on Fedora WSL
+  tags: [packages, mise]
+  community.general.copr:
+    name: jdxcode/mise
+    state: enabled
+  when: "'workstation_dev_wsl' in group_names"
+
 - name: Refresh dnf package metadata
   tags: [packages]
   ansible.builtin.dnf:

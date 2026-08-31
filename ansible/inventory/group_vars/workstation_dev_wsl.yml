@@ -3,12 +3,24 @@ enabled_services:
   - docker
 
 workstation_dev_wsl_packages:
+  - mise
   - pinentry-curses
   - python3-pip
   - tmux
+
+# Java 11 is no longer supplied by the Fedora repositories used by this WSL
+# profile. Keep the JDK patch pinned; update this value deliberately.
+workstation_mise_java_version: temurin-11.0.31+11
+
 workstation_is_wsl: true
 workstation_wsl_systemd_enabled: true
 workstation_dev_wsl_dotfiles:
+  - src: .bashrc.d/30-mise.sh
+    dest: .bashrc.d/30-mise.sh
+    mode: "0644"
+  - src: .config/mise/
+    dest: .config/mise/
+    mode: preserve
   - src: .gnupg/gpg-agent.conf
     dest: .gnupg/gpg-agent.conf
     mode: "0600"

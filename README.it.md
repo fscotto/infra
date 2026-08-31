@@ -144,6 +144,7 @@ Lo stato attuale del profilo workstation include:
 
 - installazione pacchetti base Fedora via dnf
 - installazione e configurazione di Docker dal repository ufficiale
+- installazione di Mise dal COPR ufficiale con JDK Eclipse Temurin Java 11 fissato
 - gestione dei dotfiles workstation e rendering dei template dev condivisi
 - preparazione di Fedora WSL con `systemd` per il toolchain di sviluppo
 - attivazione del firewall `firewalld` sui target Fedora che dichiarano regole host-specifiche

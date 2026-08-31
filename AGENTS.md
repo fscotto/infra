@@ -84,6 +84,7 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 ## Workstation Notes
 - `deadalus` is modeled as Windows + Fedora WSL and is the sole workstation target.
 - Fedora WSL belongs to `platform_fedora`, `workstation_dev_fedora`, and the shared WSL layer. It must not receive Flatpak or Snap runtimes.
+- Fedora WSL installs Mise from the official `jdxcode/mise` COPR and uses its pinned Temurin Java 11 JDK; update the declared Mise version deliberately.
 - Windows applications are installed manually and are not managed from the WSL profile.
 
 ## Atlas NAS Notes

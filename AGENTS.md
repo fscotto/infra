@@ -1,7 +1,6 @@
 # AGENTS.md
 
-Ansible-driven personal infrastructure repo for Fedora and Void desktops, FreeBSD transition targets,
-WSL, a Rocky Linux 9 server, and an Atlas NAS.
+Ansible-driven personal infrastructure repo for Fedora and Void desktops, WSL, a Rocky Linux 9 server, and an Atlas NAS.
 
 ## Source Of Truth
 - Main orchestration: `ansible/site.yml`

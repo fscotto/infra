@@ -1,8 +1,0 @@
----
-# Optional inventory overlay for VM tests. It is not loaded by ansible.cfg.
-all:
-  children:
-    platform_freebsd:
-      hosts:
-        freebsdtest:
-          ansible_connection: local

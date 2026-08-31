@@ -1,19 +1,9 @@
 # =========================
 # Portable Bash config
-# Target: Void Linux + FreeBSD
 # =========================
 
 # Exit if not interactive
 [[ $- != *i* ]] && return
-
-# --- environment detection
-case "$(uname -s)" in
-  Linux)   PLATFORM="linux" ;;
-  FreeBSD) PLATFORM="freebsd" ;;
-  *)       PLATFORM="other" ;;
-esac
-
-export PLATFORM
 
 # --- history
 HISTSIZE=10000
@@ -438,15 +428,10 @@ extract() {
 }
 
 # =========================
-# OS-specific small touches
+# Small touches
 # =========================
 
-if [ "$PLATFORM" = "freebsd" ]; then
-  alias df='df -h'
-  alias du='du -h'
-elif [ "$PLATFORM" = "linux" ]; then
-  alias df='df -h'
-  alias du='du -h'
-fi
+alias df='df -h'
+alias du='du -h'
 
 [ -r "$HOME/.bashrc.aliases" ] && . "$HOME/.bashrc.aliases"

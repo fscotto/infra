@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Ansible-driven personal infrastructure repo for Fedora and Void desktops, FreeBSD transition targets, WSL, and an Ubuntu server.
+Ansible-driven personal infrastructure repo for Fedora and Void desktops, WSL, and an Ubuntu server.
 
 ## Source Of Truth
 - Main orchestration: `ansible/site.yml`

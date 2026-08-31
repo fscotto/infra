@@ -1,5 +1,13 @@
 ---
 
+- name: Require supported server firewall backend
+  tags: [services, packages]
+  ansible.builtin.assert:
+    that:
+      - server_firewall_backend in ['ufw', 'firewalld']
+    fail_msg: >-
+      server_firewall_backend must be either ufw or firewalld for the server profile.
+
 - name: Copy server dotfiles
   tags: [dotfiles, dotfiles:server]
   ansible.builtin.copy:
@@ -72,6 +80,7 @@
   tags: [services, packages]
   ansible.builtin.set_fact:
     server_ufw_rules_effective: "{{ server_ufw_rules | default([]) }}"
+  when: server_firewall_backend == 'ufw'
 
 - name: Apply server UFW rules
   tags: [services, packages]
@@ -89,12 +98,41 @@
     interface_out: "{{ item.interface_out | default(omit) }}"
     route: "{{ item.route | default(omit) }}"
     comment: "{{ item.comment | default(omit) }}"
-  loop: "{{ server_ufw_rules_effective }}"
+  loop: "{{ server_ufw_rules_effective | default([]) }}"
   loop_control:
     label: "{{ item.name | default(item.port) }}"
+  when: server_firewall_backend == 'ufw'
 
 - name: Enable UFW firewall on server
   tags: [services, packages]
   community.general.ufw:
     state: enabled
-  when: (server_ufw_rules_effective | default([])) | length > 0
+  when:
+    - server_firewall_backend == 'ufw'
+    - (server_ufw_rules_effective | default([])) | length > 0
+
+- name: Allow server services through firewalld
+  tags: [services, packages]
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    zone: "{{ server_firewalld_zone }}"
+    state: enabled
+    permanent: true
+    immediate: true
+  loop: "{{ server_firewalld_services | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  when: server_firewall_backend == 'firewalld'
+
+- name: Allow server ports through firewalld
+  tags: [services, packages]
+  ansible.posix.firewalld:
+    port: "{{ item }}"
+    zone: "{{ server_firewalld_zone }}"
+    state: enabled
+    permanent: true
+    immediate: true
+  loop: "{{ server_firewalld_ports | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  when: server_firewall_backend == 'firewalld'

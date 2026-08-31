@@ -16,17 +16,39 @@ rocky_syncthing_archive_url: >-
     ~ '.tar.gz'
   }}
 
+rocky_manage_openzfs_repo: false
+rocky_manage_syncthing_binary: false
+rocky_manage_docker_repo: false
+rocky_manage_github_cli_repo: false
+
+rocky_docker_repo_url: https://download.docker.com/linux/rhel/docker-ce.repo
+rocky_docker_repo_file: /etc/yum.repos.d/docker-ce.repo
+rocky_github_cli_repo_url: https://cli.github.com/packages/rpm/gh-cli.repo
+rocky_github_cli_repo_file: /etc/yum.repos.d/gh-cli.repo
+
 enabled_services:
   - firewalld
 
+rocky_common_packages:
+  - bash-completion
+  - bat
+  - fzf
+  - git
+  - jq
+  - tree
+  - unzip
+  - vim-enhanced
+  - wget
+  - zip
+  - zoxide
+
 rocky_packages_base:
-  - cockpit
   - dnf-plugins-core
   - firewalld
-  - nfs-utils
   - openssh-server
-  - policycoreutils-python-utils
   - rsync
-  - samba
   - sudo
-  - zfs
+
+rocky_profile_packages: []
+rocky_docker_packages: []
+rocky_docker_conflicting_packages: []

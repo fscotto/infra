@@ -1,0 +1,57 @@
+---
+rocky_manage_docker_repo: true
+rocky_manage_github_cli_repo: true
+
+rocky_profile_packages:
+  - avahi
+  - curl
+  - dmidecode
+  - dosfstools
+  - gcc
+  - gcc-c++
+  - git-delta
+  - gh
+  - gnupg2
+  - htop
+  - make
+  - nmap-ncat
+  - nodejs
+  - parted
+  - pciutils
+  - pinentry
+  - ranger
+  - ripgrep
+
+rocky_docker_packages:
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-ce
+  - docker-ce-cli
+  - docker-compose-plugin
+
+rocky_docker_conflicting_packages:
+  - docker
+  - docker-client
+  - docker-client-latest
+  - docker-common
+  - docker-engine
+  - docker-latest
+  - docker-latest-logrotate
+  - docker-logrotate
+  - podman
+  - runc
+
+enabled_services:
+  - firewalld
+  - docker
+
+server_firewall_backend: firewalld
+server_firewalld_zone: public
+server_firewalld_services:
+  - ssh
+server_firewalld_ports:
+  - 22000/tcp
+  - 22000/udp
+  - 21027/udp
+server_sshd_service_name: sshd
+server_compose_selinux_mount_option: Z

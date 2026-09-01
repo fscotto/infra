@@ -25,6 +25,9 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
 - Preserve layering `all -> platform -> role -> desktop -> host`.
 - Keep `ansible/site.yml` small; orchestration belongs there, implementation belongs in roles.
 - Prefer minimal, targeted edits. Preserve idempotency and existing ordering.
+- Use Git Flow branch prefixes: `feature/` for new functionality, `bugfix/` for non-urgent fixes,
+  `hotfix/` for urgent production fixes, `release/` for release preparation, and `support/` for
+  maintained release lines. Do not use abbreviated prefixes such as `feat/`.
 - Desktop and WSL hosts use `ansible_connection: local`; remote infrastructure hosts use SSH.
 - Treat `secrets/` as sensitive. Never print secret values.
 - Tmux plugins are bootstrapped by TPM on the host; the repo only keeps tmux config and custom helper scripts.

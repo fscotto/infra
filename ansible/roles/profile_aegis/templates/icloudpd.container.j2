@@ -1,0 +1,20 @@
+# Managed by Ansible. Do not edit manually.
+[Unit]
+Description=iCloud Photos Downloader
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image={{ aegis_icloudpd_image }}
+Environment=apple_id={{ aegis_icloudpd_apple_id }}
+Environment=folder_structure={{ aegis_icloudpd_folder_structure }}
+Environment=synchronisation_interval={{ aegis_icloudpd_synchronisation_interval }}
+Volume=/var/lib/icloudpd/data:/home/root/iCloud:Z
+Volume=/var/lib/icloudpd/config:/config:Z
+AutoUpdate=registry
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

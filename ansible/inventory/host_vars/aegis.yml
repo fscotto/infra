@@ -1,0 +1,8 @@
+---
+ansible_host: aegis
+ansible_connection: ssh
+ansible_user: core
+ansible_become: true
+ansible_python_interpreter: /usr/bin/python3
+
+aegis_icloudpd_apple_id: "{{ vault_aegis_icloudpd_apple_id | default('') }}"

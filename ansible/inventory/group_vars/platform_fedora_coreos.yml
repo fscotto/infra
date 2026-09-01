@@ -1,0 +1,2 @@
+---
+# Fedora CoreOS is immutable: do not attach the mutable Fedora package roles.

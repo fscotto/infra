@@ -1,0 +1,11 @@
+---
+- name: Restart Aegis Quadlet services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: restarted
+    daemon_reload: true
+  loop:
+    - adguardhome.service
+    - icloudpd.service
+  loop_control:
+    label: "{{ item }}"

@@ -35,9 +35,9 @@ infra/
 
 ## Managed machines
 
-The repo currently covers Fedora/GNOME desktops, one Fedora WSL workstation, a Rocky Linux 9 server,
-and a Rocky Linux 9 NAS. Configuration is layered instead of
-being tied to host names:
+The repo currently covers Fedora/GNOME desktops, one Fedora WSL workstation, a Fedora CoreOS LAN
+node, a Rocky Linux 9 server, and a Rocky Linux 9 NAS. Configuration is layered instead of being tied
+to host names:
 
 ```text
 common user environment
@@ -52,6 +52,7 @@ common user environment
 | `ikaros` | Fedora | Personal workstation | GNOME |
 | `nymph` | Fedora | Desktop laptop | GNOME |
 | `deadalus` | Fedora WSL | Development workstation | — |
+| `aegis` | Fedora CoreOS | Always-on LAN node | — |
 | `prometheus` | Rocky Linux | Server | — |
 | `atlas` | Rocky Linux | NAS | — |
 
@@ -141,6 +142,20 @@ cutover. The destination SSH host key must already be trusted and the destinatio
 passwordless sudo for `rsync`. It preserves ACLs but not extended attributes, so source SELinux labels
 are not transferred; the Rocky Compose bind mounts apply their own `:Z` labels when containers start.
 
+## Aegis
+
+`aegis` is a Raspberry Pi 4 running Fedora CoreOS. Provision it once with
+`ansible/bootstrap/aegis.bu`, after replacing the SSH public-key placeholder:
+
+```bash
+butane --strict --pretty --output aegis.ign ansible/bootstrap/aegis.bu
+```
+
+The controller then manages it remotely as `core@aegis`; unlike local desktop profiles, Aegis is
+intentionally an SSH inventory target. `profile_aegis` manages rootful Podman Quadlets for AdGuard
+Home and iCloudPD, persistent data under `/var/lib`, the Podman auto-update timer, and
+`wake-ikaros`. Define `vault_aegis_icloudpd_apple_id` in Vault before applying it. iCloudPD still
+requires interactive MFA initialization after its first deployment.
 ## NAS
 
 `atlas` is a Rocky Linux 9 NAS reached through SSH. Its pool already exists: the profile only
@@ -250,6 +265,7 @@ ansible-playbook ansible/site.yml --limit deadalus --tags ai_agents --check --di
 | `profile_workstation_dev_wsl` | WSL development setup. |
 | `profile_server` | Server setup. |
 | `profile_atlas` | Rocky Linux 9 NAS setup. |
+| `profile_aegis` | Fedora CoreOS always-on LAN node. |
 | `dotfiles_common` | Shared user dotfiles. |
 
 ## What `site.yml` runs
@@ -260,6 +276,7 @@ platform_void -> packages_void + services_runit
 platform_void & graphical_desktop -> profile_desktop_common + profile_desktop_sway + profile_desktop_niri + profile_desktop_host
 platform_fedora -> packages_fedora + services_systemd
 platform_rocky -> packages_rocky + services_systemd
+role_aegis -> profile_aegis
 atlas -> profile_atlas
 rocky_server -> dotfiles_common + profile_server (after platform_rocky)
 platform_fedora & role_personal_workstation -> profile_personal_workstation
@@ -274,6 +291,8 @@ So, in practice:
 - `deadalus` gets the Fedora development layer followed by the WSL layer.
 - `rocky_server` configures the Rocky 9 server, `prometheus`.
 - `atlas` receives the Rocky platform layer and the NAS profile through SSH.
+- `aegis` receives only the immutable Fedora CoreOS profile through SSH; it does not receive
+  mutable Fedora package or common dotfile roles.
 - Empty `platform_void` groups do nothing until they get a host.
 - The playbook never restarts the display manager during a run.
 - `secrets/vault.yml` and then `secrets/vault.local.yml` are loaded only when present.
@@ -313,6 +332,7 @@ ansible-playbook ansible/site.yml --limit nymph --check --diff
 ansible-playbook ansible/site.yml --limit deadalus --check --diff
 ansible-playbook ansible/site.yml --limit prometheus --check --diff
 ansible-playbook ansible/site.yml --limit atlas --check --diff
+ansible-playbook ansible/site.yml --limit aegis --check --diff
 ansible-lint ansible/site.yml
 ansible-lint ansible/roles
 yamllint ansible/

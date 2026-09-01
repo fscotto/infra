@@ -1,0 +1,9 @@
+---
+aegis_hostname: aegis
+aegis_adguard_image: docker.io/adguard/adguardhome:latest
+aegis_icloudpd_image: docker.io/boredazfcuk/icloudpd:latest
+aegis_icloudpd_folder_structure: '{:%Y/%m/%d}'
+aegis_icloudpd_synchronisation_interval: 86400
+aegis_icloudpd_apple_id: ""
+aegis_ikaros_mac_address: aa:bb:cc:dd:ee:ff
+aegis_wol_port: 9

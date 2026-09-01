@@ -1,0 +1,16 @@
+# Bootstrap monouso per Fedora CoreOS su Aegis.
+# Sostituire la chiave SSH prima di generare Ignition con butane --strict.
+variant: fcos
+version: 1.6.0
+passwd:
+  users:
+    - name: core
+      ssh_authorized_keys:
+        - "ssh-ed25519 CHANGEME_AEGIS_SSH_PUBLIC_KEY"
+storage:
+  files:
+    - path: /etc/hostname
+      mode: 0644
+      contents:
+        inline: |
+          aegis

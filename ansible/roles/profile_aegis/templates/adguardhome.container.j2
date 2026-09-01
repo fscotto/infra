@@ -1,0 +1,18 @@
+# Managed by Ansible. Do not edit manually.
+[Unit]
+Description=AdGuard Home DNS sinkhole
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image={{ aegis_adguard_image }}
+Network=host
+Volume=/var/lib/adguard/work:/opt/adguardhome/work:Z
+Volume=/var/lib/adguard/conf:/opt/adguardhome/conf:Z
+AutoUpdate=registry
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

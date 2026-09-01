@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Managed by Ansible. Do not edit manually.
+set -euo pipefail
+
+mac='{{ aegis_ikaros_mac_address }}'
+port='{{ aegis_wol_port }}'
+mac_hex="${mac//:/}"
+
+if [[ ! $mac_hex =~ ^[[:xdigit:]]{12}$ ]]; then
+  printf 'Indirizzo MAC non valido: %s\n' "$mac" >&2
+  exit 1
+fi
+
+packet='\xFF\xFF\xFF\xFF\xFF\xFF'
+for _ in {1..16}; do
+  packet+="$(printf '\\x%s\\x%s\\x%s\\x%s\\x%s\\x%s' \
+    "${mac_hex:0:2}" "${mac_hex:2:2}" "${mac_hex:4:2}" \
+    "${mac_hex:6:2}" "${mac_hex:8:2}" "${mac_hex:10:2}")"
+done
+
+printf '%b' "$packet" > "/dev/udp/255.255.255.255/${port}"

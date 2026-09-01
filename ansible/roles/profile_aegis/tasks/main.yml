@@ -1,0 +1,77 @@
+---
+- name: Require Aegis iCloudPD Apple ID
+  tags: [aegis, icloudpd]
+  ansible.builtin.assert:
+    that:
+      - aegis_icloudpd_apple_id | length > 0
+    fail_msg: Define vault_aegis_icloudpd_apple_id before applying the Aegis profile.
+  no_log: true
+
+- name: Set Aegis hostname
+  tags: [aegis, services]
+  ansible.builtin.hostname:
+    name: "{{ aegis_hostname }}"
+
+- name: Create Aegis persistent container directories
+  tags: [aegis, containers]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /var/lib/adguard/work
+    - /var/lib/adguard/conf
+    - /var/lib/icloudpd/data
+    - /var/lib/icloudpd/config
+
+- name: Create Quadlet configuration directory
+  tags: [aegis, containers]
+  ansible.builtin.file:
+    path: /etc/containers/systemd
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Render Aegis Quadlet units
+  tags: [aegis, containers]
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "/etc/containers/systemd/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - src: adguardhome.container.j2
+      dest: adguardhome.container
+    - src: icloudpd.container.j2
+      dest: icloudpd.container
+  loop_control:
+    label: "{{ item.dest }}"
+  no_log: "{{ item.dest == 'icloudpd.container' }}"
+  notify: Restart Aegis Quadlet services
+
+- name: Install Wake-on-LAN helper for Ikaros
+  tags: [aegis, wol]
+  ansible.builtin.template:
+    src: wake-ikaros.j2
+    dest: /usr/local/bin/wake-ikaros
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Enable Aegis Quadlet services and automatic updates
+  tags: [aegis, containers, services]
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop:
+    - adguardhome.service
+    - icloudpd.service
+    - podman-auto-update.timer
+  loop_control:
+    label: "{{ item }}"

@@ -27,13 +27,15 @@ storage:
     - path: /etc/crypttab
       mode: 0644
       contents:
-        inline: |
-          aegis-data /dev/disk/by-partlabel/aegis-data - tpm2-device=auto
+        append:
+          - inline: |
+              aegis-data /dev/disk/by-partlabel/aegis-data - tpm2-device=auto
     - path: /etc/fstab
       mode: 0644
       contents:
-        inline: |
-          /dev/mapper/aegis-data /var/lib btrfs defaults,compress=zstd 0 0
+        append:
+          - inline: |
+              /dev/mapper/aegis-data /var/lib btrfs defaults,compress=zstd 0 0
     - path: /usr/local/sbin/aegis-storage-init
       mode: 0750
       user:

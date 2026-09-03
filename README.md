@@ -123,9 +123,10 @@ ansible-playbook ansible/site.yml --limit prometheus \
 butane --strict --pretty --output aegis.ign ansible/bootstrap/aegis.bu
 ```
 
-The `core` and `pi` users both receive the configured SSH key.
+The `pi` user receives the configured SSH key, and partition 5 on `/dev/mmcblk0` is formatted as
+Btrfs and mounted at `/var/lib` on first boot. Formatting is destructive for that partition.
 
-The controller then manages it remotely as `core@aegis`; unlike local desktop profiles, Aegis is
+The controller then manages it remotely as `pi@aegis`; unlike local desktop profiles, Aegis is
 intentionally an SSH inventory target. `profile_aegis` manages rootful Podman Quadlets for AdGuard
 Home and iCloudPD, persistent data under `/var/lib`, the Podman auto-update timer, and
 `wake-ikaros`. Define `vault_aegis_icloudpd_apple_id` in Vault before applying it. iCloudPD still

@@ -21,7 +21,7 @@ storage:
       label: aegis-data
       wipe_filesystem: false
       mount:
-        path: /var/lib
+        path: /
         options:
           - compress=zstd
   files:

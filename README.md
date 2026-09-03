@@ -124,7 +124,8 @@ butane --strict --pretty --output aegis.ign ansible/bootstrap/aegis.bu
 ```
 
 The `pi` user receives the configured SSH key, and partition 5 on `/dev/mmcblk0` is formatted as
-Btrfs and mounted at `/var/lib` on first boot. Formatting is destructive for that partition.
+Btrfs and mounted as the root filesystem (`/`) on first boot. Formatting is destructive for that
+partition.
 
 The controller then manages it remotely as `pi@aegis`; unlike local desktop profiles, Aegis is
 intentionally an SSH inventory target. `profile_aegis` manages rootful Podman Quadlets for AdGuard

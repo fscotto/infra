@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Ansible-driven personal infrastructure repo for Fedora and Void desktops, WSL, and an Ubuntu server.
+Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora CoreOS, WSL, and servers.
 
 ## Source Of Truth
 - Main orchestration: `ansible/site.yml`
@@ -17,6 +17,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, WSL, a
 - Workstation: `deadalus` is Windows + Fedora WSL.
 - Ubuntu server: `prometheus`
 - NAS: `atlas` (Rocky Linux 9, reached through SSH)
+- Always-on LAN node: `aegis` (Fedora CoreOS on Raspberry Pi 4, reached through SSH)
 - Hosts intentionally belong to multiple groups; trust `ansible/site.yml` over hostname assumptions.
 - Inventory axes are independent: `platform_*`, `role_*`, and `desktop_*`. Legacy `void` and `desktop` remain compatibility parents.
 
@@ -24,7 +25,10 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, WSL, a
 - Preserve layering `all -> platform -> role -> desktop -> host`.
 - Keep `ansible/site.yml` small; orchestration belongs there, implementation belongs in roles.
 - Prefer minimal, targeted edits. Preserve idempotency and existing ordering.
-- All hosts use `ansible_connection: local`.
+- Use Git Flow branch prefixes: `feature/` for new functionality, `bugfix/` for non-urgent fixes,
+  `hotfix/` for urgent production fixes, `release/` for release preparation, and `support/` for
+  maintained release lines. Do not use abbreviated prefixes such as `feat/`.
+- Desktop and WSL hosts use `ansible_connection: local`; remote infrastructure hosts use SSH.
 - Treat `secrets/` as sensitive. Never print secret values.
 - Tmux plugins are bootstrapped by TPM on the host; the repo only keeps tmux config and custom helper scripts.
 - Read the relevant role tasks, templates, vars, and deployed dotfiles before editing.
@@ -42,6 +46,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, WSL, a
   - WSL workstation dev: `ansible-playbook ansible/site.yml --limit deadalus --check --diff`
   - Server: `ansible-playbook ansible/site.yml --limit prometheus --check --diff`
   - Atlas NAS: `ansible-playbook ansible/site.yml --limit atlas --check --diff`
+  - Aegis CoreOS: `ansible-playbook ansible/site.yml --limit aegis --check --diff`
 - Focused checks:
   - Emacs is disabled by default; temporary Emacs check: `ansible-playbook ansible/site.yml --limit <host> --tags emacs --check --diff -e emacs_enabled=true`
   - AI coding agents: `ansible-playbook ansible/site.yml --limit <host> --tags ai_agents --check --diff`
@@ -148,3 +153,13 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - Keep `README.md` and `AGENTS.md` aligned when workflows materially change.
 - If you add a new operational area, also add the narrowest validation command for it.
 - Call out checks you could not run and any follow-up verification needed.
+
+## Aegis Fedora CoreOS Notes
+- `aegis` is a remote Fedora CoreOS Raspberry Pi 4 node. Bootstrap it once with
+  `ansible/bootstrap/aegis.bu`; the remaining configuration is applied by `profile_aegis` over SSH.
+- Fedora CoreOS is immutable. Do not add it to mutable Fedora package or shared dotfile roles.
+- `profile_aegis` owns rootful Podman Quadlets, persistent container state under `/var/lib`, and the
+  Podman auto-update timer. Keep Apple IDs and other credentials in Vault and use `no_log` for their
+  rendering.
+- iCloudPD requires post-deployment interactive MFA initialization; its cookie/configuration state is
+  persisted in `/var/lib/icloudpd/config`.

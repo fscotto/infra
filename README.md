@@ -117,11 +117,16 @@ ansible-playbook ansible/site.yml --limit prometheus \
 ## Aegis
 
 `aegis` is a Raspberry Pi 4 running Fedora CoreOS. Provision it once with
-`ansible/bootstrap/aegis.bu`, after replacing the SSH public-key placeholder:
+`ansible/bootstrap/aegis.bu`, after replacing the SSH public-key placeholders:
 
 ```bash
 butane --strict --pretty --output aegis.ign ansible/bootstrap/aegis.bu
 ```
+
+The bootstrap reserves partition 5 on `/dev/mmcblk0` for `/var/lib`. On the first boot it
+generates a random LUKS2 key, enrolls it in the attached TPM2 device, and formats the unlocked
+volume as btrfs. This is destructive for that partition and requires a TPM2 module/device; a
+Raspberry Pi 4 has no TPM onboard. The `core` and `pi` users both receive the configured SSH key.
 
 The controller then manages it remotely as `core@aegis`; unlike local desktop profiles, Aegis is
 intentionally an SSH inventory target. `profile_aegis` manages rootful Podman Quadlets for AdGuard

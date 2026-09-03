@@ -4,13 +4,26 @@ variant: fcos
 version: 1.6.0
 passwd:
   users:
-    - name: core
-      ssh_authorized_keys:
-        - "ssh-ed25519 CHANGEME_AEGIS_SSH_PUBLIC_KEY"
     - name: pi
       ssh_authorized_keys:
         - "ssh-ed25519 CHANGEME_AEGIS_SSH_PUBLIC_KEY"
 storage:
+  disks:
+    - device: /dev/mmcblk0
+      wipe_table: false
+      partitions:
+        - label: aegis-data
+          number: 5
+          size_mib: 0
+  filesystems:
+    - device: /dev/disk/by-partlabel/aegis-data
+      format: btrfs
+      label: aegis-data
+      wipe_filesystem: false
+      mount:
+        path: /var/lib
+        options:
+          - compress=zstd
   files:
     - path: /etc/hostname
       mode: 0644

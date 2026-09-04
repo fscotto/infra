@@ -1,12 +1,43 @@
-# Bootstrap monouso per Fedora CoreOS su Aegis.
-# Sostituire la chiave SSH prima di generare Ignition con butane --strict.
+# One-time bootstrap for Fedora CoreOS on Aegis (Raspberry Pi 4).
+# Generate only: ./generate-aegis-ign.sh
+# Generate and write an SD card: ./generate-aegis-ign.sh --write IMAGE DEVICE
+# The write mode uses arm-image-installer with the RPi4 target and embeds
+# config.ign; it prompts for Wi-Fi credentials unless supplied through its
+# WIFI_SSID and WIFI_PASS environment variables.
+# For WiFi, the UEFI 'System Table Selection' must be DeviceTree (Esc at boot).
 variant: fcos
 version: 1.6.0
 passwd:
   users:
-    - name: core
+    - name: pi
+      password_hash: "$6$bNDsU0XC5BxNJS5U$ENDGpdOUPJM3wcXBgNESCQkOqqQ9gN72/xEQoJsAI6QdsaY6mD4G5DBVIv7nHwHQOP35IH1oGRl.Uy3R2iUYQ1"
+      groups:
+        - wheel
       ssh_authorized_keys:
-        - "ssh-ed25519 CHANGEME_AEGIS_SSH_PUBLIC_KEY"
+        - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINrIxXjA3ffPwziKGR5gzc4gAoBehQPlnEMcXF4Wl0ZS ikaros"
+systemd:
+  units:
+    - name: sshd.service
+      enabled: true
+    - name: rpm-ostree-install-wifi.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Layer WiFi packages (driver, firmware, NetworkManager-wifi)
+        Wants=network-online.target
+        After=network-online.target
+        Before=zincati.service
+        ConditionPathExists=!/var/lib/%N.stamp
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/usr/bin/rpm-ostree install -y --allow-inactive NetworkManager-wifi NetworkManager-wwan wpa_supplicant wireless-regdb iw brcmfmac-firmware
+        ExecStart=/bin/touch /var/lib/%N.stamp
+        ExecStart=/bin/systemctl --no-block reboot
+
+        [Install]
+        WantedBy=multi-user.target
 storage:
   files:
     - path: /etc/hostname
@@ -14,3 +45,19 @@ storage:
       contents:
         inline: |
           aegis
+    - path: /etc/sysctl.d/99-ip-forward.conf
+      mode: 0644
+      contents:
+        inline: |
+          net.ipv4.ip_forward = 1
+    - path: /etc/hosts
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: |
+          127.0.0.1   localhost
+          ::1         localhost
+          192.168.0.1 aegis
+  links:
+    - path: /etc/localtime
+      target: ../usr/share/zoneinfo/Europe/Rome

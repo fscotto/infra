@@ -66,14 +66,27 @@
   changed_when: false
   failed_when: false
 
-- name: Install the pinned Java version with Mise
-  tags: [packages, mise, java, wsl]
+- name: Check whether the pinned Maven version is installed with Mise
+  tags: [packages, mise, maven, wsl]
+  ansible.builtin.command:
+    cmd: "mise where maven@{{ workstation_mise_maven_version }}"
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  register: workstation_mise_maven_where
+  changed_when: false
+  failed_when: false
+
+- name: Install the pinned Mise tools
+  tags: [packages, mise, java, maven, wsl]
   ansible.builtin.command:
     cmd: mise install
   become_user: "{{ username }}"
   environment:
     HOME: "{{ user_home }}"
-  when: workstation_mise_java_where.rc != 0
+  when: >-
+    workstation_mise_java_where.rc != 0 or
+    workstation_mise_maven_where.rc != 0
 
 - name: Ensure WSL boot configuration file exists
   tags: [packages, services]

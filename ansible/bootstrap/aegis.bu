@@ -39,22 +39,6 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 storage:
-  disks:
-    - device: /dev/mmcblk0
-      wipe_table: false
-      partitions:
-        - label: aegis-data
-          number: 5
-          size_mib: 0
-  filesystems:
-    - device: /dev/disk/by-partlabel/aegis-data
-      format: btrfs
-      label: aegis-data
-      wipe_filesystem: false
-      mount:
-        path: /
-        options:
-          - compress=zstd
   files:
     - path: /etc/hostname
       mode: 0644

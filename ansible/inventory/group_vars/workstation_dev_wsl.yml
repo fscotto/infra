@@ -8,9 +8,10 @@ workstation_dev_wsl_packages:
   - python3-pip
   - tmux
 
-# Java 11 is no longer supplied by the Fedora repositories used by this WSL
-# profile. Keep the JDK patch pinned; update this value deliberately.
+# Java 11 and Maven are managed by Mise on this Fedora WSL profile. Keep their
+# versions pinned; update them deliberately.
 workstation_mise_java_version: temurin-11.0.31+11
+workstation_mise_maven_version: 3.9.16
 
 workstation_is_wsl: true
 workstation_wsl_systemd_enabled: true

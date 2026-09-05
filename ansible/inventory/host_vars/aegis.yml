@@ -5,4 +5,7 @@ ansible_user: pi
 ansible_become: true
 ansible_python_interpreter: /usr/bin/python3
 
+aegis_lan_subnet: 192.168.178.0/24
+aegis_adguard_web_port: 3000
+
 aegis_icloudpd_apple_id: "{{ vault_aegis_icloudpd_apple_id | default('') }}"

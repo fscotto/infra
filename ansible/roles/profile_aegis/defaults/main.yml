@@ -7,3 +7,9 @@ aegis_icloudpd_synchronisation_interval: 86400
 aegis_icloudpd_apple_id: ""
 aegis_ikaros_mac_address: aa:bb:cc:dd:ee:ff
 aegis_wol_port: 9
+
+aegis_lan_subnet: CHANGEME_LAN_SUBNET
+aegis_firewalld_zone: public
+aegis_adguard_web_port: 3000
+aegis_ssh_allowed_users:
+  - pi

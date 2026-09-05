@@ -158,8 +158,12 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - `aegis` is a remote Fedora CoreOS Raspberry Pi 4 node. Bootstrap it once with
   `ansible/bootstrap/aegis.bu`; the remaining configuration is applied by `profile_aegis` over SSH.
 - Fedora CoreOS is immutable. Do not add it to mutable Fedora package or shared dotfile roles.
-- `profile_aegis` owns rootful Podman Quadlets, persistent container state under `/var/lib`, and the
-  Podman auto-update timer. Keep Apple IDs and other credentials in Vault and use `no_log` for their
-  rendering.
+- `profile_aegis` owns rootful Podman Quadlets, persistent container state under `/var/lib`, the
+  Podman auto-update timer, LAN-restricted firewalld rules, and SSH hardening. Keep
+  `aegis_lan_subnet` and `aegis_adguard_web_port` host-specific; SSH permits only the declared
+  key-authenticated users, never root or password authentication. Keep Apple IDs and other
+  credentials in Vault and use `no_log` for their rendering.
+- The initial AdGuard Home wizard uses `aegis_adguard_web_port: 3000`. After selecting a different
+  UI port, update that host variable and rerun the playbook to close the previous port.
 - iCloudPD requires post-deployment interactive MFA initialization; its cookie/configuration state is
   persisted in `/var/lib/icloudpd/config`.

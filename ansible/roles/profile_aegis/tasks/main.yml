@@ -7,6 +7,17 @@
     fail_msg: Define vault_aegis_icloudpd_apple_id before applying the Aegis profile.
   no_log: true
 
+- name: Require completed Aegis network placeholders
+  tags: [aegis, firewall, services]
+  ansible.builtin.assert:
+    that:
+      - aegis_lan_subnet != 'CHANGEME_LAN_SUBNET'
+      - aegis_firewalld_zone | length > 0
+      - aegis_adguard_web_port | int > 0
+      - aegis_adguard_web_port | int < 65536
+      - aegis_ssh_allowed_users | length > 0
+    fail_msg: Define the Aegis LAN subnet, firewalld zone, AdGuard web port, and SSH users.
+
 - name: Set Aegis hostname
   tags: [aegis, services]
   ansible.builtin.hostname:
@@ -52,6 +63,146 @@
     label: "{{ item.dest }}"
   no_log: "{{ item.dest == 'icloudpd.container' }}"
   notify: Restart Aegis Quadlet services
+
+- name: Enable Aegis firewalld
+  tags: [aegis, firewall, services]
+  ansible.builtin.systemd:
+    name: firewalld.service
+    enabled: true
+    state: started
+
+- name: Render Aegis AdGuard web firewalld service
+  tags: [aegis, firewall]
+  ansible.builtin.template:
+    src: aegis-adguard-web.xml.j2
+    dest: /etc/firewalld/services/aegis-adguard-web.xml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Reload firewalld custom services
+  tags: [aegis, firewall]
+  ansible.builtin.command:
+    argv:
+      - firewall-cmd
+      - --reload
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Remove unrestricted Aegis services from firewalld zone
+  tags: [aegis, firewall]
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: disabled
+    zone: "{{ aegis_firewalld_zone }}"
+  loop:
+    - ssh
+    - dns
+    - http
+    - aegis-adguard-web
+  loop_control:
+    label: "{{ item }}"
+
+- name: Allow Aegis services from the LAN only
+  tags: [aegis, firewall]
+  ansible.posix.firewalld:
+    rich_rule: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+    zone: "{{ aegis_firewalld_zone }}"
+  loop:
+    - 'rule family="ipv4" source address="{{ aegis_lan_subnet }}" service name="ssh" accept'
+    - 'rule family="ipv4" source address="{{ aegis_lan_subnet }}" service name="dns" accept'
+    - 'rule family="ipv4" source address="{{ aegis_lan_subnet }}" service name="aegis-adguard-web" accept'
+  loop_control:
+    label: "{{ item }}"
+
+- name: Check the standard Aegis SSH authorized keys file
+  tags: [aegis, ssh, services]
+  ansible.builtin.stat:
+    path: "{{ ansible_user_dir }}/.ssh/authorized_keys"
+  register: aegis_authorized_keys
+
+- name: Find Aegis SSH authorized key fragments
+  tags: [aegis, ssh, services]
+  ansible.builtin.find:
+    paths: "{{ ansible_user_dir }}/.ssh/authorized_keys.d"
+    file_type: file
+    recurse: false
+  register: aegis_authorized_key_fragments
+
+- name: Require an Aegis SSH authorized key before hardening
+  tags: [aegis, ssh, services]
+  ansible.builtin.assert:
+    that:
+      - >-
+        (aegis_authorized_keys.stat.exists and aegis_authorized_keys.stat.size | int > 0)
+        or aegis_authorized_key_fragments.matched | int > 0
+    fail_msg: Add a public key for the Ansible SSH user before disabling password authentication.
+
+- name: Ensure Aegis SSH configuration drop-in directory exists
+  tags: [aegis, ssh, services]
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure Aegis SSH drop-ins are loaded before other settings
+  tags: [aegis, ssh, services]
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^\s*Include\s+/etc/ssh/sshd_config\.d/\*\.conf\s*$'
+    line: Include /etc/ssh/sshd_config.d/*.conf
+    insertbefore: BOF
+    state: present
+    validate: "sshd -t -f %s"
+
+- name: Render Aegis SSH hardening drop-in
+  tags: [aegis, ssh, services]
+  ansible.builtin.template:
+    src: 00-aegis-hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/00-aegis-hardening.conf
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Reload Aegis SSH
+
+- name: Validate Aegis SSH configuration
+  tags: [aegis, ssh, services]
+  ansible.builtin.command:
+    argv:
+      - sshd
+      - -t
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Read effective Aegis SSH daemon configuration
+  tags: [aegis, ssh, services]
+  ansible.builtin.command:
+    argv:
+      - sshd
+      - -T
+      - -C
+      - "user={{ ansible_user }},host={{ aegis_hostname }},addr=127.0.0.1"
+  register: aegis_sshd_effective_configuration
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Verify effective Aegis SSH hardening
+  tags: [aegis, ssh, services]
+  ansible.builtin.assert:
+    that:
+      - "'permitrootlogin no' in aegis_sshd_effective_configuration.stdout_lines"
+      - "'pubkeyauthentication yes' in aegis_sshd_effective_configuration.stdout_lines"
+      - "'passwordauthentication no' in aegis_sshd_effective_configuration.stdout_lines"
+      - "'kbdinteractiveauthentication no' in aegis_sshd_effective_configuration.stdout_lines"
+      - "'allowusers ' + (aegis_ssh_allowed_users | join(' ')) in aegis_sshd_effective_configuration.stdout_lines"
+  when: not ansible_check_mode
 
 - name: Install Wake-on-LAN helper for Ikaros
   tags: [aegis, wol]

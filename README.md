@@ -116,18 +116,30 @@ ansible-playbook ansible/site.yml --limit prometheus \
 
 ## Aegis
 
-`aegis` is a Raspberry Pi 4 running Fedora CoreOS. Provision it once with
-`ansible/bootstrap/aegis.bu`, after replacing the SSH public-key placeholder:
+`aegis` is a Raspberry Pi 4 running Fedora CoreOS. Generate Ignition from
+`ansible/bootstrap/aegis.bu` with the included Podman/Butane helper, then write the SD card with
+`arm-image-installer`:
 
 ```bash
-butane --strict --pretty --output aegis.ign ansible/bootstrap/aegis.bu
+ansible/bootstrap/generate-aegis-ign.sh --write IMAGE DEVICE
 ```
 
-The controller then manages it remotely as `core@aegis`; unlike local desktop profiles, Aegis is
+The controller manages it remotely as `pi@aegis`; unlike local desktop profiles, Aegis is
 intentionally an SSH inventory target. `profile_aegis` manages rootful Podman Quadlets for AdGuard
-Home and iCloudPD, persistent data under `/var/lib`, the Podman auto-update timer, and
-`wake-ikaros`. Define `vault_aegis_icloudpd_apple_id` in Vault before applying it. iCloudPD still
-requires interactive MFA initialization after its first deployment.
+Home and iCloudPD, persistent data under `/var/lib`, the Podman auto-update timer, LAN-restricted
+firewalld rules, SSH key-only access for `pi`, and `wake-ikaros`. Set the host-local
+`aegis_lan_subnet` and `aegis_adguard_web_port` values before applying it. The initial AdGuard Home
+wizard uses port `3000`; after choosing another web port, update `aegis_adguard_web_port` and rerun
+the playbook so the firewall only permits the selected port. Define
+`vault_aegis_icloudpd_apple_id` in Vault before applying it. iCloudPD still requires interactive MFA
+initialization after its first deployment.
+
+Validate the profile before deployment:
+
+```bash
+ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
+ansible-playbook ansible/site.yml --limit aegis --check --diff --ask-become-pass
+```
 
 ## NAS
 

@@ -50,14 +50,6 @@ storage:
       contents:
         inline: |
           net.ipv4.ip_forward = 1
-    - path: /etc/hosts
-      mode: 0644
-      overwrite: true
-      contents:
-        inline: |
-          127.0.0.1   localhost
-          ::1         localhost
-          192.168.0.1 aegis
   links:
     - path: /etc/localtime
       target: ../usr/share/zoneinfo/Europe/Rome

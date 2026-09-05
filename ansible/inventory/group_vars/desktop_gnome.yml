@@ -11,6 +11,7 @@ fedora_desktop_packages:
   # Fedora equivalents of the development/tooling packages previously pulled by
   # the Void desktop profile.
   - 7zip
+  - arm-image-installer
   - nodejs-bash-language-server
   - bluez
   - bridge-utils

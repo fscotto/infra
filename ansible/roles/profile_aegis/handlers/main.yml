@@ -1,4 +1,14 @@
 ---
+- name: Restart Aegis systemd-resolved
+  ansible.builtin.systemd:
+    name: systemd-resolved.service
+    state: restarted
+
+- name: Reload Aegis SSH
+  ansible.builtin.systemd:
+    name: sshd.service
+    state: reloaded
+
 - name: Restart Aegis Quadlet services
   ansible.builtin.systemd:
     name: "{{ item }}"

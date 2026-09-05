@@ -35,7 +35,7 @@
     - role: dotfiles_common
       when:
         - "'platform_rocky' not in group_names"
-        - "'platform_fedora_coreos' not in group_names"
+        - "'platform_fedora_iot' not in group_names"
 
 - name: Configure Void platform
   hosts: platform_void
@@ -71,7 +71,7 @@
     - packages_rocky
     - services_systemd
 
-- name: Configure Aegis Fedora CoreOS profile
+- name: Configure Aegis Fedora IoT profile
   hosts: role_aegis
   become: true
 

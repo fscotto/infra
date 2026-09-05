@@ -135,6 +135,15 @@
   loop_control:
     label: "{{ item }}"
 
+- name: Remove retired Aegis TLS access rule
+  tags: [aegis, firewall]
+  ansible.posix.firewalld:
+    rich_rule: 'rule family="ipv4" source address="{{ aegis_lan_subnet }}" port port="853" protocol="tcp" accept'
+    permanent: true
+    immediate: true
+    state: disabled
+    zone: "{{ aegis_firewalld_zone }}"
+
 - name: Allow Aegis services from the LAN only
   tags: [aegis, firewall]
   ansible.posix.firewalld:
@@ -146,7 +155,6 @@
   loop:
     - 'rule family="ipv4" source address="{{ aegis_lan_subnet }}" service name="ssh" accept'
     - 'rule family="ipv4" source address="{{ aegis_lan_subnet }}" service name="dns" accept'
-    - 'rule family="ipv4" source address="{{ aegis_lan_subnet }}" port port="853" protocol="tcp" accept'
     - 'rule family="ipv4" source address="{{ aegis_lan_subnet }}" service name="aegis-adguard-web" accept'
   loop_control:
     label: "{{ item }}"

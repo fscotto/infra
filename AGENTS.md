@@ -163,8 +163,7 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   `aegis_lan_subnet` and `aegis_adguard_web_port` host-specific; SSH permits only the declared
   key-authenticated users, never root or password authentication. Keep Apple IDs and other
   credentials in Vault and use `no_log` for their rendering.
-- `aegis_adguard_web_port` defaults to `80`; the playbook also permits HTTPS on `443` and DNS-over-TLS on `853/tcp`. The initial AdGuard
-  Home wizard port `3000` is intentionally unmanaged: open and close it manually only while
+- `aegis_adguard_web_port` defaults to `80`. The initial AdGuard Home wizard port `3000` is intentionally unmanaged: open and close it manually only while
   completing initial setup. Disable the local systemd-resolved stub through `profile_aegis` before
   AdGuard binds port 53; keep
   `/etc/resolv.conf` linked to `/run/systemd/resolve/resolv.conf` so Aegis retains router-provided DNS.

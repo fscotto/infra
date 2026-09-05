@@ -129,7 +129,7 @@ intentionally an SSH inventory target. `profile_aegis` manages rootful Podman Qu
 Home and iCloudPD, persistent data under `/var/lib`, the Podman auto-update timer, LAN-restricted
 firewalld rules, SSH key-only access for `pi`, and `wake-ikaros`. Set the host-local
 `aegis_lan_subnet` and `aegis_adguard_web_port` values before applying it. The playbook permits
-AdGuard Home on ports `80`, `443`, and DNS-over-TLS on `853/tcp`; the initial wizard port `3000` is intentionally unmanaged and must be
+AdGuard Home HTTP on port `80`; the initial wizard port `3000` is intentionally unmanaged and must be
 opened and closed manually during initial setup. The profile disables the local systemd-resolved DNS
 stub and points `/etc/resolv.conf` to its full resolver data, freeing port 53
 for AdGuard while retaining DNS learned from the router. Define

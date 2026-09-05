@@ -4,8 +4,10 @@ ansible_connection: ssh
 ansible_user: pi
 ansible_become: true
 ansible_python_interpreter: /usr/bin/python3
+# Avoid PTY framing around module JSON on this remote Fedora IoT host.
+ansible_ssh_use_tty: false
 
 aegis_lan_subnet: 192.168.178.0/24
-aegis_adguard_web_port: 3000
+aegis_adguard_web_port: 80
 
 aegis_icloudpd_apple_id: "{{ vault_aegis_icloudpd_apple_id | default('') }}"

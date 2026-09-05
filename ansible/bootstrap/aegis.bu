@@ -1,12 +1,12 @@
-# One-time bootstrap for Fedora CoreOS on Aegis (Raspberry Pi 4).
+# One-time bootstrap for Fedora IoT on Aegis (Raspberry Pi 4).
 # Generate only: ./generate-aegis-ign.sh
 # Generate and write an SD card: ./generate-aegis-ign.sh --write IMAGE DEVICE
 # The write mode uses arm-image-installer with the RPi4 target and embeds
 # config.ign; it prompts for Wi-Fi credentials unless supplied through its
 # WIFI_SSID and WIFI_PASS environment variables.
 # For WiFi, the UEFI 'System Table Selection' must be DeviceTree (Esc at boot).
-variant: fcos
-version: 1.6.0
+variant: fiot
+version: 1.0.0
 passwd:
   users:
     - name: pi

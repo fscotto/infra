@@ -10,6 +10,7 @@ aegis_wol_port: 9
 
 aegis_lan_subnet: CHANGEME_LAN_SUBNET
 aegis_firewalld_zone: public
-aegis_adguard_web_port: 3000
+aegis_adguard_web_port: 80
 aegis_ssh_allowed_users:
   - pi
+aegis_ssh_user_home: "/var/home/{{ ansible_user }}"

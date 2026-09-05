@@ -36,7 +36,7 @@ infra/
 
 ## Managed machines
 
-The repo currently covers Fedora/GNOME desktops, one Fedora WSL workstation, a Fedora CoreOS LAN
+The repo currently covers Fedora/GNOME desktops, one Fedora WSL workstation, a Fedora IoT LAN
 node, an Ubuntu server, and a Rocky Linux 9 NAS. Configuration is layered instead of being tied to
 host names:
 
@@ -53,7 +53,7 @@ common user environment
 | `ikaros` | Fedora | Personal workstation | GNOME |
 | `nymph` | Fedora | Desktop laptop | GNOME |
 | `deadalus` | Fedora WSL | Development workstation | — |
-| `aegis` | Fedora CoreOS | Always-on LAN node | — |
+| `aegis` | Fedora IoT | Always-on LAN node | — |
 | `prometheus` | Ubuntu | Server | — |
 | `atlas` | Rocky 9 | NAS | — |
 
@@ -116,7 +116,7 @@ ansible-playbook ansible/site.yml --limit prometheus \
 
 ## Aegis
 
-`aegis` is a Raspberry Pi 4 running Fedora CoreOS. Generate Ignition from
+`aegis` is a Raspberry Pi 4 running Fedora IoT. Generate Ignition from
 `ansible/bootstrap/aegis.bu` with the included Podman/Butane helper, then write the SD card with
 `arm-image-installer`:
 
@@ -128,9 +128,11 @@ The controller manages it remotely as `pi@aegis`; unlike local desktop profiles,
 intentionally an SSH inventory target. `profile_aegis` manages rootful Podman Quadlets for AdGuard
 Home and iCloudPD, persistent data under `/var/lib`, the Podman auto-update timer, LAN-restricted
 firewalld rules, SSH key-only access for `pi`, and `wake-ikaros`. Set the host-local
-`aegis_lan_subnet` and `aegis_adguard_web_port` values before applying it. The initial AdGuard Home
-wizard uses port `3000`; after choosing another web port, update `aegis_adguard_web_port` and rerun
-the playbook so the firewall only permits the selected port. Define
+`aegis_lan_subnet` and `aegis_adguard_web_port` values before applying it. The playbook permits
+AdGuard Home on ports `80`, `443`, and DNS-over-TLS on `853/tcp`; the initial wizard port `3000` is intentionally unmanaged and must be
+opened and closed manually during initial setup. The profile disables the local systemd-resolved DNS
+stub and points `/etc/resolv.conf` to its full resolver data, freeing port 53
+for AdGuard while retaining DNS learned from the router. Define
 `vault_aegis_icloudpd_apple_id` in Vault before applying it. iCloudPD still requires interactive MFA
 initialization after its first deployment.
 
@@ -251,7 +253,7 @@ ansible-playbook ansible/site.yml --limit deadalus --tags ai_agents --check --di
 | `profile_workstation_dev_wsl` | WSL development setup. |
 | `profile_server` | Server setup. |
 | `profile_atlas` | Rocky Linux 9 NAS setup. |
-| `profile_aegis` | Fedora CoreOS always-on LAN node. |
+| `profile_aegis` | Fedora IoT always-on LAN node. |
 | `dotfiles_common` | Shared user dotfiles. |
 
 ## What `site.yml` runs
@@ -277,7 +279,7 @@ So, in practice:
 - `deadalus` gets the Fedora development layer followed by the WSL layer.
 - `ubuntu_server` configures `prometheus`.
 - `atlas` receives the Rocky platform layer and the NAS profile through SSH.
-- `aegis` receives only the immutable Fedora CoreOS profile through SSH; it does not receive
+- `aegis` receives only the immutable Fedora IoT profile through SSH; it does not receive
   mutable Fedora package or common dotfile roles.
 - Empty `platform_void` groups do nothing until they get a host.
 - The playbook never restarts the display manager during a run.

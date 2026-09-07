@@ -32,6 +32,7 @@ enabled_services:
 rocky_common_packages:
   - bash-completion
   - bat
+  - entr
   - fzf
   - git
   - jq

@@ -88,6 +88,7 @@ services:
       - "3000:3000"
       - "127.0.0.1:222:22"
 
+{% if server_syncthing_enabled | default(true) | bool %}
   syncthing:
     image: syncthing/syncthing:2
     container_name: syncthing
@@ -104,6 +105,7 @@ services:
       - "21027:21027/udp"
     networks:
       - web
+{% endif %}
 
 networks:
   web:

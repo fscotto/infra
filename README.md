@@ -20,7 +20,6 @@ infra/
 │   ├── common/
 │   ├── desktop/
 │   ├── fedora/
-│   ├── ubuntu/
 │   ├── server/
 │   ├── workstation/
 │   ├── workstation_dev_wsl/
@@ -36,8 +35,8 @@ infra/
 
 ## Managed machines
 
-The repo currently covers Fedora/GNOME desktops, one Fedora WSL workstation, an Ubuntu server, a
-dormant Rocky Linux 9 server profile, and a Rocky Linux 9 NAS. Configuration is layered instead of
+The repo currently covers Fedora/GNOME desktops, one Fedora WSL workstation, a Rocky Linux 9 server,
+and a Rocky Linux 9 NAS. Configuration is layered instead of
 being tied to host names:
 
 ```text
@@ -53,8 +52,7 @@ common user environment
 | `ikaros` | Fedora | Personal workstation | GNOME |
 | `nymph` | Fedora | Desktop laptop | GNOME |
 | `deadalus` | Fedora WSL | Development workstation | — |
-| `prometheus` | Ubuntu | Server | — |
-| — (`rocky_server`, dormant) | Rocky 9 | Server | — |
+| `prometheus` | Rocky 9 | Server | — |
 | `atlas` | Rocky 9 | NAS | — |
 
 ```text
@@ -101,15 +99,14 @@ That gives it Fedora packages through DNF, Docker from the official repository, 
 
 ## Server
 
-`prometheus` is the Ubuntu LTS server. It has no graphical environment and gets server-specific
-dotfiles and templates. `rocky_server` is the empty alternative profile for a future Rocky Linux 9
-migration; it does not select any host until one is explicitly added to that inventory group.
+`prometheus` is the Rocky Linux 9 server. It has no graphical environment and gets server-specific
+dotfiles and templates. The profile provisions configuration only: it does not transfer data, start
+the Compose stack, update DNS, or perform a cutover.
 
 The server profile installs platform-specific packages, Docker CE from the official repository,
-declared systemd services, the server Compose stack, and either UFW on Ubuntu or firewalld on Rocky.
-Syncthing ports `22000/tcp`, `22000/udp`, and `21027/udp` are opened; the Syncthing GUI is not
-directly exposed by the managed firewall rules. Rocky bind mounts use private SELinux relabeling for
-application data while host system files remain unchanged.
+declared systemd services, the server Compose stack, and firewalld. The Rocky server excludes
+Syncthing. Rocky bind mounts use private SELinux relabeling for application data while host system
+files remain unchanged.
 
 Server identity comes from `server_username`, `server_user_group`, and `server_user_home` in `ansible/inventory/group_vars/server.yml`. `server_username` defaults to `username`, but it can be overridden, for example:
 
@@ -120,11 +117,7 @@ ansible-playbook ansible/site.yml --limit prometheus \
   -e server_user_home=/srv/myuser
 ```
 
-The dormant profile provisions configuration only: it does not transfer data, start the Compose
-stack, update DNS, or perform a cutover. During migration, add the replacement machine to
-`rocky_server` under a distinct inventory name after creating `server_username` with local sudo
-access. When reusing `prometheus` at cutover, remove it from `ubuntu_server` before adding it to
-`rocky_server`; a host must never belong to both platform groups.
+The target must already provide `server_username` with local sudo access.
 
 ## NAS
 
@@ -222,7 +215,6 @@ ansible-playbook ansible/site.yml --limit deadalus --tags ai_agents --check --di
 | --- | --- |
 | `packages_void` | Installs packages on Void. |
 | `packages_freebsd` | Installs packages on FreeBSD with pkg. |
-| `packages_ubuntu` | Installs packages on Ubuntu. |
 | `packages_fedora` | Installs packages on Fedora. |
 | `packages_rocky` | Installs packages on Rocky Linux 9. |
 | `services_runit` | Manages runit services. |
@@ -255,17 +247,15 @@ platform_fedora & role_personal_workstation -> profile_personal_workstation
 platform_fedora & desktop_gnome -> profile_desktop_gnome
 workstation_dev_fedora -> profile_workstation_dev_common
 workstation_dev_wsl -> profile_workstation_dev_wsl (after platform_fedora + workstation_dev_fedora)
-ubuntu_server -> packages_ubuntu + services_systemd + profile_server
 ```
 
 So, in practice:
 
 - `platform_fedora` configures `ikaros`, `nymph`, and `deadalus`.
 - `deadalus` gets the Fedora development layer followed by the WSL layer.
-- `ubuntu_server` configures `prometheus`.
-- Empty `rocky_server` defines the Rocky 9 server alternative without targeting a machine.
+- `rocky_server` configures the Rocky 9 server, `prometheus`.
 - `atlas` receives the Rocky platform layer and the NAS profile through SSH.
-- Empty `platform_void`, `platform_freebsd`, and `rocky_server` groups do nothing until they get a host.
+- Empty `platform_void` and `platform_freebsd` groups do nothing until they get a host.
 - The playbook never restarts the display manager during a run.
 - `secrets/vault.yml` and then `secrets/vault.local.yml` are loaded only when present.
 

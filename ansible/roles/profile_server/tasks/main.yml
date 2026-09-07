@@ -4,9 +4,9 @@
   tags: [services, packages]
   ansible.builtin.assert:
     that:
-      - server_firewall_backend in ['ufw', 'firewalld']
+      - server_firewall_backend == 'firewalld'
     fail_msg: >-
-      server_firewall_backend must be either ufw or firewalld for the server profile.
+      server_firewall_backend must be firewalld for the Rocky server profile.
 
 - name: Copy server dotfiles
   tags: [dotfiles, dotfiles:server]
@@ -38,7 +38,15 @@
     owner: "{{ item.owner }}"
     group: "{{ item.group }}"
     mode: "{{ item.mode }}"
-  loop: "{{ server_directories | default([]) }}"
+  loop: >-
+    {{
+      (server_directories | default([]))
+      + (
+          server_syncthing_directories | default([])
+          if server_syncthing_enabled | default(true) | bool
+          else []
+        )
+    }}
   loop_control:
     label: "{{ item.path }}"
 
@@ -76,41 +84,6 @@
   notify: Reload SSH service
   when: (server_sshd_allow_users | default([])) | length > 0
 
-- name: Define effective server UFW rules
-  tags: [services, packages]
-  ansible.builtin.set_fact:
-    server_ufw_rules_effective: "{{ server_ufw_rules | default([]) }}"
-  when: server_firewall_backend == 'ufw'
-
-- name: Apply server UFW rules
-  tags: [services, packages]
-  community.general.ufw:
-    rule: "{{ item.rule }}"
-    name: "{{ item.name | default(omit) }}"
-    port: "{{ item.port | default(omit) }}"
-    proto: "{{ item.proto | default(omit) }}"
-    from_ip: "{{ item.src | default(omit) }}"
-    to_ip: "{{ item.dest | default(omit) }}"
-    from_port: "{{ item.from_port | default(omit) }}"
-    direction: "{{ item.direction | default(omit) }}"
-    interface: "{{ item.interface | default(omit) }}"
-    interface_in: "{{ item.interface_in | default(omit) }}"
-    interface_out: "{{ item.interface_out | default(omit) }}"
-    route: "{{ item.route | default(omit) }}"
-    comment: "{{ item.comment | default(omit) }}"
-  loop: "{{ server_ufw_rules_effective | default([]) }}"
-  loop_control:
-    label: "{{ item.name | default(item.port) }}"
-  when: server_firewall_backend == 'ufw'
-
-- name: Enable UFW firewall on server
-  tags: [services, packages]
-  community.general.ufw:
-    state: enabled
-  when:
-    - server_firewall_backend == 'ufw'
-    - (server_ufw_rules_effective | default([])) | length > 0
-
 - name: Allow server services through firewalld
   tags: [services, packages]
   ansible.posix.firewalld:
@@ -133,6 +106,19 @@
     permanent: true
     immediate: true
   loop: "{{ server_firewalld_ports | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  when: server_firewall_backend == 'firewalld'
+
+- name: Remove disabled server ports from firewalld
+  tags: [services, packages]
+  ansible.posix.firewalld:
+    port: "{{ item }}"
+    zone: "{{ server_firewalld_zone }}"
+    state: disabled
+    permanent: true
+    immediate: true
+  loop: "{{ server_firewalld_absent_ports | default([]) }}"
   loop_control:
     label: "{{ item }}"
   when: server_firewall_backend == 'firewalld'

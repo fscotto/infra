@@ -33,7 +33,6 @@ infra/
 │   ├── common/
 │   ├── desktop/
 │   ├── fedora/
-│   ├── ubuntu/
 │   ├── server/
 │   ├── workstation/
 │   ├── workstation_dev_wsl/
@@ -56,8 +55,8 @@ Il repository è diviso in due componenti principali:
 
 # Macchine gestite
 
-Il repository modella attualmente host Fedora/GNOME, una workstation Fedora WSL, un server Ubuntu e
-un NAS Rocky Linux 9. La composizione resta separata in assi indipendenti:
+Il repository modella attualmente host Fedora/GNOME, una workstation Fedora WSL, un server Rocky
+Linux 9 e un NAS Rocky Linux 9. La composizione resta separata in assi indipendenti:
 
 ```text
 common user environment
@@ -74,7 +73,7 @@ Matrice target:
 | ikaros       | Fedora   | Personal workstation | GNOME   |
 | nymph        | Fedora   | Desktop laptop       | GNOME   |
 | deadalus     | Fedora WSL | Workstation dev    | —       |
-| prometheus   | Ubuntu   | Server               | —       |
+| prometheus   | Rocky 9  | Server               | —       |
 | atlas        | Rocky 9 | NAS                  | —       |
 
 Regola operativa:
@@ -93,7 +92,7 @@ Nota sullo stato attuale del playbook principale:
 
 - `ansible/site.yml` applica oggi in automatico Fedora/GNOME su `ikaros` e `nymph`
 - `ansible/site.yml` applica il profilo Fedora WSL alla workstation `deadalus`
-- `ansible/site.yml` applica anche il profilo `ubuntu_server` con baseline apt, systemd, dotfiles server e firewall UFW
+- `ansible/site.yml` applica il profilo server Rocky a `prometheus` con DNF, systemd, dotfiles server e firewalld
 - `ansible/site.yml` applica il profilo NAS Rocky su `atlas` tramite SSH remoto
 
 ## Desktop
@@ -164,7 +163,7 @@ Le applicazioni Windows sono installate e gestite manualmente; il profilo WSL no
 
 Sistema operativo:
 
-- Ubuntu LTS
+- Rocky Linux 9
 
 Configurazione:
 
@@ -178,12 +177,12 @@ Profilo orientato a servizi server e gestione di dotfiles dedicati.
 
 Lo stato attuale del profilo server include:
 
-- installazione pacchetti base Ubuntu via apt
+- installazione pacchetti Rocky via DNF, EPEL e CRB
 - installazione e configurazione di Docker dal repository ufficiale
 - abilitazione dei servizi systemd dichiarati in inventory/group vars
 - copia dei dotfiles server e rendering dei template server, incluso il `docker-compose.yml` dello stack servizi
-- attivazione del firewall UFW con regola SSH esplicita
-- apertura delle porte Syncthing `22000/tcp`, `22000/udp` e `21027/udp`, lasciando la GUI non esposta direttamente su UFW
+- attivazione di firewalld con servizio SSH esplicitamente abilitato
+- Syncthing escluso dal profilo server Rocky
 
 Utente del profilo server:
 
@@ -275,7 +274,6 @@ I principali ruoli attualmente presenti sono:
 | base                      | configurazione base comune          |
 | packages_void             | installazione pacchetti su Void     |
 | packages_freebsd          | installazione pacchetti su FreeBSD via pkg |
-| packages_ubuntu           | installazione pacchetti su Ubuntu   |
 | packages_fedora           | installazione pacchetti su Fedora   |
 | packages_rocky            | installazione pacchetti su Rocky Linux 9 |
 | services_runit            | gestione servizi runit              |
@@ -312,7 +310,7 @@ platform_fedora & role_personal_workstation -> profile_personal_workstation
 platform_fedora & desktop_gnome -> profile_desktop_gnome
 workstation_dev_fedora -> profile_workstation_dev_common
 workstation_dev_wsl -> profile_workstation_dev_wsl (dopo platform_fedora + workstation_dev_fedora)
-ubuntu_server -> packages_ubuntu + services_systemd + profile_server
+rocky_server -> dotfiles_common + profile_server (dopo platform_rocky)
 ```
 
 Questo significa che, allo stato attuale:
@@ -321,9 +319,9 @@ Questo significa che, allo stato attuale:
 - `nymph` riceve Fedora Workstation/GNOME come target laptop
 - il profilo Void resta selezionabile tramite `platform_void + graphical_desktop` per host futuri
 - `deadalus` riceve il profilo Fedora WSL tramite play dev dedicati
-- il server Ubuntu (`prometheus`) e gestito con pacchetti, servizi, dotfiles server e firewall
+- il server Rocky (`prometheus`) e gestito con pacchetti, servizi, dotfiles server e firewalld
 - il NAS Rocky (`atlas`) usa un pool ZFS gia esistente, condivisioni NFSv4/SMB limitate alla LAN e Cockpit/45Drives
-- lo stack container server include `navidrome`, `postgres`, `gitea`, `nginx-proxy-manager` e `syncthing`, con GUI Syncthing raggiungibile tramite la rete Docker `web`
+- lo stack container server include `navidrome`, `postgres`, `gitea` e `nginx-proxy-manager`
 
 # Dotfiles
 
@@ -335,7 +333,6 @@ dotfiles/
 ├── desktop
 ├── server
 ├── fedora
-├── ubuntu
 ├── workstation
 ├── workstation_dev_wsl
 └── nymph
@@ -398,8 +395,7 @@ Allo stato attuale questo comando:
 - per `platform_fedora & role_personal_workstation` applica il layer personale a `ikaros`
 - per `platform_fedora & desktop_gnome` applica il profilo GNOME a `ikaros` e `nymph`
 - per `workstation_dev_wsl` applica i tweak WSL dopo il layer Fedora a `deadalus`, escludendo Flatpak e Snap
-- per gli host `ubuntu_server` applica pacchetti Ubuntu, servizi systemd, profilo server, UFW, dotfiles e template dedicati
-- per `platform_rocky` applica pacchetti Rocky e servizi systemd ad `atlas`, quindi il profilo NAS dedicato
+- per `platform_rocky` applica pacchetti Rocky e servizi systemd ad `atlas` e `prometheus`; quindi applica il profilo NAS ad `atlas` e il profilo server a `prometheus`
 - non riavvia automaticamente il display manager
 - carica `secrets/vault.yml` solo se presente
 - carica `secrets/vault.local.yml` solo se presente, dopo `vault.yml`, cosi gli override locali hanno precedenza

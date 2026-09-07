@@ -119,12 +119,3 @@
 
   roles:
     - profile_workstation_dev_wsl
-
-- name: Configure Ubuntu server
-  hosts: ubuntu_server
-  become: true
-
-  roles:
-    - packages_ubuntu
-    - services_systemd
-    - profile_server

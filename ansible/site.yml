@@ -7,6 +7,7 @@
       tags: [always]
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../secrets/vault.yml"
+      no_log: true
       when: >-
         lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.yml',
         errors='ignore', wantlist=True) | length > 0
@@ -15,6 +16,7 @@
       tags: [always]
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../secrets/vault.local.yml"
+      no_log: true
       when: >-
         lookup('ansible.builtin.fileglob', playbook_dir + '/../secrets/vault.local.yml',
         errors='ignore', wantlist=True) | length > 0

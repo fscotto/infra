@@ -18,6 +18,10 @@
       Server container secrets are missing. Define vault_navidrome_db_password and
       vault_postgres_root_password in secrets/vault.yml or another vars source.
 
+- name: Configure DuckDNS updater
+  tags: [dotfiles, dotfiles:server, duckdns]
+  ansible.builtin.import_tasks: duckdns.yml
+
 - name: Ensure server directories exist
   tags: [dotfiles, services]
   ansible.builtin.file:

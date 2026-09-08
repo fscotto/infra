@@ -1,0 +1,2 @@
+# DuckDNS runtime files contain a rendered Vault token and must stay on the host.
+/dotfiles/server/duckdns/

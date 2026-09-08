@@ -120,6 +120,24 @@ ansible-playbook ansible/site.yml --limit prometheus \
 
 The target must already provide `server_username` with local sudo access.
 
+### DuckDNS
+
+`profile_server` renders `~/duckdns/duck.sh` with mode `0700`, keeping the existing updater path
+and `duck.log`. Set `server_duckdns_domain` in the server's host vars and store the **rotated**
+`vault_duckdns_token` in encrypted `secrets/vault.yml` (using `ansible-vault edit secrets/vault.yml`)
+or untracked `secrets/vault.local.yml`. Never commit the rendered script or put the token on a
+command line. Rendering hides secret output/diffs; the updater verifies TLS and passes the token
+to curl through stdin. The playbook neither runs the updater nor changes its external schedule.
+
+```bash
+ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff
+ansible-playbook ansible/site.yml --limit prometheus --tags duckdns
+```
+
+An exposed token must be revoked/regenerated on DuckDNS: deleting it from Git history does not
+revoke it. After a history cleanup, re-clone other checkouts rather than merging the old history
+back in; preserve any uncommitted work separately without copying secrets.
+
 ### Data migration
 
 Provision Rocky first, then run the migration script **on the retired Ubuntu source host**. It is

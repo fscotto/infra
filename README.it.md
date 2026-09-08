@@ -184,6 +184,25 @@ Lo stato attuale del profilo server include:
 - attivazione di firewalld con servizio SSH esplicitamente abilitato
 - Syncthing escluso dal profilo server Rocky
 
+### DuckDNS
+
+`profile_server` genera `~/duckdns/duck.sh` con permessi `0700`, mantenendo il percorso dello
+script e `duck.log`. Definire `server_duckdns_domain` negli host vars del server e salvare il
+**nuovo token rigenerato** in `vault_duckdns_token`, nel Vault cifrato `secrets/vault.yml`
+(`ansible-vault edit secrets/vault.yml`) oppure negli override non versionati `secrets/vault.local.yml`.
+Non committare lo script generato e non passare il token sulla riga di comando. Il rendering
+nasconde output e diff sensibili; lo script verifica TLS e passa il token a curl tramite stdin.
+Il playbook non esegue lo script e non modifica la sua schedulazione esterna.
+
+```bash
+ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff
+ansible-playbook ansible/site.yml --limit prometheus --tags duckdns
+```
+
+La cancellazione dalla cronologia non revoca il token: rigenerarlo sul pannello DuckDNS.
+Dopo la bonifica, riclonare gli altri checkout senza unire nuovamente la vecchia storia;
+salvare separatamente eventuali modifiche non committate senza copiare segreti.
+
 ### Migrazione dati
 
 Dopo il provisioning Rocky, eseguire `scripts/migrate_prometheus_data.sh` **sul server Ubuntu

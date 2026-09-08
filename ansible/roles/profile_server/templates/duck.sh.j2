@@ -1,0 +1,24 @@
+#!/bin/sh
+# Managed by Ansible. Contains a Vault token; never copy this file into Git.
+set -eu
+umask 077
+
+log_file={{ (server_user_home ~ '/duckdns/duck.log') | quote }}
+
+# Keep the token out of process arguments and verify the HTTPS certificate.
+if ! response=$(curl --fail --silent --show-error --connect-timeout 10 --max-time 30 --config - <<'DUCKDNS_CONFIG'
+url = "https://www.duckdns.org/update?domains={{ server_duckdns_domain }}&token={{ vault_duckdns_token }}&ip="
+DUCKDNS_CONFIG
+); then
+  printf 'ERROR\n' > "$log_file"
+  exit 1
+fi
+
+case "$response" in
+  OK) printf 'OK\n' > "$log_file" ;;
+  *)
+    printf 'KO\n' > "$log_file"
+    printf 'DuckDNS update failed.\n' >&2
+    exit 1
+    ;;
+esac

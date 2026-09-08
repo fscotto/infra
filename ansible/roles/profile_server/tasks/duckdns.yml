@@ -1,0 +1,33 @@
+---
+- name: Require DuckDNS domain and Vault token before deployment
+  ansible.builtin.assert:
+    that:
+      - >-
+        server_duckdns_domain | default('') is
+        regex('[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', match_type='fullmatch')
+      - >-
+        vault_duckdns_token | default('') is
+        regex('[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}', match_type='fullmatch')
+    fail_msg: >-
+      Define server_duckdns_domain in host_vars and the rotated vault_duckdns_token
+      in encrypted Vault or an untracked local vars file before deploying DuckDNS.
+  no_log: true
+
+- name: Ensure private DuckDNS directory exists
+  ansible.builtin.file:
+    path: "{{ server_user_home }}/duckdns"
+    state: directory
+    owner: "{{ server_username }}"
+    group: "{{ server_user_group }}"
+    mode: "0700"
+
+- name: Render DuckDNS updater with the Vault token
+  ansible.builtin.template:
+    src: duck.sh.j2
+    dest: "{{ server_user_home }}/duckdns/duck.sh"
+    owner: "{{ server_username }}"
+    group: "{{ server_user_group }}"
+    mode: "0700"
+    validate: /bin/sh -n %s
+  no_log: true
+  diff: false

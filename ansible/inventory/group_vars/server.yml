@@ -37,9 +37,6 @@ server_dotfiles:
   - src: .themes.gitignore
     dest: .themes.gitignore
     mode: "0644"
-  - src: duckdns/
-    dest: duckdns/
-    mode: preserve
 
 server_templates:
   - src: server/.gitconfig.j2

@@ -53,6 +53,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
   - AI coding agents: `ansible-playbook ansible/site.yml --limit <host> --tags ai_agents --check --diff`
   - Mail bootstrap: `sh -n scripts/bootstrap_mail.sh` and `shellcheck scripts/bootstrap_mail.sh`
   - Server compose render: `docker compose -f /opt/docker/server/docker-compose.yml config`
+  - DuckDNS config only: `ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff`
 
 ## Conventions
 - Use FQCN Ansible modules.
@@ -96,6 +97,10 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - Windows applications are installed manually and are not managed from the WSL profile.
 
 ## Rocky Server Notes
+- DuckDNS is rendered by `profile_server` from host-local `server_duckdns_domain` and
+  `vault_duckdns_token`. Keep the rotated token in encrypted Vault or untracked local vars, never in
+  dotfiles. The private `~/duckdns/duck.sh` keeps the existing entrypoint; rendering uses `no_log`
+  and disables diffs. Provisioning does not execute the updater or change its external schedule.
 - `rocky_server` is a child of both `platform_rocky` and `server`; `prometheus` is its active target.
 - The target must already provide `server_username` with local sudo access before the profile runs.
 - The Rocky profile installs Docker CE, uses firewalld, preserves SELinux enforcement, and renders the

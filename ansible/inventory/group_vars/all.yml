@@ -116,9 +116,9 @@ ai_agents:
     uninstall_enabled: false
   github_copilot:
     npm_package: "@github/copilot"
-    install_enabled: true
-    deploy_enabled: true
-    uninstall_enabled: false
+    install_enabled: false
+    deploy_enabled: false
+    uninstall_enabled: true
   ibm_bob:
     install_enabled: true
     deploy_enabled: false

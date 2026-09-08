@@ -20,7 +20,6 @@ infra/
 │   ├── common/
 │   ├── desktop/
 │   ├── fedora/
-│   ├── ubuntu/
 │   ├── server/
 │   ├── workstation/
 │   ├── workstation_dev_wsl/
@@ -37,8 +36,8 @@ infra/
 ## Managed machines
 
 The repo currently covers Fedora/GNOME desktops, one Fedora WSL workstation, a Fedora IoT LAN
-node, an Ubuntu server, and a Rocky Linux 9 NAS. Configuration is layered instead of being tied to
-host names:
+node, a Rocky Linux 9 server, and a Rocky Linux 9 NAS. Configuration is layered instead of being tied
+to host names:
 
 ```text
 common user environment
@@ -54,8 +53,8 @@ common user environment
 | `nymph` | Fedora | Desktop laptop | GNOME |
 | `deadalus` | Fedora WSL | Development workstation | — |
 | `aegis` | Fedora IoT | Always-on LAN node | — |
-| `prometheus` | Ubuntu | Server | — |
-| `atlas` | Rocky 9 | NAS | — |
+| `prometheus` | Rocky Linux | Server | — |
+| `atlas` | Rocky Linux | NAS | — |
 
 ```text
 ikaros must be boring
@@ -101,9 +100,14 @@ That gives it Fedora packages through DNF, Docker from the official repository, 
 
 ## Server
 
-`prometheus` is the Ubuntu LTS server. It has no graphical environment and gets server-specific dotfiles and templates.
+`prometheus` is the Rocky Linux 9 server. It has no graphical environment and gets server-specific
+dotfiles and templates. The profile provisions configuration only: it does not transfer data, start
+the Compose stack, update DNS, or perform a cutover.
 
-The server profile installs Ubuntu packages, Docker from the official repository, declared systemd services, UFW rules, and the server Compose stack. Syncthing ports `22000/tcp`, `22000/udp`, and `21027/udp` are opened; the Syncthing GUI is not directly opened in UFW.
+The server profile installs platform-specific packages, Docker CE from the official repository,
+declared systemd services, the server Compose stack, and firewalld. The Rocky server excludes
+Syncthing. Rocky bind mounts use private SELinux relabeling for application data while host system
+files remain unchanged.
 
 Server identity comes from `server_username`, `server_user_group`, and `server_user_home` in `ansible/inventory/group_vars/server.yml`. `server_username` defaults to `username`, but it can be overridden, for example:
 
@@ -113,6 +117,30 @@ ansible-playbook ansible/site.yml --limit prometheus \
   -e server_username=myuser -e server_user_group=mygroup \
   -e server_user_home=/srv/myuser
 ```
+
+The target must already provide `server_username` with local sudo access.
+
+### Data migration
+
+Provision Rocky first, then run the migration script **on the retired Ubuntu source host**. It is
+dry-run by default and requires an explicit source-stack stop before it can copy PostgreSQL data:
+
+```bash
+sudo ./scripts/migrate_prometheus_data.sh \
+  --destination rocky@179.237.102.172 \
+  --identity /root/.ssh/id_ed25519
+
+sudo ./scripts/migrate_prometheus_data.sh \
+  --destination rocky@179.237.102.172 \
+  --identity /root/.ssh/id_ed25519 \
+  --quiesce-source --execute
+```
+
+The script copies Navidrome, music, Nginx Proxy Manager, PostgreSQL and Gitea data. It does not
+delete data, move Syncthing, copy `/home/git/.ssh`, start containers, update DNS, or perform a
+cutover. The destination SSH host key must already be trusted and the destination account needs
+passwordless sudo for `rsync`. It preserves ACLs but not extended attributes, so source SELinux labels
+are not transferred; the Rocky Compose bind mounts apply their own `:Z` labels when containers start.
 
 ## Aegis
 
@@ -238,7 +266,6 @@ ansible-playbook ansible/site.yml --limit deadalus --tags ai_agents --check --di
 | Role | What it does |
 | --- | --- |
 | `packages_void` | Installs packages on Void. |
-| `packages_ubuntu` | Installs packages on Ubuntu. |
 | `packages_fedora` | Installs packages on Fedora. |
 | `packages_rocky` | Installs packages on Rocky Linux 9. |
 | `services_runit` | Manages runit services. |
@@ -259,25 +286,25 @@ ansible-playbook ansible/site.yml --limit deadalus --tags ai_agents --check --di
 ## What `site.yml` runs
 
 ```text
-all -> dotfiles_common
+all except platform_rocky -> dotfiles_common
 platform_void -> packages_void + services_runit
 platform_void & graphical_desktop -> profile_desktop_common + profile_desktop_sway + profile_desktop_niri + profile_desktop_host
 platform_fedora -> packages_fedora + services_systemd
 platform_rocky -> packages_rocky + services_systemd
 role_aegis -> profile_aegis
 atlas -> profile_atlas
+rocky_server -> dotfiles_common + profile_server (after platform_rocky)
 platform_fedora & role_personal_workstation -> profile_personal_workstation
 platform_fedora & desktop_gnome -> profile_desktop_gnome
 workstation_dev_fedora -> profile_workstation_dev_common
 workstation_dev_wsl -> profile_workstation_dev_wsl (after platform_fedora + workstation_dev_fedora)
-ubuntu_server -> packages_ubuntu + services_systemd + profile_server
 ```
 
 So, in practice:
 
 - `platform_fedora` configures `ikaros`, `nymph`, and `deadalus`.
 - `deadalus` gets the Fedora development layer followed by the WSL layer.
-- `ubuntu_server` configures `prometheus`.
+- `rocky_server` configures the Rocky 9 server, `prometheus`.
 - `atlas` receives the Rocky platform layer and the NAS profile through SSH.
 - `aegis` receives only the immutable Fedora IoT profile through SSH; it does not receive
   mutable Fedora package or common dotfile roles.

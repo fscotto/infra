@@ -32,6 +32,7 @@
   ansible.builtin.dnf:
     name: "{{ rocky_openzfs_release_rpm }}"
     state: present
+  when: rocky_manage_openzfs_repo | bool
 
 - name: Disable OpenZFS DKMS repository
   tags: [packages, storage]
@@ -39,6 +40,7 @@
     name:
       - zfs
     state: disabled
+  when: rocky_manage_openzfs_repo | bool
 
 - name: Enable OpenZFS kmod repository
   tags: [packages, storage]
@@ -46,6 +48,36 @@
     name:
       - zfs-kmod
     state: enabled
+  when: rocky_manage_openzfs_repo | bool
+
+- name: Configure official Docker RPM repository
+  tags: [packages, docker]
+  ansible.builtin.get_url:
+    url: "{{ rocky_docker_repo_url }}"
+    dest: "{{ rocky_docker_repo_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: rocky_manage_docker_repo | bool
+
+- name: Configure official GitHub CLI RPM repository
+  tags: [packages]
+  ansible.builtin.get_url:
+    url: "{{ rocky_github_cli_repo_url }}"
+    dest: "{{ rocky_github_cli_repo_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: rocky_manage_github_cli_repo | bool
+
+- name: Remove packages conflicting with Docker CE
+  tags: [packages, docker]
+  ansible.builtin.dnf:
+    name: "{{ rocky_docker_conflicting_packages }}"
+    state: absent
+  when:
+    - rocky_manage_docker_repo | bool
+    - rocky_docker_conflicting_packages | length > 0
 
 - name: Refresh Rocky package metadata
   tags: [packages]
@@ -58,13 +90,22 @@
     name: >-
       {{
         (
-          (common_packages | default([]))
+          (rocky_common_packages | default([]))
           + (rocky_packages_base | default([]))
-          + (profile_packages | default([]))
+          + (rocky_profile_packages | default([]))
+          + (rocky_docker_packages | default([]))
           + (host_packages | default([]))
         ) | unique
       }}
     state: present
+
+- name: Add Rocky user to docker group
+  tags: [packages, docker]
+  ansible.builtin.user:
+    name: "{{ effective_username }}"
+    groups: docker
+    append: true
+  when: rocky_docker_packages | length > 0
 
 - name: Require supported architecture for Syncthing
   tags: [packages, syncthing]
@@ -72,6 +113,7 @@
     that:
       - ansible_facts['architecture'] == 'x86_64'
     fail_msg: The pinned Atlas Syncthing binary currently supports x86_64 only.
+  when: rocky_manage_syncthing_binary | bool
 
 - name: Read installed Syncthing version
   tags: [packages, syncthing]
@@ -83,6 +125,7 @@
   changed_when: false
   failed_when: false
   check_mode: false
+  when: rocky_manage_syncthing_binary | bool
 
 - name: Determine whether Syncthing must be installed
   tags: [packages, syncthing]
@@ -92,6 +135,7 @@
         ('syncthing v' ~ rocky_syncthing_version ~ ' ')
         not in (rocky_syncthing_version_check.stdout | default(''))
       }}
+  when: rocky_manage_syncthing_binary | bool
 
 - name: Create temporary Syncthing extraction directory
   tags: [packages, syncthing]
@@ -101,7 +145,9 @@
     owner: root
     group: root
     mode: "0755"
-  when: rocky_syncthing_install_required | bool
+  when:
+    - rocky_manage_syncthing_binary | bool
+    - rocky_syncthing_install_required | bool
 
 - name: Download pinned Syncthing release
   tags: [packages, syncthing]
@@ -112,7 +158,9 @@
     owner: root
     group: root
     mode: "0644"
-  when: rocky_syncthing_install_required | bool
+  when:
+    - rocky_manage_syncthing_binary | bool
+    - rocky_syncthing_install_required | bool
 
 - name: Extract pinned Syncthing release
   tags: [packages, syncthing]
@@ -120,7 +168,9 @@
     src: "/tmp/syncthing-{{ rocky_syncthing_version }}.tar.gz"
     dest: "/tmp/syncthing-{{ rocky_syncthing_version }}"
     remote_src: true
-  when: rocky_syncthing_install_required | bool
+  when:
+    - rocky_manage_syncthing_binary | bool
+    - rocky_syncthing_install_required | bool
 
 - name: Install pinned Syncthing binary
   tags: [packages, syncthing]
@@ -136,16 +186,20 @@
     owner: root
     group: root
     mode: "0755"
-  when: rocky_syncthing_install_required | bool
+  when:
+    - rocky_manage_syncthing_binary | bool
+    - rocky_syncthing_install_required | bool
 
 - name: Remove Syncthing release archive
   tags: [packages, syncthing]
   ansible.builtin.file:
     path: "/tmp/syncthing-{{ rocky_syncthing_version }}.tar.gz"
     state: absent
+  when: rocky_manage_syncthing_binary | bool
 
 - name: Remove Syncthing extraction directory
   tags: [packages, syncthing]
   ansible.builtin.file:
     path: "/tmp/syncthing-{{ rocky_syncthing_version }}"
     state: absent
+  when: rocky_manage_syncthing_binary | bool

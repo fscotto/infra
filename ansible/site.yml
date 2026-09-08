@@ -85,6 +85,14 @@
   roles:
     - profile_atlas
 
+- name: Configure Rocky Linux server
+  hosts: rocky_server
+  become: true
+
+  roles:
+    - dotfiles_common
+    - profile_server
+
 - name: Configure personal workstation role on Fedora
   hosts: platform_fedora:&role_personal_workstation
   become: true
@@ -112,12 +120,3 @@
 
   roles:
     - profile_workstation_dev_wsl
-
-- name: Configure Ubuntu server
-  hosts: ubuntu_server
-  become: true
-
-  roles:
-    - packages_ubuntu
-    - services_systemd
-    - profile_server

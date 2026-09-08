@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora IoT, WSL, and servers.
+Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora IoT, WSL, a Rocky Linux 9 server, and an Atlas NAS.
 
 ## Source Of Truth
 - Main orchestration: `ansible/site.yml`
@@ -15,7 +15,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
 - Current laptop: `nymph = platform_fedora + graphical_desktop + desktop_gnome`
 - Void desktop profile is also the base for other future/reference hosts via `platform_void + graphical_desktop`
 - Workstation: `deadalus` is Windows + Fedora WSL.
-- Ubuntu server: `prometheus`
+- Rocky server: `prometheus` belongs to `rocky_server`.
 - NAS: `atlas` (Rocky Linux 9, reached through SSH)
 - Always-on LAN node: `aegis` (Fedora IoT on Raspberry Pi 4, reached through SSH)
 - Hosts intentionally belong to multiple groups; trust `ansible/site.yml` over hostname assumptions.
@@ -45,6 +45,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
   - Fedora laptop work: `ansible-playbook ansible/site.yml --limit nymph --check --diff`
   - WSL workstation dev: `ansible-playbook ansible/site.yml --limit deadalus --check --diff`
   - Server: `ansible-playbook ansible/site.yml --limit prometheus --check --diff`
+  - Rocky server after activation: `ansible-playbook ansible/site.yml --limit <host> --check --diff`
   - Atlas NAS: `ansible-playbook ansible/site.yml --limit atlas --check --diff`
   - Aegis IoT: `ansible-playbook ansible/site.yml --limit aegis --check --diff`
 - Focused checks:
@@ -83,7 +84,9 @@ The Void desktop package lists in `ansible/inventory/group_vars/void.yml` are ke
 - `desktop_common_packages` — GUI infrastructure shared by the minimal desktop mode.
 - `desktop_minimal_packages` — applications, integration components, and the `emptty` display manager.
 - `desktop_sway_packages` — binaries specific to the Sway session.
-`profile_packages` in the same file is cross-distro and is overridden by `group_vars/server.yml` and the workstation group vars; do not move desktop-specific Void entries through it.
+`profile_packages` remains the shared package bucket for Void and Fedora profiles. Rocky uses
+`rocky_profile_packages` so RPM-specific names do not leak back into the other platforms; do not move
+desktop-specific Void entries through either bucket.
 The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-independent content and `desktop_minimal_dotfiles` carries Thunar, Udiskie, and MIME defaults. `desktop_void_dotfiles` remains reserved for files that need the Void runtime.
 
 ## Workstation Notes
@@ -91,6 +94,16 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - Fedora WSL belongs to `platform_fedora`, `workstation_dev_fedora`, and the shared WSL layer. It must not receive Flatpak or Snap runtimes.
 - Fedora WSL installs Mise from the official `jdxcode/mise` COPR and uses its pinned Temurin Java 11 JDK; update the declared Mise version deliberately.
 - Windows applications are installed manually and are not managed from the WSL profile.
+
+## Rocky Server Notes
+- `rocky_server` is a child of both `platform_rocky` and `server`; `prometheus` is its active target.
+- The target must already provide `server_username` with local sudo access before the profile runs.
+- The Rocky profile installs Docker CE, uses firewalld, preserves SELinux enforcement, and renders the
+  same server Compose stack. It does not transfer data, start containers, update DNS, or cut over traffic.
+- `scripts/migrate_prometheus_data.sh` is the separate, source-host-run migration path. It dry-runs by
+  default and requires explicit source-stack quiescing before copying persistent Docker data with rsync.
+- Atlas-only OpenZFS, NFS, Samba, Cockpit, and Syncthing stay selected through Atlas host variables
+  and must not leak into `rocky_server`.
 
 ## Atlas NAS Notes
 - `atlas` is a remote Rocky Linux 9 NAS. Keep its connection, LAN, pool and mountpoint values in

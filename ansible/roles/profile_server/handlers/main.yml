@@ -2,5 +2,5 @@
 - name: Reload SSH service
   tags: [services]
   ansible.builtin.service:
-    name: ssh
+    name: "{{ server_sshd_service_name }}"
     state: reloaded

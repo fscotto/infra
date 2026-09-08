@@ -1,16 +1,12 @@
 ---
 
-- name: Copy server dotfiles
-  tags: [dotfiles, dotfiles:server]
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../dotfiles/server/{{ item.src }}"
-    dest: "{{ server_user_home }}/{{ item.dest }}"
-    owner: "{{ server_username }}"
-    group: "{{ server_user_group }}"
-    mode: "{{ item.mode }}"
-  loop: "{{ server_dotfiles | default([]) }}"
-  loop_control:
-    label: "{{ item.dest }}"
+- name: Require supported server firewall backend
+  tags: [services, packages]
+  ansible.builtin.assert:
+    that:
+      - server_firewall_backend == 'firewalld'
+    fail_msg: >-
+      server_firewall_backend must be firewalld for the Rocky server profile.
 
 - name: Require server container secret variables
   tags: [dotfiles, dotfiles:server, services]
@@ -30,9 +26,29 @@
     owner: "{{ item.owner }}"
     group: "{{ item.group }}"
     mode: "{{ item.mode }}"
-  loop: "{{ server_directories | default([]) }}"
+  loop: >-
+    {{
+      (server_directories | default([]))
+      + (
+          server_syncthing_directories | default([])
+          if server_syncthing_enabled | default(true) | bool
+          else []
+        )
+    }}
   loop_control:
     label: "{{ item.path }}"
+
+- name: Copy server dotfiles
+  tags: [dotfiles, dotfiles:server]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/server/{{ item.src }}"
+    dest: "{{ server_user_home }}/{{ item.dest }}"
+    owner: "{{ server_username }}"
+    group: "{{ server_user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ server_dotfiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
 
 - name: Render server templates
   tags: [dotfiles, dotfiles:server]
@@ -68,33 +84,41 @@
   notify: Reload SSH service
   when: (server_sshd_allow_users | default([])) | length > 0
 
-- name: Define effective server UFW rules
+- name: Allow server services through firewalld
   tags: [services, packages]
-  ansible.builtin.set_fact:
-    server_ufw_rules_effective: "{{ server_ufw_rules | default([]) }}"
-
-- name: Apply server UFW rules
-  tags: [services, packages]
-  community.general.ufw:
-    rule: "{{ item.rule }}"
-    name: "{{ item.name | default(omit) }}"
-    port: "{{ item.port | default(omit) }}"
-    proto: "{{ item.proto | default(omit) }}"
-    from_ip: "{{ item.src | default(omit) }}"
-    to_ip: "{{ item.dest | default(omit) }}"
-    from_port: "{{ item.from_port | default(omit) }}"
-    direction: "{{ item.direction | default(omit) }}"
-    interface: "{{ item.interface | default(omit) }}"
-    interface_in: "{{ item.interface_in | default(omit) }}"
-    interface_out: "{{ item.interface_out | default(omit) }}"
-    route: "{{ item.route | default(omit) }}"
-    comment: "{{ item.comment | default(omit) }}"
-  loop: "{{ server_ufw_rules_effective }}"
-  loop_control:
-    label: "{{ item.name | default(item.port) }}"
-
-- name: Enable UFW firewall on server
-  tags: [services, packages]
-  community.general.ufw:
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    zone: "{{ server_firewalld_zone }}"
     state: enabled
-  when: (server_ufw_rules_effective | default([])) | length > 0
+    permanent: true
+    immediate: true
+  loop: "{{ server_firewalld_services | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  when: server_firewall_backend == 'firewalld'
+
+- name: Allow server ports through firewalld
+  tags: [services, packages]
+  ansible.posix.firewalld:
+    port: "{{ item }}"
+    zone: "{{ server_firewalld_zone }}"
+    state: enabled
+    permanent: true
+    immediate: true
+  loop: "{{ server_firewalld_ports | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  when: server_firewall_backend == 'firewalld'
+
+- name: Remove disabled server ports from firewalld
+  tags: [services, packages]
+  ansible.posix.firewalld:
+    port: "{{ item }}"
+    zone: "{{ server_firewalld_zone }}"
+    state: disabled
+    permanent: true
+    immediate: true
+  loop: "{{ server_firewalld_absent_ports | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  when: server_firewall_backend == 'firewalld'

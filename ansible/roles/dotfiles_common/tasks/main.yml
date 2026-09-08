@@ -23,6 +23,7 @@
     dest: "{{ effective_user_home }}/Templates"
     owner: "{{ effective_username }}"
     group: "{{ effective_user_group }}"
+    creates: "{{ effective_user_home }}/Templates/code/main.c"
   when: "'desktop' in group_names"
 
 - name: Ensure Emacs authoring directories exist

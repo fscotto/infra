@@ -160,7 +160,7 @@ cutover. The destination SSH host key must already be trusted and the destinatio
 passwordless sudo for `rsync`. It preserves ACLs but not extended attributes, so source SELinux labels
 are not transferred; the Rocky Compose bind mounts apply their own `:Z` labels when containers start.
 
-## Aegis
+## DNS Filter
 
 `aegis` is a Raspberry Pi 4 running Fedora IoT. Generate Ignition from
 `ansible/bootstrap/aegis.bu` with the included Podman/Butane helper, then write the SD card with

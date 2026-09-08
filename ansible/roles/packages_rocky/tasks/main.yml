@@ -50,16 +50,6 @@
     state: enabled
   when: rocky_manage_openzfs_repo | bool
 
-- name: Configure official Docker RPM repository
-  tags: [packages, docker]
-  ansible.builtin.get_url:
-    url: "{{ rocky_docker_repo_url }}"
-    dest: "{{ rocky_docker_repo_file }}"
-    owner: root
-    group: root
-    mode: "0644"
-  when: rocky_manage_docker_repo | bool
-
 - name: Configure official GitHub CLI RPM repository
   tags: [packages]
   ansible.builtin.get_url:
@@ -69,15 +59,6 @@
     group: root
     mode: "0644"
   when: rocky_manage_github_cli_repo | bool
-
-- name: Remove packages conflicting with Docker CE
-  tags: [packages, docker]
-  ansible.builtin.dnf:
-    name: "{{ rocky_docker_conflicting_packages }}"
-    state: absent
-  when:
-    - rocky_manage_docker_repo | bool
-    - rocky_docker_conflicting_packages | length > 0
 
 - name: Refresh Rocky package metadata
   tags: [packages]
@@ -93,19 +74,21 @@
           (rocky_common_packages | default([]))
           + (rocky_packages_base | default([]))
           + (rocky_profile_packages | default([]))
-          + (rocky_docker_packages | default([]))
+          + (rocky_podman_packages | default([]))
           + (host_packages | default([]))
         ) | unique
       }}
     state: present
 
-- name: Add Rocky user to docker group
-  tags: [packages, docker]
-  ansible.builtin.user:
-    name: "{{ effective_username }}"
-    groups: docker
-    append: true
-  when: rocky_docker_packages | length > 0
+- name: Ensure Podman runtime socket directory exists
+  tags: [packages, podman]
+  ansible.builtin.file:
+    path: /run/podman
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: rocky_manage_podman | bool
 
 - name: Require supported architecture for Syncthing
   tags: [packages, syncthing]

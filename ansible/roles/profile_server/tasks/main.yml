@@ -67,6 +67,10 @@
     label: "{{ item.dest }}"
   no_log: "{{ item.no_log | default(false) }}"
 
+- name: Manage Podman Compose stack
+  tags: [services, podman]
+  ansible.builtin.include_tasks: podman-compose.yml
+
 - name: Disable SSH root login on server
   tags: [services]
   ansible.builtin.lineinfile:
@@ -110,19 +114,6 @@
     permanent: true
     immediate: true
   loop: "{{ server_firewalld_ports | default([]) }}"
-  loop_control:
-    label: "{{ item }}"
-  when: server_firewall_backend == 'firewalld'
-
-- name: Remove disabled server ports from firewalld
-  tags: [services, packages]
-  ansible.posix.firewalld:
-    port: "{{ item }}"
-    zone: "{{ server_firewalld_zone }}"
-    state: disabled
-    permanent: true
-    immediate: true
-  loop: "{{ server_firewalld_absent_ports | default([]) }}"
   loop_control:
     label: "{{ item }}"
   when: server_firewall_backend == 'firewalld'

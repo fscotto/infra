@@ -52,7 +52,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
   - Emacs is disabled by default; temporary Emacs check: `ansible-playbook ansible/site.yml --limit <host> --tags emacs --check --diff -e emacs_enabled=true`
   - AI coding agents: `ansible-playbook ansible/site.yml --limit <host> --tags ai_agents --check --diff`
   - Mail bootstrap: `sh -n scripts/bootstrap_mail.sh` and `shellcheck scripts/bootstrap_mail.sh`
-  - Server compose render: `docker compose -f /opt/docker/server/docker-compose.yml config`
+  - Server compose render: `podman-compose -f /opt/docker/server/docker-compose.yml config` and `systemctl status podman-compose-server`
   - DuckDNS config only: `ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff`
 
 ## Conventions
@@ -103,12 +103,17 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   and disables diffs. Provisioning does not execute the updater or change its external schedule.
 - `rocky_server` is a child of both `platform_rocky` and `server`; `prometheus` is its active target.
 - The target must already provide `server_username` with local sudo access before the profile runs.
-- The Rocky profile installs Docker CE, uses firewalld, preserves SELinux enforcement, and renders the
-  same server Compose stack. It does not transfer data, start containers, update DNS, or cut over traffic.
+- The Rocky profile installs Podman and podman-compose, uses firewalld, preserves SELinux enforcement, and renders the
+  same server Compose stack with a `podman-compose-server` systemd unit. It does not start, enable, transfer data,
+  update DNS, or cut over traffic; activating the stack is a manual step.
+- Firewalld enables SSH, Cockpit (`9090/tcp`), HTTP and HTTPS. Nginx Proxy Manager publishes `80/tcp` and
+  `443/tcp`; bind its administration interface only to `127.0.0.1:81` and use `npm-tunnel` from Ikaros or Nymph.
+  Nextcloud remains disabled; do not provision `/srv/nextcloud` directories.
 - `scripts/migrate_prometheus_data.sh` is the separate, source-host-run migration path. It dry-runs by
   default and requires explicit source-stack quiescing before copying persistent Docker data with rsync.
-- Atlas-only OpenZFS, NFS, Samba, Cockpit, and Syncthing stay selected through Atlas host variables
-  and must not leak into `rocky_server`.
+- Atlas-only OpenZFS, NFS, Samba, and Syncthing stay selected through Atlas host variables and must not
+  leak into `rocky_server`. Cockpit plus its Navigator and Podman extensions are selected explicitly for
+  Prometheus through its host variables.
 
 ## Atlas NAS Notes
 - `atlas` is a remote Rocky Linux 9 NAS. Keep its connection, LAN, pool and mountpoint values in

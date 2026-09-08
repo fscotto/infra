@@ -86,14 +86,6 @@ server_directories:
     owner: root
     group: root
     mode: "0755"
-  - path: /srv/nextcloud
-    owner: root
-    group: root
-    mode: "0755"
-  - path: /srv/nextcloud/data
-    owner: root
-    group: root
-    mode: "0755"
 
 server_syncthing_enabled: true
 server_syncthing_directories:

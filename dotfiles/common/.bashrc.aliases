@@ -1,2 +1,5 @@
 # Additional Bash aliases.
 # Keep this file as the extension point for shared aliases.
+
+# Nginx Proxy Manager administration tunnel on Prometheus.
+alias npm-tunnel='ssh -N -o ExitOnForwardFailure=yes -L 8181:127.0.0.1:81 rocky@179.237.102.172'

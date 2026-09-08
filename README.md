@@ -104,10 +104,15 @@ That gives it Fedora packages through DNF, Docker from the official repository, 
 dotfiles and templates. The profile provisions configuration only: it does not transfer data, start
 the Compose stack, update DNS, or perform a cutover.
 
-The server profile installs platform-specific packages, Docker CE from the official repository,
-declared systemd services, the server Compose stack, and firewalld. The Rocky server excludes
+The server profile installs platform-specific packages, Podman and podman-compose,
+declared systemd services, the server Compose stack behind the `podman-compose-server` systemd unit, and firewalld. The Rocky server excludes
 Syncthing. Rocky bind mounts use private SELinux relabeling for application data while host system
 files remain unchanged.
+
+Firewalld enables SSH, Cockpit (`9090/tcp`), HTTP and HTTPS. Nginx Proxy Manager publishes only
+`80/tcp` and `443/tcp`; its administration interface is bound to `127.0.0.1:81` and can be reached
+from Ikaros or Nymph with the `npm-tunnel` Bash alias. Nextcloud remains disabled and the profile
+does not provision any `/srv/nextcloud` directories.
 
 Server identity comes from `server_username`, `server_user_group`, and `server_user_home` in `ansible/inventory/group_vars/server.yml`. `server_username` defaults to `username`, but it can be overridden, for example:
 
@@ -378,7 +383,7 @@ ansible-playbook ansible/site.yml --limit <host> --tags <tag1>,<tag2> --check --
 ansible-playbook ansible/site.yml --limit <host> --start-at-task "<task name>" --check --diff
 ansible-lint ansible/roles/<role>
 yamllint ansible/path/to/file.yml
-docker compose -f /opt/docker/server/docker-compose.yml config
+podman-compose -f /opt/docker/server/docker-compose.yml config
 ```
 
 ## Tags

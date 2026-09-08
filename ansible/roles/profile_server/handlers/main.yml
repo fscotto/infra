@@ -4,3 +4,8 @@
   ansible.builtin.service:
     name: "{{ server_sshd_service_name }}"
     state: reloaded
+
+- name: Reload systemd for Podman Compose
+  tags: [services]
+  ansible.builtin.systemd:
+    daemon_reload: true

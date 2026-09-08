@@ -178,11 +178,15 @@ Profilo orientato a servizi server e gestione di dotfiles dedicati.
 Lo stato attuale del profilo server include:
 
 - installazione pacchetti Rocky via DNF, EPEL e CRB
-- installazione e configurazione di Docker dal repository ufficiale
+- installazione di Podman e podman-compose
 - abilitazione dei servizi systemd dichiarati in inventory/group vars
-- copia dei dotfiles server e rendering dei template server, incluso il `docker-compose.yml` dello stack servizi
-- attivazione di firewalld con servizio SSH esplicitamente abilitato
+- copia dei dotfiles server e rendering dei template server, incluso il `docker-compose.yml` dello stack servizi e dell'unit `podman-compose-server` (attivazione manuale)
+- attivazione di firewalld con SSH, Cockpit (`9090/tcp`), HTTP e HTTPS abilitati
 - Syncthing escluso dal profilo server Rocky
+
+Nginx Proxy Manager pubblica solo `80/tcp` e `443/tcp`; la sua interfaccia di amministrazione e
+associata a `127.0.0.1:81` ed e raggiungibile da Ikaros o Nymph con l'alias Bash `npm-tunnel`.
+Nextcloud resta disabilitato e il profilo non crea directory `/srv/nextcloud`.
 
 ### DuckDNS
 
@@ -450,7 +454,7 @@ ansible-playbook ansible/site.yml --limit <host> --tags <tag1>,<tag2> --check --
 ansible-playbook ansible/site.yml --limit <host> --start-at-task "<task name>" --check --diff
 ansible-lint ansible/roles/<role>
 yamllint ansible/path/to/file.yml
-docker compose -f /opt/docker/server/docker-compose.yml config
+podman-compose -f /opt/docker/server/docker-compose.yml config
 ```
 
 ## Tag supportati dal playbook

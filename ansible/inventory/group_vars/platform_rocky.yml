@@ -18,11 +18,9 @@ rocky_syncthing_archive_url: >-
 
 rocky_manage_openzfs_repo: false
 rocky_manage_syncthing_binary: false
-rocky_manage_docker_repo: false
+rocky_manage_podman: false
 rocky_manage_github_cli_repo: false
 
-rocky_docker_repo_url: https://download.docker.com/linux/rhel/docker-ce.repo
-rocky_docker_repo_file: /etc/yum.repos.d/docker-ce.repo
 rocky_github_cli_repo_url: https://cli.github.com/packages/rpm/gh-cli.repo
 rocky_github_cli_repo_file: /etc/yum.repos.d/gh-cli.repo
 
@@ -47,8 +45,8 @@ rocky_packages_base:
   - firewalld
   - openssh-server
   - rsync
+  - selinux-policy-targeted
   - sudo
 
 rocky_profile_packages: []
-rocky_docker_packages: []
-rocky_docker_conflicting_packages: []
+rocky_podman_packages: []

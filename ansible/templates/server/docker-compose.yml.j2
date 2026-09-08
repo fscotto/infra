@@ -1,10 +1,10 @@
 ---
 {% set selinux_volume_option = server_compose_selinux_mount_option | default('') %}
-version: "3.8"
+name: server
 
 services:
   navidrome:
-    image: deluan/navidrome:latest
+    image: docker.io/deluan/navidrome:latest
     container_name: navidrome
     restart: unless-stopped
     expose:
@@ -23,19 +23,18 @@ services:
     depends_on:
       - navidromedb
   nginx-proxy-manager:
-    image: jc21/nginx-proxy-manager:latest
+    image: docker.io/jc21/nginx-proxy-manager:latest
     container_name: nginx-proxy-manager
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
-      - "81:81"
+      - "127.0.0.1:81:81"
     volumes:
       - "/opt/npm/data:/data{{ ':' ~ selinux_volume_option if selinux_volume_option else '' }}"
       - "/opt/npm/letsencrypt:/etc/letsencrypt{{ ':' ~ selinux_volume_option if selinux_volume_option else '' }}"
     networks:
       - web
-      - gitea
 
   # Disabled: prometheus does not have enough resources to run Nextcloud AIO.
   # nextcloud-aio-mastercontainer:
@@ -57,7 +56,7 @@ services:
   #     - web
 
   navidromedb:
-    image: postgres:13
+    image: docker.io/library/postgres:13
     container_name: navidromedb
     restart: unless-stopped
     mem_limit: 2048m
@@ -78,7 +77,7 @@ services:
       - USER_GID=1100
     restart: always
     networks:
-      - gitea
+      - web
     volumes:
       - /opt/gitea/data:/data{{ ':' ~ selinux_volume_option if selinux_volume_option else '' }}
       - /etc/timezone:/etc/timezone:ro
@@ -90,7 +89,7 @@ services:
 
 {% if server_syncthing_enabled | default(true) | bool %}
   syncthing:
-    image: syncthing/syncthing:2
+    image: docker.io/syncthing/syncthing:2
     container_name: syncthing
     hostname: syncthing
     restart: unless-stopped
@@ -110,8 +109,6 @@ services:
 networks:
   web:
     name: server_web
-    external: false
-  gitea:
     external: false
 
 # volumes:

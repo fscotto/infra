@@ -8,18 +8,6 @@
     fail_msg: >-
       server_firewall_backend must be firewalld for the Rocky server profile.
 
-- name: Copy server dotfiles
-  tags: [dotfiles, dotfiles:server]
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../dotfiles/server/{{ item.src }}"
-    dest: "{{ server_user_home }}/{{ item.dest }}"
-    owner: "{{ server_username }}"
-    group: "{{ server_user_group }}"
-    mode: "{{ item.mode }}"
-  loop: "{{ server_dotfiles | default([]) }}"
-  loop_control:
-    label: "{{ item.dest }}"
-
 - name: Require server container secret variables
   tags: [dotfiles, dotfiles:server, services]
   ansible.builtin.assert:
@@ -49,6 +37,18 @@
     }}
   loop_control:
     label: "{{ item.path }}"
+
+- name: Copy server dotfiles
+  tags: [dotfiles, dotfiles:server]
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/server/{{ item.src }}"
+    dest: "{{ server_user_home }}/{{ item.dest }}"
+    owner: "{{ server_username }}"
+    group: "{{ server_user_group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ server_dotfiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
 
 - name: Render server templates
   tags: [dotfiles, dotfiles:server]

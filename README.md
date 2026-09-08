@@ -52,8 +52,8 @@ common user environment
 | `ikaros` | Fedora | Personal workstation | GNOME |
 | `nymph` | Fedora | Desktop laptop | GNOME |
 | `deadalus` | Fedora WSL | Development workstation | — |
-| `prometheus` | Rocky 9 | Server | — |
-| `atlas` | Rocky 9 | NAS | — |
+| `prometheus` | Rocky Linux | Server | — |
+| `atlas` | Rocky Linux | NAS | — |
 
 ```text
 ikaros must be boring
@@ -118,6 +118,28 @@ ansible-playbook ansible/site.yml --limit prometheus \
 ```
 
 The target must already provide `server_username` with local sudo access.
+
+### Data migration
+
+Provision Rocky first, then run the migration script **on the retired Ubuntu source host**. It is
+dry-run by default and requires an explicit source-stack stop before it can copy PostgreSQL data:
+
+```bash
+sudo ./scripts/migrate_prometheus_data.sh \
+  --destination rocky@179.237.102.172 \
+  --identity /root/.ssh/id_ed25519
+
+sudo ./scripts/migrate_prometheus_data.sh \
+  --destination rocky@179.237.102.172 \
+  --identity /root/.ssh/id_ed25519 \
+  --quiesce-source --execute
+```
+
+The script copies Navidrome, music, Nginx Proxy Manager, PostgreSQL and Gitea data. It does not
+delete data, move Syncthing, copy `/home/git/.ssh`, start containers, update DNS, or perform a
+cutover. The destination SSH host key must already be trusted and the destination account needs
+passwordless sudo for `rsync`. It preserves ACLs but not extended attributes, so source SELinux labels
+are not transferred; the Rocky Compose bind mounts apply their own `:Z` labels when containers start.
 
 ## NAS
 

@@ -96,6 +96,8 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - The target must already provide `server_username` with local sudo access before the profile runs.
 - The Rocky profile installs Docker CE, uses firewalld, preserves SELinux enforcement, and renders the
   same server Compose stack. It does not transfer data, start containers, update DNS, or cut over traffic.
+- `scripts/migrate_prometheus_data.sh` is the separate, source-host-run migration path. It dry-runs by
+  default and requires explicit source-stack quiescing before copying persistent Docker data with rsync.
 - Atlas-only OpenZFS, NFS, Samba, Cockpit, and Syncthing stay selected through Atlas host variables
   and must not leak into `rocky_server`.
 

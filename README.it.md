@@ -73,8 +73,8 @@ Matrice target:
 | ikaros       | Fedora   | Personal workstation | GNOME   |
 | nymph        | Fedora   | Desktop laptop       | GNOME   |
 | deadalus     | Fedora WSL | Workstation dev    | —       |
-| prometheus   | Rocky 9  | Server               | —       |
-| atlas        | Rocky 9 | NAS                  | —       |
+| prometheus   | Rocky Linux | Server            | —       |
+| atlas        | Rocky Linux | NAS               | —       |
 
 Regola operativa:
 
@@ -183,6 +183,13 @@ Lo stato attuale del profilo server include:
 - copia dei dotfiles server e rendering dei template server, incluso il `docker-compose.yml` dello stack servizi
 - attivazione di firewalld con servizio SSH esplicitamente abilitato
 - Syncthing escluso dal profilo server Rocky
+
+### Migrazione dati
+
+Dopo il provisioning Rocky, eseguire `scripts/migrate_prometheus_data.sh` **sul server Ubuntu
+sorgente**. Lo script usa rsync, e in dry-run di default; richiede `--quiesce-source --execute` per
+fermare lo stack sorgente e copiare in modo consistente i dati PostgreSQL. Non avvia container, non
+cancella dati e non esegue il cutover.
 
 Utente del profilo server:
 

@@ -1,5 +1,5 @@
 ---
-{%- set selinux_volume_option = server_compose_selinux_mount_option | default('') %}
+{% set selinux_volume_option = server_compose_selinux_mount_option | default('') %}
 version: "3.8"
 
 services:

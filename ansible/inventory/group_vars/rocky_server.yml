@@ -38,7 +38,6 @@ rocky_docker_conflicting_packages:
   - docker-latest
   - docker-latest-logrotate
   - docker-logrotate
-  - podman
   - runc
 
 enabled_services:

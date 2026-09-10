@@ -10,6 +10,19 @@
   notify: Reload NFS exports
   when: atlas_manage_storage | bool
 
+- name: Enable Atlas file-sharing services
+  tags: [atlas, sharing, services]
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - nfs-server.service
+    - smb.service
+  loop_control:
+    label: "{{ item }}"
+  when: atlas_manage_storage | bool
+
 - name: Configure Atlas NFSv4-only service
   tags: [atlas, sharing]
   ansible.builtin.template:
@@ -82,106 +95,50 @@
   notify: Restart Samba service
   when: atlas_manage_storage | bool
 
-- name: Require Atlas Samba password
+- name: Require Vault-backed Atlas Samba accounts
   tags: [atlas, sharing]
   ansible.builtin.assert:
     that:
-      - atlas_samba_password | length > 0
-    fail_msg: Define vault_atlas_samba_password before enabling Atlas storage.
+      - atlas_samba_accounts | length > 0
+      - >-
+        atlas_samba_accounts | map(attribute='username') | list
+        | difference(atlas_samba_valid_users) | length == 0
+      - >-
+        atlas_samba_valid_users
+        | difference(atlas_samba_accounts | map(attribute='username') | list) | length == 0
+      - atlas_samba_accounts | selectattr('password', 'equalto', '') | list | length == 0
+    fail_msg: Define every authorized Samba account and its Vault-backed password.
   no_log: true
-  when: atlas_manage_storage | bool
-
-- name: Read Atlas Samba account
-  tags: [atlas, sharing]
-  ansible.builtin.command:
-    argv:
-      - pdbedit
-      - --list
-      - --user
-      - "{{ atlas_admin_username }}"
-  register: atlas_samba_account
-  changed_when: false
-  failed_when: false
   when: atlas_manage_storage | bool
 
 - name: Ensure Atlas Samba private state directory exists
   tags: [atlas, sharing]
   ansible.builtin.file:
-    path: "{{ atlas_samba_password_marker | dirname }}"
+    path: "{{ atlas_samba_password_marker_dir }}"
     state: directory
     owner: root
     group: root
     mode: "0700"
   when: atlas_manage_storage | bool
 
-- name: Check Atlas Samba password marker
+- name: Manage Vault-backed Atlas Samba credentials
   tags: [atlas, sharing]
-  ansible.builtin.stat:
-    path: "{{ atlas_samba_password_marker }}"
-  register: atlas_samba_password_marker_stat
-  when: atlas_manage_storage | bool
-
-- name: Read Atlas Samba password marker
-  tags: [atlas, sharing]
-  ansible.builtin.slurp:
-    src: "{{ atlas_samba_password_marker }}"
-  register: atlas_samba_password_marker_content
-  no_log: true
-  when:
-    - atlas_manage_storage | bool
-    - atlas_samba_password_marker_stat.stat.exists
-
-- name: Determine whether Atlas Samba credentials must change
-  tags: [atlas, sharing]
-  ansible.builtin.set_fact:
-    atlas_samba_password_digest: "{{ atlas_samba_password | hash('sha256') }}"
-    atlas_samba_password_update_required: >-
-      {{
-        atlas_samba_account.rc != 0
-        or not atlas_samba_password_marker_stat.stat.exists
-        or (
-          atlas_samba_password_marker_content.content | default('')
-          | b64decode | trim
-        ) != (atlas_samba_password | hash('sha256'))
-      }}
+  ansible.builtin.include_tasks: samba_account.yml
+  loop: "{{ atlas_samba_accounts }}"
+  loop_control:
+    loop_var: atlas_samba_account
+    label: "{{ atlas_samba_account.username }}"
   no_log: true
   when: atlas_manage_storage | bool
-
-- name: Set Atlas Samba account password
-  tags: [atlas, sharing]
-  ansible.builtin.command:
-    argv:
-      - smbpasswd
-      - -s
-      - -a
-      - "{{ atlas_admin_username }}"
-    stdin: "{{ atlas_samba_password }}\n{{ atlas_samba_password }}"
-  changed_when: true
-  no_log: true
-  when:
-    - atlas_manage_storage | bool
-    - atlas_samba_password_update_required | bool
-
-- name: Record managed Atlas Samba password digest
-  tags: [atlas, sharing]
-  ansible.builtin.copy:
-    content: "{{ atlas_samba_password_digest }}\n"
-    dest: "{{ atlas_samba_password_marker }}"
-    owner: root
-    group: root
-    mode: "0600"
-  no_log: true
-  when:
-    - atlas_manage_storage | bool
-    - atlas_samba_password_update_required | bool
 
 - name: Require completed Atlas firewall placeholders
   tags: [atlas, sharing, services]
   ansible.builtin.assert:
     that:
       - atlas_lan_subnet != 'CHANGEME_LAN_SUBNET'
+      - atlas_aegis_ip != 'CHANGEME_AEGIS_IP'
       - atlas_firewalld_zone | length > 0
-    fail_msg: Replace the Atlas LAN subnet and firewall zone placeholders.
+    fail_msg: Replace the Atlas LAN, Aegis and firewall-zone placeholders.
   when: atlas_manage_firewall | bool
 
 - name: Apply Atlas firewalld rich rules

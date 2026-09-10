@@ -11,5 +11,8 @@
 - name: Import Atlas file sharing tasks
   ansible.builtin.import_tasks: sharing.yml
 
+- name: Import Atlas media-container tasks
+  ansible.builtin.import_tasks: containers.yml
+
 - name: Import Atlas Syncthing tasks
   ansible.builtin.import_tasks: syncthing.yml

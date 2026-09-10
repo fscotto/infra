@@ -5,12 +5,52 @@
     atlas_zfs_datasets:
       - name: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_work }}"
         mountpoint: "{{ atlas_work_mountpoint }}"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        properties:
+          mountpoint: "{{ atlas_work_mountpoint }}"
+      - name: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_archive }}"
+        mountpoint: "{{ atlas_archive_mountpoint }}"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        properties:
+          compression: zstd
+          mountpoint: "{{ atlas_archive_mountpoint }}"
+      - name: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_music }}"
+        mountpoint: "{{ atlas_music_mountpoint }}"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        properties:
+          compression: lz4
+          mountpoint: "{{ atlas_music_mountpoint }}"
       - name: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_syncthing }}"
         mountpoint: "{{ atlas_syncthing_mountpoint }}"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        properties:
+          compression: lz4
+          mountpoint: "{{ atlas_syncthing_mountpoint }}"
       - name: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_backup_prometheus }}"
         mountpoint: "{{ atlas_backup_prometheus_mountpoint }}"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        properties:
+          mountpoint: "{{ atlas_backup_prometheus_mountpoint }}"
       - name: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_icloud_photos }}"
         mountpoint: "{{ atlas_icloud_photos_mountpoint }}"
+        owner: "{{ atlas_immich_username }}"
+        group: "{{ atlas_immich_group }}"
+        properties:
+          compression: lz4
+          mountpoint: "{{ atlas_icloud_photos_mountpoint }}"
+      - name: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_service_backups }}"
+        mountpoint: "{{ atlas_service_backups_mountpoint }}"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        properties:
+          compression: lz4
+          mountpoint: "{{ atlas_service_backups_mountpoint }}"
+          refreservation: "{{ atlas_zfs_service_backups_refreservation }}"
 
 - name: Require completed Atlas storage placeholders
   tags: [atlas, storage]
@@ -56,8 +96,7 @@
   community.general.zfs:
     name: "{{ item.name }}"
     state: present
-    extra_zfs_properties:
-      mountpoint: "{{ item.mountpoint }}"
+    extra_zfs_properties: "{{ item.properties }}"
   loop: "{{ atlas_zfs_datasets }}"
   loop_control:
     label: "{{ item.name }}"
@@ -68,8 +107,8 @@
   ansible.builtin.file:
     path: "{{ item.mountpoint }}"
     state: directory
-    owner: "{{ atlas_admin_username }}"
-    group: "{{ atlas_admin_group }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
     mode: "0770"
   loop: "{{ atlas_zfs_datasets }}"
   loop_control:

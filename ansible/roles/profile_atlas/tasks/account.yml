@@ -6,6 +6,7 @@
       - atlas_admin_username != 'CHANGEME_ATLAS_ADMIN'
       - (atlas_admin_ssh_keys | default([])) | length > 0
       - atlas_admin_password_hash not in ['', '!', '*']
+      - "'wheel' not in atlas_immich_supplementary_groups"
     fail_msg: >-
       Define atlas_admin_username, vault_atlas_authorized_ssh_keys and
       vault_atlas_admin_password_hash before applying the Atlas profile.
@@ -30,6 +31,41 @@
     create_home: true
     state: present
   no_log: true
+
+- name: Create Immich primary group
+  tags: [atlas, accounts, containers, immich]
+  ansible.builtin.group:
+    name: "{{ atlas_immich_group }}"
+    gid: "{{ atlas_immich_gid }}"
+    state: present
+
+- name: Ensure Immich hardware-access groups exist
+  tags: [atlas, accounts, containers, immich]
+  ansible.builtin.group:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ atlas_immich_supplementary_groups }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Create unprivileged Immich account
+  tags: [atlas, accounts, containers, immich]
+  ansible.builtin.user:
+    name: "{{ atlas_immich_username }}"
+    uid: "{{ atlas_immich_uid }}"
+    group: "{{ atlas_immich_group }}"
+    groups: "{{ atlas_immich_supplementary_groups }}"
+    append: false
+    home: /nonexistent
+    create_home: false
+    shell: /sbin/nologin
+    system: true
+    state: present
+
+- name: Read Immich hardware-access group IDs
+  tags: [atlas, accounts, containers, immich]
+  ansible.builtin.getent:
+    database: group
 
 - name: Grant Atlas administrator passwordless sudo
   tags: [atlas, services]

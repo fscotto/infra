@@ -180,13 +180,28 @@ Lo stato attuale del profilo server include:
 - installazione pacchetti Rocky via DNF, EPEL e CRB
 - installazione di Podman e podman-compose
 - abilitazione dei servizi systemd dichiarati in inventory/group vars
-- copia dei dotfiles server e rendering dei template server, incluso il `docker-compose.yml` dello stack servizi e dell'unit `podman-compose-server` (attivazione manuale)
+- copia dei dotfiles server e rendering del `docker-compose.yml` per Nginx Proxy Manager, Gitea e il
+  database PostgreSQL esistente di Navidrome, piu l'unita `podman-compose-server` (attivazione manuale)
+- mount di `/pool/media/music` da Atlas su `/mnt/music_atlas` tramite il servizio di sistema
+  `rclone-music.service`, e Navidrome tramite Quadlet utente rootless
 - attivazione di firewalld con SSH, Cockpit (`9090/tcp`), HTTP e HTTPS abilitati
 - Syncthing escluso dal profilo server Rocky
 
 Nginx Proxy Manager pubblica solo `80/tcp` e `443/tcp`; la sua interfaccia di amministrazione e
 associata a `127.0.0.1:81` ed e raggiungibile da Ikaros o Nymph con l'alias Bash `npm-tunnel`.
 Nextcloud resta disabilitato e il profilo non crea directory `/srv/nextcloud`.
+
+Il mount musicale e protetto da `server_atlas_music_enabled`. Prima di abilitarlo, sostituire
+l'indirizzo WireGuard e la chiave host SSH fissata in `host_vars/prometheus.yml`, quindi fornire
+`vault_prometheus_atlas_sftp_private_key` tramite Vault cifrato o variabili locali non tracciate. La
+chiave pubblica corrispondente deve essere gia presente nelle chiavi autorizzate gestite su Atlas.
+Rclone usa il percorso remoto esatto `/pool/media/music` in sola lettura e una cache VFS completa da
+`15G`; systemd lingering mantiene disponibile il manager utente per il Quadlet rootless.
+Configurare il proxy host NPM di Prometheus per Navidrome come `host.containers.internal:4533`; la
+porta Navidrome non viene aperta in firewalld.
+Prima della prima attivazione, arrestare il vecchio container rootful `navidrome`. Il ruolo rifiuta
+di avviare il sostituto rootless mentre il container precedente e in esecuzione e non rimuove mai
+automaticamente il container o i dati esistenti.
 
 ### DuckDNS
 
@@ -239,9 +254,10 @@ solo i dataset figli e non deve mai creare, partizionare, distruggere, fare roll
 pool. I client Linux usano NFSv4, quelli Windows/WSL SMB; entrambi restano limitati alla LAN
 configurata.
 
-Per il primo avvio sostituire i placeholder Atlas e fornire
-`vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash` e
-`vault_atlas_samba_password`. Eseguire il bootstrap tramite l'amministratore esistente:
+Per il primo avvio sostituire i placeholder di host, pool, mount root, LAN e IP di Aegis e
+fornire `vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash`,
+`vault_atlas_samba_password` e `vault_atlas_immich_db_password`. Eseguire il bootstrap tramite
+l'amministratore esistente:
 
 ```bash
 ansible-playbook ansible/site.yml --limit atlas \
@@ -251,11 +267,26 @@ ansible-playbook ansible/site.yml --limit atlas \
 `vault_atlas_admin_password_hash` deve essere un hash compatibile con `/etc/shadow`, non una
 password Cockpit in chiaro. Le esecuzioni successive usano `atlas_admin_username`. Abilitare
 `atlas_manage_storage` solo dopo aver verificato pool e mountpoint esistenti; abilitare
-`atlas_manage_firewall` solo dopo aver verificato subnet LAN e zona firewalld attiva.
+`atlas_manage_firewall` solo dopo aver verificato subnet LAN e zona firewalld attiva. Abilitare
+`atlas_manage_media_stack` per ultimo, dopo aver verificato `/dev/dri`, i percorsi dei container e il
+segreto del database Immich.
 
-Restano da implementare retention delle snapshot, topologia Syncthing, VPN, pull da Prometheus,
-backup cifrati con Borg su una Hetzner Storage Box, backup USB, monitoraggio e test di disaster
-recovery. Il backlog operativo dettagliato e in `AGENTS.md`.
+Con la gestione storage attiva, Atlas crea `archive` (`zstd`), `media/music` (`lz4`),
+`media/icloud_photos` (`lz4`) e `backups/services` (`lz4`, `refreservation=500G`) sotto il pool
+preesistente. I dataset esistenti Work, Syncthing e backup Prometheus restano gestiti e separati.
+SMB3 pubblica `Archive` solo agli account Samba configurati con password in Vault e ammette la LAN
+configurata senza esclusioni specifiche per host. NFSv4 esporta soltanto
+`media/icloud_photos` all'IP configurato di Aegis con `all_squash` verso UID/GID anonimi `1100`.
+
+L'account di sistema `immich` usa UID/GID `1100`, shell senza login, nessuna appartenenza a `wheel` e
+i gruppi supplementari `video` e `render`. I Quadlet rootful di Immich Server, ML, cache compatibile
+Redis, PostgreSQL e NPM condividono una rete Podman. Immich viene eseguito come `1100:1100`; Server e
+ML ricevono `/dev/dri` e la libreria iCloud Photos e montata in sola lettura. NPM pubblica `80` e
+`443`, mentre l'amministrazione resta vincolata a `127.0.0.1:81` per l'accesso tramite tunnel SSH.
+
+Restano da completare retention delle snapshot, topologia Syncthing, validazione WireGuard/firewall,
+pull di backup da Prometheus, backup cifrati con Borg su una Hetzner Storage Box, backup USB,
+monitoraggio e test di disaster recovery. Il backlog operativo dettagliato e in `AGENTS.md`.
 
 ---
 
@@ -348,7 +379,8 @@ Questo significa che, allo stato attuale:
 - `deadalus` riceve il profilo Fedora WSL tramite play dev dedicati
 - il server Rocky (`prometheus`) e gestito con pacchetti, servizi, dotfiles server e firewalld
 - il NAS Rocky (`atlas`) usa un pool ZFS gia esistente, condivisioni NFSv4/SMB limitate alla LAN e Cockpit/45Drives
-- lo stack container server include `navidrome`, `postgres`, `gitea` e `nginx-proxy-manager`
+- lo stack Compose server include `gitea`, `nginx-proxy-manager` e il database PostgreSQL di
+  Navidrome; Navidrome usa un Quadlet rootless separato e legge il mount rclone di Atlas
 
 # Dotfiles
 
@@ -455,6 +487,8 @@ ansible-playbook ansible/site.yml --limit <host> --start-at-task "<task name>" -
 ansible-lint ansible/roles/<role>
 yamllint ansible/path/to/file.yml
 podman-compose -f /opt/docker/server/docker-compose.yml config
+ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff
+ansible-playbook ansible/site.yml --limit prometheus --tags rclone,navidrome --check --diff
 ```
 
 ## Tag supportati dal playbook
@@ -471,6 +505,8 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | --- | --- | --- |
 | `always` | pre-task sempre eseguiti, inclusi caricamento vault e validazioni preliminari | common |
 | `ai_agents` | installazione agenti AI condivisi | Fedora, WSL |
+| `atlas` | account, storage, condivisioni e container Atlas | NAS Atlas |
+| `containers` | Quadlet rootful Atlas | NAS Atlas |
 | `dotfiles` | distribuzione/configurazione dotfiles | tutti i profili |
 | `dotfiles:common` | dotfiles comuni condivisi | common, workstation, server |
 | `dotfiles:desktop` | dotfiles desktop | desktop Void, Fedora/GNOME |
@@ -484,13 +520,19 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `fzf` | configurazione FZF | dotfiles comuni |
 | `git` | configurazione Git e GPG desktop | Fedora/GNOME, desktop Void |
 | `gnome` | configurazione host GNOME | Fedora/GNOME desktop |
+| `immich` | account e Quadlet Immich | NAS Atlas |
+| `navidrome` | mount rclone e Quadlet Navidrome rootless | Prometheus |
 | `sway` | sessione/configurazione sway / SwayFX (Wayland) | desktop Void |
 | `niri` | sessione/configurazione Niri (Wayland) | desktop Void |
 | `npm` | installazione pacchetti npm globali | Fedora/GNOME, desktop Void, WSL |
 | `nvidia` | componenti NVIDIA desktop | desktop Void |
 | `packages` | installazione e aggiornamento pacchetti | tutti i profili |
+| `podman` | integrazione Podman Compose e Quadlet rootless | server |
+| `rclone` | mount musica Atlas | Prometheus |
 | `portal` | configurazione xdg-desktop-portal | desktop Void |
 | `services` | gestione servizi runit/systemd | tutti i profili |
+| `sharing` | condivisioni NFSv4 e SMB3 | NAS Atlas |
+| `storage` | dataset ZFS figli | NAS Atlas |
 | `theme` | configurazione del tema GTK/Qt | desktop Void |
 | `tmux` | configurazione e plugin tmux | desktop Fedora/Void, WSL |
 | `vim` | configurazione Vim | dotfiles comuni |

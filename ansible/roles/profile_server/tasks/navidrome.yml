@@ -1,0 +1,114 @@
+---
+- name: Read server account details for rootless Navidrome
+  tags: [services, podman, rclone, navidrome]
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ server_username }}"
+  when: server_atlas_music_enabled | bool
+
+- name: Check for a running legacy rootful Navidrome container
+  tags: [services, podman, navidrome]
+  ansible.builtin.command:
+    argv:
+      - podman
+      - container
+      - inspect
+      - --format
+      - "{{ '{{.State.Running}}' }}"
+      - navidrome
+  register: server_legacy_navidrome_container
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: server_atlas_music_enabled | bool
+
+- name: Refuse concurrent legacy and rootless Navidrome
+  tags: [services, podman, navidrome]
+  ansible.builtin.assert:
+    that:
+      - >-
+        server_legacy_navidrome_container.rc != 0
+        or server_legacy_navidrome_container.stdout | trim != 'true'
+    fail_msg: >-
+      Stop the legacy rootful Navidrome container before enabling the rootless Quadlet.
+      The playbook does not remove the old container or its data automatically.
+  when: server_atlas_music_enabled | bool
+
+- name: Enable lingering for rootless Navidrome
+  tags: [services, podman, navidrome]
+  ansible.builtin.command:
+    argv:
+      - loginctl
+      - enable-linger
+      - "{{ server_username }}"
+    creates: "/var/lib/systemd/linger/{{ server_username }}"
+  when: server_atlas_music_enabled | bool
+
+- name: Start server user systemd manager
+  tags: [services, podman, navidrome]
+  ansible.builtin.systemd:
+    name: "user@{{ ansible_facts['getent_passwd'][server_username][1] }}.service"
+    state: started
+  when:
+    - server_atlas_music_enabled | bool
+    - not ansible_check_mode
+
+- name: Create rootless Navidrome Quadlet directory
+  tags: [services, podman, navidrome]
+  ansible.builtin.file:
+    path: "{{ server_navidrome_quadlet_dir }}"
+    state: directory
+    owner: "{{ server_username }}"
+    group: "{{ server_user_group }}"
+    mode: "0700"
+  when: server_atlas_music_enabled | bool
+
+- name: Create private rootless Navidrome configuration directory
+  tags: [services, podman, navidrome]
+  ansible.builtin.file:
+    path: "{{ server_navidrome_env_dir }}"
+    state: directory
+    owner: "{{ server_username }}"
+    group: "{{ server_user_group }}"
+    mode: "0700"
+  when: server_atlas_music_enabled | bool
+
+- name: Render Vault-backed rootless Navidrome environment
+  tags: [services, podman, navidrome]
+  ansible.builtin.template:
+    src: navidrome.env.j2
+    dest: "{{ server_navidrome_env_file }}"
+    owner: "{{ server_username }}"
+    group: "{{ server_user_group }}"
+    mode: "0600"
+  no_log: true
+  diff: false
+  notify: Restart rootless Navidrome
+  when: server_atlas_music_enabled | bool
+
+- name: Render rootless Navidrome Quadlet
+  tags: [services, podman, navidrome]
+  ansible.builtin.template:
+    src: navidrome.container.j2
+    dest: "{{ server_navidrome_quadlet_dir }}/navidrome.container"
+    owner: "{{ server_username }}"
+    group: "{{ server_user_group }}"
+    mode: "0644"
+  notify: Restart rootless Navidrome
+  when: server_atlas_music_enabled | bool
+
+- name: Start rootless Navidrome Quadlet
+  tags: [services, podman, navidrome]
+  become_user: "{{ server_username }}"
+  ansible.builtin.systemd:
+    name: navidrome.service
+    scope: user
+    state: started
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ ansible_facts['getent_passwd'][server_username][1] }}"
+    DBUS_SESSION_BUS_ADDRESS: >-
+      unix:path=/run/user/{{ ansible_facts['getent_passwd'][server_username][1] }}/bus
+  when:
+    - server_atlas_music_enabled | bool
+    - not ansible_check_mode

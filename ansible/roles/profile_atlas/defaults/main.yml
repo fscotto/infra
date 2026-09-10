@@ -8,20 +8,36 @@ atlas_admin_gid: 1000
 atlas_admin_ssh_keys: []
 atlas_admin_password_hash: "!"
 
+atlas_immich_username: immich
+atlas_immich_group: immich
+atlas_immich_uid: 1100
+atlas_immich_gid: 1100
+atlas_immich_supplementary_groups:
+  - video
+  - render
+
 atlas_lan_subnet: CHANGEME_LAN_SUBNET
+atlas_aegis_ip: CHANGEME_AEGIS_IP
 atlas_manage_firewall: false
 atlas_firewalld_zone: public
 atlas_zfs_pool: CHANGEME_ZFS_POOL
 atlas_zfs_dataset_work: work
+atlas_zfs_dataset_archive: archive
+atlas_zfs_dataset_music: media/music
 atlas_zfs_dataset_syncthing: syncthing
 atlas_zfs_dataset_backup_prometheus: backup_prometheus
-atlas_zfs_dataset_icloud_photos: icloud_photos
+atlas_zfs_dataset_icloud_photos: media/icloud_photos
+atlas_zfs_dataset_service_backups: backups/services
+atlas_zfs_service_backups_refreservation: 500G
 atlas_mount_root: /CHANGEME_ATLAS_MOUNT_ROOT
 
+atlas_archive_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_archive }}"
+atlas_music_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_music }}"
 atlas_work_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_work }}"
 atlas_syncthing_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_syncthing }}"
 atlas_backup_prometheus_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_backup_prometheus }}"
 atlas_icloud_photos_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_icloud_photos }}"
+atlas_service_backups_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_service_backups }}"
 atlas_syncthing_config_dir: "{{ atlas_admin_home }}/.local/state/syncthing"
 atlas_syncthing_default_dir: "{{ atlas_syncthing_mountpoint }}/Sync"
 
@@ -34,18 +50,59 @@ atlas_45drives_packages:
   - cockpit-zfs
   - cockpit-scheduler
 
-atlas_nfs_exports: []
-atlas_samba_share_name: work
+atlas_nfs_exports:
+  - path: "{{ atlas_icloud_photos_mountpoint }}"
+    client: "{{ atlas_aegis_ip }}"
+    options:
+      - rw
+      - sync
+      - no_subtree_check
+      - all_squash
+      - "anonuid={{ atlas_immich_uid }}"
+      - "anongid={{ atlas_immich_gid }}"
+atlas_samba_share_name: Archive
 atlas_samba_workgroup: WORKGROUP
 atlas_samba_valid_users: []
-atlas_samba_password: ""
-atlas_samba_password_marker: /var/lib/samba/private/.atlas-password.sha256
+atlas_samba_accounts: []
+atlas_samba_password_marker_dir: /var/lib/samba/private/ansible-passwords
 atlas_firewalld_rich_rules: []
 atlas_firewalld_restricted_services:
   - ssh
   - cockpit
   - nfs
   - samba
+  - http
+  - https
 atlas_selinux_booleans:
   - samba_export_all_rw
   - nfs_export_all_rw
+
+atlas_manage_media_stack: false
+atlas_container_quadlet_dir: /etc/containers/systemd
+atlas_container_data_root: /var/lib/atlas-containers
+atlas_npm_data_dir: "{{ atlas_container_data_root }}/npm/data"
+atlas_npm_letsencrypt_dir: "{{ atlas_container_data_root }}/npm/letsencrypt"
+atlas_npm_admin_bind_address: 127.0.0.1
+atlas_timezone: Europe/Rome
+atlas_immich_upload_dir: "{{ atlas_container_data_root }}/immich/upload"
+atlas_immich_model_cache_dir: "{{ atlas_container_data_root }}/immich/model-cache"
+atlas_immich_machine_learning_config_dir: "{{ atlas_container_data_root }}/immich/machine-learning-config"
+atlas_immich_machine_learning_cache_dir: "{{ atlas_container_data_root }}/immich/machine-learning-cache"
+atlas_immich_redis_data_dir: "{{ atlas_container_data_root }}/immich/redis"
+atlas_immich_postgres_data_dir: "{{ atlas_container_data_root }}/immich/postgres"
+
+atlas_npm_image: docker.io/jc21/nginx-proxy-manager:latest
+atlas_immich_version: release
+atlas_immich_server_image: "ghcr.io/immich-app/immich-server:{{ atlas_immich_version }}"
+atlas_immich_machine_learning_image: "ghcr.io/immich-app/immich-machine-learning:{{ atlas_immich_version }}-openvino"
+atlas_immich_redis_image: docker.io/valkey/valkey:9
+atlas_immich_postgres_image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
+atlas_immich_db_username: postgres
+atlas_immich_db_name: immich
+atlas_immich_db_password: "{{ vault_atlas_immich_db_password | default('') }}"
+atlas_media_quadlet_services:
+  - atlas-immich-redis.service
+  - atlas-immich-postgres.service
+  - atlas-immich-machine-learning.service
+  - atlas-immich-server.service
+  - atlas-npm.service

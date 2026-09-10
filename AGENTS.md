@@ -53,6 +53,10 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
   - AI coding agents: `ansible-playbook ansible/site.yml --limit <host> --tags ai_agents --check --diff`
   - Mail bootstrap: `sh -n scripts/bootstrap_mail.sh` and `shellcheck scripts/bootstrap_mail.sh`
   - Server compose render: `podman-compose -f /opt/docker/server/docker-compose.yml config` and `systemctl status podman-compose-server`
+  - Atlas media stack:
+    `ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff`
+  - Prometheus media mount:
+    `ansible-playbook ansible/site.yml --limit prometheus --tags rclone,navidrome --check --diff`
   - DuckDNS config only: `ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff`
 
 ## Conventions
@@ -104,8 +108,12 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - `rocky_server` is a child of both `platform_rocky` and `server`; `prometheus` is its active target.
 - The target must already provide `server_username` with local sudo access before the profile runs.
 - The Rocky profile installs Podman and podman-compose, uses firewalld, preserves SELinux enforcement, and renders the
-  same server Compose stack with a `podman-compose-server` systemd unit. It does not start, enable, transfer data,
-  update DNS, or cut over traffic; activating the stack is a manual step.
+  Nginx Proxy Manager/Gitea/Navidrome-PostgreSQL Compose stack with a `podman-compose-server` systemd unit. It does not
+  start or enable that Compose stack, transfer data, update DNS, or cut over traffic; activating it remains manual.
+- Prometheus has a gated system `rclone-music.service` and rootless Navidrome Quadlet. They remain disabled until the
+  Atlas WireGuard address, pinned SSH host key and Vault-backed SFTP private key are configured. The rclone mount is
+  read-only at `/mnt/music_atlas`; Navidrome must not start against the underlying empty mountpoint or while the legacy
+  rootful Navidrome container is still running. The role never removes that legacy container or its data.
 - Firewalld enables SSH, Cockpit (`9090/tcp`), HTTP and HTTPS. Nginx Proxy Manager publishes `80/tcp` and
   `443/tcp`; bind its administration interface only to `127.0.0.1:81` and use `npm-tunnel` from Ikaros or Nymph.
   Nextcloud remains disabled; do not provision `/srv/nextcloud` directories.
@@ -121,17 +129,28 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   subsequent runs use the dedicated Atlas account.
 - The pool is pre-existing: never add pool creation, disk partitioning, RAIDZ creation, rollback,
   or destruction to the Atlas profile.
-- `atlas_manage_storage` and `atlas_manage_firewall` remain false until their placeholders are
-  replaced; only then may the profile manage datasets, shares and LAN-restricted firewall rules.
+- `atlas_manage_storage`, `atlas_manage_firewall`, and `atlas_manage_media_stack` remain false until their placeholders
+  and Vault inputs are replaced; only then may the profile manage datasets, shares, LAN-restricted firewall rules, and
+  rootful media Quadlets.
 - Atlas requires `vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash` for Cockpit
-  and, when storage is enabled, `vault_atlas_samba_password`. Never print these values.
-- Atlas uses NFSv4 for Linux and SMB for Windows/WSL, restricted to the configured LAN. Snapshot,
-  Borg/Hetzner offsite backup, Prometheus pull and USB backup automation are intentionally deferred.
+  and, when the relevant gates are enabled, `vault_atlas_samba_password` and `vault_atlas_immich_db_password`. Never
+  print these values.
+- Atlas creates `archive`, `media/music`, `media/icloud_photos`, and `backups/services` only under the verified
+  pre-existing pool; `backups/services` has a `500G` refreservation. Existing Work, Syncthing, and
+  Prometheus-backup datasets remain managed and separate.
+- The `immich` system account is fixed to UID/GID `1100`, has no login shell or `wheel` membership, and receives only
+  the `video` and `render` supplementary groups. Immich's rootful Quadlets run as `1100:1100`; Server and ML receive
+  `/dev/dri`, while the iCloud Photos external library is read-only.
+- Atlas exports iCloud Photos only to the configured Aegis IP with all access squashed to UID/GID `1100`. SMB3 exposes
+  `Archive` to Vault-backed authorized accounts and admits the configured LAN without host-specific exclusions.
+- Atlas NPM and Immich share a rootful Podman network. NPM publishes HTTP/HTTPS, but its administration port remains
+  bound to `127.0.0.1:81`; do not expose it directly to the LAN or Internet.
 
 ## Atlas NAS TODO
 - Replace every Atlas `CHANGEME` value, provide the required Vault variables and validate the first
   remote bootstrap on the real Rocky Linux 9 host. Enable `atlas_manage_storage` first and
-  `atlas_manage_firewall` only after confirming the pool, mountpoints, LAN subnet and firewalld zone.
+  `atlas_manage_firewall` only after confirming the pool, mountpoints, LAN subnet and firewalld zone. Enable
+  `atlas_manage_media_stack` last, after validating `/dev/dri`, the container paths and the Immich database secret.
 - Validate the complete baseline on the target: OpenZFS kmod loading, existing pool import, dataset
   mounts, SSH reconnect, Cockpit and all selected 45Drives plugins, NFSv4, SMB and Syncthing.
 - Finalize dataset properties and the shared UID/GID, group and POSIX ACL model; test the same files
@@ -140,8 +159,8 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   or manual operations, not as the only source of configuration, and never automate snapshot rollback.
 - Manage the Syncthing star topology, device IDs, folders, folder modes, ignore rules and protected GUI
   or API access for the selected clients.
-- Add Tailscale or WireGuard and corresponding LAN/VPN-only firewalld rules before enabling remote
-  services; never expose SSH, Cockpit, NFS, SMB or Syncthing through public port forwarding.
+- Validate the existing WireGuard path and add its LAN/VPN-only firewalld rules before enabling remote services;
+  never expose SSH, Cockpit, NFS, SMB or Syncthing through public port forwarding.
 - Add the least-privilege Prometheus backup flow: remote dump generation, dedicated SSH identity,
   pinned host key, atomic pull, verification, retention and an Atlas systemd service/timer.
 - Add the encrypted offsite backup with Borg to a Hetzner Storage Box: use a dedicated SSH identity,

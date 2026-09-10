@@ -1,0 +1,29 @@
+# Managed by Ansible. Do not edit manually.
+[Unit]
+Description=Atlas Immich server
+Requires=atlas-immich-redis.service atlas-immich-postgres.service atlas-immich-machine-learning.service
+After=atlas-immich-redis.service atlas-immich-postgres.service atlas-immich-machine-learning.service
+
+[Container]
+ContainerName=atlas-immich-server
+Image={{ atlas_immich_server_image }}
+User={{ atlas_immich_uid }}:{{ atlas_immich_gid }}
+{% for group_name in atlas_immich_supplementary_groups %}
+GroupAdd={{ ansible_facts['getent_group'][group_name][1] }}
+{% endfor %}
+AddDevice=/dev/dri
+Network=atlas-media.network
+NetworkAlias=atlas-immich-server
+EnvironmentFile=/etc/immich/immich.env
+Volume={{ atlas_immich_upload_dir }}:/data:Z
+Volume={{ atlas_icloud_photos_mountpoint }}:/external/icloud_photos:ro,Z
+Volume=/etc/localtime:/etc/localtime:ro
+NoNewPrivileges=true
+DropCapability=NET_RAW
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target

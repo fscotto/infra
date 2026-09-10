@@ -3,11 +3,12 @@
   workgroup = {{ atlas_samba_workgroup }}
   security = user
   map to guest = Never
-  server min protocol = SMB2
+  server min protocol = SMB3
+  hosts allow = {{ atlas_lan_subnet }}
   include = registry
 
 [{{ atlas_samba_share_name }}]
-  path = {{ atlas_work_mountpoint }}
+  path = {{ atlas_archive_mountpoint }}
   browseable = yes
   read only = no
   valid users = {{ atlas_samba_valid_users | join(' ') }}

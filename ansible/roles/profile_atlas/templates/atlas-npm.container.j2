@@ -1,0 +1,21 @@
+# Managed by Ansible. Do not edit manually.
+[Unit]
+Description=Atlas Nginx Proxy Manager
+
+[Container]
+ContainerName=atlas-npm
+Image={{ atlas_npm_image }}
+Network=atlas-media.network
+NetworkAlias=atlas-npm
+PublishPort=80:80
+PublishPort=443:443
+PublishPort={{ atlas_npm_admin_bind_address }}:81:81
+Volume={{ atlas_npm_data_dir }}:/data:Z
+Volume={{ atlas_npm_letsencrypt_dir }}:/etc/letsencrypt:Z
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target

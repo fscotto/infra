@@ -104,10 +104,24 @@ That gives it Fedora packages through DNF, Docker from the official repository, 
 dotfiles and templates. The profile provisions configuration only: it does not transfer data, start
 the Compose stack, update DNS, or perform a cutover.
 
-The server profile installs platform-specific packages, Podman and podman-compose,
-declared systemd services, the server Compose stack behind the `podman-compose-server` systemd unit, and firewalld. The Rocky server excludes
-Syncthing. Rocky bind mounts use private SELinux relabeling for application data while host system
-files remain unchanged.
+The server profile installs platform-specific packages, Podman and podman-compose, declared systemd
+services, and firewalld. The manually activated `podman-compose-server` unit now contains Nginx Proxy
+Manager, Gitea, and the existing Navidrome PostgreSQL database. Navidrome itself runs as a rootless
+user Quadlet and reads the Atlas music dataset from the system `rclone-music.service` mount at
+`/mnt/music_atlas`. The Rocky server excludes Syncthing.
+Rocky bind mounts use private SELinux relabeling where supported; the read-only FUSE music mount is
+passed to Navidrome without relabeling.
+
+The Atlas music path is gated by `server_atlas_music_enabled`. Before enabling it, replace the
+WireGuard address and pinned SSH host-key placeholders in `host_vars/prometheus.yml`, and provide
+`vault_prometheus_atlas_sftp_private_key` through encrypted Vault or untracked local vars. The SFTP
+key's public half must already be present in Atlas' managed authorized keys. Rclone mounts the exact
+remote path `/pool/media/music` read-only and uses a `15G` full VFS cache; the rootless user manager is
+kept alive through systemd lingering.
+Configure the Prometheus NPM proxy host for Navidrome as `host.containers.internal:4533`; the
+Navidrome port is not opened through firewalld.
+Before the first enablement, stop the legacy rootful `navidrome` container. The role refuses to start
+the rootless replacement while that container is running and never removes the old container or data.
 
 Firewalld enables SSH, Cockpit (`9090/tcp`), HTTP and HTTPS. Nginx Proxy Manager publishes only
 `80/tcp` and `443/tcp`; its administration interface is bound to `127.0.0.1:81` and can be reached
@@ -201,9 +215,10 @@ manages child datasets and must never create, partition, destroy, roll back, or 
 pool itself. Linux clients use NFSv4 and Windows/WSL clients use SMB; both are restricted to the
 configured LAN.
 
-For the first run, replace the Atlas placeholders and provide
-`vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash`, and
-`vault_atlas_samba_password`. Bootstrap the host through its existing administrator:
+For the first run, replace the Atlas host, pool, mount-root, LAN, and Aegis-IP
+placeholders and provide `vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash`,
+`vault_atlas_samba_password`, and `vault_atlas_immich_db_password`. Bootstrap the host through its
+existing administrator:
 
 ```bash
 ansible-playbook ansible/site.yml --limit atlas \
@@ -211,13 +226,27 @@ ansible-playbook ansible/site.yml --limit atlas \
 ```
 
 `vault_atlas_admin_password_hash` must be an `/etc/shadow`-compatible hash, not a clear-text
-Cockpit password. Subsequent runs use `atlas_admin_username`. Enable
-`atlas_manage_storage` only after checking the existing pool and mountpoints; enable
-`atlas_manage_firewall` only after checking the LAN subnet and active firewalld zone.
+Cockpit password. Subsequent runs use `atlas_admin_username`. Enable `atlas_manage_storage` only after
+checking the existing pool and mountpoints; enable `atlas_manage_firewall` only after checking the LAN
+subnet and active firewalld zone. Enable `atlas_manage_media_stack` last, after validating `/dev/dri`,
+the container paths and the Immich database secret.
 
-Snapshot retention, Syncthing topology, VPN access, Prometheus pulls, encrypted Borg backups to a
-Hetzner Storage Box, USB backup, monitoring, and disaster-recovery tests remain follow-up work. The
-detailed operational backlog is kept in `AGENTS.md`.
+With storage management enabled, Atlas creates `archive` (`zstd`), `media/music` (`lz4`),
+`media/icloud_photos` (`lz4`), and `backups/services` (`lz4`, `refreservation=500G`) beneath the
+pre-existing pool. The existing Work, Syncthing, and Prometheus-backup datasets remain managed and
+separate. SMB3 exposes `Archive` only to the configured Vault-backed Samba accounts and admits the
+configured LAN without host-specific exclusions. NFSv4 exports only
+`media/icloud_photos` to the configured Aegis IP, using `all_squash` with anonymous UID/GID `1100`.
+
+The `immich` system account is fixed to UID/GID `1100`, has no login shell or `wheel` membership, and
+receives `video` and `render` access. The rootful Immich Server, ML, Redis-compatible cache, PostgreSQL,
+and NPM Quadlets share one Podman network. Immich runs as `1100:1100`; Server and ML receive `/dev/dri`,
+and iCloud Photos is mounted read-only as an external library. NPM publishes ports `80` and `443`; its
+administration interface remains restricted to `127.0.0.1:81` for SSH-tunnel access.
+
+Snapshot retention, Syncthing topology, WireGuard/firewall validation, Prometheus backup pulls,
+encrypted Borg backups to a Hetzner Storage Box, USB backup, monitoring, and disaster-recovery tests
+remain follow-up work. The detailed operational backlog is kept in `AGENTS.md`.
 
 ## How layering works
 
@@ -384,6 +413,8 @@ ansible-playbook ansible/site.yml --limit <host> --start-at-task "<task name>" -
 ansible-lint ansible/roles/<role>
 yamllint ansible/path/to/file.yml
 podman-compose -f /opt/docker/server/docker-compose.yml config
+ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff
+ansible-playbook ansible/site.yml --limit prometheus --tags rclone,navidrome --check --diff
 ```
 
 ## Tags
@@ -398,6 +429,8 @@ ansible-playbook ansible/site.yml --list-tags
 | --- | --- |
 | `always` | Common pre-tasks, including optional vault loading. |
 | `ai_agents` | AI coding-agent install, configuration deployment, and managed-binary removal. |
+| `atlas` | Atlas NAS account, storage, sharing, and container configuration. |
+| `containers` | Rootful Atlas Quadlets. |
 | `dotfiles` | User configuration across all profiles. |
 | `dotfiles:common` | Shared dotfiles. |
 | `dotfiles:desktop` | Void and Fedora/GNOME desktop dotfiles. |
@@ -406,9 +439,15 @@ ansible-playbook ansible/site.yml --list-tags
 | `dotfiles:workstation` | Personal workstation and WSL dotfiles. |
 | `emacs` | Shared Emacs setup and authoring dependencies. |
 | `gnome` | Fedora/GNOME desktop configuration. |
+| `immich` | Atlas Immich account and Quadlets. |
+| `navidrome` | Prometheus rclone mount and rootless Navidrome Quadlet. |
 | `npm` | Global npm packages. |
 | `packages` | Package installation and updates. |
+| `podman` | Podman Compose and rootless Quadlet integration. |
+| `rclone` | Prometheus Atlas music mount. |
 | `services` | runit and systemd services. |
+| `sharing` | Atlas NFSv4 and SMB3 configuration. |
+| `storage` | Atlas child ZFS datasets. |
 | `tmux` | tmux configuration and plugins. |
 | `wsl` | WSL bootstrap and configuration. |
 

@@ -1,0 +1,29 @@
+[Unit]
+Description=Read-only Atlas music mount via rclone SFTP
+Wants=network-online.target
+After=network-online.target
+{% if server_atlas_wireguard_unit | length > 0 %}
+Wants={{ server_atlas_wireguard_unit }}
+After={{ server_atlas_wireguard_unit }}
+{% endif %}
+
+[Service]
+Type=notify
+User={{ server_username }}
+Group={{ server_user_group }}
+ExecStart=/usr/bin/rclone mount \
+  {{ server_atlas_sftp_remote_name }}:{{ server_atlas_sftp_remote_path }} \
+  {{ server_rclone_music_mountpoint }} \
+  --config {{ server_rclone_config_file }} \
+  --cache-dir {{ server_rclone_music_cache_dir }} \
+  --read-only \
+  --vfs-cache-mode full \
+  --vfs-cache-max-size 15G \
+  --vfs-read-chunk-size 5M \
+  --dir-cache-time 24h
+ExecStop=-/usr/bin/fusermount3 -uz {{ server_rclone_music_mountpoint }}
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target

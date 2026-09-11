@@ -1,6 +1,8 @@
 ---
 hostname: nymph
 
+chatgpt_desktop_enabled: true
+
 # Fedora Workstation/GNOME laptop target. GNOME is provided by the base Fedora
 # Workstation install; Ansible deploys shared desktop dotfiles but leaves GNOME
 # settings unmanaged for now.

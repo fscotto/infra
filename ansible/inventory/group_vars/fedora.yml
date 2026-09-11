@@ -58,3 +58,13 @@ fedora_dev_packages:
 
 fedora_flatpak_remote_name: flathub
 fedora_flatpak_remote_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+
+chatgpt_desktop_enabled: false
+chatgpt_desktop_supported_fedora_versions:
+  - "43"
+  - "44"
+chatgpt_desktop_supported_architectures:
+  - x86_64
+  - aarch64
+chatgpt_desktop_rpm_gpg_key: RPM-GPG-KEY-chatgpt-3BFA0E4AE8B8CC16A2D9BA684A3B4A566C4660E4.asc
+chatgpt_desktop_rpm_repository: https://persistent.oaistatic.com/codex-app-prod/linux/rpm/$basearch

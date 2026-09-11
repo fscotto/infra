@@ -130,6 +130,56 @@
   loop_control:
     label: "{{ item.key }}"
 
+- name: Validate ChatGPT desktop architecture on Fedora
+  tags: [packages, chatgpt]
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['architecture'] in chatgpt_desktop_supported_architectures
+      - ansible_facts['distribution_major_version'] in chatgpt_desktop_supported_fedora_versions
+    fail_msg: >-
+      ChatGPT desktop supports Fedora {{ chatgpt_desktop_supported_fedora_versions | join(' and ') }}
+      on x86_64 or aarch64; detected Fedora {{ ansible_facts['distribution_major_version'] }}
+      on {{ ansible_facts['architecture'] }}.
+  when: chatgpt_desktop_enabled | bool
+
+- name: Install ChatGPT desktop RPM signing key
+  tags: [packages, chatgpt]
+  ansible.builtin.copy:
+    src: "{{ chatgpt_desktop_rpm_gpg_key }}"
+    dest: "/etc/pki/rpm-gpg/{{ chatgpt_desktop_rpm_gpg_key }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: chatgpt_desktop_enabled | bool
+
+- name: Import ChatGPT desktop RPM signing key
+  tags: [packages, chatgpt]
+  ansible.builtin.rpm_key:
+    state: present
+    key: "/etc/pki/rpm-gpg/{{ chatgpt_desktop_rpm_gpg_key }}"
+  when: chatgpt_desktop_enabled | bool
+
+- name: Configure ChatGPT desktop RPM repository
+  tags: [packages, chatgpt]
+  ansible.builtin.yum_repository:
+    name: openai-chatgpt
+    description: ChatGPT
+    baseurl: "{{ chatgpt_desktop_rpm_repository }}"
+    enabled: true
+    gpgcheck: true
+    repo_gpgcheck: true
+    gpgkey: "file:///etc/pki/rpm-gpg/{{ chatgpt_desktop_rpm_gpg_key }}"
+    state: present
+  when: chatgpt_desktop_enabled | bool
+
+- name: Install ChatGPT desktop on selected Fedora hosts
+  tags: [packages, chatgpt]
+  ansible.builtin.dnf:
+    name: chatgpt
+    state: latest
+    update_cache: true
+  when: chatgpt_desktop_enabled | bool
+
 - name: Define Fedora Flatpak applications
   tags: [packages]
   ansible.builtin.set_fact:

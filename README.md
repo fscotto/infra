@@ -63,6 +63,10 @@ nymph is allowed to break
 
 `ikaros` is the stable personal Fedora/GNOME desktop. `nymph` is the laptop and gets the same shared desktop dotfiles while GNOME itself stays close to the Fedora defaults. The legacy `void` and `desktop` groups are compatibility parents; the main axes are `platform_*`, `role_*`, and `desktop_*`.
 
+The official ChatGPT desktop RPM is enabled only on `ikaros` and `nymph`. The
+playbook configures OpenAI's signed RPM repository and imports its pinned RPM
+signing key before installation; subsequent updates are handled by DNF.
+
 ## Desktop profiles
 
 - `ikaros`: stable Fedora Workstation + GNOME desktop.
@@ -250,9 +254,10 @@ ansible-playbook ansible/site.yml --limit <host> --tags emacs -e emacs_enabled=t
 ## AI coding agents
 
 The shared npm-managed agents are OpenCode, Claude Code, Codex, Gemini CLI, and
-GitHub Copilot; IBM Bob is also managed on `deadalus`. Each agent has its own
-lifecycle flags in `ansible/inventory/group_vars/all.yml`, so one agent can be
-installed, configured, or removed without affecting the others:
+GitHub Copilot; IBM Bob is also managed on `deadalus`. Codex Relay is installed
+only on `ikaros`. Each agent has its own lifecycle flags in
+`ansible/inventory/group_vars/all.yml`, so one agent can be installed,
+configured, or removed without affecting the others:
 
 ```yaml
 ai_agents:

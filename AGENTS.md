@@ -56,7 +56,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
   - Atlas media stack:
     `ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff`
   - Atlas phase-one rootless services:
-    `ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1 --check --diff -e backend_phase1_enabled=true`
+    `ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1 --check --diff`
   - Prometheus/Atlas WireGuard overlay:
     `ansible-playbook ansible/site.yml --limit prometheus,atlas --tags wireguard --check --diff`
   - DuckDNS config only: `ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff`
@@ -126,15 +126,16 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - `atlas` is a remote Rocky Linux 9 NAS. Keep its connection, LAN, pool and mountpoint values in
   `host_vars/atlas.yml`. Bootstrap it once with `-e atlas_connection_username=<existing-admin>`;
   subsequent runs use the dedicated Atlas account.
-- The pool is pre-existing: never add pool creation, disk partitioning, RAIDZ creation, rollback,
-  or destruction to the Atlas profile.
-- `atlas_manage_storage`, `atlas_manage_firewall`, and `atlas_manage_media_stack` remain false until their placeholders
-  and Vault inputs are replaced; only then may the profile manage datasets, shares, LAN-restricted firewall rules, and
-  rootful media Quadlets.
+- The pool is normally pre-existing. A one-time bootstrap may create it only when `atlas_create_pool=true`
+  is explicitly supplied and `atlas_zpool_disks` contains exactly four real `/dev/disk/by-id/...` paths.
+  Never partition, force, destroy, roll back, or modify the vdev layout of an existing pool.
+- `atlas_manage_storage`, `atlas_manage_sharing`, and `atlas_manage_firewall` are enabled in Atlas host vars as
+  the declared steady state; set one false only for a deliberate suspension. `atlas_manage_media_stack` remains false
+  until the future rootful Immich stack has its required Vault inputs and target validation.
 - Atlas requires `vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash` for Cockpit
-  and, when the relevant gates are enabled, `vault_atlas_samba_password` and
+  and, while sharing is enabled, `vault_atlas_samba_password`. The future rootful media stack also requires
   `vault_atlas_immich_db_password`. Never print these values.
-- Atlas creates the complete declared hierarchy only under the verified pre-existing pool: `work`, `archive`,
+- Atlas creates the complete declared hierarchy only under the verified existing or explicitly bootstrapped pool: `work`, `archive`,
   `archive/app_data`, `archive/app_data/navidrome`, `archive/app_data/syncthing`, `media`, `media/music`,
   `media/photobook`, `backups`, `backups/services`, and `backup_prometheus`. `backups/services` has a `500G`
   refreservation. There is no separate legacy `zpool/syncthing` dataset.
@@ -157,14 +158,13 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   use `10.0.0.2:4533` for Navidrome and `10.0.0.2:8384` for the Syncthing GUI. Native Syncthing transfer/discovery does
   not use the HTTP proxy.
 - `wireguard_overlay` manages the required `wg0` path between Prometheus and Atlas, persists private keys only on their
-  respective hosts, and exchanges only derived public keys. The first gated run must include both hosts. Prometheus
+  respective hosts, and exchanges only derived public keys. The initial run must include both hosts. Prometheus
   opens `51820/udp`; the Atlas backend role admits service ports only in the WireGuard firewalld zone.
 
 ## Atlas NAS TODO
-- Replace every Atlas `CHANGEME` value, provide the required Vault variables and validate the first
-  remote bootstrap on the real Rocky Linux 9 host. Enable `atlas_manage_storage` first and
-  `atlas_manage_firewall` only after confirming the pool, mountpoints, LAN subnet and firewalld zone. Enable
-  `atlas_manage_media_stack` last, after validating `/dev/dri`, the container paths and the Immich database secret.
+- Provide the required Vault variables and validate the first remote bootstrap on the real Rocky Linux 9 host.
+  Before the first apply, confirm the pool, mountpoints, LAN subnet and firewalld zone. Keep
+  `atlas_manage_media_stack` disabled until `/dev/dri`, the container paths and the Immich database secret are validated.
 - Validate the complete baseline on the target: OpenZFS kmod loading, existing pool import, dataset
   mounts, SSH reconnect, Cockpit and all selected 45Drives plugins, NFSv4, SMB and Syncthing.
 - Finalize dataset properties and the shared UID/GID, group and POSIX ACL model; test the same files

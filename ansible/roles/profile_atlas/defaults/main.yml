@@ -1,5 +1,9 @@
 ---
 atlas_manage_storage: false
+atlas_manage_sharing: false
+# Destructive first-boot action; normally false once the pool exists.
+atlas_create_pool: false
+atlas_zpool_disks: []
 atlas_admin_username: CHANGEME_ATLAS_ADMIN
 atlas_admin_group: "{{ atlas_admin_username }}"
 atlas_admin_home: "/home/{{ atlas_admin_username }}"

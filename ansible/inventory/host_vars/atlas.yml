@@ -1,5 +1,5 @@
 ---
-# Keep Atlas management gates disabled until the NAS and required Vault inputs are ready.
+# Atlas declares its intended steady state; set a feature flag false only for a deliberate suspension.
 hostname: atlas
 ansible_host: 192.168.178.55
 ansible_user: "{{ atlas_connection_username }}"
@@ -17,9 +17,13 @@ atlas_admin_password_hash: "{{ vault_atlas_admin_password_hash | default('!') }}
 
 atlas_lan_subnet: 192.168.178.0/24
 atlas_aegis_ip: 192.168.178.54
-atlas_manage_firewall: false
+atlas_manage_firewall: true
 atlas_firewalld_zone: public
 atlas_zfs_pool: zpool
+# Populate only for the first pool bootstrap with four real persistent disk paths.
+# Example: /dev/disk/by-id/ata-Seagate_IronWolf_...
+atlas_zpool_disks: []
+atlas_create_pool: false
 atlas_zfs_dataset_work: work
 atlas_zfs_dataset_archive: archive
 atlas_zfs_dataset_app_data: archive/app_data
@@ -32,10 +36,11 @@ atlas_zfs_dataset_photobook: media/photobook
 atlas_zfs_dataset_backups: backups
 atlas_zfs_dataset_service_backups: backups/services
 atlas_mount_root: /zpool
-atlas_manage_storage: false
+atlas_manage_storage: true
+atlas_manage_sharing: true
 atlas_manage_media_stack: false
 
-wireguard_overlay_enabled: false
+wireguard_overlay_enabled: true
 wireguard_address: 10.0.0.2/24
 wireguard_peers:
   - name: prometheus
@@ -45,7 +50,7 @@ wireguard_peers:
       - 10.0.0.0/24
     persistent_keepalive: 25
 
-backend_phase1_enabled: false
+backend_phase1_enabled: true
 backend_phase1_start_services: false
 backend_phase1_wireguard_address: 10.0.0.2
 

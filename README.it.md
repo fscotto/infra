@@ -246,13 +246,14 @@ ansible-playbook ansible/site.yml --limit prometheus -e server_username=myuser -
 
 ## NAS
 
-`atlas` e un NAS Rocky Linux 9 raggiunto tramite SSH. Il pool ZFS esiste gia: il profilo gestisce
-solo i dataset figli e non deve mai creare, partizionare, distruggere, fare rollback o modificare il
-pool. I client Linux usano NFSv4, quelli Windows/WSL SMB; entrambi restano limitati alla LAN
+`atlas` e un NAS Rocky Linux 9 raggiunto tramite SSH. Normalmente il pool ZFS esiste gia e il profilo
+gestisce solo i dataset figli. Un bootstrap RAIDZ2 una tantum e disponibile solo con conferma esplicita
+(`atlas_create_pool=true`) e quattro percorsi reali e verificati `/dev/disk/by-id/...` in
+`atlas_zpool_disks`. Non partiziona, forza, distrugge, esegue rollback o modifica il layout vdev di un
+pool esistente. I client Linux usano NFSv4, quelli Windows/WSL SMB; entrambi restano limitati alla LAN
 configurata.
 
-Per il primo avvio sostituire i placeholder di host, pool, mount root, LAN e IP di Aegis e
-fornire `vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash`,
+Per il primo avvio fornire `vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash`,
 `vault_atlas_samba_password` e `vault_atlas_immich_db_password`. Eseguire il bootstrap tramite
 l'amministratore esistente:
 
@@ -262,13 +263,12 @@ ansible-playbook ansible/site.yml --limit atlas \
 ```
 
 `vault_atlas_admin_password_hash` deve essere un hash compatibile con `/etc/shadow`, non una
-password Cockpit in chiaro. Le esecuzioni successive usano `atlas_admin_username`. Abilitare
-`atlas_manage_storage` solo dopo aver verificato pool e mountpoint esistenti; abilitare
-`atlas_manage_firewall` solo dopo aver verificato subnet LAN e zona firewalld attiva. Abilitare
-`atlas_manage_media_stack` per ultimo, dopo aver verificato `/dev/dri`, i percorsi dei container e il
-segreto del database Immich.
+password Cockpit in chiaro. Le esecuzioni successive usano `atlas_admin_username`. Atlas dichiara
+abilitati storage, condivisioni e regole firewall LAN. Prima della prima applicazione verificare pool e
+mountpoint esistenti, subnet LAN e zona firewalld attiva. `atlas_manage_media_stack` resta disabilitato
+finche non saranno validati `/dev/dri`, i percorsi dei container e il segreto del database Immich.
 
-Con la gestione storage attiva, Atlas crea l'intera gerarchia sotto il pool `zpool` preesistente:
+Con la gestione storage attiva, Atlas crea l'intera gerarchia sotto il pool `zpool` esistente o creato esplicitamente:
 `work`, `archive`, `archive/app_data`, i dataset applicativi separati
 `archive/app_data/navidrome` e `archive/app_data/syncthing`, `media`, `media/music`,
 `media/photobook`, `backups`, `backups/services` e `backup_prometheus`. I dataset applicativi e
@@ -284,15 +284,15 @@ Redis, PostgreSQL e NPM condividono una rete Podman. Immich viene eseguito come 
 ML ricevono `/dev/dri` e Photobook e montato in sola lettura su `/external/photobook`. NPM pubblica `80` e
 `443`, mentre l'amministrazione resta vincolata a `127.0.0.1:81` per l'accesso tramite tunnel SSH.
 
-La fase 1 e limitata ai Quadlet utente rootless di Navidrome e Syncthing su Atlas ed e protetta dal
-gate `backend_phase1_enabled`. Navidrome ufficiale `0.63.2` usa il database SQLite sotto `/data` e
+La fase 1 e limitata ai Quadlet utente rootless di Navidrome e Syncthing su Atlas. E abilitata nella
+configurazione host di Atlas e puo essere impostata a `false` solo per una sospensione intenzionale. Navidrome ufficiale `0.63.2` usa il database SQLite sotto `/data` e
 non supporta `ND_DATABASE_URL` ne un backend PostgreSQL esterno. Il servizio obsoleto `navidromedb`
 e quindi rimosso da Prometheus invece di essere replicato su Atlas. Il ruolo deriva i percorsi dal
-pool esistente `zpool`, montato in `/zpool`: musica in sola lettura da `/zpool/media/music`, stato
+pool `zpool`, montato in `/zpool`: musica in sola lettura da `/zpool/media/music`, stato
 applicativo Navidrome e `navidrome.db` in `/zpool/archive/app_data/navidrome` e dati Syncthing in
 `/zpool/archive/app_data/syncthing`. `profile_atlas` crea questi dataset quando
 `atlas_manage_storage` e attivo; il ruolo backend verifica i mountpoint esatti prima di avviare i
-container. Nessun ruolo crea il pool. Il ruolo separato `wireguard_overlay`
+container. Il ruolo backend non crea mai il pool. Il ruolo separato `wireguard_overlay`
 gestisce `wg0` tra Prometheus (`10.0.0.1`) e Atlas (`10.0.0.2`), genera una sola volta le chiavi
 private sui rispettivi host e scambia tramite Ansible soltanto quelle pubbliche. Solo Prometheus apre
 pubblicamente `51820/udp`. Le porte backend sono ammesse esclusivamente nella zona firewalld WireGuard.
@@ -308,20 +308,16 @@ Validare e generare i servizi Atlas con:
 
 ```bash
 ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
-ansible-playbook ansible/site.yml --limit atlas --tags storage \
-  -e atlas_manage_storage=true
+ansible-playbook ansible/site.yml --limit atlas --tags storage
 
 ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
-ansible-playbook ansible/site.yml --limit prometheus,atlas --tags wireguard \
-  -e wireguard_overlay_enabled=true
+ansible-playbook ansible/site.yml --limit prometheus,atlas --tags wireguard
 
 ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
-ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1 --check --diff \
-  -e backend_phase1_enabled=true
+ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1 --check --diff
 
 ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
-ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1 \
-  -e backend_phase1_enabled=true
+ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1
 ```
 
 Per il cutover, arrestare il vecchio Navidrome prima di copiare la sua directory dati, verificare
@@ -538,7 +534,7 @@ ansible-lint ansible/roles/<role>
 yamllint ansible/path/to/file.yml
 podman-compose -f /opt/docker/server/docker-compose.yml config
 ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff
-ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1 --check --diff -e backend_phase1_enabled=true
+ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1 --check --diff
 ```
 
 ## Tag supportati dal playbook

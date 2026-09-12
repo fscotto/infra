@@ -8,7 +8,7 @@ ansible_ssh_private_key_file: /home/fscotto/.ssh/id_ed25519
 server_username: rocky
 server_duckdns_domain: fscotto
 
-wireguard_overlay_enabled: false
+wireguard_overlay_enabled: true
 wireguard_address: 10.0.0.1/24
 wireguard_listen_port: 51820
 wireguard_enable_ipv4_forwarding: true

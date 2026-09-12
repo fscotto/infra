@@ -8,7 +8,7 @@
     group: root
     mode: "0644"
   notify: Reload NFS exports
-  when: atlas_manage_storage | bool
+  when: atlas_manage_sharing | bool
 
 - name: Enable Atlas file-sharing services
   tags: [atlas, sharing, services]
@@ -21,7 +21,7 @@
     - smb.service
   loop_control:
     label: "{{ item }}"
-  when: atlas_manage_storage | bool
+  when: atlas_manage_sharing | bool
 
 - name: Configure Atlas NFSv4-only service
   tags: [atlas, sharing]
@@ -32,7 +32,7 @@
     group: root
     mode: "0644"
   notify: Restart NFS server
-  when: atlas_manage_storage | bool
+  when: atlas_manage_sharing | bool
 
 - name: Mask Atlas NFSv3 RPC services
   tags: [atlas, sharing, services]
@@ -47,7 +47,7 @@
     - rpcbind.socket
   loop_control:
     label: "{{ item }}"
-  when: atlas_manage_storage | bool
+  when: atlas_manage_sharing | bool
 
 - name: Ensure Atlas NFS mount daemon drop-in directory exists
   tags: [atlas, sharing, services]
@@ -57,7 +57,7 @@
     owner: root
     group: root
     mode: "0755"
-  when: atlas_manage_storage | bool
+  when: atlas_manage_sharing | bool
 
 - name: Disable Atlas NFSv3 mount daemon listeners
   tags: [atlas, sharing, services]
@@ -68,7 +68,7 @@
     group: root
     mode: "0644"
   notify: Restart NFS mount daemon
-  when: atlas_manage_storage | bool
+  when: atlas_manage_sharing | bool
 
 - name: Enable SELinux access for Atlas file sharing
   tags: [atlas, sharing, services]
@@ -80,7 +80,7 @@
   loop_control:
     label: "{{ item }}"
   when:
-    - atlas_manage_storage | bool
+    - atlas_manage_sharing | bool
     - (ansible_facts['selinux'] | default({})).get('status', 'disabled') == 'enabled'
 
 - name: Render Atlas Samba configuration
@@ -93,7 +93,7 @@
     mode: "0644"
     validate: "testparm --suppress-prompt %s"
   notify: Restart Samba service
-  when: atlas_manage_storage | bool
+  when: atlas_manage_sharing | bool
 
 - name: Require Vault-backed Atlas Samba accounts
   tags: [atlas, sharing]
@@ -109,7 +109,7 @@
       - atlas_samba_accounts | selectattr('password', 'equalto', '') | list | length == 0
     fail_msg: Define every authorized Samba account and its Vault-backed password.
   no_log: true
-  when: atlas_manage_storage | bool
+  when: atlas_manage_sharing | bool
 
 - name: Ensure Atlas Samba private state directory exists
   tags: [atlas, sharing]
@@ -119,7 +119,7 @@
     owner: root
     group: root
     mode: "0700"
-  when: atlas_manage_storage | bool
+  when: atlas_manage_sharing | bool
 
 - name: Manage Vault-backed Atlas Samba credentials
   tags: [atlas, sharing]
@@ -129,7 +129,7 @@
     loop_var: atlas_samba_account
     label: "{{ atlas_samba_account.username }}"
   no_log: true
-  when: atlas_manage_storage | bool
+  when: atlas_manage_sharing | bool
 
 - name: Require completed Atlas firewall placeholders
   tags: [atlas, sharing, services]

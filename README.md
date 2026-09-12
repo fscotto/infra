@@ -204,13 +204,13 @@ ansible-playbook ansible/site.yml --limit aegis --check --diff --ask-become-pass
 
 ## NAS
 
-`atlas` is a Rocky Linux 9 NAS reached through SSH. Its pool already exists: the profile only
-manages child datasets and must never create, partition, destroy, roll back, or otherwise alter the
-pool itself. Linux clients use NFSv4 and Windows/WSL clients use SMB; both are restricted to the
-configured LAN.
+`atlas` is a Rocky Linux 9 NAS reached through SSH. Normally its pool already exists and the profile
+only manages child datasets. A one-time RAIDZ2 bootstrap is available only with explicit confirmation
+(`atlas_create_pool=true`) and exactly four verified `/dev/disk/by-id/...` paths in `atlas_zpool_disks`.
+It never partitions, forces, destroys, rolls back, or changes the vdev layout of an existing pool. Linux
+clients use NFSv4 and Windows/WSL clients use SMB; both are restricted to the configured LAN.
 
-For the first run, replace the Atlas host, pool, mount-root, LAN, and Aegis-IP
-placeholders and provide `vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash`,
+For the first run, provide `vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash`,
 `vault_atlas_samba_password`, and `vault_atlas_immich_db_password`. Bootstrap the host through its
 existing administrator:
 
@@ -220,13 +220,13 @@ ansible-playbook ansible/site.yml --limit atlas \
 ```
 
 `vault_atlas_admin_password_hash` must be an `/etc/shadow`-compatible hash, not a clear-text
-Cockpit password. Subsequent runs use `atlas_admin_username`. Enable `atlas_manage_storage` only after
-checking the existing pool and mountpoints; enable `atlas_manage_firewall` only after checking the LAN
-subnet and active firewalld zone. Enable `atlas_manage_media_stack` last, after validating `/dev/dri`,
-the container paths and the Immich database secret.
+Cockpit password. Subsequent runs use `atlas_admin_username`. Atlas declares storage, sharing, and its
+LAN firewall rules enabled. Before the first apply, check the existing pool and mountpoints, LAN subnet,
+and active firewalld zone. `atlas_manage_media_stack` remains disabled until `/dev/dri`, the container
+paths, and the Immich database secret are validated.
 
-With storage management enabled, Atlas creates the complete dataset hierarchy below the pre-existing
-`zpool`: `work`, `archive`, `archive/app_data`, the separate `archive/app_data/navidrome` and
+With storage management enabled, Atlas creates the complete dataset hierarchy below the existing or
+explicitly bootstrapped `zpool`: `work`, `archive`, `archive/app_data`, the separate `archive/app_data/navidrome` and
 `archive/app_data/syncthing` application datasets, `media`, `media/music`, `media/photobook`,
 `backups`, `backups/services`, and `backup_prometheus`. Application/archive datasets use `zstd`,
 while media, Syncthing and service-backup datasets use `lz4`; `backups/services` also has a `500G`
@@ -240,16 +240,16 @@ and NPM Quadlets share one Podman network. Immich runs as `1100:1100`; Server an
 and Photobook is mounted read-only at `/external/photobook`. NPM publishes ports `80` and `443`; its
 administration interface remains restricted to `127.0.0.1:81` for SSH-tunnel access.
 
-Phase 1 is limited to rootless Navidrome and Syncthing user Quadlets on Atlas and is gated by
-`backend_phase1_enabled`. Official Navidrome `0.63.2` uses its SQLite database below `/data`; it does
+Phase 1 is limited to rootless Navidrome and Syncthing user Quadlets on Atlas. It is enabled in the
+Atlas host configuration and can be set to `false` only for a deliberate suspension. Official Navidrome `0.63.2` uses its SQLite database below `/data`; it does
 not support `ND_DATABASE_URL` or an external PostgreSQL backend. The obsolete `navidromedb` service
 was therefore removed from Prometheus instead of being reproduced on Atlas. The role derives all
-storage paths from the existing `zpool` mounted at `/zpool`: music is read-only at
+storage paths from the `zpool` mounted at `/zpool`: music is read-only at
 `/zpool/media/music`, Navidrome application state and `navidrome.db` are stored at
 `/zpool/archive/app_data/navidrome`, and Syncthing persists at
 `/zpool/archive/app_data/syncthing`. `profile_atlas` creates these datasets when
 `atlas_manage_storage` is enabled; the backend role verifies their exact mountpoints before starting
-containers. Neither role creates the pool. The separate `wireguard_overlay` role manages `wg0`
+containers. The backend role never creates the pool. The separate `wireguard_overlay` role manages `wg0`
 between Prometheus (`10.0.0.1`) and Atlas (`10.0.0.2`), generating private keys once
 on their respective hosts and exchanging only public keys through Ansible. Prometheus alone opens
 `51820/udp` publicly. Backend ports are admitted only in the WireGuard firewalld zone.
@@ -265,20 +265,16 @@ Validate and render the Atlas services with:
 
 ```bash
 ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
-ansible-playbook ansible/site.yml --limit atlas --tags storage \
-  -e atlas_manage_storage=true
+ansible-playbook ansible/site.yml --limit atlas --tags storage
 
 ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
-ansible-playbook ansible/site.yml --limit prometheus,atlas --tags wireguard \
-  -e wireguard_overlay_enabled=true
+ansible-playbook ansible/site.yml --limit prometheus,atlas --tags wireguard
 
 ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
-ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1 --check --diff \
-  -e backend_phase1_enabled=true
+ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1 --check --diff
 
 ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
-ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1 \
-  -e backend_phase1_enabled=true
+ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1
 ```
 
 For the cutover, stop the old Navidrome writer before copying its data directory, verify ownership by

@@ -119,8 +119,9 @@ does not provision any `/srv/nextcloud` directories.
 The Atlas phase-one work does not change this NPM deployment or its persistent data. Once WireGuard
 and the Atlas services are active, configure the current NPM proxy hosts with Navidrome upstream
 `http://10.0.0.2:4533` and Syncthing GUI upstream `http://10.0.0.2:8384`. Only the Syncthing web GUI
-uses NPM; synchronization traffic remains on its native WireGuard-restricted ports. Configure both
-Syncthing authentication and an appropriate NPM access policy before publishing its GUI.
+uses NPM; synchronization traffic remains on explicitly published native ports bound only to the Atlas
+WireGuard address. Configure both Syncthing authentication and an appropriate NPM access policy before
+publishing its GUI.
 
 Server identity comes from `server_username`, `server_user_group`, and `server_user_home` in `ansible/inventory/group_vars/server.yml`. `server_username` defaults to `username`, but it can be overridden, for example:
 
@@ -230,9 +231,11 @@ explicitly bootstrapped `zpool`: `work`, `archive`, `archive/app_data`, the sepa
 `archive/app_data/syncthing` application datasets, `media`, `media/music`, `media/photobook`,
 `backups`, `backups/services`, and `backup_prometheus`. Application/archive datasets use `zstd`,
 while media, Syncthing and service-backup datasets use `lz4`; `backups/services` also has a `500G`
-refreservation. SMB3 exposes `Archive` only to the configured Vault-backed Samba accounts and admits
-the configured LAN without host-specific exclusions. NFSv4 exports only
-`media/photobook` to the configured Aegis IP, using `all_squash` with anonymous UID/GID `1100`.
+refreservation. Atlas enforces targeted SELinux persistently and reports, without initiating, any reboot required to activate it. It assigns its primary LAN interface explicitly to the managed firewalld zone and applies persistent kernel network hardening: redirects and source routes are rejected, martians logged, reverse-path filtering remains loose for WireGuard, and IPv4 forwarding is disabled. SSH permits only the declared administrator using public-key authentication; root login, passwords,
+agent and remote forwarding are disabled, while local forwarding remains available for private administrative tunnels. SMB3 exposes `Archive` only to the configured Vault-backed
+Samba accounts on encrypted, signed SMB3 over TCP/445 only and admits the configured LAN without host-specific
+exclusions. NFSv4 exports only `media/photobook` to the configured Aegis IP over TCP/2049, using
+`all_squash` with anonymous UID/GID `1100`.
 
 The `immich` system account is fixed to UID/GID `1100`, has no login shell or `wheel` membership, and
 receives `video` and `render` access. The rootful Immich Server, ML, Redis-compatible cache, PostgreSQL,

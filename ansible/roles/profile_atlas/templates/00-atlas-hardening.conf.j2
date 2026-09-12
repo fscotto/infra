@@ -3,4 +3,16 @@ PermitRootLogin no
 PubkeyAuthentication yes
 PasswordAuthentication no
 KbdInteractiveAuthentication no
+AuthenticationMethods publickey
+X11Forwarding no
+AllowTcpForwarding {{ atlas_ssh_allow_tcp_forwarding }}
+AllowAgentForwarding no
+GatewayPorts no
+PermitTunnel no
+PermitUserEnvironment no
+MaxAuthTries 3
+LoginGraceTime 30
+ClientAliveInterval 300
+ClientAliveCountMax 2
+LogLevel VERBOSE
 AllowUsers {{ atlas_admin_username }}

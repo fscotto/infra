@@ -1,4 +1,50 @@
----
+- name: Require completed Atlas firewall placeholders
+  tags: [atlas, sharing, services]
+  ansible.builtin.assert:
+    that:
+      - atlas_lan_subnet != 'CHANGEME_LAN_SUBNET'
+      - atlas_aegis_ip != 'CHANGEME_AEGIS_IP'
+      - atlas_firewalld_zone | length > 0
+      - ansible_facts.default_ipv4.interface | default('') | length > 0
+    fail_msg: Replace the Atlas LAN, Aegis and firewall-zone placeholders.
+  when: atlas_manage_firewall | bool
+
+- name: Apply Atlas firewalld rich rules
+  tags: [atlas, sharing, services]
+  ansible.posix.firewalld:
+    rich_rule: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+    zone: "{{ atlas_firewalld_zone }}"
+  loop: "{{ atlas_firewalld_rich_rules }}"
+  loop_control:
+    label: "{{ item }}"
+  when: atlas_manage_firewall | bool
+
+- name: Assign primary Atlas LAN interface to managed firewalld zone
+  tags: [atlas, sharing, services]
+  ansible.posix.firewalld:
+    interface: "{{ ansible_facts.default_ipv4.interface }}"
+    zone: "{{ atlas_firewalld_zone }}"
+    state: enabled
+    permanent: true
+    immediate: true
+  when: atlas_manage_firewall | bool
+
+- name: Remove unrestricted Atlas services from firewalld zone
+  tags: [atlas, sharing, services]
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: disabled
+    zone: "{{ atlas_firewalld_zone }}"
+  loop: "{{ atlas_firewalld_restricted_services }}"
+  loop_control:
+    label: "{{ item }}"
+  when: atlas_manage_firewall | bool
+
 - name: Render Atlas NFS exports
   tags: [atlas, sharing]
   ansible.builtin.template:
@@ -8,19 +54,6 @@
     group: root
     mode: "0644"
   notify: Reload NFS exports
-  when: atlas_manage_sharing | bool
-
-- name: Enable Atlas file-sharing services
-  tags: [atlas, sharing, services]
-  ansible.builtin.systemd:
-    name: "{{ item }}"
-    enabled: true
-    state: started
-  loop:
-    - nfs-server.service
-    - smb.service
-  loop_control:
-    label: "{{ item }}"
   when: atlas_manage_sharing | bool
 
 - name: Configure Atlas NFSv4-only service
@@ -99,6 +132,7 @@
   tags: [atlas, sharing]
   ansible.builtin.assert:
     that:
+      - atlas_samba_encryption in ['required', 'desired']
       - atlas_samba_accounts | length > 0
       - >-
         atlas_samba_accounts | map(attribute='username') | list
@@ -131,38 +165,87 @@
   no_log: true
   when: atlas_manage_sharing | bool
 
-- name: Require completed Atlas firewall placeholders
+- name: Enable Atlas file-sharing services
   tags: [atlas, sharing, services]
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - nfs-server.service
+    - smb.service
+  loop_control:
+    label: "{{ item }}"
+  when: atlas_manage_sharing | bool
+
+- name: Gather effective Atlas firewalld zone configuration
+  tags: [atlas, sharing, services, security]
+  ansible.posix.firewalld_info:
+    zones:
+      - "{{ atlas_firewalld_zone }}"
+  register: atlas_firewalld_info
+  when:
+    - atlas_manage_firewall | bool
+    - not ansible_check_mode
+
+- name: Verify effective Atlas firewalld restrictions
+  tags: [atlas, sharing, services, security]
   ansible.builtin.assert:
     that:
-      - atlas_lan_subnet != 'CHANGEME_LAN_SUBNET'
-      - atlas_aegis_ip != 'CHANGEME_AEGIS_IP'
-      - atlas_firewalld_zone | length > 0
-    fail_msg: Replace the Atlas LAN, Aegis and firewall-zone placeholders.
-  when: atlas_manage_firewall | bool
+      - atlas_firewalld_zone in atlas_firewalld_info.firewalld_info.zones
+      - >-
+        ansible_facts.default_ipv4.interface
+        in atlas_firewalld_info.firewalld_info.zones[atlas_firewalld_zone].interfaces
+      - >-
+        atlas_firewalld_restricted_services
+        | intersect(atlas_firewalld_info.firewalld_info.zones[atlas_firewalld_zone].services)
+        | length == 0
+    fail_msg: >-
+      The effective Atlas firewalld zone does not restrict the primary LAN
+      interface and unmanaged service exposure as declared.
+  when:
+    - atlas_manage_firewall | bool
+    - not ansible_check_mode
 
-- name: Apply Atlas firewalld rich rules
-  tags: [atlas, sharing, services]
-  ansible.posix.firewalld:
-    rich_rule: "{{ item }}"
-    permanent: true
-    immediate: true
-    state: enabled
-    zone: "{{ atlas_firewalld_zone }}"
-  loop: "{{ atlas_firewalld_rich_rules }}"
-  loop_control:
-    label: "{{ item }}"
-  when: atlas_manage_firewall | bool
+- name: Apply pending Atlas sharing handlers before verification
+  tags: [atlas, sharing, services, security]
+  ansible.builtin.meta: flush_handlers
+  when:
+    - atlas_manage_sharing | bool
+    - not ansible_check_mode
 
-- name: Remove unrestricted Atlas services from firewalld zone
-  tags: [atlas, sharing, services]
-  ansible.posix.firewalld:
-    service: "{{ item }}"
-    permanent: true
-    immediate: true
-    state: disabled
-    zone: "{{ atlas_firewalld_zone }}"
-  loop: "{{ atlas_firewalld_restricted_services }}"
+- name: Read Atlas file-sharing service state
+  tags: [atlas, sharing, services, security]
+  ansible.builtin.service_facts:
+  when:
+    - atlas_manage_sharing | bool
+    - not ansible_check_mode
+
+- name: Require active Atlas file-sharing services
+  tags: [atlas, sharing, services, security]
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.services['nfs-server.service'] is defined
+      - ansible_facts.services['nfs-server.service'].state == 'running'
+      - ansible_facts.services['smb.service'] is defined
+      - ansible_facts.services['smb.service'].state == 'running'
+    fail_msg: Atlas NFSv4 or SMB3 did not start after its managed configuration was applied.
+  when:
+    - atlas_manage_sharing | bool
+    - not ansible_check_mode
+
+- name: Require Atlas file-sharing TCP listeners
+  tags: [atlas, sharing, services, security]
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ item }}"
+    state: started
+    timeout: 15
+  loop:
+    - 2049
+    - 445
   loop_control:
-    label: "{{ item }}"
-  when: atlas_manage_firewall | bool
+    label: "{{ item }}/tcp"
+  when:
+    - atlas_manage_sharing | bool
+    - not ansible_check_mode

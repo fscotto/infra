@@ -55,6 +55,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
   - Server compose render: `podman-compose -f /opt/docker/server/docker-compose.yml config` and `systemctl status podman-compose-server`
   - Atlas media stack:
     `ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff`
+  - Atlas network/share hardening:
+    `ansible-playbook ansible/site.yml --limit atlas --tags hardening,sharing --check --diff`
   - Atlas phase-one rootless services:
     `ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1 --check --diff`
   - Prometheus/Atlas WireGuard overlay:
@@ -142,8 +144,9 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - The `immich` system account is fixed to UID/GID `1100`, has no login shell or `wheel` membership, and receives only
   the `video` and `render` supplementary groups. Immich's rootful Quadlets run as `1100:1100`; Server and ML receive
   `/dev/dri`, while the Photobook external library is read-only at `/external/photobook`.
-- Atlas exports Photobook only to the configured Aegis IP with all access squashed to UID/GID `1100`. SMB3 exposes
-  `Archive` to Vault-backed authorized accounts and admits the configured LAN without host-specific exclusions.
+- Atlas applies persistent kernel network hardening: redirects and source routes are rejected, martians logged, reverse-path filtering remains loose for WireGuard, and IPv4 forwarding is disabled. SSH permits only the declared administrator using public-key authentication; root login, passwords, agent and remote forwarding
+  are disabled, while local forwarding remains available for private administrative tunnels. Photobook is exported only to the configured Aegis IP with all access squashed to UID/GID
+  `1100`. Targeted SELinux is enforced persistently; a required reboot is reported but never initiated automatically. The primary LAN interface is assigned explicitly to the managed firewalld zone, and firewall rules are applied before NFS or SMB are started; their service state and TCP listeners are then verified. SMB3 exposes `Archive` to Vault-backed authorized accounts on mandatory encrypted, signed SMB3 over TCP/445 only and admits the configured LAN without host-specific exclusions.
 - Atlas NPM and Immich share a rootful Podman network. NPM publishes HTTP/HTTPS, but its administration port remains
   bound to `127.0.0.1:81`; do not expose it directly to the LAN or Internet.
 - `profile_backend_phase1` is limited to rootless Navidrome and Syncthing user Quadlets on Atlas. Official Navidrome
@@ -155,8 +158,8 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   Atlas and its SQLite database verified. The playbook renders the target but never migrates or deletes application
   data; after cutover, set the flag true to enable and start Navidrome and Syncthing.
 - Phase 1 must not change Prometheus' existing NPM deployment. NPM continues to be managed exactly by `profile_server`;
-  use `10.0.0.2:4533` for Navidrome and `10.0.0.2:8384` for the Syncthing GUI. Native Syncthing transfer/discovery does
-  not use the HTTP proxy.
+  use `10.0.0.2:4533` for Navidrome and `10.0.0.2:8384` for the Syncthing GUI. Syncthing does not use host networking:
+  its GUI, transfer, QUIC and discovery ports are explicitly published only on `10.0.0.2`; native transfer/discovery does not use the HTTP proxy.
 - `wireguard_overlay` manages the required `wg0` path between Prometheus and Atlas, persists private keys only on their
   respective hosts, and exchanges only derived public keys. The initial run must include both hosts. Prometheus
   opens `51820/udp`; the Atlas backend role admits service ports only in the WireGuard firewalld zone.

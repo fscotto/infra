@@ -14,6 +14,7 @@ atlas_admin_uid: 1000
 atlas_admin_gid: 1000
 atlas_admin_ssh_keys: "{{ vault_atlas_authorized_ssh_keys | default([]) }}"
 atlas_admin_password_hash: "{{ vault_atlas_admin_password_hash | default('!') }}"
+atlas_ssh_allow_tcp_forwarding: local
 
 atlas_lan_subnet: 192.168.178.0/24
 atlas_aegis_ip: 192.168.178.54
@@ -63,7 +64,9 @@ rocky_podman_packages:
 host_packages:
   - cockpit
   - nfs-utils
+  - policycoreutils
   - policycoreutils-python-utils
+  - python3-libselinux
   - samba
   - samba-client
   - samba-common-tools
@@ -82,6 +85,7 @@ atlas_nfs_exports:
 
 atlas_samba_share_name: Archive
 atlas_samba_workgroup: WORKGROUP
+atlas_samba_encryption: required
 # Append any pre-existing laptop Unix account here and keep its Samba password in Vault.
 atlas_samba_accounts:
   - username: "{{ atlas_admin_username }}"
@@ -91,12 +95,10 @@ atlas_samba_valid_users: "{{ atlas_samba_accounts | map(attribute='username') | 
 atlas_immich_db_password: "{{ vault_atlas_immich_db_password | default('') }}"
 
 atlas_firewalld_rich_rules:
-  - 'rule family="ipv4" source address="{{ atlas_lan_subnet }}" service name="ssh" accept'
-  - 'rule family="ipv4" source address="{{ atlas_lan_subnet }}" service name="cockpit" accept'
-  - 'rule family="ipv4" source address="{{ atlas_aegis_ip }}" service name="nfs" accept'
-  - 'rule family="ipv4" source address="{{ atlas_lan_subnet }}" service name="samba" accept'
-  - 'rule family="ipv4" source address="{{ atlas_lan_subnet }}" service name="http" accept'
-  - 'rule family="ipv4" source address="{{ atlas_lan_subnet }}" service name="https" accept'
+  - 'rule family="ipv4" source address="{{ atlas_lan_subnet }}" port port="22" protocol="tcp" accept'
+  - 'rule family="ipv4" source address="{{ atlas_lan_subnet }}" port port="9090" protocol="tcp" accept'
+  - 'rule family="ipv4" source address="{{ atlas_aegis_ip }}" port port="2049" protocol="tcp" accept'
+  - 'rule family="ipv4" source address="{{ atlas_lan_subnet }}" port port="445" protocol="tcp" accept'
 
 host_enabled_services:
   - sshd

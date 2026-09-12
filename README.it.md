@@ -196,8 +196,8 @@ Nextcloud resta disabilitato e il profilo non crea directory `/srv/nextcloud`.
 La fase 1 su Atlas non modifica questo deployment NPM ne i suoi dati persistenti. Dopo aver attivato
 WireGuard e i servizi Atlas, configurare i proxy host NPM correnti con upstream Navidrome
 `http://10.0.0.2:4533` e upstream per la GUI Syncthing `http://10.0.0.2:8384`. Solo la GUI web di
-Syncthing usa NPM; il traffico di sincronizzazione resta sulle porte native limitate a WireGuard.
-Configurare l'autenticazione Syncthing e una policy di accesso NPM adeguata prima di pubblicare la GUI.
+Syncthing usa NPM; il traffico di sincronizzazione resta sulle porte native pubblicate esplicitamente solo
+sull'indirizzo WireGuard di Atlas. Configurare l'autenticazione Syncthing e una policy di accesso NPM adeguata prima di pubblicare la GUI.
 
 ### DuckDNS
 
@@ -274,9 +274,10 @@ Con la gestione storage attiva, Atlas crea l'intera gerarchia sotto il pool `zpo
 `media/photobook`, `backups`, `backups/services` e `backup_prometheus`. I dataset applicativi e
 di archivio usano `zstd`; media, Syncthing e backup dei servizi usano `lz4`;
 `backups/services` mantiene inoltre una `refreservation` di `500G`.
-SMB3 pubblica `Archive` solo agli account Samba configurati con password in Vault e ammette la LAN
-configurata senza esclusioni specifiche per host. NFSv4 esporta soltanto
-`media/photobook` all'IP configurato di Aegis con `all_squash` verso UID/GID anonimi `1100`.
+Atlas impone SELinux targeted in modo persistente e segnala, senza avviarlo, l’eventuale reboot necessario per attivarlo. Assegna esplicitamente l’interfaccia LAN primaria alla zona firewalld gestita e applica hardening persistente del kernel di rete: rifiuta redirect e source-route, registra i martian, usa reverse-path filtering loose per WireGuard e disabilita il forwarding IPv4. SSH consente solo l’amministratore dichiarato tramite chiave pubblica; root, password, agent e forwarding
+remoto sono disabilitati, mentre il forwarding locale resta disponibile per tunnel amministrativi privati. SMB3 pubblica `Archive` solo agli account Samba configurati con password in Vault e
+ammette la LAN configurata su SMB3 cifrato e firmato, esclusivamente su TCP/445. NFSv4 esporta soltanto
+`media/photobook` all'IP configurato di Aegis su TCP/2049, con `all_squash` verso UID/GID anonimi `1100`.
 
 L'account di sistema `immich` usa UID/GID `1100`, shell senza login, nessuna appartenenza a `wheel` e
 i gruppi supplementari `video` e `render`. I Quadlet rootful di Immich Server, ML, cache compatibile

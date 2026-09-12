@@ -5,6 +5,9 @@
 - name: Import Atlas 45Drives tasks
   ansible.builtin.import_tasks: cockpit.yml
 
+- name: Import Atlas network hardening tasks
+  ansible.builtin.import_tasks: hardening.yml
+
 - name: Import Atlas pool bootstrap tasks
   ansible.builtin.import_tasks: pool.yml
 

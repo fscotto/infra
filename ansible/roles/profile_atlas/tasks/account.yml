@@ -6,6 +6,7 @@
       - atlas_admin_username != 'CHANGEME_ATLAS_ADMIN'
       - (atlas_admin_ssh_keys | default([])) | length > 0
       - atlas_admin_password_hash not in ['', '!', '*']
+      - atlas_ssh_allow_tcp_forwarding in ['no', 'yes', 'local', 'remote', 'all']
       - "'wheel' not in atlas_immich_supplementary_groups"
     fail_msg: >-
       Define atlas_admin_username, vault_atlas_authorized_ssh_keys and
@@ -149,6 +150,18 @@
       - "'pubkeyauthentication yes' in atlas_sshd_effective_configuration.stdout_lines"
       - "'passwordauthentication no' in atlas_sshd_effective_configuration.stdout_lines"
       - "'kbdinteractiveauthentication no' in atlas_sshd_effective_configuration.stdout_lines"
+      - "'authenticationmethods publickey' in atlas_sshd_effective_configuration.stdout_lines"
+      - "'x11forwarding no' in atlas_sshd_effective_configuration.stdout_lines"
+      - "('allowtcpforwarding ' ~ atlas_ssh_allow_tcp_forwarding) in atlas_sshd_effective_configuration.stdout_lines"
+      - "'allowagentforwarding no' in atlas_sshd_effective_configuration.stdout_lines"
+      - "'gatewayports no' in atlas_sshd_effective_configuration.stdout_lines"
+      - "'permittunnel no' in atlas_sshd_effective_configuration.stdout_lines"
+      - "'permituserenvironment no' in atlas_sshd_effective_configuration.stdout_lines"
+      - "'maxauthtries 3' in atlas_sshd_effective_configuration.stdout_lines"
+      - "'logingracetime 30' in atlas_sshd_effective_configuration.stdout_lines"
+      - "'clientaliveinterval 300' in atlas_sshd_effective_configuration.stdout_lines"
+      - "'clientalivecountmax 2' in atlas_sshd_effective_configuration.stdout_lines"
+      - "'loglevel VERBOSE' in atlas_sshd_effective_configuration.stdout_lines"
       - "('allowusers ' ~ atlas_admin_username) in atlas_sshd_effective_configuration.stdout_lines"
     fail_msg: The effective Atlas SSH configuration does not match the required hardening.
   when: not ansible_check_mode

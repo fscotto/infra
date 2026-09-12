@@ -6,13 +6,16 @@ Description=Atlas rootless Syncthing backend
 ContainerName=atlas-syncthing
 Image={{ backend_phase1_syncthing_image }}
 HostName=atlas-syncthing
-Network=host
 UserNS=keep-id
 User={{ backend_phase1_uid }}
 Group={{ backend_phase1_gid }}
+PublishPort={{ backend_phase1_wireguard_address }}:{{ backend_phase1_syncthing_gui_port }}:{{ backend_phase1_syncthing_gui_port }}
+PublishPort={{ backend_phase1_wireguard_address }}:{{ backend_phase1_syncthing_transfer_port }}:{{ backend_phase1_syncthing_transfer_port }}
+PublishPort={{ backend_phase1_wireguard_address }}:{{ backend_phase1_syncthing_transfer_port }}:{{ backend_phase1_syncthing_transfer_port }}/udp
+PublishPort={{ backend_phase1_wireguard_address }}:{{ backend_phase1_syncthing_discovery_port }}:{{ backend_phase1_syncthing_discovery_port }}/udp
 Environment=HOME=/var/syncthing
 Environment=STHOMEDIR=/var/syncthing/config
-Environment=STGUIADDRESS={{ backend_phase1_wireguard_address }}:{{ backend_phase1_syncthing_gui_port }}
+Environment=STGUIADDRESS=0.0.0.0:{{ backend_phase1_syncthing_gui_port }}
 Environment=TZ={{ backend_phase1_timezone }}
 Volume={{ backend_phase1_syncthing_root }}:/var/syncthing:Z
 NoNewPrivileges=true

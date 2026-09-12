@@ -11,6 +11,8 @@ atlas_admin_uid: 1000
 atlas_admin_gid: 1000
 atlas_admin_ssh_keys: []
 atlas_admin_password_hash: "!"
+# Local forwarding permits an administrator to tunnel a private service without allowing remote forwards.
+atlas_ssh_allow_tcp_forwarding: local
 
 atlas_immich_username: immich
 atlas_immich_group: immich
@@ -24,6 +26,25 @@ atlas_lan_subnet: CHANGEME_LAN_SUBNET
 atlas_aegis_ip: CHANGEME_AEGIS_IP
 atlas_manage_firewall: false
 atlas_firewalld_zone: public
+atlas_hardening_sysctls:
+  net.ipv4.conf.all.accept_redirects: "0"
+  net.ipv4.conf.default.accept_redirects: "0"
+  net.ipv4.conf.all.send_redirects: "0"
+  net.ipv4.conf.default.send_redirects: "0"
+  net.ipv4.conf.all.accept_source_route: "0"
+  net.ipv4.conf.default.accept_source_route: "0"
+  net.ipv4.conf.all.log_martians: "1"
+  net.ipv4.conf.default.log_martians: "1"
+  net.ipv4.conf.all.rp_filter: "2"
+  net.ipv4.conf.default.rp_filter: "2"
+  net.ipv4.tcp_syncookies: "1"
+  net.ipv4.icmp_echo_ignore_broadcasts: "1"
+  net.ipv4.icmp_ignore_bogus_error_responses: "1"
+  net.ipv4.ip_forward: "0"
+  net.ipv6.conf.all.accept_redirects: "0"
+  net.ipv6.conf.default.accept_redirects: "0"
+  net.ipv6.conf.all.accept_source_route: "0"
+  net.ipv6.conf.default.accept_source_route: "0"
 atlas_zfs_pool: CHANGEME_ZFS_POOL
 atlas_zfs_dataset_work: work
 atlas_zfs_dataset_archive: archive
@@ -72,6 +93,8 @@ atlas_nfs_exports:
       - "anongid={{ atlas_immich_gid }}"
 atlas_samba_share_name: Archive
 atlas_samba_workgroup: WORKGROUP
+# Keep encryption mandatory unless a verified client-compatibility exception is explicitly required.
+atlas_samba_encryption: required
 atlas_samba_valid_users: []
 atlas_samba_accounts: []
 atlas_samba_password_marker_dir: /var/lib/samba/private/ansible-passwords

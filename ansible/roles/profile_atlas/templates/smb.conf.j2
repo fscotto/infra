@@ -4,6 +4,10 @@
   security = user
   map to guest = Never
   server min protocol = SMB3
+  server signing = mandatory
+  smb encrypt = {{ atlas_samba_encryption }}
+  disable netbios = yes
+  smb ports = 445
   hosts allow = {{ atlas_lan_subnet }}
   include = registry
 

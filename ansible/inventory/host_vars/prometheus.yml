@@ -7,19 +7,21 @@ ansible_ssh_private_key_file: /home/fscotto/.ssh/id_ed25519
 
 server_username: rocky
 server_duckdns_domain: fscotto
-server_atlas_music_enabled: false
-server_atlas_sftp_host: CHANGEME_ATLAS_WIREGUARD_IP
-server_atlas_sftp_username: admin
-server_atlas_sftp_known_host: CHANGEME_ATLAS_SSH_HOST_KEY
-server_atlas_wireguard_unit: wg-quick@wg0.service
-server_atlas_sftp_private_key: "{{ vault_prometheus_atlas_sftp_private_key | default('') }}"
+
+wireguard_overlay_enabled: false
+wireguard_address: 10.0.0.1/24
+wireguard_listen_port: 51820
+wireguard_enable_ipv4_forwarding: true
+wireguard_peers:
+  - name: atlas
+    host: atlas
+    allowed_ips:
+      - 10.0.0.2/32
 
 host_packages:
   - cockpit
   - cockpit-navigator
   - cockpit-podman
-  - fuse3
-  - rclone
 
 host_enabled_services:
   - cockpit.socket

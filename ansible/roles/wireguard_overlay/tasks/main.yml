@@ -1,0 +1,158 @@
+---
+- name: Configure WireGuard overlay
+  tags: [wireguard, services]
+  when: wireguard_overlay_enabled | bool
+  block:
+    - name: Validate WireGuard host configuration
+      ansible.builtin.assert:
+        that:
+          - wireguard_address != 'CHANGEME_WIREGUARD_ADDRESS'
+          - wireguard_address is match('^[0-9]{1,3}(\.[0-9]{1,3}){3}/[0-9]{1,2}$')
+          - wireguard_peers | length > 0
+          - wireguard_peers | map(attribute='host') | difference(ansible_play_hosts_all) | length == 0
+        fail_msg: >-
+          Configure this host's WireGuard address and peers, and run the first
+          key bootstrap against every peer in the same play.
+
+    - name: Install WireGuard userspace tools
+      ansible.builtin.dnf:
+        name: "{{ wireguard_packages }}"
+        state: present
+
+    - name: Create private WireGuard configuration directory
+      ansible.builtin.file:
+        path: "{{ wireguard_config_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0700"
+
+    - name: Check for an existing WireGuard private key
+      ansible.builtin.stat:
+        path: "{{ wireguard_private_key_path }}"
+      register: wireguard_private_key_stat
+
+    - name: Generate a missing WireGuard private key
+      ansible.builtin.command:
+        argv:
+          - wg
+          - genkey
+      register: wireguard_generated_private_key
+      changed_when: true
+      no_log: true
+      when:
+        - not wireguard_private_key_stat.stat.exists
+        - not ansible_check_mode
+
+    - name: Persist the generated WireGuard private key
+      ansible.builtin.copy:
+        content: "{{ wireguard_generated_private_key.stdout }}\n"
+        dest: "{{ wireguard_private_key_path }}"
+        owner: root
+        group: root
+        mode: "0600"
+      no_log: true
+      when:
+        - not wireguard_private_key_stat.stat.exists
+        - not ansible_check_mode
+
+    - name: Require a private key during check mode
+      ansible.builtin.assert:
+        that:
+          - wireguard_private_key_stat.stat.exists
+        fail_msg: >-
+          The initial WireGuard key generation cannot be simulated safely in
+          check mode. Run the gated WireGuard play once without --check.
+      when: ansible_check_mode
+
+    - name: Read the persisted WireGuard private key
+      ansible.builtin.slurp:
+        src: "{{ wireguard_private_key_path }}"
+      register: wireguard_private_key_material
+      no_log: true
+
+    - name: Derive this host's WireGuard public key
+      ansible.builtin.command:
+        argv:
+          - wg
+          - pubkey
+        stdin: "{{ wireguard_private_key_material.content | b64decode | trim }}"
+      register: wireguard_derived_public_key
+      changed_when: false
+      no_log: true
+
+    - name: Publish this host's WireGuard public key
+      ansible.builtin.set_fact:
+        wireguard_public_key: "{{ wireguard_derived_public_key.stdout }}"
+
+    - name: Require every peer's generated public key
+      ansible.builtin.assert:
+        that:
+          - hostvars[item.host].wireguard_public_key is defined
+          - hostvars[item.host].wireguard_public_key | length > 0
+        fail_msg: >-
+          The public key for {{ item.host }} is unavailable. The first
+          WireGuard run must include every overlay host.
+      loop: "{{ wireguard_peers }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Render the private WireGuard interface configuration
+      ansible.builtin.template:
+        src: wg.conf.j2
+        dest: "{{ wireguard_config_path }}"
+        owner: root
+        group: root
+        mode: "0600"
+      diff: false
+      no_log: true
+      notify: Restart WireGuard interface
+
+    - name: Enable IPv4 forwarding for the ingress host
+      ansible.posix.sysctl:
+        name: net.ipv4.ip_forward
+        value: "1"
+        state: present
+        sysctl_set: true
+        reload: true
+      when: wireguard_enable_ipv4_forwarding | bool
+
+    - name: Create the WireGuard firewalld zone
+      ansible.posix.firewalld:
+        zone: "{{ wireguard_firewalld_zone }}"
+        state: present
+        permanent: true
+      register: wireguard_firewalld_zone_result
+
+    - name: Reload firewalld after creating the WireGuard zone
+      ansible.builtin.systemd:
+        name: firewalld.service
+        state: reloaded
+      when:
+        - wireguard_firewalld_zone_result is changed
+        - not ansible_check_mode
+
+    - name: Assign the WireGuard interface to its firewalld zone
+      ansible.posix.firewalld:
+        interface: "{{ wireguard_interface }}"
+        zone: "{{ wireguard_firewalld_zone }}"
+        state: enabled
+        permanent: true
+        immediate: true
+
+    - name: Permit this host's public WireGuard listener
+      ansible.posix.firewalld:
+        port: "{{ wireguard_listen_port }}/udp"
+        zone: "{{ wireguard_public_firewalld_zone }}"
+        state: enabled
+        permanent: true
+        immediate: true
+      when: wireguard_listen_port | int > 0
+
+    - name: Enable the WireGuard interface
+      ansible.builtin.systemd:
+        name: "wg-quick@{{ wireguard_interface }}.service"
+        enabled: true
+        state: started
+        daemon_reload: true
+      when: not ansible_check_mode

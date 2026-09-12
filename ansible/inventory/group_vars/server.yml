@@ -6,29 +6,6 @@ effective_username: "{{ server_username }}"
 effective_user_group: "{{ server_user_group }}"
 effective_user_home: "{{ server_user_home }}"
 server_container_stack_dir: /opt/docker/server
-server_atlas_music_enabled: false
-server_atlas_sftp_remote_name: atlas
-server_atlas_sftp_host: CHANGEME_ATLAS_WIREGUARD_IP
-server_atlas_sftp_port: 22
-server_atlas_sftp_username: admin
-server_atlas_sftp_remote_path: /pool/media/music
-server_atlas_sftp_private_key: "{{ vault_prometheus_atlas_sftp_private_key | default('') }}"
-server_atlas_sftp_private_key_file: /etc/rclone/atlas_ed25519
-server_atlas_sftp_known_host: ""
-server_atlas_sftp_known_hosts_file: /etc/rclone/known_hosts
-server_atlas_wireguard_unit: ""
-server_rclone_config_dir: /etc/rclone
-server_rclone_config_file: /etc/rclone/rclone.conf
-server_rclone_music_service: rclone-music.service
-server_rclone_music_mountpoint: /mnt/music_atlas
-server_rclone_music_cache_dir: /var/cache/rclone-music
-server_navidrome_data_dir: /opt/navidrome/data
-server_navidrome_quadlet_dir: "{{ server_user_home }}/.config/containers/systemd"
-server_navidrome_env_dir: "{{ server_user_home }}/.config/navidrome"
-server_navidrome_env_file: "{{ server_navidrome_env_dir }}/navidrome.env"
-server_navidrome_image: docker.io/deluan/navidrome:latest
-server_navidrome_port: 4533
-server_navidrome_db_password: "{{ vault_navidrome_db_password | default('') }}"
 ai_agents: {}
 vim_plugins_enabled: false
 
@@ -85,19 +62,11 @@ server_directories:
     owner: root
     group: root
     mode: "0755"
-  - path: "{{ server_navidrome_data_dir }}"
-    owner: "{{ server_username }}"
-    group: "{{ server_user_group }}"
-    mode: "0755"
   - path: /opt/npm/data
     owner: root
     group: root
     mode: "0755"
   - path: /opt/npm/letsencrypt
-    owner: root
-    group: root
-    mode: "0755"
-  - path: /opt/postgres/data
     owner: root
     group: root
     mode: "0755"

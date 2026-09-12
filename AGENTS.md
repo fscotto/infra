@@ -55,8 +55,10 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
   - Server compose render: `podman-compose -f /opt/docker/server/docker-compose.yml config` and `systemctl status podman-compose-server`
   - Atlas media stack:
     `ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff`
-  - Prometheus media mount:
-    `ansible-playbook ansible/site.yml --limit prometheus --tags rclone,navidrome --check --diff`
+  - Atlas phase-one rootless services:
+    `ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1 --check --diff -e backend_phase1_enabled=true`
+  - Prometheus/Atlas WireGuard overlay:
+    `ansible-playbook ansible/site.yml --limit prometheus,atlas --tags wireguard --check --diff`
   - DuckDNS config only: `ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff`
 
 ## Conventions
@@ -108,16 +110,13 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - `rocky_server` is a child of both `platform_rocky` and `server`; `prometheus` is its active target.
 - The target must already provide `server_username` with local sudo access before the profile runs.
 - The Rocky profile installs Podman and podman-compose, uses firewalld, preserves SELinux enforcement, and renders the
-  Nginx Proxy Manager/Gitea/Navidrome-PostgreSQL Compose stack with a `podman-compose-server` systemd unit. It does not
-  start or enable that Compose stack, transfer data, update DNS, or cut over traffic; activating it remains manual.
-- Prometheus has a gated system `rclone-music.service` and rootless Navidrome Quadlet. They remain disabled until the
-  Atlas WireGuard address, pinned SSH host key and Vault-backed SFTP private key are configured. The rclone mount is
-  read-only at `/mnt/music_atlas`; Navidrome must not start against the underlying empty mountpoint or while the legacy
-  rootful Navidrome container is still running. The role never removes that legacy container or its data.
+  existing Nginx Proxy Manager/Gitea Compose stack with a `podman-compose-server` systemd unit. PostgreSQL and
+  Navidrome are no longer part of the desired Prometheus configuration. The role does not stop or remove legacy
+  containers, delete `/opt/postgres/data`, start the Compose stack, update DNS, or cut over traffic.
 - Firewalld enables SSH, Cockpit (`9090/tcp`), HTTP and HTTPS. Nginx Proxy Manager publishes `80/tcp` and
   `443/tcp`; bind its administration interface only to `127.0.0.1:81` and use `npm-tunnel` from Ikaros or Nymph.
   Nextcloud remains disabled; do not provision `/srv/nextcloud` directories.
-- `scripts/migrate_prometheus_data.sh` is the separate, source-host-run migration path. It dry-runs by
+- `scripts/migrate_prometheus_data.sh` is the separate, source-host-run NPM/Gitea migration path. It dry-runs by
   default and requires explicit source-stack quiescing before copying persistent Docker data with rsync.
 - Atlas-only OpenZFS, NFS, Samba, and Syncthing stay selected through Atlas host variables and must not
   leak into `rocky_server`. Cockpit plus its Navigator and Podman extensions are selected explicitly for
@@ -133,18 +132,33 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   and Vault inputs are replaced; only then may the profile manage datasets, shares, LAN-restricted firewall rules, and
   rootful media Quadlets.
 - Atlas requires `vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash` for Cockpit
-  and, when the relevant gates are enabled, `vault_atlas_samba_password` and `vault_atlas_immich_db_password`. Never
-  print these values.
-- Atlas creates `archive`, `media/music`, `media/icloud_photos`, and `backups/services` only under the verified
-  pre-existing pool; `backups/services` has a `500G` refreservation. Existing Work, Syncthing, and
-  Prometheus-backup datasets remain managed and separate.
+  and, when the relevant gates are enabled, `vault_atlas_samba_password` and
+  `vault_atlas_immich_db_password`. Never print these values.
+- Atlas creates the complete declared hierarchy only under the verified pre-existing pool: `work`, `archive`,
+  `archive/app_data`, `archive/app_data/navidrome`, `archive/app_data/syncthing`, `media`, `media/music`,
+  `media/photobook`, `backups`, `backups/services`, and `backup_prometheus`. `backups/services` has a `500G`
+  refreservation. There is no separate legacy `zpool/syncthing` dataset.
 - The `immich` system account is fixed to UID/GID `1100`, has no login shell or `wheel` membership, and receives only
   the `video` and `render` supplementary groups. Immich's rootful Quadlets run as `1100:1100`; Server and ML receive
-  `/dev/dri`, while the iCloud Photos external library is read-only.
-- Atlas exports iCloud Photos only to the configured Aegis IP with all access squashed to UID/GID `1100`. SMB3 exposes
+  `/dev/dri`, while the Photobook external library is read-only at `/external/photobook`.
+- Atlas exports Photobook only to the configured Aegis IP with all access squashed to UID/GID `1100`. SMB3 exposes
   `Archive` to Vault-backed authorized accounts and admits the configured LAN without host-specific exclusions.
 - Atlas NPM and Immich share a rootful Podman network. NPM publishes HTTP/HTTPS, but its administration port remains
   bound to `127.0.0.1:81`; do not expose it directly to the LAN or Internet.
+- `profile_backend_phase1` is limited to rootless Navidrome and Syncthing user Quadlets on Atlas. Official Navidrome
+  `0.63.2` uses SQLite below `/data` and does not support `ND_DATABASE_URL` or an external PostgreSQL backend; do not
+  recreate the obsolete Prometheus `navidromedb` service. The role requires the storage role's `zpool/media/music`,
+  `zpool/archive/app_data`, `zpool/archive/app_data/navidrome`, and `zpool/archive/app_data/syncthing` datasets at
+  their exact paths. It never creates the pool.
+- Keep `backend_phase1_start_services` false until the stopped Prometheus Navidrome data directory has been copied to
+  Atlas and its SQLite database verified. The playbook renders the target but never migrates or deletes application
+  data; after cutover, set the flag true to enable and start Navidrome and Syncthing.
+- Phase 1 must not change Prometheus' existing NPM deployment. NPM continues to be managed exactly by `profile_server`;
+  use `10.0.0.2:4533` for Navidrome and `10.0.0.2:8384` for the Syncthing GUI. Native Syncthing transfer/discovery does
+  not use the HTTP proxy.
+- `wireguard_overlay` manages the required `wg0` path between Prometheus and Atlas, persists private keys only on their
+  respective hosts, and exchanges only derived public keys. The first gated run must include both hosts. Prometheus
+  opens `51820/udp`; the Atlas backend role admits service ports only in the WireGuard firewalld zone.
 
 ## Atlas NAS TODO
 - Replace every Atlas `CHANGEME` value, provide the required Vault variables and validate the first
@@ -159,7 +173,7 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   or manual operations, not as the only source of configuration, and never automate snapshot rollback.
 - Manage the Syncthing star topology, device IDs, folders, folder modes, ignore rules and protected GUI
   or API access for the selected clients.
-- Validate the existing WireGuard path and add its LAN/VPN-only firewalld rules before enabling remote services;
+- Validate the managed WireGuard path and its LAN/VPN-only firewalld rules before enabling remote services;
   never expose SSH, Cockpit, NFS, SMB or Syncthing through public port forwarding.
 - Add the least-privilege Prometheus backup flow: remote dump generation, dedicated SSH identity,
   pinned host key, atomic pull, verification, retention and an Atlas systemd service/timer.

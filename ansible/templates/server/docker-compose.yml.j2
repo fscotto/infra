@@ -38,22 +38,6 @@ services:
   #   networks:
   #     - web
 
-  navidromedb:
-    image: docker.io/library/postgres:13
-    container_name: navidromedb
-    restart: unless-stopped
-    mem_limit: 2048m
-    environment:
-      POSTGRES_DB: "navidrome_db"
-      POSTGRES_USER: "navidrome"
-      POSTGRES_PASSWORD: "{{ vault_postgres_root_password }}"
-    volumes:
-      - "/opt/postgres/data:/var/lib/postgresql/data{{ ':' ~ selinux_volume_option if selinux_volume_option else '' }}"
-    ports:
-      - "127.0.0.1:5432:5432"
-    networks:
-      - web
-
   gitea:
     image: docker.gitea.com/gitea:1.25.2
     container_name: gitea

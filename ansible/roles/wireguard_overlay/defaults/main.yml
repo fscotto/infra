@@ -1,0 +1,15 @@
+---
+wireguard_overlay_enabled: false
+wireguard_interface: wg0
+wireguard_config_dir: /etc/wireguard
+wireguard_private_key_path: "{{ wireguard_config_dir }}/{{ wireguard_interface }}.key"
+wireguard_config_path: "{{ wireguard_config_dir }}/{{ wireguard_interface }}.conf"
+wireguard_address: CHANGEME_WIREGUARD_ADDRESS
+wireguard_listen_port: 0
+wireguard_mtu: 1420
+wireguard_firewalld_zone: wireguard
+wireguard_public_firewalld_zone: public
+wireguard_enable_ipv4_forwarding: false
+wireguard_peers: []
+wireguard_packages:
+  - wireguard-tools

@@ -8,17 +8,6 @@
     fail_msg: >-
       server_firewall_backend must be firewalld for the Rocky server profile.
 
-- name: Require server database secret variables
-  tags: [dotfiles, dotfiles:server, services, navidrome]
-  ansible.builtin.assert:
-    that:
-      - server_navidrome_db_password | length > 0
-      - (vault_postgres_root_password | default('')) | length > 0
-    fail_msg: >-
-      Define vault_navidrome_db_password and vault_postgres_root_password in Vault
-      before rendering the Navidrome database configuration.
-  no_log: true
-
 - name: Configure DuckDNS updater
   tags: [dotfiles, dotfiles:server, duckdns]
   ansible.builtin.import_tasks: duckdns.yml
@@ -71,12 +60,6 @@
 - name: Manage Podman Compose stack
   tags: [services, podman]
   ansible.builtin.include_tasks: podman-compose.yml
-
-- name: Configure Atlas music mount
-  ansible.builtin.import_tasks: rclone-music.yml
-
-- name: Configure rootless Navidrome
-  ansible.builtin.import_tasks: navidrome.yml
 
 - name: Disable SSH root login on server
   tags: [services]

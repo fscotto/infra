@@ -1,0 +1,28 @@
+---
+backend_phase1_enabled: false
+backend_phase1_start_services: false
+backend_phase1_username: "{{ atlas_admin_username }}"
+backend_phase1_user_group: "{{ atlas_admin_group }}"
+backend_phase1_user_home: "{{ atlas_admin_home }}"
+backend_phase1_quadlet_dir: "{{ backend_phase1_user_home }}/.config/containers/systemd"
+backend_phase1_wireguard_interface: wg0
+backend_phase1_wireguard_address: CHANGEME_ATLAS_WIREGUARD_ADDRESS
+backend_phase1_wireguard_firewalld_zone: wireguard
+backend_phase1_music_dir: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_music }}"
+backend_phase1_app_data_root: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_app_data }}"
+backend_phase1_navidrome_data_dir: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_navidrome }}"
+backend_phase1_syncthing_root: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_syncthing }}"
+backend_phase1_music_dataset: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_music }}"
+backend_phase1_app_data_dataset: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_app_data }}"
+backend_phase1_navidrome_dataset: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_navidrome }}"
+backend_phase1_syncthing_dataset: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_syncthing }}"
+backend_phase1_navidrome_image: docker.io/deluan/navidrome:0.63.2
+backend_phase1_syncthing_image: docker.io/syncthing/syncthing:2.1.3
+backend_phase1_navidrome_port: 4533
+backend_phase1_syncthing_gui_port: 8384
+backend_phase1_syncthing_transfer_port: 22000
+backend_phase1_syncthing_discovery_port: 21027
+backend_phase1_timezone: Europe/Rome
+backend_phase1_services:
+  - atlas-navidrome.service
+  - atlas-syncthing.service

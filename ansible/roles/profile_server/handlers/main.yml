@@ -9,29 +9,3 @@
   tags: [services]
   ansible.builtin.systemd:
     daemon_reload: true
-
-- name: Restart rclone music mount
-  tags: [services, rclone, navidrome]
-  ansible.builtin.systemd:
-    name: "{{ server_rclone_music_service }}"
-    state: restarted
-    daemon_reload: true
-  when:
-    - server_atlas_music_enabled | bool
-    - not ansible_check_mode
-
-- name: Restart rootless Navidrome
-  tags: [services, podman, rclone, navidrome]
-  become_user: "{{ server_username }}"
-  ansible.builtin.systemd:
-    name: navidrome.service
-    scope: user
-    state: restarted
-    daemon_reload: true
-  environment:
-    XDG_RUNTIME_DIR: "/run/user/{{ ansible_facts['getent_passwd'][server_username][1] }}"
-    DBUS_SESSION_BUS_ADDRESS: >-
-      unix:path=/run/user/{{ ansible_facts['getent_passwd'][server_username][1] }}/bus
-  when:
-    - server_atlas_music_enabled | bool
-    - not ansible_check_mode

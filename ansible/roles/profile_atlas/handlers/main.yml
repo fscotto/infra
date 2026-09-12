@@ -28,11 +28,6 @@
     name: smb
     state: restarted
 
-- name: Restart Atlas Syncthing service
-  ansible.builtin.systemd:
-    name: atlas-syncthing
-    state: restarted
-
 - name: Restart Atlas media Quadlets
   ansible.builtin.systemd:
     name: "{{ item }}"

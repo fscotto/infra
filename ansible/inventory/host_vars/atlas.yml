@@ -22,17 +22,35 @@ atlas_firewalld_zone: public
 atlas_zfs_pool: zpool
 atlas_zfs_dataset_work: work
 atlas_zfs_dataset_archive: archive
+atlas_zfs_dataset_app_data: archive/app_data
+atlas_zfs_dataset_navidrome: archive/app_data/navidrome
+atlas_zfs_dataset_syncthing: archive/app_data/syncthing
+atlas_zfs_dataset_media: media
 atlas_zfs_dataset_music: media/music
-atlas_zfs_dataset_syncthing: syncthing
 atlas_zfs_dataset_backup_prometheus: backup_prometheus
-atlas_zfs_dataset_icloud_photos: media/icloud_photos
+atlas_zfs_dataset_photobook: media/photobook
+atlas_zfs_dataset_backups: backups
 atlas_zfs_dataset_service_backups: backups/services
 atlas_mount_root: /zpool
 atlas_manage_storage: false
 atlas_manage_media_stack: false
 
+wireguard_overlay_enabled: false
+wireguard_address: 10.0.0.2/24
+wireguard_peers:
+  - name: prometheus
+    host: prometheus
+    endpoint: "{{ hostvars['prometheus']['ansible_host'] }}:{{ hostvars['prometheus']['wireguard_listen_port'] }}"
+    allowed_ips:
+      - 10.0.0.0/24
+    persistent_keepalive: 25
+
+backend_phase1_enabled: false
+backend_phase1_start_services: false
+backend_phase1_wireguard_address: 10.0.0.2
+
 rocky_manage_openzfs_repo: true
-rocky_manage_syncthing_binary: true
+rocky_manage_syncthing_binary: false
 rocky_manage_podman: true
 rocky_podman_packages:
   - podman
@@ -47,7 +65,7 @@ host_packages:
   - zfs
 
 atlas_nfs_exports:
-  - path: "{{ atlas_icloud_photos_mountpoint }}"
+  - path: "{{ atlas_photobook_mountpoint }}"
     client: "{{ atlas_aegis_ip }}"
     options:
       - rw

@@ -23,23 +23,29 @@ atlas_firewalld_zone: public
 atlas_zfs_pool: CHANGEME_ZFS_POOL
 atlas_zfs_dataset_work: work
 atlas_zfs_dataset_archive: archive
+atlas_zfs_dataset_app_data: archive/app_data
+atlas_zfs_dataset_navidrome: archive/app_data/navidrome
+atlas_zfs_dataset_syncthing: archive/app_data/syncthing
+atlas_zfs_dataset_media: media
 atlas_zfs_dataset_music: media/music
-atlas_zfs_dataset_syncthing: syncthing
 atlas_zfs_dataset_backup_prometheus: backup_prometheus
-atlas_zfs_dataset_icloud_photos: media/icloud_photos
+atlas_zfs_dataset_photobook: media/photobook
+atlas_zfs_dataset_backups: backups
 atlas_zfs_dataset_service_backups: backups/services
 atlas_zfs_service_backups_refreservation: 500G
 atlas_mount_root: /CHANGEME_ATLAS_MOUNT_ROOT
 
 atlas_archive_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_archive }}"
+atlas_app_data_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_app_data }}"
+atlas_navidrome_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_navidrome }}"
+atlas_syncthing_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_syncthing }}"
+atlas_media_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_media }}"
 atlas_music_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_music }}"
 atlas_work_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_work }}"
-atlas_syncthing_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_syncthing }}"
 atlas_backup_prometheus_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_backup_prometheus }}"
-atlas_icloud_photos_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_icloud_photos }}"
+atlas_photobook_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_photobook }}"
+atlas_backups_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_backups }}"
 atlas_service_backups_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_service_backups }}"
-atlas_syncthing_config_dir: "{{ atlas_admin_home }}/.local/state/syncthing"
-atlas_syncthing_default_dir: "{{ atlas_syncthing_mountpoint }}/Sync"
 
 atlas_45drives_repo_url: https://repo.45drives.com/repofiles/rocky/45drives-enterprise.repo
 atlas_45drives_repo_file: /etc/yum.repos.d/45drives-enterprise.repo
@@ -51,7 +57,7 @@ atlas_45drives_packages:
   - cockpit-scheduler
 
 atlas_nfs_exports:
-  - path: "{{ atlas_icloud_photos_mountpoint }}"
+  - path: "{{ atlas_photobook_mountpoint }}"
     client: "{{ atlas_aegis_ip }}"
     options:
       - rw

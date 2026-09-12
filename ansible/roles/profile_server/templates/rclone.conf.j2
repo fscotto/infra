@@ -1,9 +1,0 @@
-# Managed by Ansible. Authentication uses the separately deployed Vault-backed key.
-[{{ server_atlas_sftp_remote_name }}]
-type = sftp
-host = {{ server_atlas_sftp_host }}
-user = {{ server_atlas_sftp_username }}
-port = {{ server_atlas_sftp_port }}
-key_file = {{ server_atlas_sftp_private_key_file }}
-known_hosts_file = {{ server_atlas_sftp_known_hosts_file }}
-shell_type = unix

@@ -10,6 +10,7 @@ atlas_admin_home: "/home/{{ atlas_admin_username }}"
 atlas_admin_uid: 1000
 atlas_admin_gid: 1000
 atlas_admin_ssh_keys: []
+atlas_admin_ssh_key_directory: "{{ atlas_admin_home }}/.ssh/authorized_keys.d"
 atlas_admin_password_hash: "!"
 # Local forwarding permits an administrator to tunnel a private service without allowing remote forwards.
 atlas_ssh_allow_tcp_forwarding: local

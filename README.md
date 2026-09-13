@@ -133,6 +133,8 @@ ansible-playbook ansible/site.yml --limit prometheus \
 ```
 
 The target must already provide `server_username` with local sudo access.
+Prometheus authorizes its declared SSH public keys through separate files below
+`~/.ssh/authorized_keys.d/`, while `sshd` is configured to read those files directly.
 
 ### DuckDNS
 
@@ -215,8 +217,8 @@ only manages child datasets. A one-time RAIDZ2 bootstrap is available only with 
 It never partitions, forces, destroys, rolls back, or changes the vdev layout of an existing pool. Linux
 clients use NFSv4 and Windows/WSL clients use SMB; both are restricted to the configured LAN.
 
-For the first run, provide `vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash`,
-`vault_atlas_samba_password`, and `vault_atlas_immich_db_password`. Bootstrap the host through its
+For the first run, provide `vault_atlas_admin_password_hash`, `vault_atlas_samba_password`, and
+`vault_atlas_immich_db_password`. Bootstrap the host through its
 existing administrator:
 
 ```bash
@@ -228,7 +230,8 @@ ansible-playbook ansible/site.yml --limit atlas \
 Cockpit password. Subsequent runs use `atlas_admin_username`. Atlas declares storage, sharing, and its
 LAN firewall rules enabled. Before the first apply, check the existing pool and mountpoints, LAN subnet,
 and active firewalld zone. `atlas_manage_media_stack` remains disabled until `/dev/dri`, the container
-paths, and the Immich database secret are validated.
+paths, and the Immich database secret are validated. Atlas reads its declared SSH public keys from
+separate files below `~/.ssh/authorized_keys.d/`.
 
 With storage management enabled, Atlas creates the complete dataset hierarchy below the existing or
 explicitly bootstrapped `zpool`: `work`, `archive`, `archive/app_data`, the separate `archive/app_data/navidrome` and

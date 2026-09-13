@@ -4,6 +4,7 @@ PubkeyAuthentication yes
 PasswordAuthentication no
 KbdInteractiveAuthentication no
 AuthenticationMethods publickey
+AuthorizedKeysFile {% for key in atlas_admin_ssh_keys %}%h/.ssh/authorized_keys.d/{{ key.name }}{% if not loop.last %} {% endif %}{% endfor %}
 X11Forwarding no
 AllowTcpForwarding {{ atlas_ssh_allow_tcp_forwarding }}
 AllowAgentForwarding no

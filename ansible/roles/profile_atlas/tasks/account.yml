@@ -9,8 +9,8 @@
       - atlas_ssh_allow_tcp_forwarding in ['no', 'yes', 'local', 'remote', 'all']
       - "'wheel' not in atlas_immich_supplementary_groups"
     fail_msg: >-
-      Define atlas_admin_username, vault_atlas_authorized_ssh_keys and
-      vault_atlas_admin_password_hash before applying the Atlas profile.
+      Define atlas_admin_username, atlas_admin_ssh_keys and vault_atlas_admin_password_hash
+      before applying the Atlas profile.
   no_log: true
 
 - name: Create Atlas administrator group
@@ -78,13 +78,26 @@
     mode: "0440"
     validate: "visudo -cf %s"
 
-- name: Manage Atlas administrator authorized SSH keys exclusively
+- name: Ensure Atlas administrator SSH authorized key fragments directory exists
   tags: [atlas, services]
-  ansible.posix.authorized_key:
-    user: "{{ atlas_admin_username }}"
-    key: "{{ atlas_admin_ssh_keys | join('\n') }}"
-    state: present
-    exclusive: true
+  ansible.builtin.file:
+    path: "{{ atlas_admin_ssh_key_directory }}"
+    state: directory
+    owner: "{{ atlas_admin_username }}"
+    group: "{{ atlas_admin_group }}"
+    mode: "0700"
+
+- name: Manage Atlas administrator SSH authorized key fragments
+  tags: [atlas, services]
+  ansible.builtin.copy:
+    content: "{{ item.key }}\n"
+    dest: "{{ atlas_admin_ssh_key_directory }}/{{ item.name }}"
+    owner: "{{ atlas_admin_username }}"
+    group: "{{ atlas_admin_group }}"
+    mode: "0600"
+  loop: "{{ atlas_admin_ssh_keys }}"
+  loop_control:
+    label: "{{ item.name }}"
 
 - name: Check whether the Atlas SSH host key exists
   tags: [atlas, services]

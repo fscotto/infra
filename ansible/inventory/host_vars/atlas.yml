@@ -12,7 +12,13 @@ atlas_admin_group: "{{ atlas_admin_username }}"
 atlas_admin_home: "/home/{{ atlas_admin_username }}"
 atlas_admin_uid: 1000
 atlas_admin_gid: 1000
-atlas_admin_ssh_keys: "{{ vault_atlas_authorized_ssh_keys | default([]) }}"
+atlas_admin_ssh_keys:
+  - name: ikaros
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINrIxXjA3ffPwziKGR5gzc4gAoBehQPlnEMcXF4Wl0ZS ikaros"
+  - name: nymph
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEH/7GJfGt0ZVmKeEzceoFkFkeCXFryKK9vAbaip+HCx nymph"
+  - name: siren
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA95wYlzpfN3rjUhpMeP4KHn8I6ZrjQXoDTgwgRIa++b siren"
 atlas_admin_password_hash: "{{ vault_atlas_admin_password_hash | default('!') }}"
 atlas_ssh_allow_tcp_forwarding: local
 

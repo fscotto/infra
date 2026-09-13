@@ -134,8 +134,8 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - `atlas_manage_storage`, `atlas_manage_sharing`, and `atlas_manage_firewall` are enabled in Atlas host vars as
   the declared steady state; set one false only for a deliberate suspension. `atlas_manage_media_stack` remains false
   until the future rootful Immich stack has its required Vault inputs and target validation.
-- Atlas requires `vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash` for Cockpit
-  and, while sharing is enabled, `vault_atlas_samba_password`. The future rootful media stack also requires
+- Atlas requires `vault_atlas_admin_password_hash` for Cockpit and, while sharing is enabled,
+  `vault_atlas_samba_password`. The future rootful media stack also requires
   `vault_atlas_immich_db_password`. Never print these values.
 - Atlas creates the complete declared hierarchy only under the verified existing or explicitly bootstrapped pool: `work`, `archive`,
   `archive/app_data`, `archive/app_data/navidrome`, `archive/app_data/syncthing`, `media`, `media/music`,
@@ -178,8 +178,9 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   or API access for the selected clients.
 - Validate the managed WireGuard path and its LAN/VPN-only firewalld rules before enabling remote services;
   never expose SSH, Cockpit, NFS, SMB or Syncthing through public port forwarding.
-- Add the least-privilege Prometheus backup flow: remote dump generation, dedicated SSH identity,
-  pinned host key, atomic pull, verification, retention and an Atlas systemd service/timer.
+- Add the Atlas-initiated least-privilege Prometheus backup pull: Prometheus exposes only prepared
+  read-only dumps through a dedicated account and Atlas retains the private SSH key, pinned host key,
+  atomic pull, verification, retention and systemd service/timer.
 - Add the encrypted offsite backup with Borg to a Hetzner Storage Box: use a dedicated SSH identity,
   pin the host key, keep Borg repository credentials and encryption material in Vault, use
   snapshot-consistent sources, and manage retries, logging, pruning, repository checks and restores.

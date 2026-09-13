@@ -196,6 +196,10 @@ for AdGuard while retaining DNS learned from the router. Define
 `vault_aegis_icloudpd_apple_id` in Vault before applying it. iCloudPD still requires interactive MFA
 initialization after its first deployment.
 
+New Aegis images create the `admin` account in Butane. Before configuring a newly imaged node, run its
+first playbook execution with `-e ansible_user=admin`; the SSH hardening role then permits that same
+account. Keep the inventory on `pi` until the existing node has been replaced.
+
 Validate the profile before deployment:
 
 ```bash

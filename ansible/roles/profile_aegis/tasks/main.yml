@@ -165,6 +165,16 @@
     path: "{{ aegis_ssh_user_home }}/.ssh/authorized_keys"
   register: aegis_authorized_keys
 
+- name: Manage Aegis SSH authorized keys
+  tags: [aegis, ssh, services]
+  ansible.posix.authorized_key:
+    user: "{{ ansible_user }}"
+    key: "{{ aegis_ssh_authorized_keys | join('\n') }}"
+    state: present
+    exclusive: true
+    manage_dir: true
+  when: aegis_ssh_authorized_keys | length > 0
+
 - name: Find Aegis SSH authorized key fragments
   tags: [aegis, ssh, services]
   ansible.builtin.find:
@@ -178,7 +188,8 @@
   ansible.builtin.assert:
     that:
       - >-
-        (aegis_authorized_keys.stat.exists and aegis_authorized_keys.stat.size | int > 0)
+        (aegis_ssh_authorized_keys | length > 0)
+        or (aegis_authorized_keys.stat.exists and aegis_authorized_keys.stat.size | int > 0)
         or aegis_authorized_key_fragments.matched | int > 0
     fail_msg: Add a public key for the Ansible SSH user before disabling password authentication.
 

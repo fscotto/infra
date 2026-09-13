@@ -180,13 +180,24 @@ Lo stato attuale del profilo server include:
 - installazione pacchetti Rocky via DNF, EPEL e CRB
 - installazione di Podman e podman-compose
 - abilitazione dei servizi systemd dichiarati in inventory/group vars
-- copia dei dotfiles server e rendering dei template server, incluso il `docker-compose.yml` dello stack servizi e dell'unit `podman-compose-server` (attivazione manuale)
+- copia dei dotfiles server e rendering del `docker-compose.yml` per Nginx Proxy Manager e Gitea,
+  piu l'unita `podman-compose-server` (attivazione manuale)
 - attivazione di firewalld con SSH, Cockpit (`9090/tcp`), HTTP e HTTPS abilitati
 - Syncthing escluso dal profilo server Rocky
+
+Il Compose desiderato su Prometheus non include piu Navidrome ne il database PostgreSQL obsoleto.
+Navidrome e Syncthing appartengono ad Atlas; Navidrome ufficiale usa invece SQLite. Il profilo non
+arresta o rimuove automaticamente eventuali container legacy e non elimina `/opt/postgres/data`.
 
 Nginx Proxy Manager pubblica solo `80/tcp` e `443/tcp`; la sua interfaccia di amministrazione e
 associata a `127.0.0.1:81` ed e raggiungibile da Ikaros o Nymph con l'alias Bash `npm-tunnel`.
 Nextcloud resta disabilitato e il profilo non crea directory `/srv/nextcloud`.
+
+La fase 1 su Atlas non modifica questo deployment NPM ne i suoi dati persistenti. Dopo aver attivato
+WireGuard e i servizi Atlas, configurare i proxy host NPM correnti con upstream Navidrome
+`http://10.0.0.2:4533` e upstream per la GUI Syncthing `http://10.0.0.2:8384`. Solo la GUI web di
+Syncthing usa NPM; il traffico di sincronizzazione resta sulle porte native pubblicate esplicitamente solo
+sull'indirizzo WireGuard di Atlas. Configurare l'autenticazione Syncthing e una policy di accesso NPM adeguata prima di pubblicare la GUI.
 
 ### DuckDNS
 
@@ -211,8 +222,9 @@ salvare separatamente eventuali modifiche non committate senza copiare segreti.
 
 Dopo il provisioning Rocky, eseguire `scripts/migrate_prometheus_data.sh` **sul server Ubuntu
 sorgente**. Lo script usa rsync, e in dry-run di default; richiede `--quiesce-source --execute` per
-fermare lo stack sorgente e copiare in modo consistente i dati PostgreSQL. Non avvia container, non
-cancella dati e non esegue il cutover.
+fermare lo stack sorgente e copiare in modo consistente soltanto i dati di Nginx Proxy Manager e
+Gitea. Non sposta Navidrome o Syncthing, non avvia container, non cancella dati e non esegue il
+cutover.
 
 Utente del profilo server:
 
@@ -234,14 +246,16 @@ ansible-playbook ansible/site.yml --limit prometheus -e server_username=myuser -
 
 ## NAS
 
-`atlas` e un NAS Rocky Linux 9 raggiunto tramite SSH. Il pool ZFS esiste gia: il profilo gestisce
-solo i dataset figli e non deve mai creare, partizionare, distruggere, fare rollback o modificare il
-pool. I client Linux usano NFSv4, quelli Windows/WSL SMB; entrambi restano limitati alla LAN
+`atlas` e un NAS Rocky Linux 9 raggiunto tramite SSH. Normalmente il pool ZFS esiste gia e il profilo
+gestisce solo i dataset figli. Un bootstrap RAIDZ2 una tantum e disponibile solo con conferma esplicita
+(`atlas_create_pool=true`) e quattro percorsi reali e verificati `/dev/disk/by-id/...` in
+`atlas_zpool_disks`. Non partiziona, forza, distrugge, esegue rollback o modifica il layout vdev di un
+pool esistente. I client Linux usano NFSv4, quelli Windows/WSL SMB; entrambi restano limitati alla LAN
 configurata.
 
-Per il primo avvio sostituire i placeholder Atlas e fornire
-`vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash` e
-`vault_atlas_samba_password`. Eseguire il bootstrap tramite l'amministratore esistente:
+Per il primo avvio fornire `vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash`,
+`vault_atlas_samba_password` e `vault_atlas_immich_db_password`. Eseguire il bootstrap tramite
+l'amministratore esistente:
 
 ```bash
 ansible-playbook ansible/site.yml --limit atlas \
@@ -249,13 +263,73 @@ ansible-playbook ansible/site.yml --limit atlas \
 ```
 
 `vault_atlas_admin_password_hash` deve essere un hash compatibile con `/etc/shadow`, non una
-password Cockpit in chiaro. Le esecuzioni successive usano `atlas_admin_username`. Abilitare
-`atlas_manage_storage` solo dopo aver verificato pool e mountpoint esistenti; abilitare
-`atlas_manage_firewall` solo dopo aver verificato subnet LAN e zona firewalld attiva.
+password Cockpit in chiaro. Le esecuzioni successive usano `atlas_admin_username`. Atlas dichiara
+abilitati storage, condivisioni e regole firewall LAN. Prima della prima applicazione verificare pool e
+mountpoint esistenti, subnet LAN e zona firewalld attiva. `atlas_manage_media_stack` resta disabilitato
+finche non saranno validati `/dev/dri`, i percorsi dei container e il segreto del database Immich.
 
-Restano da implementare retention delle snapshot, topologia Syncthing, VPN, pull da Prometheus,
-backup cifrati con Borg su una Hetzner Storage Box, backup USB, monitoraggio e test di disaster
-recovery. Il backlog operativo dettagliato e in `AGENTS.md`.
+Con la gestione storage attiva, Atlas crea l'intera gerarchia sotto il pool `zpool` esistente o creato esplicitamente:
+`work`, `archive`, `archive/app_data`, i dataset applicativi separati
+`archive/app_data/navidrome` e `archive/app_data/syncthing`, `media`, `media/music`,
+`media/photobook`, `backups`, `backups/services` e `backup_prometheus`. I dataset applicativi e
+di archivio usano `zstd`; media, Syncthing e backup dei servizi usano `lz4`;
+`backups/services` mantiene inoltre una `refreservation` di `500G`.
+Atlas impone SELinux targeted in modo persistente e segnala, senza avviarlo, l’eventuale reboot necessario per attivarlo. Assegna esplicitamente l’interfaccia LAN primaria alla zona firewalld gestita e applica hardening persistente del kernel di rete: rifiuta redirect e source-route, registra i martian, usa reverse-path filtering loose per WireGuard e disabilita il forwarding IPv4. SSH consente solo l’amministratore dichiarato tramite chiave pubblica; root, password, agent e forwarding
+remoto sono disabilitati, mentre il forwarding locale resta disponibile per tunnel amministrativi privati. SMB3 pubblica `Archive` solo agli account Samba configurati con password in Vault e
+ammette la LAN configurata su SMB3 cifrato e firmato, esclusivamente su TCP/445. NFSv4 esporta soltanto
+`media/photobook` all'IP configurato di Aegis su TCP/2049, con `all_squash` verso UID/GID anonimi `1100`.
+
+L'account di sistema `immich` usa UID/GID `1100`, shell senza login, nessuna appartenenza a `wheel` e
+i gruppi supplementari `video` e `render`. I Quadlet rootful di Immich Server, ML, cache compatibile
+Redis, PostgreSQL e NPM condividono una rete Podman. Immich viene eseguito come `1100:1100`; Server e
+ML ricevono `/dev/dri` e Photobook e montato in sola lettura su `/external/photobook`. NPM pubblica `80` e
+`443`, mentre l'amministrazione resta vincolata a `127.0.0.1:81` per l'accesso tramite tunnel SSH.
+
+La fase 1 e limitata ai Quadlet utente rootless di Navidrome e Syncthing su Atlas. E abilitata nella
+configurazione host di Atlas e puo essere impostata a `false` solo per una sospensione intenzionale. Navidrome ufficiale `0.63.2` usa il database SQLite sotto `/data` e
+non supporta `ND_DATABASE_URL` ne un backend PostgreSQL esterno. Il servizio obsoleto `navidromedb`
+e quindi rimosso da Prometheus invece di essere replicato su Atlas. Il ruolo deriva i percorsi dal
+pool `zpool`, montato in `/zpool`: musica in sola lettura da `/zpool/media/music`, stato
+applicativo Navidrome e `navidrome.db` in `/zpool/archive/app_data/navidrome` e dati Syncthing in
+`/zpool/archive/app_data/syncthing`. `profile_atlas` crea questi dataset quando
+`atlas_manage_storage` e attivo; il ruolo backend verifica i mountpoint esatti prima di avviare i
+container. Il ruolo backend non crea mai il pool. Il ruolo separato `wireguard_overlay`
+gestisce `wg0` tra Prometheus (`10.0.0.1`) e Atlas (`10.0.0.2`), genera una sola volta le chiavi
+private sui rispettivi host e scambia tramite Ansible soltanto quelle pubbliche. Solo Prometheus apre
+pubblicamente `51820/udp`. Le porte backend sono ammesse esclusivamente nella zona firewalld WireGuard.
+
+`backend_phase1_start_services` resta falso durante il trasferimento dello stato applicativo, quindi
+la prima esecuzione reale del backend genera i Quadlet senza creare un database Atlas vuoto. Dopo aver
+arrestato Navidrome su Prometheus, copiare l'intera directory `/opt/navidrome/data/` in
+`/zpool/archive/app_data/navidrome/`, preservando `navidrome.db` e gli eventuali file SQLite laterali.
+Impostare quindi questa variabile a vero e rieseguire il ruolo per abilitare e avviare Navidrome e
+Syncthing. Il playbook non copia e non elimina mai i dati applicativi.
+
+Validare e generare i servizi Atlas con:
+
+```bash
+ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
+ansible-playbook ansible/site.yml --limit atlas --tags storage
+
+ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
+ansible-playbook ansible/site.yml --limit prometheus,atlas --tags wireguard
+
+ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
+ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1 --check --diff
+
+ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
+ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1
+```
+
+Per il cutover, arrestare il vecchio Navidrome prima di copiare la sua directory dati, verificare
+l'ownership dell'account `admin` su Atlas e confermare la presenza del database SQLite copiato prima
+di impostare `backend_phase1_start_services: true` in `host_vars/atlas.yml`. Conservare i dati sorgente
+e il container legacy `navidromedb` fermo finche Navidrome su Atlas e una prova di restore non sono
+stati validati.
+
+Restano da completare retention delle snapshot, topologia Syncthing, validazione WireGuard/firewall,
+pull di backup da Prometheus, backup cifrati con Borg su una Hetzner Storage Box, backup USB,
+monitoraggio e test di disaster recovery. Il backlog operativo dettagliato e in `AGENTS.md`.
 
 ---
 
@@ -317,6 +391,8 @@ I principali ruoli attualmente presenti sono:
 | profile_workstation_dev_wsl | configurazione WSL condivisa per sviluppo |
 | profile_server            | configurazione server               |
 | profile_atlas             | configurazione NAS Rocky Linux 9    |
+| profile_backend_phase1    | Navidrome e Syncthing rootless su Atlas |
+| wireguard_overlay         | overlay WireGuard Prometheus/Atlas  |
 | dotfiles_common           | distribuzione dotfiles comuni       |
 | dotfiles                  | distribuzione configurazioni utente |
 
@@ -332,7 +408,9 @@ platform_void -> packages_void + services_runit
 platform_void & graphical_desktop -> profile_desktop_common + profile_desktop_sway + profile_desktop_niri + profile_desktop_host
 platform_fedora -> packages_fedora + services_systemd
 platform_rocky -> packages_rocky + services_systemd
+wireguard_overlay -> wireguard_overlay (dopo platform_rocky)
 atlas -> profile_atlas
+role_backend_phase1 -> profile_backend_phase1 (dopo atlas)
 platform_fedora & role_personal_workstation -> profile_personal_workstation
 platform_fedora & desktop_gnome -> profile_desktop_gnome
 workstation_dev_fedora -> profile_workstation_dev_common
@@ -348,7 +426,8 @@ Questo significa che, allo stato attuale:
 - `deadalus` riceve il profilo Fedora WSL tramite play dev dedicati
 - il server Rocky (`prometheus`) e gestito con pacchetti, servizi, dotfiles server e firewalld
 - il NAS Rocky (`atlas`) usa un pool ZFS gia esistente, condivisioni NFSv4/SMB limitate alla LAN e Cockpit/45Drives
-- lo stack container server include `navidrome`, `postgres`, `gitea` e `nginx-proxy-manager`
+- lo stack Compose server include soltanto `gitea` e `nginx-proxy-manager`; Navidrome e Syncthing
+  della fase 1 sono Quadlet rootless su Atlas
 
 # Dotfiles
 
@@ -455,6 +534,8 @@ ansible-playbook ansible/site.yml --limit <host> --start-at-task "<task name>" -
 ansible-lint ansible/roles/<role>
 yamllint ansible/path/to/file.yml
 podman-compose -f /opt/docker/server/docker-compose.yml config
+ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff
+ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1 --check --diff
 ```
 
 ## Tag supportati dal playbook
@@ -471,6 +552,9 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | --- | --- | --- |
 | `always` | pre-task sempre eseguiti, inclusi caricamento vault e validazioni preliminari | common |
 | `ai_agents` | installazione agenti AI condivisi | Fedora, WSL |
+| `atlas` | account, storage, condivisioni e container Atlas | NAS Atlas |
+| `backend_phase1` | Quadlet rootless Navidrome e Syncthing | NAS Atlas |
+| `containers` | Quadlet rootful Atlas | NAS Atlas |
 | `dotfiles` | distribuzione/configurazione dotfiles | tutti i profili |
 | `dotfiles:common` | dotfiles comuni condivisi | common, workstation, server |
 | `dotfiles:desktop` | dotfiles desktop | desktop Void, Fedora/GNOME |
@@ -484,16 +568,21 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | `fzf` | configurazione FZF | dotfiles comuni |
 | `git` | configurazione Git e GPG desktop | Fedora/GNOME, desktop Void |
 | `gnome` | configurazione host GNOME | Fedora/GNOME desktop |
+| `immich` | account e Quadlet Immich | NAS Atlas |
 | `sway` | sessione/configurazione sway / SwayFX (Wayland) | desktop Void |
 | `niri` | sessione/configurazione Niri (Wayland) | desktop Void |
 | `npm` | installazione pacchetti npm globali | Fedora/GNOME, desktop Void, WSL |
 | `nvidia` | componenti NVIDIA desktop | desktop Void |
 | `packages` | installazione e aggiornamento pacchetti | tutti i profili |
+| `podman` | integrazione Podman Compose e Quadlet rootless | server |
 | `portal` | configurazione xdg-desktop-portal | desktop Void |
 | `services` | gestione servizi runit/systemd | tutti i profili |
+| `sharing` | condivisioni NFSv4 e SMB3 | NAS Atlas |
+| `storage` | dataset ZFS figli | NAS Atlas |
 | `theme` | configurazione del tema GTK/Qt | desktop Void |
 | `tmux` | configurazione e plugin tmux | desktop Fedora/Void, WSL |
 | `vim` | configurazione Vim | dotfiles comuni |
+| `wireguard` | overlay WireGuard Prometheus/Atlas | Prometheus, NAS Atlas |
 | `wsl` | bootstrap e configurazione WSL | WSL |
 
 Esempi pratici:

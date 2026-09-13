@@ -1,0 +1,64 @@
+---
+- name: Require an existing Unix account for Atlas Samba
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ atlas_samba_account.username }}"
+
+- name: Read Atlas Samba account
+  ansible.builtin.command:
+    argv:
+      - pdbedit
+      - --list
+      - --user
+      - "{{ atlas_samba_account.username }}"
+  register: atlas_samba_account_check
+  changed_when: false
+  failed_when: false
+
+- name: Check Atlas Samba password marker
+  ansible.builtin.stat:
+    path: "{{ atlas_samba_password_marker_dir }}/{{ atlas_samba_account.username }}.sha256"
+  register: atlas_samba_password_marker_stat
+
+- name: Read Atlas Samba password marker
+  ansible.builtin.slurp:
+    src: "{{ atlas_samba_password_marker_dir }}/{{ atlas_samba_account.username }}.sha256"
+  register: atlas_samba_password_marker_content
+  no_log: true
+  when: atlas_samba_password_marker_stat.stat.exists
+
+- name: Determine whether Atlas Samba credentials must change
+  ansible.builtin.set_fact:
+    atlas_samba_password_digest: "{{ atlas_samba_account.password | hash('sha256') }}"
+    atlas_samba_password_update_required: >-
+      {{
+        atlas_samba_account_check.rc != 0
+        or not atlas_samba_password_marker_stat.stat.exists
+        or (
+          atlas_samba_password_marker_content.content | default('')
+          | b64decode | trim
+        ) != (atlas_samba_account.password | hash('sha256'))
+      }}
+  no_log: true
+
+- name: Set Atlas Samba account password
+  ansible.builtin.command:
+    argv:
+      - smbpasswd
+      - -s
+      - -a
+      - "{{ atlas_samba_account.username }}"
+    stdin: "{{ atlas_samba_account.password }}\n{{ atlas_samba_account.password }}"
+  changed_when: true
+  no_log: true
+  when: atlas_samba_password_update_required | bool
+
+- name: Record managed Atlas Samba password digest
+  ansible.builtin.copy:
+    content: "{{ atlas_samba_password_digest }}\n"
+    dest: "{{ atlas_samba_password_marker_dir }}/{{ atlas_samba_account.username }}.sha256"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  when: atlas_samba_password_update_required | bool

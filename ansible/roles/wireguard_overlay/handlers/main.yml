@@ -1,0 +1,10 @@
+---
+- name: Restart WireGuard interface
+  tags: [wireguard, services]
+  ansible.builtin.systemd:
+    name: "wg-quick@{{ wireguard_interface }}.service"
+    state: restarted
+    daemon_reload: true
+  when:
+    - wireguard_overlay_enabled | bool
+    - not ansible_check_mode

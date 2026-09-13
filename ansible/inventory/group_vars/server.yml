@@ -62,23 +62,11 @@ server_directories:
     owner: root
     group: root
     mode: "0755"
-  - path: /opt/navidrome/data
-    owner: "{{ server_username }}"
-    group: "{{ server_user_group }}"
-    mode: "0755"
-  - path: /opt/music
-    owner: "{{ server_username }}"
-    group: "{{ server_user_group }}"
-    mode: "0755"
   - path: /opt/npm/data
     owner: root
     group: root
     mode: "0755"
   - path: /opt/npm/letsencrypt
-    owner: root
-    group: root
-    mode: "0755"
-  - path: /opt/postgres/data
     owner: root
     group: root
     mode: "0755"

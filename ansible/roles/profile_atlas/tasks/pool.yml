@@ -1,0 +1,56 @@
+---
+- name: Bootstrap Atlas ZFS pool
+  tags: [atlas, storage, pool]
+  when: atlas_create_pool | bool
+  block:
+    - name: Validate Atlas pool bootstrap inputs
+      ansible.builtin.assert:
+        that:
+          - atlas_zpool_disks | length == 4
+          - atlas_zpool_disks | unique | length == 4
+          - atlas_zpool_disks | select('match', '^/dev/disk/by-id/') | list | length == 4
+        fail_msg: >-
+          Set exactly four distinct persistent /dev/disk/by-id paths in
+          atlas_zpool_disks before creating the RAIDZ2 pool.
+
+    - name: Inspect declared Atlas pool disks
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop: "{{ atlas_zpool_disks }}"
+      loop_control:
+        label: "{{ item }}"
+      register: atlas_zpool_disk_stats
+
+    - name: Require every declared Atlas pool disk
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.isblk | default(false)
+        fail_msg: "Declared Atlas pool disk is unavailable or is not a block device: {{ item.item }}"
+      loop: "{{ atlas_zpool_disk_stats.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Check whether the Atlas ZFS pool already exists
+      ansible.builtin.command:
+        argv:
+          - zpool
+          - list
+          - -H
+          - -o
+          - name
+          - "{{ atlas_zfs_pool }}"
+      register: atlas_zpool_bootstrap_check
+      changed_when: false
+      failed_when: atlas_zpool_bootstrap_check.rc not in [0, 1]
+
+    - name: Create the Atlas RAIDZ2 pool when absent
+      community.general.zpool:
+        name: "{{ atlas_zfs_pool }}"
+        state: present
+        mountpoint: "{{ atlas_mount_root }}"
+        force: false
+        vdevs:
+          - type: raidz2
+            disks: "{{ atlas_zpool_disks }}"
+      when: atlas_zpool_bootstrap_check.rc == 1

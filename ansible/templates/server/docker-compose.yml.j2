@@ -3,25 +3,6 @@
 name: server
 
 services:
-  navidrome:
-    image: docker.io/deluan/navidrome:latest
-    container_name: navidrome
-    restart: unless-stopped
-    expose:
-      - "4533"
-    environment:
-      ND_DATABASE_URL: "postgres://navidrome:{{ vault_navidrome_db_password }}@navidromedb:5432/navidrome_db?sslmode=disable"
-      ND_SESSIONTIMEOUT: 24h
-      ND_ENABLETRANSCODING: "true"
-
-    volumes:
-      - "/opt/navidrome/data:/data{{ ':' ~ selinux_volume_option if selinux_volume_option else '' }}"
-      - "/opt/music:/music:ro{{ ',' ~ selinux_volume_option if selinux_volume_option else '' }}"
-    user: "1000:1000"
-    networks:
-      - web
-    depends_on:
-      - navidromedb
   nginx-proxy-manager:
     image: docker.io/jc21/nginx-proxy-manager:latest
     container_name: nginx-proxy-manager
@@ -30,6 +11,8 @@ services:
       - "80:80"
       - "443:443"
       - "127.0.0.1:81:81"
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
     volumes:
       - "/opt/npm/data:/data{{ ':' ~ selinux_volume_option if selinux_volume_option else '' }}"
       - "/opt/npm/letsencrypt:/etc/letsencrypt{{ ':' ~ selinux_volume_option if selinux_volume_option else '' }}"
@@ -55,20 +38,6 @@ services:
   #   networks:
   #     - web
 
-  navidromedb:
-    image: docker.io/library/postgres:13
-    container_name: navidromedb
-    restart: unless-stopped
-    mem_limit: 2048m
-    environment:
-      POSTGRES_DB: "navidrome_db"
-      POSTGRES_USER: "navidrome"
-      POSTGRES_PASSWORD: "{{ vault_postgres_root_password }}"
-
-    volumes:
-      - "/opt/postgres/data:/var/lib/postgresql/data{{ ':' ~ selinux_volume_option if selinux_volume_option else '' }}"
-    networks:
-      - web
   gitea:
     image: docker.gitea.com/gitea:1.25.2
     container_name: gitea

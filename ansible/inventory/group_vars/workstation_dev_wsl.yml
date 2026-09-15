@@ -3,6 +3,10 @@ enabled_services:
   - docker
 
 workstation_dev_wsl_packages:
+  - buildah
+  - helm
+  # Fedora ships the kubectl client binary in the kubernetes-client package.
+  - kubernetes-client
   - mise
   - pinentry-curses
   - python3-pip

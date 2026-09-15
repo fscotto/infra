@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-# Copy the persistent Docker data from the retired Ubuntu server to the Rocky
+# Copy the persistent NPM and Gitea data from the retired Ubuntu server to the Rocky
 # replacement. Run this script on the Ubuntu source as root. It is a dry run
 # unless --execute and --quiesce-source are both supplied. Extended attributes
 # are deliberately not copied: Rocky must assign its own SELinux labels.
@@ -14,11 +14,8 @@ EXECUTE=false
 QUIESCE_SOURCE=false
 
 DATA_PATHS='
-/opt/navidrome/data
-/opt/music
 /opt/npm/data
 /opt/npm/letsencrypt
-/opt/postgres/data
 /opt/gitea/data
 '
 
@@ -26,8 +23,8 @@ usage() {
   cat <<'EOF'
 Usage: sudo ./scripts/migrate_prometheus_data.sh --destination USER@HOST [options]
 
-Copies persistent Navidrome, Nginx Proxy Manager, PostgreSQL and Gitea data to
-the Rocky server with rsync. The destination Docker containers must be stopped.
+Copies persistent Nginx Proxy Manager and Gitea data to the Rocky server with
+rsync. The destination Docker containers must be stopped.
 
 Options:
   --destination USER@HOST  Rocky SSH destination (required).
@@ -97,7 +94,7 @@ if [ -n "$IDENTITY_FILE" ]; then
 fi
 
 if [ "$EXECUTE" = true ] && [ "$QUIESCE_SOURCE" != true ]; then
-  fail '--execute requires --quiesce-source to keep PostgreSQL data consistent'
+  fail '--execute requires --quiesce-source to keep application data consistent'
 fi
 
 require_command rsync

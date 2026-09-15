@@ -1,0 +1,45 @@
+---
+- name: Enforce targeted SELinux on Atlas
+  tags: [atlas, hardening, security]
+  ansible.posix.selinux:
+    policy: targeted
+    state: enforcing
+    update_kernel_param: true
+  register: atlas_selinux_enforcement
+
+- name: Report when Atlas requires a reboot for SELinux enforcement
+  tags: [atlas, hardening, security]
+  ansible.builtin.debug:
+    msg: Reboot Atlas before relying on SELinux enforcement.
+  when: atlas_selinux_enforcement.reboot_required | default(false)
+
+- name: Apply Atlas network-kernel hardening
+  tags: [atlas, hardening, security]
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    sysctl_set: true
+    reload: true
+  loop: "{{ atlas_hardening_sysctls | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}={{ item.value }}"
+
+- name: Read active Atlas SELinux mode
+  tags: [atlas, hardening, security]
+  ansible.builtin.command:
+    argv:
+      - getenforce
+  register: atlas_selinux_mode
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Require active SELinux enforcement on Atlas
+  tags: [atlas, hardening, security]
+  ansible.builtin.assert:
+    that:
+      - atlas_selinux_mode.stdout == 'Enforcing'
+    fail_msg: >-
+      Atlas SELinux is not enforcing. Reboot if requested by the preceding
+      SELinux task, then rerun the hardening role before enabling services.
+  when: not ansible_check_mode

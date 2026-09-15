@@ -1,0 +1,20 @@
+# Managed by Ansible. Do not edit manually.
+[Unit]
+Description=Atlas Immich Redis-compatible cache
+
+[Container]
+ContainerName=atlas-immich-redis
+Image={{ atlas_immich_redis_image }}
+User={{ atlas_immich_uid }}:{{ atlas_immich_gid }}
+Network=atlas-media.network
+NetworkAlias=atlas-immich-redis
+Volume={{ atlas_immich_redis_data_dir }}:/data:Z
+NoNewPrivileges=true
+DropCapability=NET_RAW
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target

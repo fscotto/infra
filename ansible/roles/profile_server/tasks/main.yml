@@ -8,16 +8,6 @@
     fail_msg: >-
       server_firewall_backend must be firewalld for the Rocky server profile.
 
-- name: Require server container secret variables
-  tags: [dotfiles, dotfiles:server, services]
-  ansible.builtin.assert:
-    that:
-      - (vault_navidrome_db_password | default('')) | length > 0
-      - (vault_postgres_root_password | default('')) | length > 0
-    fail_msg: >-
-      Server container secrets are missing. Define vault_navidrome_db_password and
-      vault_postgres_root_password in secrets/vault.yml or another vars source.
-
 - name: Configure DuckDNS updater
   tags: [dotfiles, dotfiles:server, duckdns]
   ansible.builtin.import_tasks: duckdns.yml
@@ -70,6 +60,42 @@
 - name: Manage Podman Compose stack
   tags: [services, podman]
   ansible.builtin.include_tasks: podman-compose.yml
+
+- name: Ensure server SSH authorized key fragments directory exists
+  tags: [services, ssh]
+  ansible.builtin.file:
+    path: "{{ server_ssh_authorized_key_directory }}"
+    state: directory
+    owner: "{{ server_username }}"
+    group: "{{ server_user_group }}"
+    mode: "0700"
+  when: server_ssh_authorized_keys | length > 0
+
+- name: Manage server SSH authorized key fragments
+  tags: [services, ssh]
+  ansible.builtin.copy:
+    content: "{{ item.key }}\n"
+    dest: "{{ server_ssh_authorized_key_directory }}/{{ item.name }}"
+    owner: "{{ server_username }}"
+    group: "{{ server_user_group }}"
+    mode: "0600"
+  loop: "{{ server_ssh_authorized_keys }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: server_ssh_authorized_keys | length > 0
+
+- name: Configure server SSH authorized key fragments
+  tags: [services, ssh]
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^\s*AuthorizedKeysFile\s+'
+    line: >-
+      AuthorizedKeysFile {{ server_ssh_authorized_keys | map(attribute='name')
+      | map('regex_replace', '^', '%h/.ssh/authorized_keys.d/') | join(' ') }}
+    state: present
+    validate: "sshd -t -f %s"
+  notify: Reload SSH service
+  when: server_ssh_authorized_keys | length > 0
 
 - name: Disable SSH root login on server
   tags: [services]

@@ -9,12 +9,14 @@ variant: fiot
 version: 1.0.0
 passwd:
   users:
-    - name: pi
+    - name: admin
       password_hash: "$6$bNDsU0XC5BxNJS5U$ENDGpdOUPJM3wcXBgNESCQkOqqQ9gN72/xEQoJsAI6QdsaY6mD4G5DBVIv7nHwHQOP35IH1oGRl.Uy3R2iUYQ1"
       groups:
         - wheel
       ssh_authorized_keys:
         - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINrIxXjA3ffPwziKGR5gzc4gAoBehQPlnEMcXF4Wl0ZS ikaros"
+        - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEH/7GJfGt0ZVmKeEzceoFkFkeCXFryKK9vAbaip+HCx nymph"
+        - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA95wYlzpfN3rjUhpMeP4KHn8I6ZrjQXoDTgwgRIa++b siren"
 systemd:
   units:
     - name: sshd.service

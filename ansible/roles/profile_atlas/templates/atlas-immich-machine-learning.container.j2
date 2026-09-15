@@ -1,0 +1,27 @@
+# Managed by Ansible. Do not edit manually.
+[Unit]
+Description=Atlas Immich machine learning
+
+[Container]
+ContainerName=atlas-immich-machine-learning
+Image={{ atlas_immich_machine_learning_image }}
+User={{ atlas_immich_uid }}:{{ atlas_immich_gid }}
+{% for group_name in atlas_immich_supplementary_groups %}
+GroupAdd={{ ansible_facts['getent_group'][group_name][1] }}
+{% endfor %}
+AddDevice=/dev/dri
+Network=atlas-media.network
+NetworkAlias=atlas-immich-machine-learning
+Environment=TZ={{ atlas_timezone }}
+Volume={{ atlas_immich_model_cache_dir }}:/cache:Z
+Volume={{ atlas_immich_machine_learning_config_dir }}:/.config:Z
+Volume={{ atlas_immich_machine_learning_cache_dir }}:/.cache:Z
+NoNewPrivileges=true
+DropCapability=NET_RAW
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target

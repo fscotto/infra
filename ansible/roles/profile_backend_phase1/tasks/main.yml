@@ -1,0 +1,163 @@
+---
+- name: Configure Atlas phase-one backend services
+  tags: [backend_phase1, podman]
+  when: backend_phase1_enabled | bool
+  block:
+    - name: Validate phase-one backend inputs
+      ansible.builtin.assert:
+        that:
+          - not (atlas_manage_media_stack | bool)
+          - backend_phase1_wireguard_interface in ansible_facts.interfaces
+          - backend_phase1_wireguard_address != 'CHANGEME_ATLAS_WIREGUARD_ADDRESS'
+          - backend_phase1_music_dir.startswith('/')
+          - backend_phase1_app_data_root.startswith('/')
+          - backend_phase1_navidrome_data_dir.startswith(backend_phase1_app_data_root + '/')
+          - backend_phase1_syncthing_root.startswith(backend_phase1_app_data_root + '/')
+        fail_msg: >-
+          Disable the rootful media-stack gate and provide the active
+          WireGuard interface/address and absolute ZFS-backed paths before
+          enabling phase one. This role does not manage Prometheus or migrate
+          Navidrome application data.
+
+    - name: Read the rootless service account
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ backend_phase1_username }}"
+
+    - name: Record rootless service account IDs
+      ansible.builtin.set_fact:
+        backend_phase1_uid: "{{ ansible_facts['getent_passwd'][backend_phase1_username][1] }}"
+        backend_phase1_gid: "{{ ansible_facts['getent_passwd'][backend_phase1_username][2] }}"
+
+    - name: Read system service state before starting rootless Syncthing
+      ansible.builtin.service_facts:
+
+    - name: Refuse to overlap a system-level Atlas Syncthing service
+      ansible.builtin.assert:
+        that:
+          - >-
+            ansible_facts.services['atlas-syncthing.service'] is not defined
+            or ansible_facts.services['atlas-syncthing.service'].state != 'running'
+        fail_msg: >-
+          Remove or stop the system-level atlas-syncthing.service before
+          enabling the rootless Syncthing Quadlet.
+
+    - name: Inspect required ZFS datasets
+      community.general.zfs_facts:
+        name: "{{ item.dataset }}"
+        properties: name,mounted,mountpoint
+      loop:
+        - dataset: "{{ backend_phase1_music_dataset }}"
+          mountpoint: "{{ backend_phase1_music_dir }}"
+        - dataset: "{{ backend_phase1_app_data_dataset }}"
+          mountpoint: "{{ backend_phase1_app_data_root }}"
+        - dataset: "{{ backend_phase1_navidrome_dataset }}"
+          mountpoint: "{{ backend_phase1_navidrome_data_dir }}"
+        - dataset: "{{ backend_phase1_syncthing_dataset }}"
+          mountpoint: "{{ backend_phase1_syncthing_root }}"
+      loop_control:
+        label: "{{ item.dataset }}"
+      register: backend_phase1_zfs_facts
+
+    - name: Require mounted datasets at the declared paths
+      ansible.builtin.assert:
+        that:
+          - item.ansible_facts.ansible_zfs_datasets | length == 1
+          - item.ansible_facts.ansible_zfs_datasets[0].mounted == 'yes'
+          - item.ansible_facts.ansible_zfs_datasets[0].mountpoint == item.item.mountpoint
+        fail_msg: >-
+          {{ item.item.dataset }} must already be mounted at
+          {{ item.item.mountpoint }}. The phase-one role never creates or
+          imports the pool.
+      loop: "{{ backend_phase1_zfs_facts.results }}"
+      loop_control:
+        label: "{{ item.item.dataset }}"
+
+    - name: Enable lingering for the rootless service account
+      ansible.builtin.command:
+        argv:
+          - loginctl
+          - enable-linger
+          - "{{ backend_phase1_username }}"
+        creates: "/var/lib/systemd/linger/{{ backend_phase1_username }}"
+
+    - name: Start the rootless user systemd manager
+      ansible.builtin.systemd:
+        name: "user@{{ backend_phase1_uid }}.service"
+        state: started
+      when: not ansible_check_mode
+
+    - name: Create rootless Quadlet and application directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ backend_phase1_username }}"
+        group: "{{ backend_phase1_user_group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - path: "{{ backend_phase1_quadlet_dir }}"
+          mode: "0700"
+        - path: "{{ backend_phase1_navidrome_data_dir }}"
+          mode: "0750"
+        - path: "{{ backend_phase1_syncthing_root }}"
+          mode: "0750"
+      loop_control:
+        label: "{{ item.path }}"
+
+    - name: Render the rootless Navidrome Quadlet
+      ansible.builtin.template:
+        src: atlas-navidrome.container.j2
+        dest: "{{ backend_phase1_quadlet_dir }}/atlas-navidrome.container"
+        owner: "{{ backend_phase1_username }}"
+        group: "{{ backend_phase1_user_group }}"
+        mode: "0644"
+      notify: Restart Atlas Navidrome Quadlet
+
+    - name: Render the rootless Syncthing Quadlet
+      ansible.builtin.template:
+        src: atlas-syncthing.container.j2
+        dest: "{{ backend_phase1_quadlet_dir }}/atlas-syncthing.container"
+        owner: "{{ backend_phase1_username }}"
+        group: "{{ backend_phase1_user_group }}"
+        mode: "0644"
+      notify: Restart Atlas Syncthing Quadlet
+
+    - name: Reload the rootless user systemd manager
+      become_user: "{{ backend_phase1_username }}"
+      ansible.builtin.systemd:
+        scope: user
+        daemon_reload: true
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ backend_phase1_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ backend_phase1_uid }}/bus"
+      when: not ansible_check_mode
+
+    - name: Permit phase-one services only through the WireGuard zone
+      ansible.posix.firewalld:
+        port: "{{ item }}"
+        zone: "{{ backend_phase1_wireguard_firewalld_zone }}"
+        state: enabled
+        permanent: true
+        immediate: true
+      loop:
+        - "{{ backend_phase1_navidrome_port }}/tcp"
+        - "{{ backend_phase1_syncthing_gui_port }}/tcp"
+        - "{{ backend_phase1_syncthing_transfer_port }}/tcp"
+        - "{{ backend_phase1_syncthing_transfer_port }}/udp"
+        - "{{ backend_phase1_syncthing_discovery_port }}/udp"
+
+    - name: Start rootless phase-one Quadlets
+      become_user: "{{ backend_phase1_username }}"
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        scope: user
+        state: started
+        enabled: true
+        daemon_reload: true
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ backend_phase1_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ backend_phase1_uid }}/bus"
+      loop: "{{ backend_phase1_services }}"
+      when:
+        - backend_phase1_start_services | bool
+        - not ansible_check_mode

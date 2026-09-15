@@ -1,0 +1,32 @@
+---
+- name: Restart Atlas Navidrome Quadlet
+  tags: [backend_phase1, navidrome, podman, services]
+  become_user: "{{ backend_phase1_username }}"
+  ansible.builtin.systemd:
+    name: atlas-navidrome.service
+    scope: user
+    state: restarted
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ backend_phase1_uid }}"
+    DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ backend_phase1_uid }}/bus"
+  when:
+    - backend_phase1_enabled | bool
+    - backend_phase1_start_services | bool
+    - not ansible_check_mode
+
+- name: Restart Atlas Syncthing Quadlet
+  tags: [backend_phase1, syncthing, podman, services]
+  become_user: "{{ backend_phase1_username }}"
+  ansible.builtin.systemd:
+    name: atlas-syncthing.service
+    scope: user
+    state: restarted
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ backend_phase1_uid }}"
+    DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ backend_phase1_uid }}/bus"
+  when:
+    - backend_phase1_enabled | bool
+    - backend_phase1_start_services | bool
+    - not ansible_check_mode

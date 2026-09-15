@@ -1,0 +1,28 @@
+# Managed by Ansible. Do not edit manually.
+[Unit]
+Description=Atlas rootless Navidrome backend
+
+[Container]
+ContainerName=atlas-navidrome
+Image={{ backend_phase1_navidrome_image }}
+UserNS=keep-id
+User={{ backend_phase1_uid }}
+Group={{ backend_phase1_gid }}
+PublishPort={{ backend_phase1_wireguard_address }}:{{ backend_phase1_navidrome_port }}:4533
+Environment=ND_LOGLEVEL=info
+Environment=ND_SCANSCHEDULE=1h
+Environment=ND_SESSIONTIMEOUT=24h
+Environment=ND_ENABLETRANSCODING=true
+Environment=TZ={{ backend_phase1_timezone }}
+Volume={{ backend_phase1_navidrome_data_dir }}:/data:Z
+Volume={{ backend_phase1_music_dir }}:/music:ro,z
+NoNewPrivileges=true
+DropCapability=all
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

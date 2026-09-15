@@ -73,6 +73,13 @@
     - packages_rocky
     - services_systemd
 
+- name: Configure WireGuard overlay
+  hosts: wireguard_overlay
+  become: true
+
+  roles:
+    - wireguard_overlay
+
 - name: Configure Aegis Fedora IoT profile
   hosts: role_aegis
   become: true
@@ -86,6 +93,13 @@
 
   roles:
     - profile_atlas
+
+- name: Configure Atlas phase-one backend services
+  hosts: role_backend_phase1
+  become: true
+
+  roles:
+    - profile_backend_phase1
 
 - name: Configure Rocky Linux server
   hosts: rocky_server

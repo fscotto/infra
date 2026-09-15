@@ -27,6 +27,14 @@
     name: epel-release
     state: present
 
+- name: Import official OpenZFS EL9+ signing key
+  tags: [packages, storage]
+  ansible.builtin.rpm_key:
+    state: present
+    key: "{{ rocky_openzfs_gpg_key_url }}"
+    fingerprint: "{{ rocky_openzfs_gpg_key_fingerprint }}"
+  when: rocky_manage_openzfs_repo | bool
+
 - name: Install official OpenZFS repository package
   tags: [packages, storage]
   ansible.builtin.dnf:

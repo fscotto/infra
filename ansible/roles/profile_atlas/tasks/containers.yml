@@ -1,0 +1,140 @@
+---
+- name: Require completed Atlas media-stack configuration
+  tags: [atlas, containers, immich]
+  ansible.builtin.assert:
+    that:
+      - atlas_manage_storage | bool
+      - atlas_zfs_pool != 'CHANGEME_ZFS_POOL'
+      - atlas_mount_root != '/CHANGEME_ATLAS_MOUNT_ROOT'
+      - atlas_immich_db_password | length > 0
+      - atlas_npm_admin_bind_address == '127.0.0.1'
+    fail_msg: >-
+      Enable and configure Atlas storage, provide vault_atlas_immich_db_password,
+      and keep the NPM administration port bound to loopback before enabling the media stack.
+  no_log: true
+  when: atlas_manage_media_stack | bool
+
+- name: Check Atlas Intel graphics device
+  tags: [atlas, containers, immich]
+  ansible.builtin.stat:
+    path: /dev/dri
+  register: atlas_dri_device
+  when: atlas_manage_media_stack | bool
+
+- name: Require Atlas Intel graphics device
+  tags: [atlas, containers, immich]
+  ansible.builtin.assert:
+    that:
+      - atlas_dri_device.stat.isdir | default(false)
+    fail_msg: /dev/dri is required for Immich QuickSync and OpenVINO acceleration.
+  when: atlas_manage_media_stack | bool
+
+- name: Create Atlas rootful Quadlet directory
+  tags: [atlas, containers]
+  ansible.builtin.file:
+    path: "{{ atlas_container_quadlet_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: atlas_manage_media_stack | bool
+
+- name: Create Atlas Immich configuration directory
+  tags: [atlas, containers, immich]
+  ansible.builtin.file:
+    path: /etc/immich
+    state: directory
+    owner: root
+    group: "{{ atlas_immich_group }}"
+    mode: "0750"
+  when: atlas_manage_media_stack | bool
+
+- name: Create Atlas Immich persistent directories
+  tags: [atlas, containers, immich]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ atlas_immich_username }}"
+    group: "{{ atlas_immich_group }}"
+    mode: "0750"
+  loop:
+    - "{{ atlas_immich_upload_dir }}"
+    - "{{ atlas_immich_model_cache_dir }}"
+    - "{{ atlas_immich_machine_learning_config_dir }}"
+    - "{{ atlas_immich_machine_learning_cache_dir }}"
+    - "{{ atlas_immich_redis_data_dir }}"
+    - "{{ atlas_immich_postgres_data_dir }}"
+  loop_control:
+    label: "{{ item }}"
+  when: atlas_manage_media_stack | bool
+
+- name: Create Atlas NPM persistent directories
+  tags: [atlas, containers, npm]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  loop:
+    - "{{ atlas_npm_data_dir }}"
+    - "{{ atlas_npm_letsencrypt_dir }}"
+  loop_control:
+    label: "{{ item }}"
+  when: atlas_manage_media_stack | bool
+
+- name: Allow confined containers to use Atlas graphics devices
+  tags: [atlas, containers, immich]
+  ansible.posix.seboolean:
+    name: container_use_devices
+    state: true
+    persistent: true
+  when:
+    - atlas_manage_media_stack | bool
+    - (ansible_facts['selinux'] | default({})).get('status', 'disabled') == 'enabled'
+
+- name: Render Vault-backed Immich environment
+  tags: [atlas, containers, immich]
+  ansible.builtin.template:
+    src: immich.env.j2
+    dest: /etc/immich/immich.env
+    owner: root
+    group: "{{ atlas_immich_group }}"
+    mode: "0640"
+  no_log: true
+  diff: false
+  notify: Restart Atlas media Quadlets
+  when: atlas_manage_media_stack | bool
+
+- name: Render Atlas media Quadlets
+  tags: [atlas, containers]
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "{{ atlas_container_quadlet_dir }}/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - atlas-media.network
+    - atlas-immich-redis.container
+    - atlas-immich-postgres.container
+    - atlas-immich-machine-learning.container
+    - atlas-immich-server.container
+    - atlas-npm.container
+  loop_control:
+    label: "{{ item }}"
+  notify: Restart Atlas media Quadlets
+  when: atlas_manage_media_stack | bool
+
+- name: Start Atlas media Quadlet services
+  tags: [atlas, containers, services]
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: started
+    daemon_reload: true
+  loop: "{{ atlas_media_quadlet_services }}"
+  loop_control:
+    label: "{{ item }}"
+  when:
+    - atlas_manage_media_stack | bool
+    - not ansible_check_mode

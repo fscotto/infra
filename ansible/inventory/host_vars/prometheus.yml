@@ -7,6 +7,24 @@ ansible_ssh_private_key_file: /home/fscotto/.ssh/id_ed25519
 
 server_username: rocky
 server_duckdns_domain: fscotto
+server_ssh_authorized_keys:
+  - name: ikaros
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINrIxXjA3ffPwziKGR5gzc4gAoBehQPlnEMcXF4Wl0ZS ikaros"
+  - name: nymph
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEH/7GJfGt0ZVmKeEzceoFkFkeCXFryKK9vAbaip+HCx nymph"
+  - name: siren
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA95wYlzpfN3rjUhpMeP4KHn8I6ZrjQXoDTgwgRIa++b siren"
+
+wireguard_overlay_enabled: true
+wireguard_address: 10.0.0.1/24
+wireguard_listen_port: 51820
+wireguard_enable_ipv4_forwarding: true
+wireguard_reload_rootful_podman_networks: true
+wireguard_peers:
+  - name: atlas
+    host: atlas
+    allowed_ips:
+      - 10.0.0.2/32
 
 host_packages:
   - cockpit

@@ -219,12 +219,17 @@ clients use NFSv4 and Windows/WSL clients use SMB; both are restricted to the co
 
 For the first run, provide `vault_atlas_admin_password_hash`, `vault_atlas_samba_password`, and
 `vault_atlas_immich_db_password`. Bootstrap the host through its
-existing administrator:
+existing administrator. Open `51820/udp` towards Prometheus in the provider firewall first, then
+include both WireGuard peers in the same idempotent playbook run:
 
 ```bash
-ansible-playbook ansible/site.yml --limit atlas \
-  -e atlas_connection_username=<existing-admin>
+ansible-playbook ansible/site.yml --limit prometheus,atlas \
+  -e atlas_connection_username=<existing-admin> \
+  -e atlas_create_pool=true
 ```
+
+The explicit pool gate is safe to repeat: the role creates the RAIDZ2 pool only when it is absent.
+WireGuard waits for a real peer handshake before the play continues.
 
 `vault_atlas_admin_password_hash` must be an `/etc/shadow`-compatible hash, not a clear-text
 Cockpit password. Subsequent runs use `atlas_admin_username`. Atlas declares storage, sharing, and its
@@ -262,7 +267,9 @@ storage paths from the `zpool` mounted at `/zpool`: music is read-only at
 containers. The backend role never creates the pool. The separate `wireguard_overlay` role manages `wg0`
 between Prometheus (`10.0.0.1`) and Atlas (`10.0.0.2`), generating private keys once
 on their respective hosts and exchanging only public keys through Ansible. Prometheus alone opens
-`51820/udp` publicly. Backend ports are admitted only in the WireGuard firewalld zone.
+`51820/udp` publicly. When the WireGuard zone is created, Ansible reloads firewalld and immediately
+reloads Prometheus' rootful Podman networks so the existing proxy stack retains container DNS and
+connectivity. Backend ports are admitted only in the WireGuard firewalld zone.
 
 `backend_phase1_start_services` stays false during the application-state transfer, so the first real
 backend run renders the Quadlets without creating an empty Atlas database. After stopping Navidrome

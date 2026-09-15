@@ -10,6 +10,9 @@ wireguard_mtu: 1420
 wireguard_firewalld_zone: wireguard
 wireguard_public_firewalld_zone: public
 wireguard_enable_ipv4_forwarding: false
+wireguard_reload_rootful_podman_networks: false
+wireguard_handshake_retries: 12
+wireguard_handshake_delay: 5
 wireguard_peers: []
 wireguard_packages:
   - wireguard-tools

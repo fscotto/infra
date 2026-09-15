@@ -19,6 +19,7 @@ wireguard_overlay_enabled: true
 wireguard_address: 10.0.0.1/24
 wireguard_listen_port: 51820
 wireguard_enable_ipv4_forwarding: true
+wireguard_reload_rootful_podman_networks: true
 wireguard_peers:
   - name: atlas
     host: atlas

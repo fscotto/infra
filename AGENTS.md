@@ -161,8 +161,11 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   use `10.0.0.2:4533` for Navidrome and `10.0.0.2:8384` for the Syncthing GUI. Syncthing does not use host networking:
   its GUI, transfer, QUIC and discovery ports are explicitly published only on `10.0.0.2`; native transfer/discovery does not use the HTTP proxy.
 - `wireguard_overlay` manages the required `wg0` path between Prometheus and Atlas, persists private keys only on their
-  respective hosts, and exchanges only derived public keys. The initial run must include both hosts. Prometheus
-  opens `51820/udp`; the Atlas backend role admits service ports only in the WireGuard firewalld zone.
+  respective hosts, exchanges only derived public keys, and verifies a real peer handshake. The initial run must
+  include both hosts. Prometheus
+  opens `51820/udp`; after creating the WireGuard firewalld zone, restore Prometheus' rootful Podman networking with
+  `podman network reload --all` so the existing proxy stack retains container DNS. The Atlas backend role admits
+  service ports only in the WireGuard firewalld zone.
 
 ## Atlas NAS TODO
 - Provide the required Vault variables and validate the first remote bootstrap on the real Rocky Linux 9 host.

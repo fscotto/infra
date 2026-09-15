@@ -132,6 +132,20 @@
         - wireguard_firewalld_zone_result is changed
         - not ansible_check_mode
 
+    - name: Restore rootful Podman networking after firewalld reload
+      ansible.builtin.command:
+        argv:
+          - podman
+          - network
+          - reload
+          - --all
+      register: wireguard_podman_network_reload
+      changed_when: wireguard_podman_network_reload.stdout_lines | length > 0
+      when:
+        - wireguard_firewalld_zone_result is changed
+        - wireguard_reload_rootful_podman_networks | bool
+        - not ansible_check_mode
+
     - name: Assign the WireGuard interface to its firewalld zone
       ansible.posix.firewalld:
         interface: "{{ wireguard_interface }}"
@@ -155,4 +169,24 @@
         enabled: true
         state: started
         daemon_reload: true
+      when: not ansible_check_mode
+
+    - name: Apply pending WireGuard handlers before verification
+      ansible.builtin.meta: flush_handlers
+      when: not ansible_check_mode
+
+    - name: Wait for every WireGuard peer handshake
+      ansible.builtin.command:
+        argv:
+          - wg
+          - show
+          - "{{ wireguard_interface }}"
+          - latest-handshakes
+      register: wireguard_latest_handshakes
+      changed_when: false
+      retries: "{{ wireguard_handshake_retries }}"
+      delay: "{{ wireguard_handshake_delay }}"
+      until:
+        - wireguard_latest_handshakes.stdout_lines | length == wireguard_peers | length
+        - wireguard_latest_handshakes.stdout_lines | select('search', '\t0$') | list | length == 0
       when: not ansible_check_mode

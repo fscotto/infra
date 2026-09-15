@@ -28,8 +28,12 @@ atlas_manage_firewall: true
 atlas_firewalld_zone: public
 atlas_zfs_pool: zpool
 # Populate only for the first pool bootstrap with four real persistent disk paths.
-# Example: /dev/disk/by-id/ata-Seagate_IronWolf_...
-atlas_zpool_disks: []
+# Confirmed empty 4 TB IronWolf data disks; the NVMe system disk is intentionally excluded.
+atlas_zpool_disks:
+  - /dev/disk/by-id/ata-ST4000VN006-3CW104_WW6AC1XM
+  - /dev/disk/by-id/ata-ST4000VN006-3CW104_WW6A73T2
+  - /dev/disk/by-id/ata-ST4000VN006-3CW104_WW6A6VJK
+  - /dev/disk/by-id/ata-ST4000VN006-3CW104_WW6AC1LM
 atlas_create_pool: false
 atlas_zfs_dataset_work: work
 atlas_zfs_dataset_archive: archive

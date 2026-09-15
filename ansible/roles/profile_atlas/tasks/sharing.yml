@@ -56,6 +56,16 @@
   notify: Reload NFS exports
   when: atlas_manage_sharing | bool
 
+- name: Ensure Atlas NFS configuration drop-in directory exists
+  tags: [atlas, sharing]
+  ansible.builtin.file:
+    path: /etc/nfs.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: atlas_manage_sharing | bool
+
 - name: Configure Atlas NFSv4-only service
   tags: [atlas, sharing]
   ansible.builtin.template:
@@ -214,9 +224,22 @@
     - atlas_manage_sharing | bool
     - not ansible_check_mode
 
-- name: Read Atlas file-sharing service state
+- name: Check active Atlas file-sharing services
   tags: [atlas, sharing, services, security]
-  ansible.builtin.service_facts:
+  ansible.builtin.command:
+    argv:
+      - systemctl
+      - is-active
+      - --quiet
+      - "{{ item }}"
+  loop:
+    - nfs-server.service
+    - smb.service
+  loop_control:
+    label: "{{ item }}"
+  register: atlas_file_sharing_service_activity
+  changed_when: false
+  failed_when: false
   when:
     - atlas_manage_sharing | bool
     - not ansible_check_mode
@@ -225,10 +248,7 @@
   tags: [atlas, sharing, services, security]
   ansible.builtin.assert:
     that:
-      - ansible_facts.services['nfs-server.service'] is defined
-      - ansible_facts.services['nfs-server.service'].state == 'running'
-      - ansible_facts.services['smb.service'] is defined
-      - ansible_facts.services['smb.service'].state == 'running'
+      - atlas_file_sharing_service_activity.results | map(attribute='rc') | list == [0, 0]
     fail_msg: Atlas NFSv4 or SMB3 did not start after its managed configuration was applied.
   when:
     - atlas_manage_sharing | bool

@@ -16,6 +16,7 @@
     - name: Inspect declared Atlas pool disks
       ansible.builtin.stat:
         path: "{{ item }}"
+        follow: true
       loop: "{{ atlas_zpool_disks }}"
       loop_control:
         label: "{{ item }}"

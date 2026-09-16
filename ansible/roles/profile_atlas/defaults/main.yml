@@ -47,31 +47,31 @@ atlas_hardening_sysctls:
   net.ipv6.conf.all.accept_source_route: "0"
   net.ipv6.conf.default.accept_source_route: "0"
 atlas_zfs_pool: CHANGEME_ZFS_POOL
-atlas_zfs_dataset_work: work
 atlas_zfs_dataset_archive: archive
-atlas_zfs_dataset_app_data: archive/app_data
-atlas_zfs_dataset_navidrome: archive/app_data/navidrome
-atlas_zfs_dataset_syncthing: archive/app_data/syncthing
+atlas_zfs_dataset_services: services
+atlas_zfs_dataset_app_data: services/data
+atlas_zfs_dataset_navidrome: services/data/navidrome
+atlas_zfs_dataset_syncthing: services/data/syncthing
 atlas_zfs_dataset_media: media
 atlas_zfs_dataset_music: media/music
-atlas_zfs_dataset_backup_prometheus: backup_prometheus
+atlas_zfs_dataset_backup: backup
+atlas_zfs_dataset_host_backups: backup/hosts
+atlas_zfs_dataset_backup_prometheus: backup/hosts/prometheus
+atlas_zfs_backup_reservation: 500G
 atlas_zfs_dataset_photobook: media/photobook
-atlas_zfs_dataset_backups: backups
-atlas_zfs_dataset_service_backups: backups/services
-atlas_zfs_service_backups_refreservation: 500G
 atlas_mount_root: /CHANGEME_ATLAS_MOUNT_ROOT
 
 atlas_archive_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_archive }}"
+atlas_services_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_services }}"
 atlas_app_data_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_app_data }}"
 atlas_navidrome_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_navidrome }}"
 atlas_syncthing_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_syncthing }}"
 atlas_media_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_media }}"
 atlas_music_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_music }}"
-atlas_work_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_work }}"
+atlas_backup_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_backup }}"
+atlas_host_backups_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_host_backups }}"
 atlas_backup_prometheus_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_backup_prometheus }}"
 atlas_photobook_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_photobook }}"
-atlas_backups_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_backups }}"
-atlas_service_backups_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_service_backups }}"
 
 atlas_45drives_repo_url: https://repo.45drives.com/repofiles/rocky/45drives-enterprise.repo
 atlas_45drives_repo_file: /etc/yum.repos.d/45drives-enterprise.repo

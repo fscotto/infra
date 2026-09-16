@@ -139,10 +139,10 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - Atlas requires `vault_atlas_admin_password_hash` for Cockpit and, while sharing is enabled,
   `vault_atlas_samba_password`. The future rootful media stack also requires
   `vault_atlas_immich_db_password`. Never print these values.
-- Atlas creates the complete declared hierarchy only under the verified existing or explicitly bootstrapped pool: `work`, `archive`,
-  `archive/app_data`, `archive/app_data/navidrome`, `archive/app_data/syncthing`, `media`, `media/music`,
-  `media/photobook`, `backups`, `backups/services`, and `backup_prometheus`. `backups/services` has a `500G`
-  refreservation. There is no separate legacy `zpool/syncthing` dataset.
+- Atlas creates the complete declared hierarchy only under the verified existing or explicitly bootstrapped pool: `archive`,
+  `services`, `services/data`, `services/data/navidrome`, `services/data/syncthing`, `media`, `media/music`,
+  `media/photobook`, `backup`, `backup/hosts`, and `backup/hosts/prometheus`. `backup` has a `500G`
+  reservation covering its descendants. `archive` is the SMB-shared raw-data namespace; container state is never beneath it.
 - The `immich` system account is fixed to UID/GID `1100`, has no login shell or `wheel` membership, and receives only
   the `video` and `render` supplementary groups. Immich's rootful Quadlets run as `1100:1100`; Server and ML receive
   `/dev/dri`, while the Photobook external library is read-only at `/external/photobook`.
@@ -154,7 +154,7 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - `profile_backend_phase1` is limited to rootless Navidrome and Syncthing user Quadlets on Atlas. Official Navidrome
   `0.63.2` uses SQLite below `/data` and does not support `ND_DATABASE_URL` or an external PostgreSQL backend; do not
   recreate the obsolete Prometheus `navidromedb` service. The role requires the storage role's `zpool/media/music`,
-  `zpool/archive/app_data`, `zpool/archive/app_data/navidrome`, and `zpool/archive/app_data/syncthing` datasets at
+  `zpool/services/data`, `zpool/services/data/navidrome`, and `zpool/services/data/syncthing` datasets at
   their exact paths. It never creates the pool.
 - Keep `backend_phase1_start_services` false until the stopped Prometheus Navidrome data directory has been copied to
   Atlas and its SQLite database verified. The playbook renders the target but never migrates or deletes application
@@ -176,7 +176,7 @@ the Prometheus--Atlas WireGuard path are operational. Aegis has validated NFSv4.
 and `all_squash` mapping to UID/GID `1100` end-to-end.
 - Complete the Phase 1 Navidrome cutover: stop the Prometheus writer, copy and verify its complete
   `/opt/navidrome/data/` directory (including SQLite sidecars) under
-  `/zpool/archive/app_data/navidrome/`, then set `backend_phase1_start_services: true` and validate
+  `/zpool/services/data/navidrome/`, then set `backend_phase1_start_services: true` and validate
   Navidrome on Atlas through WireGuard. Do not delete the source until a restore test succeeds.
 - Start and validate the rendered Syncthing Quadlet only after its device IDs, star topology, folders,
   folder modes, ignore rules, and GUI/API protection are declared. Validate its GUI and native transfer

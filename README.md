@@ -263,11 +263,11 @@ paths, and the Immich database secret are validated. Atlas reads its declared SS
 separate files below `~/.ssh/authorized_keys.d/`.
 
 With storage management enabled, Atlas creates the complete dataset hierarchy below the existing or
-explicitly bootstrapped `zpool`: `work`, `archive`, `archive/app_data`, the separate `archive/app_data/navidrome` and
-`archive/app_data/syncthing` application datasets, `media`, `media/music`, `media/photobook`,
-`backups`, `backups/services`, and `backup_prometheus`. Application/archive datasets use `zstd`,
-while media, Syncthing and service-backup datasets use `lz4`; `backups/services` also has a `500G`
-refreservation. Atlas enforces targeted SELinux persistently and reports, without initiating, any reboot required to activate it. It assigns its primary LAN interface explicitly to the managed firewalld zone and applies persistent kernel network hardening: redirects and source routes are rejected, martians logged, reverse-path filtering remains loose for WireGuard, and IPv4 forwarding is disabled. SSH permits only the declared administrator using public-key authentication; root login, passwords,
+explicitly bootstrapped `zpool`: SMB-shared `archive`, private `services/data` with separate
+`services/data/navidrome` and `services/data/syncthing` application datasets, `media`, `media/music`,
+`media/photobook`, and `backup/hosts/prometheus`. Application/archive datasets use `zstd`, while media,
+Syncthing, and host-backup datasets use `lz4`; `backup` has a `500G` reservation covering its descendants.
+Atlas enforces targeted SELinux persistently and reports, without initiating, any reboot required to activate it. It assigns its primary LAN interface explicitly to the managed firewalld zone and applies persistent kernel network hardening: redirects and source routes are rejected, martians logged, reverse-path filtering remains loose for WireGuard, and IPv4 forwarding is disabled. SSH permits only the declared administrator using public-key authentication; root login, passwords,
 agent and remote forwarding are disabled, while local forwarding remains available for private administrative tunnels. SMB3 exposes `Archive` only to the configured Vault-backed
 Samba accounts on encrypted, signed SMB3 over TCP/445 only and admits the configured LAN without host-specific
 exclusions. NFSv4 exports only `media/photobook` to the configured Aegis IP over TCP/2049, using
@@ -285,8 +285,8 @@ not support `ND_DATABASE_URL` or an external PostgreSQL backend. The obsolete `n
 was therefore removed from Prometheus instead of being reproduced on Atlas. The role derives all
 storage paths from the `zpool` mounted at `/zpool`: music is read-only at
 `/zpool/media/music`, Navidrome application state and `navidrome.db` are stored at
-`/zpool/archive/app_data/navidrome`, and Syncthing persists at
-`/zpool/archive/app_data/syncthing`. `profile_atlas` creates these datasets when
+`/zpool/services/data/navidrome`, and Syncthing persists at
+`/zpool/services/data/syncthing`. `profile_atlas` creates these datasets when
 `atlas_manage_storage` is enabled; the backend role verifies their exact mountpoints before starting
 containers. The backend role never creates the pool. The separate `wireguard_overlay` role manages `wg0`
 between Prometheus (`10.0.0.1`) and Atlas (`10.0.0.2`), generating private keys once
@@ -298,7 +298,7 @@ connectivity. Backend ports are admitted only in the WireGuard firewalld zone.
 `backend_phase1_start_services` stays false during the application-state transfer, so the first real
 backend run renders the Quadlets without creating an empty Atlas database. After stopping Navidrome
 on Prometheus, copy the complete `/opt/navidrome/data/` directory into
-`/zpool/archive/app_data/navidrome/`, preserving `navidrome.db` and any SQLite sidecar files. Then set
+`/zpool/services/data/navidrome/`, preserving `navidrome.db` and any SQLite sidecar files. Then set
 this variable to true and rerun the role to enable and start Navidrome and Syncthing. The playbook
 never copies or deletes application data.
 

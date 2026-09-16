@@ -193,12 +193,17 @@ ansible/bootstrap/generate-aegis-ign.sh --write IMAGE DEVICE
 The controller manages it remotely as `pi@aegis`; unlike local desktop profiles, Aegis is
 intentionally an SSH inventory target. `profile_aegis` manages rootful Podman Quadlets for AdGuard
 Home and iCloudPD, persistent data under `/var/lib`, the Podman auto-update timer, LAN-restricted
-firewalld rules, SSH key-only access for `pi`, and `wake-ikaros`. Set the host-local
-`aegis_lan_subnet` and `aegis_adguard_web_port` values before applying it. The playbook permits
+firewalld rules, SSH key-only access for `pi`, the `nfs-utils` rpm-ostree layer required by the
+Atlas NFS client, and `wake-ikaros`. A new layered package deployment requires a manual reboot; the
+role reports this condition but never reboots Aegis automatically. Set the host-local
+`aegis_lan_subnet`, `aegis_adguard_web_port`, and `aegis_network_connection_uuid` values before
+applying it. The playbook permits
 AdGuard Home HTTP on port `80`; the initial wizard port `3000` is intentionally unmanaged and must be
 opened and closed manually during initial setup. The profile disables the local systemd-resolved DNS
-stub and points `/etc/resolv.conf` to its full resolver data, freeing port 53
-for AdGuard while retaining DNS learned from the router. Define
+stub and points `/etc/resolv.conf` to its full resolver data, freeing port 53 for AdGuard. LAN clients
+may use AdGuard on Aegis, while Aegis itself uses the independent upstream DNS declared by
+`aegis_host_dns_servers`; this prevents Greenboot from depending on the AdGuard container during
+startup. Reboot Aegis after changing its NetworkManager DNS profile. Define
 `vault_aegis_icloudpd_apple_id` in Vault before applying it. iCloudPD still requires interactive MFA
 initialization after its first deployment.
 
@@ -211,6 +216,21 @@ Validate the profile before deployment:
 ```bash
 ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
 ansible-playbook ansible/site.yml --limit aegis --check --diff --ask-become-pass
+```
+
+Apply only the independent host DNS configuration, then reboot Aegis manually:
+
+```bash
+ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
+ansible-playbook ansible/site.yml --limit aegis --tags dns --ask-become-pass
+```
+
+Layer the Atlas NFS client package independently, then reboot Aegis manually when the role reports
+that the new deployment is ready:
+
+```bash
+ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
+ansible-playbook ansible/site.yml --limit aegis --tags nfs --ask-become-pass
 ```
 
 ## NAS

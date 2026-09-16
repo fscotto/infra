@@ -48,6 +48,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
   - Rocky server after activation: `ansible-playbook ansible/site.yml --limit <host> --check --diff`
   - Atlas NAS: `ansible-playbook ansible/site.yml --limit atlas --check --diff`
   - Aegis IoT: `ansible-playbook ansible/site.yml --limit aegis --check --diff`
+  - Aegis NFS client layer: `ansible-playbook ansible/site.yml --limit aegis --tags nfs --list-tasks`
+  - Aegis host DNS: `ansible-playbook ansible/site.yml --limit aegis --tags dns --check --diff`
 - Focused checks:
   - Emacs is disabled by default; temporary Emacs check: `ansible-playbook ansible/site.yml --limit <host> --tags emacs --check --diff -e emacs_enabled=true`
   - AI coding agents: `ansible-playbook ansible/site.yml --limit <host> --tags ai_agents --check --diff`
@@ -221,14 +223,18 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - `aegis` is a remote Fedora IoT Raspberry Pi 4 node. Bootstrap it once with
   `ansible/bootstrap/aegis.bu`; the remaining configuration is applied by `profile_aegis` over SSH.
 - Fedora IoT is immutable. Do not add it to mutable Fedora package or shared dotfile roles.
-- `profile_aegis` owns rootful Podman Quadlets, persistent container state under `/var/lib`, the
-  Podman auto-update timer, LAN-restricted firewalld rules, and SSH hardening. Keep
-  `aegis_lan_subnet` and `aegis_adguard_web_port` host-specific; SSH permits only the declared
+- `profile_aegis` owns the `nfs-utils` rpm-ostree layer used as the Atlas NFS client and reports the
+  required reboot without initiating it. It also owns rootful Podman Quadlets, persistent container
+  state under `/var/lib`, the Podman auto-update timer, LAN-restricted firewalld rules, and SSH hardening. Keep
+  `aegis_lan_subnet`, `aegis_adguard_web_port`, and `aegis_network_connection_uuid` host-specific;
+  SSH permits only the declared
   key-authenticated users, never root or password authentication. Keep Apple IDs and other
   credentials in Vault and use `no_log` for their rendering.
 - `aegis_adguard_web_port` defaults to `80`. The initial AdGuard Home wizard port `3000` is intentionally unmanaged: open and close it manually only while
   completing initial setup. Disable the local systemd-resolved stub through `profile_aegis` before
   AdGuard binds port 53; keep
-  `/etc/resolv.conf` linked to `/run/systemd/resolve/resolv.conf` so Aegis retains router-provided DNS.
+  `/etc/resolv.conf` linked to `/run/systemd/resolve/resolv.conf`. LAN clients may use AdGuard, but
+  Aegis must use the independent upstream DNS declared by `aegis_host_dns_servers` so Greenboot does
+  not depend on the AdGuard container during startup.
 - iCloudPD requires post-deployment interactive MFA initialization; its cookie/configuration state is
   persisted in `/var/lib/icloudpd/config`.

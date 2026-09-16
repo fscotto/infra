@@ -1,4 +1,18 @@
 ---
+- name: Manage Aegis layered packages
+  tags: [aegis, packages, nfs]
+  community.general.rpm_ostree_pkg:
+    name: "{{ aegis_layered_packages }}"
+    state: present
+  register: aegis_layered_packages_result
+  when: aegis_layered_packages | length > 0
+
+- name: Report reboot required for Aegis layered packages
+  tags: [aegis, packages, nfs]
+  ansible.builtin.debug:
+    msg: Reboot Aegis to activate the newly layered packages, then rerun the playbook.
+  when: aegis_layered_packages_result.needs_reboot | default(false)
+
 - name: Require Aegis iCloudPD Apple ID
   tags: [aegis, icloudpd]
   ansible.builtin.assert:
@@ -8,15 +22,86 @@
   no_log: true
 
 - name: Require completed Aegis network placeholders
-  tags: [aegis, firewall, services]
+  tags: [aegis, dns, firewall, network, services]
   ansible.builtin.assert:
     that:
       - aegis_lan_subnet != 'CHANGEME_LAN_SUBNET'
       - aegis_firewalld_zone | length > 0
       - aegis_adguard_web_port | int > 0
       - aegis_adguard_web_port | int < 65536
+      - aegis_network_connection_name | length > 0
+      - aegis_network_connection_uuid | length > 0
+      - aegis_host_dns_servers | length > 0
+      - ansible_facts["default_ipv4"]["address"] not in aegis_host_dns_servers
       - aegis_ssh_allowed_users | length > 0
-    fail_msg: Define the Aegis LAN subnet, firewalld zone, AdGuard web port, and SSH users.
+    fail_msg: >-
+      Define the Aegis LAN subnet, firewalld zone, AdGuard web port, independent host DNS,
+      NetworkManager connection, and SSH users. Aegis must not use its own address as upstream DNS.
+
+- name: Verify the declared Aegis NetworkManager connection exists
+  tags: [aegis, dns, network, services]
+  ansible.builtin.command:
+    argv:
+      - nmcli
+      - --get-values
+      - connection.id
+      - connection
+      - show
+      - uuid
+      - "{{ aegis_network_connection_uuid }}"
+  register: aegis_network_connection
+  changed_when: false
+  failed_when: >-
+    aegis_network_connection.rc != 0
+    or aegis_network_connection.stdout != aegis_network_connection_name
+
+- name: Read the current Aegis host DNS configuration
+  tags: [aegis, dns, network, services]
+  ansible.builtin.command:
+    argv:
+      - nmcli
+      - --get-values
+      - ipv4.ignore-auto-dns,ipv4.dns,ipv4.dns-search,ipv6.ignore-auto-dns
+      - connection
+      - show
+      - uuid
+      - "{{ aegis_network_connection_uuid }}"
+  register: aegis_host_dns_current
+  changed_when: false
+
+- name: Configure independent upstream DNS for the Aegis host
+  tags: [aegis, dns, network, services]
+  ansible.builtin.command:
+    argv:
+      - nmcli
+      - connection
+      - modify
+      - uuid
+      - "{{ aegis_network_connection_uuid }}"
+      - ipv4.ignore-auto-dns
+      - "yes"
+      - ipv4.dns
+      - "{{ aegis_host_dns_servers | join(',') }}"
+      - ipv4.dns-search
+      - "{{ aegis_host_dns_search_domains | join(',') }}"
+      - ipv6.ignore-auto-dns
+      - "yes"
+  register: aegis_host_dns_profile
+  when: >-
+    aegis_host_dns_current.stdout_lines !=
+    [
+      'yes',
+      aegis_host_dns_servers | join(','),
+      aegis_host_dns_search_domains | join(','),
+      'yes'
+    ]
+  changed_when: true
+
+- name: Report Aegis reboot required for host DNS changes
+  tags: [aegis, dns, network, services]
+  ansible.builtin.debug:
+    msg: Reboot Aegis to activate its independent upstream DNS before testing another OS update.
+  when: aegis_host_dns_profile.changed | default(false)
 
 - name: Set Aegis hostname
   tags: [aegis, services]

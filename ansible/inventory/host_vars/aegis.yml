@@ -9,6 +9,12 @@ ansible_ssh_use_tty: false
 
 aegis_lan_subnet: 192.168.178.0/24
 aegis_adguard_web_port: 80
+aegis_network_connection_name: FRITZ!Box 7530 NR
+aegis_network_connection_uuid: a52fda3d-3eb6-351f-bf04-753edcb76944
+aegis_host_dns_servers:
+  - 192.168.178.1
+aegis_host_dns_search_domains:
+  - fritz.box
 aegis_ssh_authorized_keys:
   - name: ikaros
     key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINrIxXjA3ffPwziKGR5gzc4gAoBehQPlnEMcXF4Wl0ZS ikaros"

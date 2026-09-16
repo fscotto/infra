@@ -1,5 +1,11 @@
 ---
 aegis_hostname: aegis
+aegis_layered_packages:
+  - nfs-utils
+aegis_network_connection_name: ""
+aegis_network_connection_uuid: ""
+aegis_host_dns_servers: []
+aegis_host_dns_search_domains: []
 aegis_adguard_image: docker.io/adguard/adguardhome:latest
 aegis_icloudpd_image: docker.io/boredazfcuk/icloudpd:latest
 aegis_icloudpd_folder_structure: '{:%Y/%m/%d}'

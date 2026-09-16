@@ -170,19 +170,24 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   service ports only in the WireGuard firewalld zone.
 
 ## Atlas NAS TODO
-- Provide the required Vault variables and validate the first remote bootstrap on the real Rocky Linux 9 host.
-  Before the first apply, confirm the pool, mountpoints, LAN subnet and firewalld zone. Keep
-  `atlas_manage_media_stack` disabled until `/dev/dri`, the container paths and the Immich database secret are validated.
-- Validate the complete baseline on the target: OpenZFS kmod loading, existing pool import, dataset
-  mounts, SSH reconnect, Cockpit and all selected 45Drives plugins, NFSv4, SMB and Syncthing.
-- Finalize dataset properties and the shared UID/GID, group and POSIX ACL model; test the same files
-  through both NFS and SMB before considering multiprotocol access complete.
+Completed validation: the existing RAIDZ2 pool and datasets, SELinux, LAN firewall, SSH, Cockpit with
+the selected 45Drives plugins, encrypted SMB3 `Archive`, the Aegis-only NFSv4 `photobook` export, and
+the Prometheus--Atlas WireGuard path are operational. Aegis has validated NFSv4.2 read, write, delete,
+and `all_squash` mapping to UID/GID `1100` end-to-end.
+- Complete the Phase 1 Navidrome cutover: stop the Prometheus writer, copy and verify its complete
+  `/opt/navidrome/data/` directory (including SQLite sidecars) under
+  `/zpool/archive/app_data/navidrome/`, then set `backend_phase1_start_services: true` and validate
+  Navidrome on Atlas through WireGuard. Do not delete the source until a restore test succeeds.
+- Start and validate the rendered Syncthing Quadlet only after its device IDs, star topology, folders,
+  folder modes, ignore rules, and GUI/API protection are declared. Validate its GUI and native transfer
+  ports through WireGuard only.
+- Decide whether a common SMB/NFS namespace is required. `Archive` (SMB) and `photobook` (NFS) are
+  intentionally distinct today; only if a shared namespace is selected, finalize its UID/GID, group,
+  and POSIX ACL model and test the same files through both protocols.
+- Keep `atlas_manage_media_stack` disabled until the future Immich deployment has validated `/dev/dri`,
+  container paths, and the required Vault database secret.
 - Add Ansible-managed ZFS snapshot retention and scrub timers. Use Cockpit Scheduler for visibility
   or manual operations, not as the only source of configuration, and never automate snapshot rollback.
-- Manage the Syncthing star topology, device IDs, folders, folder modes, ignore rules and protected GUI
-  or API access for the selected clients.
-- Validate the managed WireGuard path and its LAN/VPN-only firewalld rules before enabling remote services;
-  never expose SSH, Cockpit, NFS, SMB or Syncthing through public port forwarding.
 - Add the Atlas-initiated least-privilege Prometheus backup pull: Prometheus exposes only prepared
   read-only dumps through a dedicated account and Atlas retains the private SSH key, pinned host key,
   atomic pull, verification, retention and systemd service/timer.
@@ -195,8 +200,9 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   failed backup timers, plus a controlled Rocky kernel/OpenZFS update and reboot procedure.
 - Document and test disaster recovery: rebuild Atlas with Ansible, import the existing pool, restore
   from snapshot/USB/Hetzner, preserve Vault and Borg recovery material offline, and define RPO/RTO.
-- Optionally design iCloud photo ingestion as a separate workflow after the storage and backup layers
-  are validated; do not make it a dependency of the Atlas baseline.
+- Optionally design iCloud photo ingestion and an Aegis persistent NFS mount as a separate workflow
+  after the storage and backup layers are validated; do not make either a dependency of the Atlas
+  baseline.
 
 ## Coding Agent Notes
 - Shared agent definitions and lifecycle flags live in `ai_agents` in `ansible/inventory/group_vars/all.yml`.

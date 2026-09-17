@@ -10,10 +10,13 @@ backend_phase1_firewalld_zone: public
 backend_phase1_npm_source_ip: CHANGEME_AEGIS_IP
 backend_phase1_syncthing_native_subnet: CHANGEME_LAN_SUBNET
 backend_phase1_music_dir: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_music }}"
+backend_phase1_archive_dir: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_archive }}"
+backend_phase1_syncthing_folder_path: "{{ backend_phase1_archive_dir }}/Org"
 backend_phase1_app_data_root: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_app_data }}"
 backend_phase1_navidrome_data_dir: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_navidrome }}"
 backend_phase1_syncthing_root: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_syncthing }}"
 backend_phase1_music_dataset: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_music }}"
+backend_phase1_archive_dataset: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_archive }}"
 backend_phase1_app_data_dataset: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_app_data }}"
 backend_phase1_navidrome_dataset: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_navidrome }}"
 backend_phase1_syncthing_dataset: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_syncthing }}"

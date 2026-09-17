@@ -61,6 +61,12 @@ atlas_zfs_backup_reservation: 500G
 atlas_zfs_dataset_photobook: media/photobook
 atlas_mount_root: /CHANGEME_ATLAS_MOUNT_ROOT
 
+atlas_manage_zfs_snapshots: false
+atlas_zfs_snapshot_prefix: atlas-auto
+atlas_zfs_snapshot_policies: []
+atlas_manage_zfs_scrub: false
+atlas_zfs_scrub_calendar: ""
+
 atlas_archive_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_archive }}"
 atlas_services_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_services }}"
 atlas_app_data_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_app_data }}"

@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export LC_ALL=C
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+
+if [[ $# -ne 1 ]]; then
+  printf 'Usage: %s <policy>\n' "$0" >&2
+  exit 64
+fi
+
+readonly pool={{ atlas_zfs_pool | quote }}
+readonly prefix={{ atlas_zfs_snapshot_prefix | quote }}
+readonly period="$1"
+
+case "$period" in
+{% for policy in atlas_zfs_snapshot_policies %}
+  {{ policy.name | quote }})
+    keep={{ policy.keep | int }}
+    ;;
+{% endfor %}
+  *)
+    printf 'Unknown Atlas ZFS snapshot policy: %s\n' "$period" >&2
+    exit 64
+    ;;
+esac
+readonly keep
+
+zpool list -H -o name "$pool" >/dev/null
+
+exec 9>/run/lock/atlas-zfs-snapshot.lock
+flock 9
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+readonly timestamp
+readonly snapshot_prefix="${pool}@${prefix}-${period}-"
+readonly snapshot="${snapshot_prefix}${timestamp}"
+
+zfs snapshot -r "$snapshot"
+printf 'Created recursive ZFS snapshot %s\n' "$snapshot"
+
+snapshot_listing="$(zfs list -H -t snapshot -o name -s creation -r "$pool")"
+managed_snapshots=()
+while IFS= read -r snapshot_name; do
+  if [[ "$snapshot_name" == "$snapshot_prefix"* ]]; then
+    snapshot_suffix="${snapshot_name#"$snapshot_prefix"}"
+    if [[ "$snapshot_suffix" =~ ^[0-9]{8}T[0-9]{6}Z$ ]]; then
+      managed_snapshots+=("$snapshot_name")
+    fi
+  fi
+done <<< "$snapshot_listing"
+
+{% raw %}
+managed_snapshot_count="${#managed_snapshots[@]}"
+{% endraw %}
+prune_count=$((managed_snapshot_count - keep))
+if ((prune_count <= 0)); then
+  printf 'Retaining %d of %d managed %s snapshots\n' \
+    "$managed_snapshot_count" "$keep" "$period"
+  exit 0
+fi
+
+for ((index = 0; index < prune_count; index++)); do
+  candidate="${managed_snapshots[$index]}"
+  if [[ "$candidate" != "$snapshot_prefix"* ]]; then
+    printf 'Refusing to destroy unexpected snapshot: %s\n' "$candidate" >&2
+    exit 65
+  fi
+
+  zfs destroy -r "$candidate"
+  printf 'Pruned recursive ZFS snapshot %s\n' "$candidate"
+done

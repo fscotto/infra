@@ -14,6 +14,9 @@
 - name: Import Atlas storage tasks
   ansible.builtin.import_tasks: storage.yml
 
+- name: Import Atlas ZFS maintenance tasks
+  ansible.builtin.import_tasks: zfs_maintenance.yml
+
 - name: Import Atlas file sharing tasks
   ansible.builtin.import_tasks: sharing.yml
 

@@ -49,6 +49,23 @@ atlas_zfs_backup_reservation: 500G
 atlas_zfs_dataset_photobook: media/photobook
 atlas_mount_root: /zpool
 atlas_manage_storage: true
+atlas_manage_zfs_snapshots: true
+atlas_zfs_snapshot_prefix: atlas-auto
+atlas_zfs_snapshot_policies:
+  - name: hourly
+    calendar: "*-*-* *:05:00"
+    keep: 24
+  - name: daily
+    calendar: "*-*-* 00:15:00"
+    keep: 30
+  - name: weekly
+    calendar: "Sun *-*-* 01:00:00"
+    keep: 8
+  - name: monthly
+    calendar: "*-*-01 02:00:00"
+    keep: 12
+atlas_manage_zfs_scrub: true
+atlas_zfs_scrub_calendar: "Sun *-*-01..07 03:00:00"
 atlas_manage_sharing: true
 atlas_manage_media_stack: false
 

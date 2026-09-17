@@ -1,0 +1,175 @@
+---
+- name: Validate Atlas ZFS snapshot policy
+  tags: [atlas, storage, snapshots]
+  ansible.builtin.assert:
+    that:
+      - atlas_manage_storage | bool
+      - atlas_zfs_pool != 'CHANGEME_ZFS_POOL'
+      - atlas_zfs_snapshot_prefix is match('^[a-z0-9][a-z0-9_-]*$')
+      - atlas_zfs_snapshot_policies | length > 0
+      - >-
+        (atlas_zfs_snapshot_policies | map(attribute='name') | unique | list | length)
+        == (atlas_zfs_snapshot_policies | length)
+    fail_msg: >-
+      Enable Atlas storage and declare a non-empty snapshot policy with a safe
+      prefix and unique policy names before managing automatic snapshots.
+  when: atlas_manage_zfs_snapshots | bool
+
+- name: Validate Atlas ZFS snapshot policy entries
+  tags: [atlas, storage, snapshots]
+  ansible.builtin.assert:
+    that:
+      - item.name is match('^[a-z][a-z0-9_-]*$')
+      - item.keep | int > 0
+      - item.calendar | length > 0
+    fail_msg: >-
+      Every Atlas snapshot policy needs a safe name, a positive retention
+      count, and a systemd calendar expression.
+  loop: "{{ atlas_zfs_snapshot_policies }}"
+  loop_control:
+    label: "{{ item.name | default('unnamed') }}"
+  when: atlas_manage_zfs_snapshots | bool
+
+- name: Validate Atlas ZFS snapshot calendars
+  tags: [atlas, storage, snapshots]
+  ansible.builtin.command:
+    argv:
+      - systemd-analyze
+      - calendar
+      - "{{ item.calendar }}"
+  loop: "{{ atlas_zfs_snapshot_policies }}"
+  loop_control:
+    label: "{{ item.name }}: {{ item.calendar }}"
+  changed_when: false
+  check_mode: false
+  when: atlas_manage_zfs_snapshots | bool
+
+- name: Install Atlas ZFS snapshot and retention helper
+  tags: [atlas, storage, snapshots]
+  ansible.builtin.template:
+    src: atlas-zfs-snapshot.sh.j2
+    dest: /usr/local/sbin/atlas-zfs-snapshot
+    owner: root
+    group: root
+    mode: "0750"
+  when: atlas_manage_zfs_snapshots | bool
+
+- name: Install Atlas ZFS snapshot systemd service
+  tags: [atlas, storage, snapshots]
+  ansible.builtin.template:
+    src: atlas-zfs-snapshot@.service.j2
+    dest: /etc/systemd/system/atlas-zfs-snapshot@.service
+    owner: root
+    group: root
+    mode: "0644"
+  when: atlas_manage_zfs_snapshots | bool
+
+- name: Install Atlas ZFS snapshot systemd timers
+  tags: [atlas, storage, snapshots]
+  ansible.builtin.template:
+    src: atlas-zfs-snapshot.timer.j2
+    dest: "/etc/systemd/system/atlas-zfs-snapshot-{{ item.name }}.timer"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ atlas_zfs_snapshot_policies }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: atlas_manage_zfs_snapshots | bool
+
+- name: Enable Atlas ZFS snapshot systemd timers
+  tags: [atlas, storage, snapshots]
+  ansible.builtin.systemd:
+    name: "atlas-zfs-snapshot-{{ item.name }}.timer"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop: "{{ atlas_zfs_snapshot_policies }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - atlas_manage_zfs_snapshots | bool
+    - not ansible_check_mode
+
+- name: Validate Atlas ZFS scrub policy
+  tags: [atlas, storage, scrub]
+  ansible.builtin.assert:
+    that:
+      - atlas_manage_storage | bool
+      - atlas_zfs_pool != 'CHANGEME_ZFS_POOL'
+      - atlas_zfs_scrub_calendar | length > 0
+    fail_msg: >-
+      Enable Atlas storage and declare a systemd calendar expression before
+      managing periodic ZFS scrubs.
+  when: atlas_manage_zfs_scrub | bool
+
+- name: Validate Atlas ZFS scrub calendar
+  tags: [atlas, storage, scrub]
+  ansible.builtin.command:
+    argv:
+      - systemd-analyze
+      - calendar
+      - "{{ atlas_zfs_scrub_calendar }}"
+  changed_when: false
+  check_mode: false
+  when: atlas_manage_zfs_scrub | bool
+
+- name: Require OpenZFS scrub systemd units
+  tags: [atlas, storage, scrub]
+  ansible.builtin.command:
+    argv:
+      - systemctl
+      - cat
+      - "{{ item }}"
+  loop:
+    - "zfs-scrub@{{ atlas_zfs_pool }}.service"
+    - "zfs-scrub-monthly@{{ atlas_zfs_pool }}.timer"
+    - "zfs-scrub-weekly@{{ atlas_zfs_pool }}.timer"
+  loop_control:
+    label: "{{ item }}"
+  changed_when: false
+  check_mode: false
+  when: atlas_manage_zfs_scrub | bool
+
+- name: Create Atlas ZFS scrub timer override directory
+  tags: [atlas, storage, scrub]
+  ansible.builtin.file:
+    path: "/etc/systemd/system/zfs-scrub-monthly@{{ atlas_zfs_pool }}.timer.d"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: atlas_manage_zfs_scrub | bool
+
+- name: Configure Atlas ZFS monthly scrub schedule
+  tags: [atlas, storage, scrub]
+  ansible.builtin.template:
+    src: atlas-zfs-scrub-timer.conf.j2
+    dest: >-
+      /etc/systemd/system/zfs-scrub-monthly@{{ atlas_zfs_pool }}.timer.d/override.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: atlas_manage_zfs_scrub | bool
+
+- name: Disable the conflicting weekly OpenZFS scrub timer
+  tags: [atlas, storage, scrub]
+  ansible.builtin.systemd:
+    name: "zfs-scrub-weekly@{{ atlas_zfs_pool }}.timer"
+    enabled: false
+    state: stopped
+    daemon_reload: true
+  when:
+    - atlas_manage_zfs_scrub | bool
+    - not ansible_check_mode
+
+- name: Enable the Atlas monthly OpenZFS scrub timer
+  tags: [atlas, storage, scrub]
+  ansible.builtin.systemd:
+    name: "zfs-scrub-monthly@{{ atlas_zfs_pool }}.timer"
+    enabled: true
+    state: started
+    daemon_reload: true
+  when:
+    - atlas_manage_zfs_scrub | bool
+    - not ansible_check_mode

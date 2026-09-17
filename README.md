@@ -299,9 +299,27 @@ The first real WireGuard run must include both peers. If Fedora IoT has just lay
 reboot Aegis manually and rerun the command without `--check`; the role then waits for a real peer
 handshake.
 
-Snapshot retention, Syncthing topology, WireGuard/firewall validation, Prometheus backup pulls,
-encrypted Borg backups to a Hetzner Storage Box, USB backup, monitoring, and disaster-recovery tests
-remain follow-up work. The detailed operational backlog is kept in `AGENTS.md`.
+Atlas declares recursive, systemd-timed ZFS snapshots for the complete pool hierarchy: 24 hourly
+snapshots at minute 05, 30 daily snapshots at 00:15, 8 weekly snapshots on Sunday at 01:00, and 12
+monthly snapshots on the first day at 02:00. The retention helper prunes only snapshots carrying its
+managed `atlas-auto` prefix and never rolls back a dataset. The OpenZFS monthly scrub timer is scheduled
+for the first Sunday at 03:00; the conflicting weekly scrub timer is disabled explicitly. The first recursive
+hourly snapshot completed successfully on Atlas; retention pruning and the first scheduled scrub still await
+live runtime evidence. Validate this layer independently with:
+
+```bash
+ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
+ansible-playbook ansible/site.yml --limit atlas --tags snapshots,scrub --check --diff
+```
+
+A temporary Nextcloud deployment on Atlas is also planned before Uranus: it requires separately
+declared persistent application, database, and cache storage, Vault-backed credentials, NPM-only
+publishing through Aegis, and defined backup, upgrade, and eventual migration procedures. Do not deploy
+it before the data-protection checklist is complete.
+
+Prometheus backup pulls, encrypted Borg backups to a Hetzner Storage Box, USB backup, restore testing,
+monitoring, and disaster-recovery tests remain follow-up work. The prioritized operational backlog is kept
+in `AGENTS.md`.
 
 ## How layering works
 

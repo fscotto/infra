@@ -1,0 +1,11 @@
+[Unit]
+Description=Schedule {{ item.name }} ZFS snapshots for {{ atlas_zfs_pool }}
+
+[Timer]
+OnCalendar={{ item.calendar }}
+Persistent=true
+AccuracySec=1min
+Unit=atlas-zfs-snapshot@{{ item.name }}.service
+
+[Install]
+WantedBy=timers.target

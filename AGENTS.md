@@ -59,6 +59,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff`
   - Atlas network/share hardening:
     `ansible-playbook ansible/site.yml --limit atlas --tags hardening,sharing --check --diff`
+  - Atlas ZFS snapshot retention and scrub timers:
+    `ansible-playbook ansible/site.yml --limit atlas --tags snapshots,scrub --check --diff`
   - Prometheus/Aegis WireGuard gateway:
     `ansible-playbook ansible/site.yml --limit prometheus,aegis --tags wireguard --check --diff`
   - DuckDNS config only: `ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff`
@@ -163,35 +165,51 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 
 ## Atlas NAS TODO
 Completed validation: the existing RAIDZ2 pool and datasets, SELinux, LAN firewall, SSH, Cockpit with
-the selected 45Drives plugins, encrypted SMB3 `Archive`, the Aegis-only NFSv4 `photobook` export, and
-the former Prometheus--Atlas WireGuard path were operational. Aegis has validated NFSv4.2 read, write, delete,
-and `all_squash` mapping to UID/GID `1100` end-to-end.
-- Validate the Prometheus--Aegis WireGuard gateway after migration: peer handshake and counters, Aegis IPv4
-  forwarding and masquerading, and an NPM request from Prometheus to an Atlas LAN address. Add the Uranus VIP to
-  Prometheus' Aegis peer when the cluster control plane is assigned.
-- Validate temporary Atlas Navidrome and Syncthing through Aegis before creating their NPM Proxy Hosts.
-  Keep NPM host configuration manual; plan their eventual Uranus migration with storage and routing declared
-  separately from the NAS baseline.
-- Decide whether a common SMB/NFS namespace is required. `Archive` (SMB) and `photobook` (NFS) are
-  intentionally distinct today; only if a shared namespace is selected, finalize its UID/GID, group,
-  and POSIX ACL model and test the same files through both protocols.
-- Keep `atlas_manage_media_stack` disabled until the future Immich deployment has validated `/dev/dri`,
-  container paths, and the required Vault database secret.
-- Add Ansible-managed ZFS snapshot retention and scrub timers. Use Cockpit Scheduler for visibility
-  or manual operations, not as the only source of configuration, and never automate snapshot rollback.
-- Add the Atlas-initiated least-privilege Prometheus backup pull: Prometheus exposes only prepared
-  read-only dumps through a dedicated account and Atlas retains the private SSH key, pinned host key,
-  atomic pull, verification, retention and systemd service/timer.
-- Add the encrypted offsite backup with Borg to a Hetzner Storage Box: use a dedicated SSH identity,
+the selected 45Drives plugins, encrypted SMB3 `Archive`, the Aegis-only NFSv4 `photobook` export, and the
+Prometheus--Aegis WireGuard gateway are operational. The gateway handshake, forwarding, source masquerading,
+and TCP reachability to Atlas were verified. Temporary Navidrome and Syncthing are available through their
+manual NPM Proxy Hosts; Syncthing uses `/data/Org` backed by the SMB-shared Archive dataset. Aegis has also
+validated NFSv4.2 read, write, delete, and `all_squash` mapping to UID/GID `1100` end-to-end. The ZFS
+snapshot timers are active and the first recursive hourly snapshot completed successfully; the first
+scheduled retention prune and monthly scrub remain runtime checks.
+
+### Priority 1 - Data protection
+- [x] Deploy Ansible-managed recursive ZFS snapshots with 24 hourly, 30 daily, 8 weekly, and 12 monthly
+  generations, plus a monthly scrub on the first Sunday at 03:00. The timers and first hourly snapshot were
+  verified on Atlas. Still observe the first scheduled retention prune and scrub; Cockpit Scheduler is for
+  visibility or manual operations only, and snapshot rollback is never automated.
+- [ ] Add the encrypted offsite backup with Borg to a Hetzner Storage Box: use a dedicated SSH identity,
   pin the host key, keep Borg repository credentials and encryption material in Vault, use
   snapshot-consistent sources, and manage retries, logging, pruning, repository checks and restores.
-- Add the UUID-bound offline USB backup with versioned rsync, locking, capacity checks, verification,
+- [ ] Add the UUID-bound offline USB backup with versioned rsync, locking, capacity checks, verification,
   safe unmounting and a tested restore procedure; never trigger it for an arbitrary USB disk.
-- Add monitoring and alerting for pool health, scrub/resilver, SMART data, temperatures, free space and
-  failed backup timers, plus a controlled Rocky kernel/OpenZFS update and reboot procedure.
-- Document and test disaster recovery: rebuild Atlas with Ansible, import the existing pool, restore
+- [ ] Test restores independently from a ZFS snapshot, Borg, and the offline USB backup before relying on
+  any backup path.
+- [ ] Add monitoring and alerting for pool health, scrub/resilver, SMART data, temperatures, free space,
+  snapshot/backup capacity growth, and failed maintenance or backup timers.
+
+### Priority 2 - NAS operability and recovery
+- [ ] Document and test disaster recovery: rebuild Atlas with Ansible, import the existing pool, restore
   from snapshot/USB/Hetzner, preserve Vault and Borg recovery material offline, and define RPO/RTO.
-- Optionally design iCloud photo ingestion and an Aegis persistent NFS mount as a separate workflow
+- [ ] Define a controlled Rocky kernel/OpenZFS update and reboot procedure.
+- [ ] Add the Atlas-initiated least-privilege Prometheus backup pull: Prometheus exposes only prepared
+  read-only dumps through a dedicated account and Atlas retains the private SSH key, pinned host key,
+  atomic pull, verification, retention and systemd service/timer.
+- [ ] Decide whether a common SMB/NFS namespace is required. `Archive` (SMB) and `photobook` (NFS) are
+  intentionally distinct today; only if a shared namespace is selected, finalize its UID/GID, group,
+  and POSIX ACL model and test the same files through both protocols.
+
+### Priority 3 - Service expansion
+- [ ] After data protection and recovery are validated, populate `/zpool/media/music` and validate Navidrome.
+- [ ] Design and deploy Nextcloud as another explicitly temporary Atlas service before Uranus. Give it
+  separate persistent application, database, and cache storage; keep credentials in Vault; publish it only
+  through NPM over the Prometheus--Aegis gateway; and define backup, upgrade, and eventual Uranus-migration
+  procedures before exposing user data. Do not deploy Nextcloud before the data-protection checklist is complete.
+- [ ] Keep `atlas_manage_media_stack` disabled until the future Immich deployment has validated `/dev/dri`,
+  container paths, and the required Vault database secret.
+
+### Priority 4 - Optional workflows
+- [ ] Optionally design iCloud photo ingestion and an Aegis persistent NFS mount as a separate workflow
   after the storage and backup layers are validated; do not make either a dependency of the Atlas
   baseline.
 

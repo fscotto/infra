@@ -1,0 +1,25 @@
+[Unit]
+Description=Create and retain %i ZFS snapshots for {{ atlas_zfs_pool }}
+Documentation=man:zfs-snapshot(8) man:zfs-destroy(8)
+Requires=zfs.target
+After=zfs.target
+ConditionFileIsExecutable=/usr/local/sbin/atlas-zfs-snapshot
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/atlas-zfs-snapshot %i
+User=root
+Group=root
+UMask=0077
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+LockPersonality=true

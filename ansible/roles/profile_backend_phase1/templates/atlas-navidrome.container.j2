@@ -8,7 +8,7 @@ Image={{ backend_phase1_navidrome_image }}
 UserNS=keep-id
 User={{ backend_phase1_uid }}
 Group={{ backend_phase1_gid }}
-PublishPort={{ backend_phase1_wireguard_address }}:{{ backend_phase1_navidrome_port }}:4533
+PublishPort={{ backend_phase1_bind_address }}:{{ backend_phase1_navidrome_port }}:4533
 Environment=ND_LOGLEVEL=info
 Environment=ND_SCANSCHEDULE=1h
 Environment=ND_SESSIONTIMEOUT=24h

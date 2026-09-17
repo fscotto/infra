@@ -40,4 +40,3 @@ server_firewalld_services:
 server_firewalld_ports: []
 server_sshd_service_name: sshd
 server_compose_selinux_mount_option: Z
-server_syncthing_enabled: false

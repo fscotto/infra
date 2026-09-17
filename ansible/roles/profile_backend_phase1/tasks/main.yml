@@ -7,17 +7,20 @@
       ansible.builtin.assert:
         that:
           - not (atlas_manage_media_stack | bool)
-          - backend_phase1_wireguard_interface in ansible_facts.interfaces
-          - backend_phase1_wireguard_address != 'CHANGEME_ATLAS_WIREGUARD_ADDRESS'
+          - backend_phase1_bind_address != 'CHANGEME_ATLAS_BIND_ADDRESS'
+          - backend_phase1_bind_address is match('^[0-9]{1,3}(\.[0-9]{1,3}){3}$')
+          - backend_phase1_firewalld_zone | length > 0
+          - backend_phase1_npm_source_ip != 'CHANGEME_AEGIS_IP'
+          - backend_phase1_syncthing_native_subnet != 'CHANGEME_LAN_SUBNET'
           - backend_phase1_music_dir.startswith('/')
           - backend_phase1_app_data_root.startswith('/')
           - backend_phase1_navidrome_data_dir.startswith(backend_phase1_app_data_root + '/')
           - backend_phase1_syncthing_root.startswith(backend_phase1_app_data_root + '/')
         fail_msg: >-
-          Disable the rootful media-stack gate and provide the active
-          WireGuard interface/address and absolute ZFS-backed paths before
+          Disable the rootful media-stack gate and provide the Atlas LAN bind
+          address, firewall sources, and absolute ZFS-backed paths before
           enabling phase one. This role does not manage Prometheus or migrate
-          Navidrome application data.
+          application data.
 
     - name: Read the rootless service account
       ansible.builtin.getent:
@@ -132,19 +135,35 @@
         DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ backend_phase1_uid }}/bus"
       when: not ansible_check_mode
 
-    - name: Permit phase-one services only through the WireGuard zone
+    - name: Permit NPM access to phase-one web interfaces through Aegis
       ansible.posix.firewalld:
-        port: "{{ item }}"
-        zone: "{{ backend_phase1_wireguard_firewalld_zone }}"
+        rich_rule: >-
+          rule family="ipv4" source address="{{ backend_phase1_npm_source_ip }}"
+          port port="{{ item }}" protocol="tcp" accept
+        zone: "{{ backend_phase1_firewalld_zone }}"
         state: enabled
         permanent: true
         immediate: true
       loop:
-        - "{{ backend_phase1_navidrome_port }}/tcp"
-        - "{{ backend_phase1_syncthing_gui_port }}/tcp"
-        - "{{ backend_phase1_syncthing_transfer_port }}/tcp"
-        - "{{ backend_phase1_syncthing_transfer_port }}/udp"
-        - "{{ backend_phase1_syncthing_discovery_port }}/udp"
+        - "{{ backend_phase1_navidrome_port }}"
+        - "{{ backend_phase1_syncthing_gui_port }}"
+
+    - name: Permit native Syncthing traffic from the LAN
+      ansible.posix.firewalld:
+        rich_rule: >-
+          rule family="ipv4" source address="{{ backend_phase1_syncthing_native_subnet }}"
+          port port="{{ item.port }}" protocol="{{ item.protocol }}" accept
+        zone: "{{ backend_phase1_firewalld_zone }}"
+        state: enabled
+        permanent: true
+        immediate: true
+      loop:
+        - port: "{{ backend_phase1_syncthing_transfer_port }}"
+          protocol: tcp
+        - port: "{{ backend_phase1_syncthing_transfer_port }}"
+          protocol: udp
+        - port: "{{ backend_phase1_syncthing_discovery_port }}"
+          protocol: udp
 
     - name: Start rootless phase-one Quadlets
       become_user: "{{ backend_phase1_username }}"

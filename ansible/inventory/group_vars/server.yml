@@ -75,21 +75,6 @@ server_directories:
     group: root
     mode: "0755"
 
-server_syncthing_enabled: true
-server_syncthing_directories:
-  - path: /opt/syncthing/config
-    owner: root
-    group: root
-    mode: "0755"
-  - path: /srv/syncthing
-    owner: root
-    group: root
-    mode: "0755"
-  - path: /srv/syncthing/data
-    owner: "1000"
-    group: "1000"
-    mode: "0755"
-
 server_sshd_settings:
   PermitRootLogin: "no"
 

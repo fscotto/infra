@@ -52,9 +52,14 @@ atlas_manage_storage: true
 atlas_manage_sharing: true
 atlas_manage_media_stack: false
 
-# Atlas is a NAS-only host. WireGuard is retired manually on the host and is
-# intentionally no longer managed here.
-backend_phase1_enabled: false
+# WireGuard is retired on Atlas. These rootless services are a temporary home
+# until Uranus replaces them.
+backend_phase1_enabled: true
+backend_phase1_start_services: true
+backend_phase1_bind_address: "{{ ansible_host }}"
+backend_phase1_firewalld_zone: "{{ atlas_firewalld_zone }}"
+backend_phase1_npm_source_ip: "{{ atlas_aegis_ip }}"
+backend_phase1_syncthing_native_subnet: "{{ atlas_lan_subnet }}"
 
 rocky_manage_openzfs_repo: true
 rocky_manage_syncthing_binary: false

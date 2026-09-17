@@ -149,8 +149,10 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   `1100`. Targeted SELinux is enforced persistently; a required reboot is reported but never initiated automatically. The primary LAN interface is assigned explicitly to the managed firewalld zone, and firewall rules are applied before NFS or SMB are started; their service state and TCP listeners are then verified. SMB3 exposes `Archive` to Vault-backed authorized accounts on mandatory encrypted, signed SMB3 over TCP/445 only and admits the configured LAN without host-specific exclusions.
 - Atlas NPM and Immich share a rootful Podman network. NPM publishes HTTP/HTTPS, but its administration port remains
   bound to `127.0.0.1:81`; do not expose it directly to the LAN or Internet.
-- Atlas is NAS-only. `profile_backend_phase1` is disabled in its host variables; do not reactivate its former
-  Navidrome or Syncthing Quadlets. Future application workloads belong to the Uranus K3s cluster.
+- `profile_backend_phase1` temporarily runs rootless Navidrome and Syncthing on Atlas until Uranus replaces
+  them. It binds only to Atlas' LAN IP, never `wg0`; Navidrome and the Syncthing GUI admit only Aegis as
+  the source-NAT gateway, while native Syncthing ports admit the configured LAN. It initializes fresh
+  state only and never migrates or deletes source application data.
 - `wireguard_overlay` manages `wg0` between Prometheus (`10.0.0.1`) and Aegis (`10.0.0.2`). It persists private
   keys only on their respective hosts, exchanges only derived public keys through Ansible, and verifies a real peer
   handshake. Prometheus opens `51820/udp`; Aegis is the LAN gateway. Its persistent IPv4 forwarding, narrowly scoped
@@ -167,8 +169,9 @@ and `all_squash` mapping to UID/GID `1100` end-to-end.
 - Validate the Prometheus--Aegis WireGuard gateway after migration: peer handshake and counters, Aegis IPv4
   forwarding and masquerading, and an NPM request from Prometheus to an Atlas LAN address. Add the Uranus VIP to
   Prometheus' Aegis peer when the cluster control plane is assigned.
-- Keep Atlas application Quadlets disabled. Plan Navidrome, Syncthing, Nextcloud, and Immich as Uranus workloads,
-  with their storage and routing declared separately from the NAS baseline.
+- Validate temporary Atlas Navidrome and Syncthing through Aegis before creating their NPM Proxy Hosts.
+  Keep NPM host configuration manual; plan their eventual Uranus migration with storage and routing declared
+  separately from the NAS baseline.
 - Decide whether a common SMB/NFS namespace is required. `Archive` (SMB) and `photobook` (NFS) are
   intentionally distinct today; only if a shared namespace is selected, finalize its UID/GID, group,
   and POSIX ACL model and test the same files through both protocols.

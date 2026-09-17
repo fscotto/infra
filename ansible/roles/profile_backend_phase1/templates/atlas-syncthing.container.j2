@@ -9,10 +9,10 @@ HostName=atlas-syncthing
 UserNS=keep-id
 User={{ backend_phase1_uid }}
 Group={{ backend_phase1_gid }}
-PublishPort={{ backend_phase1_wireguard_address }}:{{ backend_phase1_syncthing_gui_port }}:{{ backend_phase1_syncthing_gui_port }}
-PublishPort={{ backend_phase1_wireguard_address }}:{{ backend_phase1_syncthing_transfer_port }}:{{ backend_phase1_syncthing_transfer_port }}
-PublishPort={{ backend_phase1_wireguard_address }}:{{ backend_phase1_syncthing_transfer_port }}:{{ backend_phase1_syncthing_transfer_port }}/udp
-PublishPort={{ backend_phase1_wireguard_address }}:{{ backend_phase1_syncthing_discovery_port }}:{{ backend_phase1_syncthing_discovery_port }}/udp
+PublishPort={{ backend_phase1_bind_address }}:{{ backend_phase1_syncthing_gui_port }}:{{ backend_phase1_syncthing_gui_port }}
+PublishPort={{ backend_phase1_bind_address }}:{{ backend_phase1_syncthing_transfer_port }}:{{ backend_phase1_syncthing_transfer_port }}
+PublishPort={{ backend_phase1_bind_address }}:{{ backend_phase1_syncthing_transfer_port }}:{{ backend_phase1_syncthing_transfer_port }}/udp
+PublishPort={{ backend_phase1_bind_address }}:{{ backend_phase1_syncthing_discovery_port }}:{{ backend_phase1_syncthing_discovery_port }}/udp
 Environment=HOME=/var/syncthing
 Environment=STHOMEDIR=/var/syncthing/config
 Environment=STGUIADDRESS=0.0.0.0:{{ backend_phase1_syncthing_gui_port }}

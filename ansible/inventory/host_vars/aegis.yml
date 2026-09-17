@@ -15,6 +15,26 @@ aegis_host_dns_servers:
   - 192.168.178.1
 aegis_host_dns_search_domains:
   - fritz.box
+
+# Aegis is the internal WireGuard endpoint and NAT gateway for the LAN.
+wireguard_overlay_enabled: true
+wireguard_address: 10.0.0.2/24
+wireguard_enable_ipv4_forwarding: true
+wireguard_reload_rootful_podman_networks: true
+wireguard_forwarding_policies:
+  - name: aegis-wireguard-to-lan
+    ingress_zone: wireguard
+    egress_zone: public
+    source: 10.0.0.0/24
+    destination: "{{ aegis_lan_subnet }}"
+    masquerade: true
+wireguard_peers:
+  - name: prometheus
+    host: prometheus
+    endpoint: "{{ hostvars['prometheus']['ansible_host'] }}:{{ hostvars['prometheus']['wireguard_listen_port'] }}"
+    allowed_ips:
+      - 10.0.0.0/24
+    persistent_keepalive: 25
 aegis_ssh_authorized_keys:
   - name: ikaros
     key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINrIxXjA3ffPwziKGR5gzc4gAoBehQPlnEMcXF4Wl0ZS ikaros"

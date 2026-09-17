@@ -73,19 +73,19 @@
     - packages_rocky
     - services_systemd
 
-- name: Configure WireGuard overlay
-  hosts: wireguard_overlay
-  become: true
-
-  roles:
-    - wireguard_overlay
-
 - name: Configure Aegis Fedora IoT profile
   hosts: role_aegis
   become: true
 
   roles:
     - profile_aegis
+
+- name: Configure WireGuard overlay
+  hosts: wireguard_overlay
+  become: true
+
+  roles:
+    - wireguard_overlay
 
 - name: Configure Atlas NAS profile
   hosts: atlas

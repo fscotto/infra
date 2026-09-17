@@ -52,19 +52,9 @@ atlas_manage_storage: true
 atlas_manage_sharing: true
 atlas_manage_media_stack: false
 
-wireguard_overlay_enabled: true
-wireguard_address: 10.0.0.2/24
-wireguard_peers:
-  - name: prometheus
-    host: prometheus
-    endpoint: "{{ hostvars['prometheus']['ansible_host'] }}:{{ hostvars['prometheus']['wireguard_listen_port'] }}"
-    allowed_ips:
-      - 10.0.0.0/24
-    persistent_keepalive: 25
-
-backend_phase1_enabled: true
-backend_phase1_start_services: false
-backend_phase1_wireguard_address: 10.0.0.2
+# Atlas is a NAS-only host. WireGuard is retired manually on the host and is
+# intentionally no longer managed here.
+backend_phase1_enabled: false
 
 rocky_manage_openzfs_repo: true
 rocky_manage_syncthing_binary: false

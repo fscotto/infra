@@ -59,10 +59,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff`
   - Atlas network/share hardening:
     `ansible-playbook ansible/site.yml --limit atlas --tags hardening,sharing --check --diff`
-  - Atlas phase-one rootless services:
-    `ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1 --check --diff`
-  - Prometheus/Atlas WireGuard overlay:
-    `ansible-playbook ansible/site.yml --limit prometheus,atlas --tags wireguard --check --diff`
+  - Prometheus/Aegis WireGuard gateway:
+    `ansible-playbook ansible/site.yml --limit prometheus,aegis --tags wireguard --check --diff`
   - DuckDNS config only: `ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff`
 
 ## Conventions
@@ -151,36 +149,26 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   `1100`. Targeted SELinux is enforced persistently; a required reboot is reported but never initiated automatically. The primary LAN interface is assigned explicitly to the managed firewalld zone, and firewall rules are applied before NFS or SMB are started; their service state and TCP listeners are then verified. SMB3 exposes `Archive` to Vault-backed authorized accounts on mandatory encrypted, signed SMB3 over TCP/445 only and admits the configured LAN without host-specific exclusions.
 - Atlas NPM and Immich share a rootful Podman network. NPM publishes HTTP/HTTPS, but its administration port remains
   bound to `127.0.0.1:81`; do not expose it directly to the LAN or Internet.
-- `profile_backend_phase1` is limited to rootless Navidrome and Syncthing user Quadlets on Atlas. Official Navidrome
-  `0.63.2` uses SQLite below `/data` and does not support `ND_DATABASE_URL` or an external PostgreSQL backend; do not
-  recreate the obsolete Prometheus `navidromedb` service. The role requires the storage role's `zpool/media/music`,
-  `zpool/services/data`, `zpool/services/data/navidrome`, and `zpool/services/data/syncthing` datasets at
-  their exact paths. It never creates the pool.
-- Keep `backend_phase1_start_services` false until the stopped Prometheus Navidrome data directory has been copied to
-  Atlas and its SQLite database verified. The playbook renders the target but never migrates or deletes application
-  data; after cutover, set the flag true to enable and start Navidrome and Syncthing.
-- Phase 1 must not change Prometheus' existing NPM deployment. NPM continues to be managed exactly by `profile_server`;
-  use `10.0.0.2:4533` for Navidrome and `10.0.0.2:8384` for the Syncthing GUI. Syncthing does not use host networking:
-  its GUI, transfer, QUIC and discovery ports are explicitly published only on `10.0.0.2`; native transfer/discovery does not use the HTTP proxy.
-- `wireguard_overlay` manages the required `wg0` path between Prometheus and Atlas, persists private keys only on their
-  respective hosts, exchanges only derived public keys, and verifies a real peer handshake. The initial run must
-  include both hosts. Prometheus
-  opens `51820/udp`; after creating the WireGuard firewalld zone, restore Prometheus' rootful Podman networking with
-  `podman network reload --all` so the existing proxy stack retains container DNS. The Atlas backend role admits
-  service ports only in the WireGuard firewalld zone.
+- Atlas is NAS-only. `profile_backend_phase1` is disabled in its host variables; do not reactivate its former
+  Navidrome or Syncthing Quadlets. Future application workloads belong to the Uranus K3s cluster.
+- `wireguard_overlay` manages `wg0` between Prometheus (`10.0.0.1`) and Aegis (`10.0.0.2`). It persists private
+  keys only on their respective hosts, exchanges only derived public keys through Ansible, and verifies a real peer
+  handshake. Prometheus opens `51820/udp`; Aegis is the LAN gateway. Its persistent IPv4 forwarding, narrowly scoped
+  WireGuard-to-LAN firewalld policy, and source masquerading permit Prometheus to reach LAN services without a static
+  route on the router. Prometheus includes `192.168.178.0/24` in Aegis' peer `AllowedIPs`; add the Uranus VIP there
+  when it is assigned. After a firewalld reload, restore Prometheus' rootful Podman networking with
+  `podman network reload --all` so the existing proxy stack retains container DNS.
 
 ## Atlas NAS TODO
 Completed validation: the existing RAIDZ2 pool and datasets, SELinux, LAN firewall, SSH, Cockpit with
 the selected 45Drives plugins, encrypted SMB3 `Archive`, the Aegis-only NFSv4 `photobook` export, and
-the Prometheus--Atlas WireGuard path are operational. Aegis has validated NFSv4.2 read, write, delete,
+the former Prometheus--Atlas WireGuard path were operational. Aegis has validated NFSv4.2 read, write, delete,
 and `all_squash` mapping to UID/GID `1100` end-to-end.
-- Complete the Phase 1 Navidrome cutover: stop the Prometheus writer, copy and verify its complete
-  `/opt/navidrome/data/` directory (including SQLite sidecars) under
-  `/zpool/services/data/navidrome/`, then set `backend_phase1_start_services: true` and validate
-  Navidrome on Atlas through WireGuard. Do not delete the source until a restore test succeeds.
-- Start and validate the rendered Syncthing Quadlet only after its device IDs, star topology, folders,
-  folder modes, ignore rules, and GUI/API protection are declared. Validate its GUI and native transfer
-  ports through WireGuard only.
+- Validate the Prometheus--Aegis WireGuard gateway after migration: peer handshake and counters, Aegis IPv4
+  forwarding and masquerading, and an NPM request from Prometheus to an Atlas LAN address. Add the Uranus VIP to
+  Prometheus' Aegis peer when the cluster control plane is assigned.
+- Keep Atlas application Quadlets disabled. Plan Navidrome, Syncthing, Nextcloud, and Immich as Uranus workloads,
+  with their storage and routing declared separately from the NAS baseline.
 - Decide whether a common SMB/NFS namespace is required. `Archive` (SMB) and `photobook` (NFS) are
   intentionally distinct today; only if a shared namespace is selected, finalize its UID/GID, group,
   and POSIX ACL model and test the same files through both protocols.
@@ -229,8 +217,9 @@ and `all_squash` mapping to UID/GID `1100` end-to-end.
 - `aegis` is a remote Fedora IoT Raspberry Pi 4 node. Bootstrap it once with
   `ansible/bootstrap/aegis.bu`; the remaining configuration is applied by `profile_aegis` over SSH.
 - Fedora IoT is immutable. Do not add it to mutable Fedora package or shared dotfile roles.
-- `profile_aegis` owns the `nfs-utils` rpm-ostree layer used as the Atlas NFS client and reports the
-  required reboot without initiating it. It also owns rootful Podman Quadlets, persistent container
+- `profile_aegis` owns the `nfs-utils` and `wireguard-tools` rpm-ostree layers and reports the required reboot
+  without initiating it. `wireguard_overlay` then configures Aegis as the WireGuard LAN gateway with persistent IPv4
+  forwarding, a scoped inter-zone policy, and source masquerading. It also owns rootful Podman Quadlets, persistent container
   state under `/var/lib`, the Podman auto-update timer, LAN-restricted firewalld rules, and SSH hardening. Keep
   `aegis_lan_subnet`, `aegis_adguard_web_port`, and `aegis_network_connection_uuid` host-specific;
   SSH permits only the declared

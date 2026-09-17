@@ -21,10 +21,12 @@ wireguard_listen_port: 51820
 wireguard_enable_ipv4_forwarding: true
 wireguard_reload_rootful_podman_networks: true
 wireguard_peers:
-  - name: atlas
-    host: atlas
+  - name: aegis
+    host: aegis
+    # TODO: Aggiungere VIP di Uranus in futuro
     allowed_ips:
       - 10.0.0.2/32
+      - 192.168.178.0/24
 
 host_packages:
   - cockpit

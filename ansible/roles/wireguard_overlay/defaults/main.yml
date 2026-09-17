@@ -10,6 +10,12 @@ wireguard_mtu: 1420
 wireguard_firewalld_zone: wireguard
 wireguard_public_firewalld_zone: public
 wireguard_enable_ipv4_forwarding: false
+# Legacy zone-level masquerading; policy-level masquerading is required for inter-zone forwarding.
+wireguard_enable_masquerade: false
+# A list of narrowly scoped inter-zone forwarding rules, rendered as persistent
+# firewalld policies. Each item requires name, ingress_zone, egress_zone,
+# source, and destination.
+wireguard_forwarding_policies: []
 wireguard_reload_rootful_podman_networks: false
 wireguard_handshake_retries: 12
 wireguard_handshake_delay: 5

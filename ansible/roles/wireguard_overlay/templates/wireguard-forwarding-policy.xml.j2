@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<policy target="CONTINUE">
+  <short>WireGuard forwarding: {{ item.name }}</short>
+  <description>Managed WireGuard-to-LAN forwarding policy.</description>
+{% if item.masquerade | default(false) %}
+  <masquerade/>
+{% endif %}
+  <ingress-zone name="{{ item.ingress_zone }}"/>
+  <egress-zone name="{{ item.egress_zone }}"/>
+  <rule family="ipv4">
+    <source address="{{ item.source }}"/>
+    <destination address="{{ item.destination }}"/>
+    <accept/>
+  </rule>
+</policy>

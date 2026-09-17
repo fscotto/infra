@@ -1,6 +1,6 @@
 ---
 - name: Manage Aegis layered packages
-  tags: [aegis, packages, nfs]
+  tags: [aegis, packages, nfs, wireguard]
   community.general.rpm_ostree_pkg:
     name: "{{ aegis_layered_packages }}"
     state: present
@@ -8,7 +8,7 @@
   when: aegis_layered_packages | length > 0
 
 - name: Report reboot required for Aegis layered packages
-  tags: [aegis, packages, nfs]
+  tags: [aegis, packages, nfs, wireguard]
   ansible.builtin.debug:
     msg: Reboot Aegis to activate the newly layered packages, then rerun the playbook.
   when: aegis_layered_packages_result.needs_reboot | default(false)

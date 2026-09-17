@@ -2,6 +2,7 @@
 aegis_hostname: aegis
 aegis_layered_packages:
   - nfs-utils
+  - wireguard-tools
 aegis_network_connection_name: ""
 aegis_network_connection_uuid: ""
 aegis_host_dns_servers: []

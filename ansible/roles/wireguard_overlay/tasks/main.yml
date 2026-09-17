@@ -14,10 +14,44 @@
           Configure this host's WireGuard address and peers, and run the first
           key bootstrap against every peer in the same play.
 
-    - name: Install WireGuard userspace tools
+    - name: Validate WireGuard forwarding policies
+      ansible.builtin.assert:
+        that:
+          - item.name is defined
+          - item.ingress_zone is defined
+          - item.egress_zone is defined
+          - item.source is defined
+          - item.destination is defined
+        fail_msg: >-
+          Every WireGuard forwarding policy requires name, ingress_zone,
+          egress_zone, source, and destination.
+      loop: "{{ wireguard_forwarding_policies }}"
+      loop_control:
+        label: "{{ item.name | default('unnamed policy') }}"
+
+    - name: Install WireGuard userspace tools on mutable hosts
       ansible.builtin.dnf:
         name: "{{ wireguard_packages }}"
         state: present
+      when: "'platform_fedora_iot' not in group_names"
+
+    - name: Require WireGuard userspace tools in the booted deployment
+      ansible.builtin.command:
+        argv:
+          - wg
+          - --version
+      changed_when: false
+      failed_when: false
+      register: wireguard_userspace_tools
+
+    - name: Require active WireGuard userspace tools
+      ansible.builtin.assert:
+        that:
+          - wireguard_userspace_tools.rc == 0
+        fail_msg: >-
+          WireGuard userspace tools are not present in the booted deployment.
+          On Fedora IoT, reboot after rpm-ostree layers wireguard-tools, then
+          rerun the WireGuard play.
 
     - name: Create private WireGuard configuration directory
       ansible.builtin.file:
@@ -124,12 +158,33 @@
         permanent: true
       register: wireguard_firewalld_zone_result
 
-    - name: Reload firewalld after creating the WireGuard zone
+    - name: Create the firewalld policy directory
+      ansible.builtin.file:
+        path: /etc/firewalld/policies
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      when: wireguard_forwarding_policies | length > 0
+
+    - name: Render WireGuard forwarding policies
+      ansible.builtin.template:
+        src: wireguard-forwarding-policy.xml.j2
+        dest: "/etc/firewalld/policies/{{ item.name }}.xml"
+        owner: root
+        group: root
+        mode: "0644"
+      loop: "{{ wireguard_forwarding_policies }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: wireguard_forwarding_policy_result
+
+    - name: Reload firewalld after WireGuard firewall changes
       ansible.builtin.systemd:
         name: firewalld.service
         state: reloaded
       when:
-        - wireguard_firewalld_zone_result is changed
+        - wireguard_firewalld_zone_result is changed or (wireguard_forwarding_policy_result | default({})) is changed
         - not ansible_check_mode
 
     - name: Restore rootful Podman networking after firewalld reload
@@ -142,7 +197,7 @@
       register: wireguard_podman_network_reload
       changed_when: wireguard_podman_network_reload.stdout_lines | length > 0
       when:
-        - wireguard_firewalld_zone_result is changed
+        - wireguard_firewalld_zone_result is changed or (wireguard_forwarding_policy_result | default({})) is changed
         - wireguard_reload_rootful_podman_networks | bool
         - not ansible_check_mode
 
@@ -151,6 +206,14 @@
         interface: "{{ wireguard_interface }}"
         zone: "{{ wireguard_firewalld_zone }}"
         state: enabled
+        permanent: true
+        immediate: true
+
+    - name: Manage legacy WireGuard zone masquerading
+      ansible.posix.firewalld:
+        zone: "{{ wireguard_firewalld_zone }}"
+        masquerade: true
+        state: "{{ 'enabled' if wireguard_enable_masquerade | bool else 'disabled' }}"
         permanent: true
         immediate: true
 

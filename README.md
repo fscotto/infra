@@ -347,14 +347,17 @@ ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
 ansible-playbook ansible/site.yml --limit atlas --tags packages,borg --check --diff
 ```
 
+Atlas runtime activation is complete: the initial backup and repository check succeeded, a full restore
+to a temporary directory was validated against the live `Archive` tree, the recovery-key export was copied
+to offline storage, and the temporary snapshot and bind mounts were cleaned up.
+
 A temporary Nextcloud deployment on Atlas is also planned before Uranus: it requires separately
 declared persistent application, database, and cache storage, Vault-backed credentials, NPM-only
 publishing through Aegis, and defined backup, upgrade, and eventual migration procedures. Do not deploy
 it before the data-protection checklist is complete.
 
-Runtime activation and restore validation of the Borg backup, Prometheus backup pulls, USB backup,
-monitoring, and disaster-recovery tests remain follow-up work. The prioritized operational backlog is
-kept in `AGENTS.md`.
+Prometheus backup pulls, USB backup, monitoring, and disaster-recovery tests remain follow-up work. The
+prioritized operational backlog is kept in `AGENTS.md`.
 
 ## How layering works
 

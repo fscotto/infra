@@ -1,0 +1,518 @@
+---
+- name: Validate Atlas Borg backup configuration
+  tags: [atlas, storage, backup, borg, borg_key]
+  ansible.builtin.assert:
+    that:
+      - atlas_manage_storage | bool
+      - atlas_zfs_pool != 'CHANGEME_ZFS_POOL'
+      - atlas_mount_root.startswith('/')
+      - atlas_borg_username is match('^[a-z_][a-z0-9_-]*$')
+      - atlas_borg_group is match('^[a-z_][a-z0-9_-]*$')
+      - atlas_borg_username not in ['root', atlas_admin_username]
+      - atlas_borg_group != 'wheel'
+      - atlas_borg_home.startswith('/var/lib/')
+      - atlas_borg_repository_host is match('^[A-Za-z0-9.-]+$')
+      - atlas_borg_repository_user is match('^[A-Za-z0-9_-]+$')
+      - atlas_borg_repository_port | int > 0
+      - atlas_borg_repository_port | int < 65536
+      - atlas_borg_repository_path is match('^\./[A-Za-z0-9][A-Za-z0-9._/-]*$')
+      - "'/../' not in ('/' ~ atlas_borg_repository_path ~ '/')"
+      - atlas_borg_remote_path is match('^borg-[0-9]+\.[0-9]+$')
+      - atlas_borg_host_key.startswith(
+          '[' ~ atlas_borg_repository_host ~ ']:' ~ (atlas_borg_repository_port | string) ~ ' ssh-ed25519 '
+        )
+      - atlas_borg_ssh_private_key_path.startswith('/etc/atlas-borg/')
+      - atlas_borg_known_hosts_path.startswith('/etc/atlas-borg/')
+      - atlas_borg_passphrase_path.startswith('/etc/atlas-borg/')
+      - atlas_borg_ssh_wrapper_path.startswith('/usr/local/libexec/')
+      - atlas_borg_encryption_mode == 'repokey'
+      - atlas_borg_archive_prefix is match('^[a-z0-9][a-z0-9_-]*$')
+      - atlas_borg_snapshot_prefix is match('^[a-z0-9][a-z0-9_-]*$')
+      - atlas_borg_keep_daily | int > 0
+      - atlas_borg_keep_weekly | int > 0
+      - atlas_borg_keep_monthly | int > 0
+    fail_msg: >-
+      Atlas Borg needs a safe relative repository path, a pinned ED25519 host
+      key, positive retention counts, and valid dedicated SSH settings.
+  when: atlas_manage_borg_backup | bool
+
+- name: Create the Atlas Borg system group
+  tags: [atlas, storage, backup, borg, borg_key]
+  ansible.builtin.group:
+    name: "{{ atlas_borg_group }}"
+    system: true
+    state: present
+  when: atlas_manage_borg_backup | bool
+
+- name: Create the least-privilege Atlas Borg account
+  tags: [atlas, storage, backup, borg, borg_key]
+  ansible.builtin.user:
+    name: "{{ atlas_borg_username }}"
+    group: "{{ atlas_borg_group }}"
+    groups: []
+    append: false
+    comment: Atlas Borg backup service
+    home: "{{ atlas_borg_home }}"
+    create_home: false
+    shell: /sbin/nologin
+    password_lock: true
+    system: true
+    state: present
+  when: atlas_manage_borg_backup | bool
+
+- name: Read Atlas Borg account group membership
+  tags: [atlas, storage, backup, borg, borg_key]
+  ansible.builtin.command:
+    argv:
+      - id
+      - -nG
+      - "{{ atlas_borg_username }}"
+  register: atlas_borg_account_groups
+  changed_when: false
+  check_mode: false
+  when:
+    - atlas_manage_borg_backup | bool
+    - not ansible_check_mode
+
+- name: Require the Atlas Borg account to have no supplementary groups
+  tags: [atlas, storage, backup, borg, borg_key]
+  ansible.builtin.assert:
+    that:
+      - atlas_borg_account_groups.stdout.split() == [atlas_borg_group]
+    fail_msg: >-
+      The Atlas Borg service account must belong only to its private primary
+      group and must never receive wheel or other supplementary membership.
+  when:
+    - atlas_manage_borg_backup | bool
+    - not ansible_check_mode
+
+- name: Validate Atlas Borg systemd calendars
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.command:
+    argv:
+      - systemd-analyze
+      - calendar
+      - "{{ item }}"
+  loop:
+    - "{{ atlas_borg_backup_calendar }}"
+    - "{{ atlas_borg_check_calendar }}"
+  changed_when: false
+  check_mode: false
+  when: atlas_manage_borg_backup | bool
+
+- name: Create Atlas Borg configuration directory
+  tags: [atlas, storage, backup, borg, borg_key]
+  ansible.builtin.file:
+    path: /etc/atlas-borg
+    state: directory
+    owner: root
+    group: "{{ atlas_borg_group }}"
+    mode: "0750"
+  when: atlas_manage_borg_backup | bool
+
+- name: Generate the dedicated Atlas Borg SSH identity
+  tags: [atlas, storage, backup, borg, borg_key]
+  ansible.builtin.command:
+    argv:
+      - ssh-keygen
+      - -q
+      - -t
+      - ed25519
+      - -N
+      - ""
+      - -C
+      - atlas-borg@atlas
+      - -f
+      - "{{ atlas_borg_ssh_private_key_path }}"
+    creates: "{{ atlas_borg_ssh_private_key_path }}"
+  when: atlas_manage_borg_backup | bool
+
+- name: Protect the Atlas Borg private SSH identity
+  tags: [atlas, storage, backup, borg, borg_key]
+  ansible.builtin.file:
+    path: "{{ atlas_borg_ssh_private_key_path }}"
+    owner: "{{ atlas_borg_username }}"
+    group: "{{ atlas_borg_group }}"
+    mode: "0600"
+  when:
+    - atlas_manage_borg_backup | bool
+    - not ansible_check_mode
+
+- name: Set permissions on the Atlas Borg public SSH identity
+  tags: [atlas, storage, backup, borg, borg_key]
+  ansible.builtin.file:
+    path: "{{ atlas_borg_ssh_private_key_path }}.pub"
+    owner: "{{ atlas_borg_username }}"
+    group: "{{ atlas_borg_group }}"
+    mode: "0644"
+  when:
+    - atlas_manage_borg_backup | bool
+    - not ansible_check_mode
+
+- name: Read the dedicated Atlas Borg public SSH identity
+  tags: [atlas, storage, backup, borg, borg_key]
+  ansible.builtin.slurp:
+    src: "{{ atlas_borg_ssh_private_key_path }}.pub"
+  register: atlas_borg_public_key
+  when:
+    - atlas_manage_borg_backup | bool
+    - not ansible_check_mode
+
+- name: Report the public SSH identity to install in the Hetzner sub-account
+  tags: [atlas, storage, backup, borg, borg_key]
+  ansible.builtin.debug:
+    msg: "{{ atlas_borg_public_key.content | b64decode | trim }}"
+  when:
+    - atlas_manage_borg_backup | bool
+    - not ansible_check_mode
+
+- name: Pin the Hetzner Storage Box SSH host key
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.copy:
+    content: "{{ atlas_borg_host_key }}\n"
+    dest: "{{ atlas_borg_known_hosts_path }}"
+    owner: "{{ atlas_borg_username }}"
+    group: "{{ atlas_borg_group }}"
+    mode: "0600"
+  when: atlas_manage_borg_backup | bool
+
+- name: Create Atlas Borg state directories
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ atlas_borg_username }}"
+    group: "{{ atlas_borg_group }}"
+    mode: "0700"
+  loop:
+    - "{{ atlas_borg_config_dir }}"
+    - "{{ atlas_borg_cache_dir }}"
+  when: atlas_manage_borg_backup | bool
+
+- name: Create the shared Atlas Borg operation lock
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.copy:
+    content: ""
+    dest: "{{ atlas_borg_lock_path }}"
+    owner: "{{ atlas_borg_username }}"
+    group: "{{ atlas_borg_group }}"
+    mode: "0600"
+    force: false
+  when: atlas_manage_borg_backup | bool
+
+- name: Require the Atlas Borg encryption passphrase from Vault
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.assert:
+    that:
+      - atlas_borg_passphrase | length >= 20
+    fail_msg: >-
+      Define vault_atlas_borg_passphrase with a strong unique value in the
+      encrypted Vault before activating the Borg repository.
+  no_log: true
+  when: atlas_manage_borg_backup | bool
+
+- name: Install the Atlas Borg passphrase
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.copy:
+    content: "{{ atlas_borg_passphrase }}\n"
+    dest: "{{ atlas_borg_passphrase_path }}"
+    owner: "{{ atlas_borg_username }}"
+    group: "{{ atlas_borg_group }}"
+    mode: "0600"
+  diff: false
+  no_log: true
+  when: atlas_manage_borg_backup | bool
+
+- name: Install the Atlas Borg backup helper
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.template:
+    src: atlas-borg-backup.sh.j2
+    dest: /usr/local/sbin/atlas-borg-backup
+    owner: root
+    group: root
+    mode: "0750"
+  when: atlas_manage_borg_backup | bool
+
+- name: Install the Atlas Borg check helper
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.template:
+    src: atlas-borg-check.sh.j2
+    dest: /usr/local/sbin/atlas-borg-check
+    owner: root
+    group: "{{ atlas_borg_group }}"
+    mode: "0750"
+  when: atlas_manage_borg_backup | bool
+
+- name: Create the local libexec directory for the Atlas Borg SSH wrapper
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.file:
+    path: "{{ atlas_borg_ssh_wrapper_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: atlas_manage_borg_backup | bool
+
+- name: Install the capability-dropping Atlas Borg SSH wrapper
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.template:
+    src: atlas-borg-ssh.sh.j2
+    dest: "{{ atlas_borg_ssh_wrapper_path }}"
+    owner: root
+    group: root
+    mode: "0755"
+  when: atlas_manage_borg_backup | bool
+
+- name: Install Atlas Borg systemd units
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - atlas-borg-backup.service
+    - atlas-borg-backup.timer
+    - atlas-borg-check.service
+    - atlas-borg-check.timer
+  notify: Restart Atlas Borg timers
+  when: atlas_manage_borg_backup | bool
+
+- name: Verify dedicated SSH access to the Hetzner Storage Box
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - -T
+      - -i
+      - "{{ atlas_borg_ssh_private_key_path }}"
+      - -p
+      - "{{ atlas_borg_repository_port | string }}"
+      - -o
+      - BatchMode=yes
+      - -o
+      - IdentitiesOnly=yes
+      - -o
+      - StrictHostKeyChecking=yes
+      - -o
+      - "UserKnownHostsFile={{ atlas_borg_known_hosts_path }}"
+      - "{{ atlas_borg_repository_user }}@{{ atlas_borg_repository_host }}"
+      - pwd
+  register: atlas_borg_ssh_probe
+  become: true
+  become_user: "{{ atlas_borg_username }}"
+  changed_when: false
+  failed_when: false
+  when:
+    - atlas_manage_borg_backup | bool
+    - not ansible_check_mode
+
+- name: Require the dedicated public key on the Hetzner sub-account
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.assert:
+    that:
+      - atlas_borg_ssh_probe.rc == 0
+    fail_msg: >-
+      Install the reported Atlas Borg public key in the Hetzner sub-account
+      before rerunning the Borg tasks. Password authentication is never used.
+  when:
+    - atlas_manage_borg_backup | bool
+    - not ansible_check_mode
+
+- name: Probe the remote Atlas Borg repository path
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - -T
+      - -i
+      - "{{ atlas_borg_ssh_private_key_path }}"
+      - -p
+      - "{{ atlas_borg_repository_port | string }}"
+      - -o
+      - BatchMode=yes
+      - -o
+      - IdentitiesOnly=yes
+      - -o
+      - StrictHostKeyChecking=yes
+      - -o
+      - "UserKnownHostsFile={{ atlas_borg_known_hosts_path }}"
+      - "{{ atlas_borg_repository_user }}@{{ atlas_borg_repository_host }}"
+      - stat
+      - "{{ atlas_borg_repository_path }}"
+  register: atlas_borg_repository_path_probe
+  become: true
+  become_user: "{{ atlas_borg_username }}"
+  changed_when: false
+  failed_when: false
+  when:
+    - atlas_manage_borg_backup | bool
+    - not ansible_check_mode
+
+- name: Probe the Atlas Borg repository
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/borg
+      - --remote-path
+      - "{{ atlas_borg_remote_path }}"
+      - info
+      - >-
+        ssh://{{ atlas_borg_repository_user }}@{{ atlas_borg_repository_host }}:
+        {{- atlas_borg_repository_port }}/{{ atlas_borg_repository_path }}
+  environment:
+    BORG_CACHE_DIR: "{{ atlas_borg_cache_dir }}"
+    BORG_CONFIG_DIR: "{{ atlas_borg_config_dir }}"
+    BORG_PASSCOMMAND: "cat {{ atlas_borg_passphrase_path }}"
+    BORG_RSH: "{{ atlas_borg_ssh_wrapper_path }}"
+  register: atlas_borg_repository_probe
+  become: true
+  become_user: "{{ atlas_borg_username }}"
+  changed_when: false
+  failed_when: false
+  when:
+    - atlas_manage_borg_backup | bool
+    - not ansible_check_mode
+    - atlas_borg_repository_path_probe.rc == 0
+
+- name: Reject an existing path that is not the configured Borg repository
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.assert:
+    that:
+      - atlas_borg_repository_probe.rc == 0
+    fail_msg: >-
+      The remote repository path already exists but Borg could not open it.
+      Refusing to initialize over existing data; verify the path, passphrase,
+      and repository state manually.
+  when:
+    - atlas_manage_borg_backup | bool
+    - not ansible_check_mode
+    - atlas_borg_repository_path_probe.rc == 0
+
+- name: Initialize the encrypted Atlas Borg repository
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/borg
+      - --remote-path
+      - "{{ atlas_borg_remote_path }}"
+      - init
+      - --encryption
+      - "{{ atlas_borg_encryption_mode }}"
+      - >-
+        ssh://{{ atlas_borg_repository_user }}@{{ atlas_borg_repository_host }}:
+        {{- atlas_borg_repository_port }}/{{ atlas_borg_repository_path }}
+  environment:
+    BORG_CACHE_DIR: "{{ atlas_borg_cache_dir }}"
+    BORG_CONFIG_DIR: "{{ atlas_borg_config_dir }}"
+    BORG_PASSCOMMAND: "cat {{ atlas_borg_passphrase_path }}"
+    BORG_RSH: "{{ atlas_borg_ssh_wrapper_path }}"
+  become: true
+  become_user: "{{ atlas_borg_username }}"
+  when:
+    - atlas_manage_borg_backup | bool
+    - not ansible_check_mode
+    - atlas_borg_repository_path_probe.rc != 0
+
+- name: Verify the encrypted Atlas Borg repository
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/borg
+      - --remote-path
+      - "{{ atlas_borg_remote_path }}"
+      - info
+      - >-
+        ssh://{{ atlas_borg_repository_user }}@{{ atlas_borg_repository_host }}:
+        {{- atlas_borg_repository_port }}/{{ atlas_borg_repository_path }}
+  environment:
+    BORG_CACHE_DIR: "{{ atlas_borg_cache_dir }}"
+    BORG_CONFIG_DIR: "{{ atlas_borg_config_dir }}"
+    BORG_PASSCOMMAND: "cat {{ atlas_borg_passphrase_path }}"
+    BORG_RSH: "{{ atlas_borg_ssh_wrapper_path }}"
+  become: true
+  become_user: "{{ atlas_borg_username }}"
+  changed_when: false
+  when:
+    - atlas_manage_borg_backup | bool
+    - not ansible_check_mode
+
+- name: Check for the local Atlas Borg recovery-key export
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.stat:
+    path: "{{ atlas_borg_recovery_export_path }}"
+  register: atlas_borg_recovery_export
+  delegate_to: localhost
+  become: false
+  when:
+    - atlas_manage_borg_backup | bool
+    - not ansible_check_mode
+
+- name: Export the Atlas Borg recovery key for offline preservation
+  tags: [atlas, storage, backup, borg]
+  when:
+    - atlas_manage_borg_backup | bool
+    - not ansible_check_mode
+    - not atlas_borg_recovery_export.stat.exists
+  no_log: true
+  block:
+    - name: Create the local recovery-material directory
+      ansible.builtin.file:
+        path: "{{ atlas_borg_recovery_export_path | dirname }}"
+        state: directory
+        mode: "0700"
+      delegate_to: localhost
+      become: false
+
+    - name: Export the encrypted Borg repository key on Atlas
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/borg
+          - --remote-path
+          - "{{ atlas_borg_remote_path }}"
+          - key
+          - export
+          - >-
+            ssh://{{ atlas_borg_repository_user }}@{{ atlas_borg_repository_host }}:
+            {{- atlas_borg_repository_port }}/{{ atlas_borg_repository_path }}
+          - "{{ atlas_borg_config_dir }}/atlas-borg-repokey.export"
+      environment:
+        BORG_CACHE_DIR: "{{ atlas_borg_cache_dir }}"
+        BORG_CONFIG_DIR: "{{ atlas_borg_config_dir }}"
+        BORG_PASSCOMMAND: "cat {{ atlas_borg_passphrase_path }}"
+        BORG_RSH: "{{ atlas_borg_ssh_wrapper_path }}"
+      become: true
+      become_user: "{{ atlas_borg_username }}"
+
+    - name: Fetch the encrypted Borg recovery key from Atlas
+      ansible.builtin.fetch:
+        src: "{{ atlas_borg_config_dir }}/atlas-borg-repokey.export"
+        dest: "{{ atlas_borg_recovery_export_path }}"
+        flat: true
+
+    - name: Protect the local Borg recovery-key export
+      ansible.builtin.file:
+        path: "{{ atlas_borg_recovery_export_path }}"
+        mode: "0600"
+      delegate_to: localhost
+      become: false
+  always:
+    - name: Remove the temporary recovery-key export from Atlas
+      ansible.builtin.file:
+        path: "{{ atlas_borg_config_dir }}/atlas-borg-repokey.export"
+        state: absent
+
+- name: Enable Atlas Borg backup and check timers
+  tags: [atlas, storage, backup, borg]
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop:
+    - atlas-borg-backup.timer
+    - atlas-borg-check.timer
+  when:
+    - atlas_manage_borg_backup | bool
+    - not ansible_check_mode

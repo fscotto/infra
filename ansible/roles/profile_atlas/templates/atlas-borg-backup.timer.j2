@@ -1,0 +1,12 @@
+[Unit]
+Description=Schedule the encrypted Atlas Borg backup
+
+[Timer]
+OnCalendar={{ atlas_borg_backup_calendar }}
+Persistent=true
+RandomizedDelaySec={{ atlas_borg_randomized_delay }}
+AccuracySec=1min
+Unit=atlas-borg-backup.service
+
+[Install]
+WantedBy=timers.target

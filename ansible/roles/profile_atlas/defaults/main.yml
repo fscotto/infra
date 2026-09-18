@@ -67,6 +67,36 @@ atlas_zfs_snapshot_policies: []
 atlas_manage_zfs_scrub: false
 atlas_zfs_scrub_calendar: ""
 
+atlas_manage_borg_backup: false
+atlas_borg_username: borg
+atlas_borg_group: borg
+atlas_borg_home: /var/lib/atlas-borg
+atlas_borg_repository_host: CHANGEME_BORG_HOST
+atlas_borg_repository_user: CHANGEME_BORG_USER
+atlas_borg_repository_port: 23
+atlas_borg_repository_path: ./borg-data
+atlas_borg_remote_path: borg-1.4
+atlas_borg_host_key: ""
+atlas_borg_ssh_private_key_path: /etc/atlas-borg/id_ed25519
+atlas_borg_known_hosts_path: /etc/atlas-borg/known_hosts
+atlas_borg_passphrase_path: /etc/atlas-borg/passphrase
+atlas_borg_ssh_wrapper_path: /usr/local/libexec/atlas-borg-ssh
+atlas_borg_passphrase: "{{ vault_atlas_borg_passphrase | default('') }}"
+atlas_borg_encryption_mode: repokey
+atlas_borg_archive_prefix: atlas
+atlas_borg_snapshot_prefix: atlas-borg
+atlas_borg_compression: auto,zstd,3
+atlas_borg_backup_calendar: ""
+atlas_borg_check_calendar: ""
+atlas_borg_randomized_delay: 30m
+atlas_borg_keep_daily: 30
+atlas_borg_keep_weekly: 8
+atlas_borg_keep_monthly: 12
+atlas_borg_config_dir: /var/lib/atlas-borg
+atlas_borg_cache_dir: /var/cache/atlas-borg
+atlas_borg_lock_path: /var/lib/atlas-borg/backup.lock
+atlas_borg_recovery_export_path: "{{ playbook_dir }}/../secrets/recovery/atlas-borg-repokey.export"
+
 atlas_archive_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_archive }}"
 atlas_services_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_services }}"
 atlas_app_data_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_app_data }}"

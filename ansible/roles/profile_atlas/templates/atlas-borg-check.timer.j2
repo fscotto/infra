@@ -1,0 +1,12 @@
+[Unit]
+Description=Schedule checks of the encrypted Atlas Borg repository
+
+[Timer]
+OnCalendar={{ atlas_borg_check_calendar }}
+Persistent=true
+RandomizedDelaySec={{ atlas_borg_randomized_delay }}
+AccuracySec=1min
+Unit=atlas-borg-check.service
+
+[Install]
+WantedBy=timers.target

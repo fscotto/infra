@@ -1,0 +1,40 @@
+[Unit]
+Description=Back up Atlas ZFS datasets to the encrypted Borg repository
+Documentation=man:borg-create(1) man:borg-prune(1) man:borg-compact(1)
+Requires=zfs.target
+Wants=network-online.target
+After=zfs.target network-online.target
+StartLimitIntervalSec=6h
+StartLimitBurst=3
+ConditionFileIsExecutable=/usr/local/sbin/atlas-borg-backup
+ConditionPathExists={{ atlas_borg_passphrase_path }}
+ConditionPathExists={{ atlas_borg_ssh_private_key_path }}
+ConditionPathExists={{ atlas_borg_known_hosts_path }}
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/atlas-borg-backup
+User=root
+Group=root
+UMask=0077
+SuccessExitStatus=1
+Restart=on-failure
+RestartSec=30m
+TimeoutStartSec=infinity
+RuntimeDirectory=atlas-borg
+RuntimeDirectoryMode=0750
+Nice=15
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=true
+PrivateMounts=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths={{ atlas_borg_cache_dir }} {{ atlas_borg_config_dir }} /run/atlas-borg /run/lock
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictRealtime=true
+LockPersonality=true

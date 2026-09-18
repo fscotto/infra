@@ -312,14 +312,49 @@ ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
 ansible-playbook ansible/site.yml --limit atlas --tags snapshots,scrub --check --diff
 ```
 
+Atlas also declares an encrypted Borg backup to the dedicated Hetzner Storage Box sub-account
+`u660064-sub1`. The repository is the sub-account-relative `./borg-data` path and uses the explicitly
+selected remote Borg 1.4 binary over SSH port 23. The ED25519 server key is pinned; a dedicated client
+key is generated for the locked, non-login `borg` system account, and its private half never leaves
+`/etc/atlas-borg`. The account has no sudo or supplementary groups and owns only its SSH identity,
+passphrase, cache, and Borg state. Borg receives its passphrase through a mode `0600` file rendered from
+`vault_atlas_borg_passphrase`.
+
+The daily backup starts at 04:30 with up to 30 minutes of randomized delay. It creates a temporary,
+recursive ZFS snapshot and reconstructs every dataset below `/zpool` as a read-only bind-mounted tree,
+so parent and child datasets enter one consistent Borg archive. Cleanup always removes the temporary
+mounts and managed snapshot. Only the root wrapper performs snapshot and mount operations; it launches
+the Borg client as `borg` with temporary read-search capability and no ZFS, sudo, or pool-management
+privileges. Borg retains 30 daily, 8 weekly, and 12 monthly archives, then compacts the standard
+read-write repository. A full metadata and repository check runs as `borg` on the fifteenth day of each
+month at 06:00. Both operations use a common lock, journal logging, and bounded systemd retries.
+
+Initial activation remains explicit:
+
+1. Add a strong unique `vault_atlas_borg_passphrase` with `ansible-vault edit secrets/vault.yml`.
+2. Generate and display only the dedicated public key with
+   `ansible-playbook ansible/site.yml --limit atlas --tags borg_key`.
+3. Install that public key in the Hetzner sub-account, then apply with
+   `ansible-playbook ansible/site.yml --limit atlas --tags packages,borg`.
+4. Copy the ignored `secrets/recovery/atlas-borg-repokey.export` file to genuinely offline storage.
+   The controller-side copy is not an offline backup by itself.
+
+The role initializes only the missing `repokey` repository and never accepts an unpinned host key or
+password authentication. It does not start the first backup manually. Validate the rendered state with:
+
+```bash
+ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
+ansible-playbook ansible/site.yml --limit atlas --tags packages,borg --check --diff
+```
+
 A temporary Nextcloud deployment on Atlas is also planned before Uranus: it requires separately
 declared persistent application, database, and cache storage, Vault-backed credentials, NPM-only
 publishing through Aegis, and defined backup, upgrade, and eventual migration procedures. Do not deploy
 it before the data-protection checklist is complete.
 
-Prometheus backup pulls, encrypted Borg backups to a Hetzner Storage Box, USB backup, restore testing,
-monitoring, and disaster-recovery tests remain follow-up work. The prioritized operational backlog is kept
-in `AGENTS.md`.
+Runtime activation and restore validation of the Borg backup, Prometheus backup pulls, USB backup,
+monitoring, and disaster-recovery tests remain follow-up work. The prioritized operational backlog is
+kept in `AGENTS.md`.
 
 ## How layering works
 

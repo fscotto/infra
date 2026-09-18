@@ -28,6 +28,18 @@
     name: smb
     state: restarted
 
+- name: Restart Atlas Borg timers
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: restarted
+    daemon_reload: true
+  loop:
+    - atlas-borg-backup.timer
+    - atlas-borg-check.timer
+  when:
+    - atlas_manage_borg_backup | bool
+    - not ansible_check_mode
+
 - name: Restart Atlas media Quadlets
   ansible.builtin.systemd:
     name: "{{ item }}"

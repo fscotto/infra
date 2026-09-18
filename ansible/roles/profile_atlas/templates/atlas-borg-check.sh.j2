@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+export LC_ALL=C
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export BORG_CACHE_DIR={{ atlas_borg_cache_dir | quote }}
+export BORG_CONFIG_DIR={{ atlas_borg_config_dir | quote }}
+export BORG_PASSCOMMAND={{ ('cat ' ~ atlas_borg_passphrase_path) | quote }}
+export BORG_RSH={{ atlas_borg_ssh_wrapper_path | quote }}
+
+readonly repository={{ ('ssh://' ~ atlas_borg_repository_user ~ '@' ~ atlas_borg_repository_host
+  ~ ':' ~ (atlas_borg_repository_port | string) ~ '/' ~ atlas_borg_repository_path) | quote }}
+readonly remote_path={{ atlas_borg_remote_path | quote }}
+readonly archive_prefix={{ atlas_borg_archive_prefix | quote }}
+readonly borg_lock={{ atlas_borg_lock_path | quote }}
+
+exec 8>"$borg_lock"
+flock 8
+
+exec borg --remote-path "$remote_path" --lock-wait 600 check \
+  --show-rc \
+  --glob-archives "${archive_prefix}-*" \
+  "$repository"

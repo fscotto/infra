@@ -1,0 +1,176 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+export LC_ALL=C
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export BORG_CACHE_DIR={{ atlas_borg_cache_dir | quote }}
+export BORG_CONFIG_DIR={{ atlas_borg_config_dir | quote }}
+export BORG_PASSCOMMAND={{ ('cat ' ~ atlas_borg_passphrase_path) | quote }}
+export BORG_RSH={{ atlas_borg_ssh_wrapper_path | quote }}
+
+readonly pool={{ atlas_zfs_pool | quote }}
+readonly mount_root={{ atlas_mount_root | quote }}
+readonly repository={{ ('ssh://' ~ atlas_borg_repository_user ~ '@' ~ atlas_borg_repository_host
+  ~ ':' ~ (atlas_borg_repository_port | string) ~ '/' ~ atlas_borg_repository_path) | quote }}
+readonly remote_path={{ atlas_borg_remote_path | quote }}
+readonly archive_prefix={{ atlas_borg_archive_prefix | quote }}
+readonly snapshot_prefix={{ atlas_borg_snapshot_prefix | quote }}
+readonly compression={{ atlas_borg_compression | quote }}
+readonly stage=/run/atlas-borg/source
+readonly borg_user={{ atlas_borg_username | quote }}
+readonly borg_group={{ atlas_borg_group | quote }}
+readonly borg_home={{ atlas_borg_home | quote }}
+readonly borg_lock={{ atlas_borg_lock_path | quote }}
+
+snapshot_name=""
+snapshot_created=false
+mounted_targets=()
+
+# Invoked through the EXIT trap below.
+# shellcheck disable=SC2329
+cleanup() {
+  local status=$?
+  local cleanup_status=0
+  local index
+  trap - EXIT HUP INT TERM
+  set +e
+
+{% raw %}
+  for ((index = ${#mounted_targets[@]} - 1; index >= 0; index--)); do
+{% endraw %}
+    if mountpoint -q "${mounted_targets[$index]}"; then
+      umount "${mounted_targets[$index]}" || cleanup_status=2
+    fi
+  done
+  rm -rf "$stage" || cleanup_status=2
+
+  if [[ "$snapshot_created" == true ]]; then
+    flock 9
+    zfs destroy -r "${pool}@${snapshot_name}" || cleanup_status=2
+    flock -u 9
+  fi
+
+  if ((status == 0 && cleanup_status != 0)); then
+    status=$cleanup_status
+  fi
+  exit "$status"
+}
+
+trap cleanup EXIT
+trap 'exit 143' HUP INT TERM
+
+run_as_borg() {
+  setpriv \
+    --reuid "$borg_user" \
+    --regid "$borg_group" \
+    --clear-groups \
+    --inh-caps=-all,+dac_read_search \
+    --ambient-caps=-all,+dac_read_search \
+    --bounding-set=-all,+dac_read_search \
+    -- env HOME="$borg_home" USER="$borg_user" LOGNAME="$borg_user" "$@"
+}
+
+exec 8>"$borg_lock"
+flock 8
+exec 9>/run/lock/atlas-zfs-snapshot.lock
+
+zpool list -H -o name "$pool" >/dev/null
+rm -rf "$stage"
+mkdir -p "$stage"
+chown root:"$borg_group" /run/atlas-borg "$stage"
+chmod 0750 /run/atlas-borg "$stage"
+
+flock 9
+while IFS= read -r stale_snapshot; do
+  stale_suffix="${stale_snapshot#"${pool}@${snapshot_prefix}-"}"
+  if [[ "$stale_suffix" =~ ^[0-9]{8}T[0-9]{6}Z$ ]]; then
+    zfs destroy -r "$stale_snapshot"
+    printf 'Removed stale Borg source snapshot %s\n' "$stale_snapshot"
+  fi
+done < <(
+  zfs list -H -t snapshot -o name -r "$pool" |
+    grep -E "^${pool}@${snapshot_prefix}-[0-9]{8}T[0-9]{6}Z$" || true
+)
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+readonly timestamp
+snapshot_name="${snapshot_prefix}-${timestamp}"
+readonly snapshot_name
+zfs snapshot -r "${pool}@${snapshot_name}"
+snapshot_created=true
+flock -u 9
+printf 'Created recursive Borg source snapshot %s@%s\n' "$pool" "$snapshot_name"
+
+while IFS=$'\t' read -r dataset dataset_mountpoint mounted; do
+  if [[ "$mounted" != yes ]]; then
+    printf 'Dataset %s is not mounted; refusing an incomplete backup\n' "$dataset" >&2
+    exit 65
+  fi
+  if [[ "$dataset_mountpoint" != "$mount_root" && "$dataset_mountpoint" != "$mount_root/"* ]]; then
+    printf 'Dataset %s has unexpected mountpoint %s\n' "$dataset" "$dataset_mountpoint" >&2
+    exit 65
+  fi
+
+  dataset_suffix="${dataset#"$pool"}"
+  source_path="${dataset_mountpoint}/.zfs/snapshot/${snapshot_name}"
+  target_path="${stage}${dataset_suffix}"
+  mkdir -p "$target_path"
+  mount --bind "$source_path" "$target_path"
+  mount -o remount,bind,ro "$target_path"
+  mounted_targets+=("$target_path")
+done < <(zfs list -H -o name,mountpoint,mounted -s name -r "$pool")
+
+archive="${archive_prefix}-${timestamp}"
+readonly archive
+borg_status=0
+
+set +e
+(
+  cd /run/atlas-borg
+  run_as_borg borg --remote-path "$remote_path" --lock-wait 600 create \
+    --show-rc \
+    --stats \
+    --checkpoint-interval 900 \
+    --compression "$compression" \
+    "${repository}::${archive}" \
+    source
+)
+create_status=$?
+set -e
+if ((create_status >= 2)); then
+  exit "$create_status"
+fi
+borg_status=$create_status
+
+set +e
+run_as_borg borg --remote-path "$remote_path" --lock-wait 600 prune \
+  --show-rc \
+  --list \
+  --glob-archives "${archive_prefix}-*" \
+  --keep-daily {{ atlas_borg_keep_daily | int }} \
+  --keep-weekly {{ atlas_borg_keep_weekly | int }} \
+  --keep-monthly {{ atlas_borg_keep_monthly | int }} \
+  "$repository"
+prune_status=$?
+set -e
+if ((prune_status >= 2)); then
+  exit "$prune_status"
+fi
+if ((prune_status > borg_status)); then
+  borg_status=$prune_status
+fi
+
+set +e
+run_as_borg borg --remote-path "$remote_path" --lock-wait 600 compact \
+  --show-rc \
+  "$repository"
+compact_status=$?
+set -e
+if ((compact_status >= 2)); then
+  exit "$compact_status"
+fi
+if ((compact_status > borg_status)); then
+  borg_status=$compact_status
+fi
+
+exit "$borg_status"

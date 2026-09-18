@@ -66,6 +66,23 @@ atlas_zfs_snapshot_policies:
     keep: 12
 atlas_manage_zfs_scrub: true
 atlas_zfs_scrub_calendar: "Sun *-*-01..07 03:00:00"
+atlas_manage_borg_backup: true
+atlas_borg_repository_host: u660064-sub1.your-storagebox.de
+atlas_borg_repository_user: u660064-sub1
+atlas_borg_repository_port: 23
+atlas_borg_repository_path: ./borg-data
+atlas_borg_remote_path: borg-1.4
+# Verified against Hetzner's published ED25519 fingerprint on 2026-09-17:
+# SHA256:XqONwb1S0zuj5A1CDxpOSuD2hnAArV1A3wKY7Z3sdgM
+atlas_borg_host_key: >-
+  [u660064-sub1.your-storagebox.de]:23 ssh-ed25519
+  AAAAC3NzaC1lZDI1NTE5AAAAIICf9svRenC/PLKIL9nk6K/pxQgoiFC41wTNvoIncOxs
+atlas_borg_backup_calendar: "*-*-* 04:30:00"
+atlas_borg_check_calendar: "*-*-15 06:00:00"
+atlas_borg_randomized_delay: 30m
+atlas_borg_keep_daily: 30
+atlas_borg_keep_weekly: 8
+atlas_borg_keep_monthly: 12
 atlas_manage_sharing: true
 atlas_manage_media_stack: false
 
@@ -93,6 +110,7 @@ host_packages:
   - samba
   - samba-client
   - samba-common-tools
+  - borgbackup
   - zfs
 
 atlas_nfs_exports:

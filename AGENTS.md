@@ -61,6 +61,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags hardening,sharing --check --diff`
   - Atlas ZFS snapshot retention and scrub timers:
     `ansible-playbook ansible/site.yml --limit atlas --tags snapshots,scrub --check --diff`
+  - Atlas encrypted Borg backup:
+    `ansible-playbook ansible/site.yml --limit atlas --tags packages,borg --check --diff`
   - Prometheus/Aegis WireGuard gateway:
     `ansible-playbook ansible/site.yml --limit prometheus,aegis --tags wireguard --check --diff`
   - DuckDNS config only: `ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff`
@@ -178,9 +180,13 @@ scheduled retention prune and monthly scrub remain runtime checks.
   generations, plus a monthly scrub on the first Sunday at 03:00. The timers and first hourly snapshot were
   verified on Atlas. Still observe the first scheduled retention prune and scrub; Cockpit Scheduler is for
   visibility or manual operations only, and snapshot rollback is never automated.
-- [ ] Add the encrypted offsite backup with Borg to a Hetzner Storage Box: use a dedicated SSH identity,
-  pin the host key, keep Borg repository credentials and encryption material in Vault, use
-  snapshot-consistent sources, and manage retries, logging, pruning, repository checks and restores.
+- [ ] Complete runtime activation of the encrypted offsite Borg backup to the Hetzner Storage Box. The
+  playbook now declares the dedicated SSH identity, pinned ED25519 host key, Vault-backed `repokey`
+  encryption, a locked non-login `borg` account with no sudo or supplementary groups, snapshot-consistent
+  sources prepared only by the root wrapper, Borg execution without ZFS privileges, daily retries and
+  logging, 30 daily, 8 weekly and 12 monthly archives, compaction, and monthly repository checks. Still
+  add the Vault passphrase, install the generated public key in the sub-account, run the initial backup
+  and check, preserve the exported recovery key offline, and validate a restore before relying on it.
 - [ ] Add the UUID-bound offline USB backup with versioned rsync, locking, capacity checks, verification,
   safe unmounting and a tested restore procedure; never trigger it for an arbitrary USB disk.
 - [ ] Test restores independently from a ZFS snapshot, Borg, and the offline USB backup before relying on

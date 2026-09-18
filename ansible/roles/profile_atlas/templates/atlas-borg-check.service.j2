@@ -1,0 +1,32 @@
+[Unit]
+Description=Check the encrypted Atlas Borg repository
+Documentation=man:borg-check(1)
+Wants=network-online.target
+After=network-online.target atlas-borg-backup.service
+ConditionFileIsExecutable=/usr/local/sbin/atlas-borg-check
+ConditionPathExists={{ atlas_borg_passphrase_path }}
+ConditionPathExists={{ atlas_borg_ssh_private_key_path }}
+ConditionPathExists={{ atlas_borg_known_hosts_path }}
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/atlas-borg-check
+User={{ atlas_borg_username }}
+Group={{ atlas_borg_group }}
+UMask=0077
+SuccessExitStatus=1
+TimeoutStartSec=infinity
+Nice=15
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths={{ atlas_borg_cache_dir }} {{ atlas_borg_config_dir }}
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictRealtime=true
+LockPersonality=true

@@ -66,6 +66,17 @@
   changed_when: false
   failed_when: false
 
+- name: Check whether the pinned Java 25 version is installed with Mise
+  tags: [packages, mise, java, wsl]
+  ansible.builtin.command:
+    cmd: "mise where java@{{ workstation_mise_java_25_version }}"
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  register: workstation_mise_java_25_where
+  changed_when: false
+  failed_when: false
+
 - name: Check whether the pinned Maven version is installed with Mise
   tags: [packages, mise, maven, wsl]
   ansible.builtin.command:
@@ -86,6 +97,7 @@
     HOME: "{{ user_home }}"
   when: >-
     workstation_mise_java_where.rc != 0 or
+    workstation_mise_java_25_where.rc != 0 or
     workstation_mise_maven_where.rc != 0
 
 - name: Ensure WSL boot configuration file exists

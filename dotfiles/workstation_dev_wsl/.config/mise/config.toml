@@ -1,3 +1,6 @@
 [tools]
-java = "temurin-11.0.31+11"
+java = ["25.0.2", "temurin-11.0.31+11"]
 maven = "3.9.16"
+
+[env]
+JAVA_HOME = "{{ env.HOME }}/.local/share/mise/installs/java/25.0.2"

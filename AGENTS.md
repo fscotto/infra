@@ -187,6 +187,10 @@ scheduled retention prune and monthly scrub remain runtime checks.
   tree matched the live data, and temporary snapshots and mounts were removed. The exported recovery key
   was copied offline. Daily backup retries and logging, 30 daily, 8 weekly and 12 monthly archives,
   compaction, and monthly repository checks are enabled.
+- [x] Populate `/zpool/archive` with the currently available data so offsite and offline backup tests run
+  against a representative load.
+- [ ] Run and evaluate Borg against the populated pool: duration, repository capacity, deduplication, and
+  a subsequent incremental archive must be observed before relying on the offline USB test.
 - [ ] Add the UUID-bound offline USB backup with versioned rsync, locking, capacity checks, verification,
   safe unmounting and a tested restore procedure; never trigger it for an arbitrary USB disk.
 - [ ] Test restores independently from a ZFS snapshot, Borg, and the offline USB backup before relying on

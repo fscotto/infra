@@ -9,6 +9,7 @@ fedora_packages_base:
   - jq
   - make
   - nodejs
+  - openssl
   - ripgrep
 
 fedora_manage_docker_repo: true

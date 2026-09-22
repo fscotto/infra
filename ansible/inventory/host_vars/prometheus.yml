@@ -32,6 +32,7 @@ host_packages:
   - cockpit
   - cockpit-navigator
   - cockpit-podman
+  - cockpit-storaged
 
 host_enabled_services:
   - cockpit.socket

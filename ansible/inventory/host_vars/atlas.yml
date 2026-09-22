@@ -104,6 +104,7 @@ rocky_podman_packages:
 host_packages:
   - cockpit
   - cockpit-podman
+  - cockpit-storaged
   - cryptsetup
   - nfs-utils
   - policycoreutils

@@ -63,6 +63,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags snapshots,scrub --check --diff`
   - Atlas encrypted Borg backup:
     `ansible-playbook ansible/site.yml --limit atlas --tags packages,borg --check --diff`
+  - Atlas Borg progress logging only:
+    `ansible-playbook ansible/site.yml --limit atlas --tags borg_logging --check --diff`
   - Prometheus/Aegis WireGuard gateway:
     `ansible-playbook ansible/site.yml --limit prometheus,aegis --tags wireguard --check --diff`
   - DuckDNS config only: `ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff`

@@ -224,7 +224,7 @@
   when: atlas_manage_borg_backup | bool
 
 - name: Install the Atlas Borg backup helper
-  tags: [atlas, storage, backup, borg]
+  tags: [atlas, storage, backup, borg, borg_logging]
   ansible.builtin.template:
     src: atlas-borg-backup.sh.j2
     dest: /usr/local/sbin/atlas-borg-backup
@@ -244,10 +244,20 @@
   when: atlas_manage_borg_backup | bool
 
 - name: Create the local libexec directory for the Atlas Borg SSH wrapper
-  tags: [atlas, storage, backup, borg]
+  tags: [atlas, storage, backup, borg, borg_logging]
   ansible.builtin.file:
     path: "{{ atlas_borg_ssh_wrapper_path | dirname }}"
     state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: atlas_manage_borg_backup | bool
+
+- name: Install the Atlas Borg progress formatter
+  tags: [atlas, storage, backup, borg, borg_logging]
+  ansible.builtin.copy:
+    src: atlas-borg-progress.py
+    dest: /usr/local/libexec/atlas-borg-progress
     owner: root
     group: root
     mode: "0755"

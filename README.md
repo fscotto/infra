@@ -328,6 +328,12 @@ the Borg client as `borg` with temporary read-search capability and no ZFS, sudo
 privileges. Borg retains 30 daily, 8 weekly, and 12 monthly archives, then compacts the standard
 read-write repository. A full metadata and repository check runs as `borg` on the fifteenth day of each
 month at 06:00. Both operations use a common lock, journal logging, and bounded systemd retries.
+New backup runs also log the create phase and a compact progress line at most once per minute: dataset,
+files processed, and original/compressed/deduplicated bytes. Progress lines omit individual filenames
+and a percentage, since Borg does not know the total in advance; warnings may still name affected files.
+Follow the current run with
+`sudo journalctl -fu atlas-borg-backup.service` on Atlas; changes to the helper do not alter a run
+already in progress.
 
 Initial activation remains explicit:
 

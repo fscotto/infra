@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-export LC_ALL=C
+export LC_ALL=C.utf8
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin
 export BORG_CACHE_DIR={{ atlas_borg_cache_dir | quote }}
 export BORG_CONFIG_DIR={{ atlas_borg_config_dir | quote }}
@@ -21,6 +21,7 @@ readonly borg_user={{ atlas_borg_username | quote }}
 readonly borg_group={{ atlas_borg_group | quote }}
 readonly borg_home={{ atlas_borg_home | quote }}
 readonly borg_lock={{ atlas_borg_lock_path | quote }}
+readonly progress_filter=/usr/local/libexec/atlas-borg-progress
 
 snapshot_name=""
 snapshot_created=false
@@ -124,24 +125,31 @@ archive="${archive_prefix}-${timestamp}"
 readonly archive
 borg_status=0
 
+printf 'Starting Borg archive %s from snapshot %s@%s\n' "$archive" "$pool" "$snapshot_name"
 set +e
 (
   cd /run/atlas-borg
-  run_as_borg borg --remote-path "$remote_path" --lock-wait 600 create \
+  run_as_borg borg --remote-path "$remote_path" --lock-wait 600 --log-json --progress create \
     --show-rc \
     --stats \
     --checkpoint-interval 900 \
     --compression "$compression" \
     "${repository}::${archive}" \
-    source
-)
-create_status=$?
+    source 2>&1
+) | /usr/bin/python3 -u "$progress_filter"
+create_pipeline_status=("${PIPESTATUS[@]}")
 set -e
+create_status=${create_pipeline_status[0]}
+if ((create_pipeline_status[1] != 0)); then
+  printf 'Borg progress logging failed with status %s\n' "${create_pipeline_status[1]}" >&2
+  exit 2
+fi
 if ((create_status >= 2)); then
   exit "$create_status"
 fi
 borg_status=$create_status
 
+printf 'Borg archive %s created; applying retention\n' "$archive"
 set +e
 run_as_borg borg --remote-path "$remote_path" --lock-wait 600 prune \
   --show-rc \
@@ -160,6 +168,7 @@ if ((prune_status > borg_status)); then
   borg_status=$prune_status
 fi
 
+printf 'Borg retention complete; compacting repository\n'
 set +e
 run_as_borg borg --remote-path "$remote_path" --lock-wait 600 compact \
   --show-rc \
@@ -173,4 +182,5 @@ if ((compact_status > borg_status)); then
   borg_status=$compact_status
 fi
 
+printf 'Borg backup %s completed with status %s\n' "$archive" "$borg_status"
 exit "$borg_status"

@@ -225,6 +225,41 @@ scheduled retention prune and monthly scrub remain runtime checks.
   after the storage and backup layers are validated; do not make either a dependency of the Atlas
   baseline.
 
+## Cerberus Management Node (Deferred)
+`cerberus` is postponed until the office in the new house is physically set up. It is not an inventory
+host and this section is a design and implementation backlog, not authorization to provision it early.
+
+The planned node is a Lenovo ThinkCentre M700 Tiny with an Intel Core i3-6100T, 8 GB RAM, a 256 GB SSD,
+and native 1 Gbps Ethernet. It will connect to a multi-input KVM switch using a passive DisplayPort-to-HDMI
+cable, sharing the monitor and peripherals with Ikaros. Fedora Sericea (immutable Fedora with the Sway
+Wayland compositor) is the intended OS. Cerberus is an isolated management plane: a dedicated Toolbox
+environment will run Ansible for future `uranus` cluster provisioning. Rootless Podman will host Grafana,
+Prometheus, and Loki. The 256 GB local SSD is the hot tier retaining metrics and logs for 30 days; scheduled,
+validated exports of older historical data will use a dedicated Atlas NFS dataset as cold storage.
+
+### Implementation plan
+- [ ] Confirm the office, KVM switch, passive DisplayPort-to-HDMI path, shared monitor/peripherals, and native
+  1 Gbps Ethernet are physically operational before adding Cerberus to inventory.
+- [ ] Install and update Fedora Sericea with Sway; document the immutable-host lifecycle and keep host changes
+  declarative rather than treating the base OS as a mutable workstation.
+- [ ] Model Cerberus as its own host with independent platform, role, desktop, network, and storage inputs;
+  do not repurpose Ikaros variables or make it a Uranus cluster member.
+- [ ] Provision an isolated Toolbox-based Ansible controller with the required collections and a reproducible
+  project checkout; define its least-privilege SSH access, known-host handling, and Vault workflow without
+  storing secrets in the image or repository.
+- [ ] Define the explicit Uranus provisioning workflow from Cerberus, including inventory boundaries,
+  validation-only runs, and separate approval for any destructive cluster operation.
+- [ ] Design rootless Podman/Quadlet services for Grafana, Prometheus, and Loki, including persistent local
+  state, service ownership, LAN exposure/authentication, resource limits, updates, and backups.
+- [ ] Size and enforce a 30-day local hot-retention policy for metrics and logs on the 256 GB SSD; validate
+  actual disk growth and alert before capacity exhaustion.
+- [ ] Create and validate a dedicated Atlas NFS cold-storage dataset and least-privilege export for Cerberus;
+  do not use a broad existing share or couple it to unrelated Atlas application state.
+- [ ] Implement scheduled, idempotent exports of data older than 30 days to the Atlas NFS cold tier, with
+  locking, capacity checks, integrity verification, retention rules, failure monitoring, and a tested restore.
+- [ ] Validate management-plane recovery: rebuild Cerberus, restore observability history from Atlas, and
+  confirm that Uranus provisioning can resume without depending on unreproducible local state.
+
 ## Coding Agent Notes
 - Shared agent definitions and lifecycle flags live in `ai_agents` in `ansible/inventory/group_vars/all.yml`.
 - Shared agent dotfiles live in `ai_agents_dotfiles`; rendered configs live in `ai_agents_templates`.

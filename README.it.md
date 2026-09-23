@@ -95,6 +95,27 @@ Nota sullo stato attuale del playbook principale:
 - `ansible/site.yml` applica il profilo server Rocky a `prometheus` con DNF, systemd, dotfiles server e firewalld
 - `ansible/site.yml` applica il profilo NAS Rocky su `atlas` tramite SSH remoto
 
+## Nodo pianificato e posticipato: Cerberus
+
+`cerberus` e un nodo di management **posticipato**, in attesa dell'allestimento
+fisico dell'ufficio nella nuova casa. Non e ancora presente nell'inventory e non
+esistono ruoli o playbook che lo prendano come target.
+
+L'hardware previsto e un Lenovo ThinkCentre M700 Tiny (Intel Core i3-6100T,
+8 GB di RAM e SSD da 256 GB) con Ethernet nativa a 1 Gbps. Condividera monitor
+e periferiche di Ikaros tramite uno switch KVM a ingressi multipli, usando un
+cavo passivo DisplayPort-HDMI per il collegamento video. Il sistema operativo
+previsto e Fedora Sericea, la variante Fedora immutabile con compositor Wayland
+Sway.
+
+Cerberus sara un management plane isolato: Ansible verra eseguito in un ambiente
+Toolbox dedicato per il provisioning del futuro cluster `uranus`, anziche da
+Ikaros o da un host non gestito. Lo stack di osservabilita rootless Podman
+eseguira Grafana, Prometheus e Loki. L'SSD locale sara l'hot storage, con
+metriche e log conservati per 30 giorni; esportazioni programmate trasferiranno
+i dati storici piu vecchi su un dataset Atlas montato via NFS come cold storage.
+Il piano di implementazione, con prerequisiti espliciti, e in `AGENTS.md`.
+
 ## Desktop
 
 Target operativi:

@@ -67,6 +67,27 @@ The official ChatGPT desktop RPM is enabled only on `ikaros` and `nymph`. The
 playbook configures OpenAI's signed RPM repository and imports its pinned RPM
 signing key before installation; subsequent updates are handled by DNF.
 
+## Deferred planned node: Cerberus
+
+`cerberus` is a **postponed** management-plane node, pending the physical setup
+of the office in the new house. It is not yet an inventory host and no role or
+playbook targets it.
+
+The planned hardware is a Lenovo ThinkCentre M700 Tiny (Intel Core i3-6100T,
+8 GB RAM, and a 256 GB SSD) with native 1 Gbps Ethernet. It will share Ikaros'
+monitor and peripherals through a multi-input KVM switch, using a passive
+DisplayPort-to-HDMI cable for its video connection. Fedora Sericea, the
+immutable Fedora variant with the Sway Wayland compositor, is the intended
+operating system.
+
+Cerberus will be an isolated management plane: Ansible will run from a
+dedicated Toolbox environment to provision the future `uranus` cluster, rather
+than from Ikaros or an unmanaged host. Its rootless Podman observability stack
+will run Grafana, Prometheus, and Loki. The local SSD is the hot tier and
+retains metrics and logs for 30 days; scheduled exports will place older
+historical data on an NFS-mounted Atlas dataset as the cold tier. The detailed,
+implementation-gated plan is maintained in `AGENTS.md`.
+
 ## Desktop profiles
 
 - `ikaros`: stable Fedora Workstation + GNOME desktop.

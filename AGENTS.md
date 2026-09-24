@@ -65,6 +65,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags packages,borg --check --diff`
   - Atlas Borg progress logging only:
     `ansible-playbook ansible/site.yml --limit atlas --tags borg_logging --check --diff`
+  - Atlas manual offline USB backup and 45Drives Alerts reminder:
+    `ansible-playbook ansible/site.yml --limit atlas --tags usb_backup,usb_reminder --check --diff`
   - Prometheus/Aegis WireGuard gateway:
     `ansible-playbook ansible/site.yml --limit prometheus,aegis --tags wireguard --check --diff`
   - DuckDNS config only: `ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff`
@@ -194,7 +196,14 @@ scheduled retention prune and monthly scrub remain runtime checks.
 - [ ] Run and evaluate Borg against the populated pool: duration, repository capacity, deduplication, and
   a subsequent incremental archive must be observed before relying on the offline USB test.
 - [ ] Add the UUID-bound offline USB backup with versioned rsync, locking, capacity checks, verification,
-  safe unmounting and a tested restore procedure; never trigger it for an arbitrary USB disk.
+  safe unmounting and a tested restore procedure; never trigger it for an arbitrary USB disk. The
+  LUKS/ext4 identities were read-only verified; the manual service and 45Drives Alerts reminder timer were
+  deployed on Atlas. Interactive LUKS unlock is part of the manual service; only the reminder is
+  scheduled for the first Saturday of each month at 10:00 Europe/Rome via the existing 45Drives
+  notifier. A manual test produced an Alerts notification, not an email. The first USB attempt failed
+  on a `security.selinux` xattr and was interrupted; the xattr filter is deployed and the temporary
+  recursive snapshot, open LUKS mapper, and failed service state were cleaned up. No complete backup or
+  tested USB restore exists; do not mark this item complete yet.
 - [ ] Test restores independently from a ZFS snapshot, Borg, and the offline USB backup before relying on
   any backup path.
 - [ ] Add monitoring and alerting for pool health, scrub/resilver, SMART data, temperatures, free space,

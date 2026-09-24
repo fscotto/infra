@@ -83,6 +83,13 @@ atlas_borg_randomized_delay: 30m
 atlas_borg_keep_daily: 30
 atlas_borg_keep_weekly: 8
 atlas_borg_keep_monthly: 12
+atlas_manage_usb_backup: true
+# Read-only lsblk verification on Atlas, 2026-09-23. Never store the LUKS password here.
+atlas_usb_backup_luks_uuid: 577b3c43-ea37-4611-81a9-39d555cdfbd4
+atlas_usb_backup_fs_uuid: 758e2d2e-a427-4797-aad9-39c3a9f17c7e
+atlas_usb_backup_mapper_name: zpool-backup
+atlas_manage_usb_reminder: true
+atlas_usb_reminder_calendar: "Sat *-*-01..07 10:00:00 Europe/Rome"
 atlas_manage_sharing: true
 atlas_manage_media_stack: false
 

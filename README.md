@@ -378,6 +378,55 @@ Atlas runtime activation is complete: the initial backup and repository check su
 to a temporary directory was validated against the live `Archive` tree, the recovery-key export was copied
 to offline storage, and the temporary snapshot and bind mounts were cleaned up.
 
+The offline USB backup is deployed as a manual-only service (`atlas_manage_usb_backup: true`):
+Ansible never formats, unlocks, mounts, backs up to, or schedules the disk. Atlas' existing USB disk was verified
+read-only on 2026-09-23 as LUKS UUID `577b3c43-ea37-4611-81a9-39d555cdfbd4`, containing ext4 UUID
+`758e2d2e-a427-4797-aad9-39c3a9f17c7e` through mapper `zpool-backup`. It was mounted at
+`/mnt/zpool-backup` at inspection time. The service deliberately requires the verified mapper to be
+**not mounted** before starting. When necessary, `systemd-ask-password` requests the LUKS passphrase
+through the `systemctl start` password agent; it is piped directly to `cryptsetup` without saving it,
+passing it as a command argument, or caching it. The service then mounts the disk privately, takes a recursive ZFS snapshot,
+copies every dataset to a versioned `atlas/snapshots/<timestamp>/` directory using `rsync --link-dest`,
+verifies the result with a checksum-based dry run, atomically updates `atlas/latest`, unmounts and closes
+LUKS. A failed run never replaces `latest` or removes an earlier complete version. Borg and the USB
+backup may run concurrently from separate snapshots; both reading the same pool can reduce throughput.
+The USB copy preserves ACLs and extended attributes except `security.selinux`, which the target
+SELinux policy must recreate during a restore; do not restore data into service paths without relabeling.
+Old USB versions are not pruned automatically, to avoid deleting the only offline
+copy without an explicitly chosen retention policy; capacity checks include an estimated transfer size
+and a 10 GiB free-space reserve. The disk must be physically disconnected after a successful backup
+to make the copy offline.
+
+To check the USB backup and reminder configuration without starting a backup, run:
+
+```bash
+ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
+ansible-playbook ansible/site.yml --limit atlas --tags usb_backup,usb_reminder --check --diff
+```
+
+Before the first **manual** service start, safely unmount the currently mounted
+`/mnt/zpool-backup`; never run it on an arbitrary mounted disk. Future starts
+can begin with the mapper closed: `sudo systemctl start atlas-usb-backup.service` prompts for the
+passphrase interactively and then performs the backup. Neither the LUKS password nor a key file belongs
+in Ansible. Inspect the run with
+`sudo journalctl -fu atlas-usb-backup.service`. There is intentionally no timer. Independently test a
+read-only mount and restore from `atlas/latest` into an empty temporary directory before marking the
+USB recovery path complete. Only `atlas-usb-reminder.timer` is enabled, for the first Saturday of each
+month at 10:00 Europe/Rome. Its warning notification uses the existing 45Drives Houston notifier.
+A manual test confirmed a notification in 45Drives Alerts, **not** an email. The reminder service log
+reports notification submission, not email delivery; the role does not depend on SMTP/OAuth settings.
+The reminder never starts the backup. Check its schedule with
+`systemctl list-timers atlas-usb-reminder.timer` and the result in 45Drives Alerts.
+The timer was verified active with its first scheduled run at 2026-10-03 10:00 CEST. The USB backup
+service was verified inactive after deployment; no successful backup or email delivery is claimed.
+The first manual USB attempt on 2026-09-23 did not complete: rsync was denied while removing
+`security.selinux` on the USB filesystem, then the interrupted service left its recursive
+`atlas-usb-20260923T185748Z-2469168` snapshot and the `zpool-backup` LUKS mapper open. The
+rsync xattr filter was deployed afterward. The incomplete USB directory was absent on inspection;
+the exact failed snapshot was removed, the verified and unmounted mapper closed, and the service
+failed state cleared. A final check found no remnant snapshot, mount, mapper, or staging directory.
+The failed attempt is not a valid backup, and no USB restore has been tested.
+
 A temporary Nextcloud deployment on Atlas is also planned before Uranus: it requires separately
 declared persistent application, database, and cache storage, Vault-backed credentials, NPM-only
 publishing through Aegis, and defined backup, upgrade, and eventual migration procedures. Do not deploy

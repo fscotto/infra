@@ -1,0 +1,135 @@
+---
+- name: Validate Atlas offline USB backup configuration
+  tags: [atlas, storage, backup, usb_backup]
+  ansible.builtin.assert:
+    that:
+      - atlas_manage_storage | bool
+      - atlas_zfs_pool != 'CHANGEME_ZFS_POOL'
+      - atlas_mount_root.startswith('/')
+      - atlas_usb_backup_luks_uuid is match('^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$')
+      - atlas_usb_backup_fs_uuid is match('^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$')
+      - atlas_usb_backup_luks_uuid != atlas_usb_backup_fs_uuid
+      - atlas_usb_backup_mapper_name is match('^[a-z][a-z0-9_-]*$')
+      - atlas_usb_backup_min_free_bytes | int > 0
+      - atlas_usb_backup_snapshot_prefix is match('^[a-z0-9][a-z0-9_-]*$')
+      - atlas_usb_backup_snapshot_prefix != atlas_borg_snapshot_prefix
+      - atlas_usb_backup_snapshot_prefix != atlas_zfs_snapshot_prefix
+    fail_msg: >-
+      The manual Atlas USB backup needs verified LUKS and ext4 UUIDs, a safe
+      mapper name, positive free-space reserve, and a unique snapshot prefix.
+  when: atlas_manage_usb_backup | bool
+
+- name: Install rsync for the Atlas offline USB backup
+  tags: [atlas, storage, backup, usb_backup]
+  ansible.builtin.dnf:
+    name: rsync
+    state: present
+  when: atlas_manage_usb_backup | bool
+
+- name: Install the manual Atlas offline USB backup helper
+  tags: [atlas, storage, backup, usb_backup]
+  ansible.builtin.template:
+    src: atlas-usb-backup.sh.j2
+    dest: /usr/local/sbin/atlas-usb-backup
+    owner: root
+    group: root
+    mode: "0750"
+  when: atlas_manage_usb_backup | bool
+
+- name: Install the manual Atlas offline USB backup service
+  tags: [atlas, storage, backup, usb_backup]
+  ansible.builtin.template:
+    src: atlas-usb-backup.service.j2
+    dest: /etc/systemd/system/atlas-usb-backup.service
+    owner: root
+    group: root
+    mode: "0644"
+  when: atlas_manage_usb_backup | bool
+
+- name: Reload systemd for the Atlas offline USB backup service
+  tags: [atlas, storage, backup, usb_backup]
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when:
+    - atlas_manage_usb_backup | bool
+    - not ansible_check_mode
+
+- name: Validate the 45Drives Atlas USB reminder configuration
+  tags: [atlas, backup, usb_reminder]
+  ansible.builtin.assert:
+    that:
+      - atlas_manage_usb_backup | bool
+      - atlas_usb_reminder_calendar | length > 0
+      - atlas_usb_reminder_notifier.startswith('/opt/45drives/houston/')
+    fail_msg: >-
+      Enable the manual USB backup and declare a systemd calendar before
+      enabling its 45Drives Alerts reminder.
+  when: atlas_manage_usb_reminder | bool
+
+- name: Validate the Atlas USB reminder calendar
+  tags: [atlas, backup, usb_reminder]
+  ansible.builtin.command:
+    argv:
+      - systemd-analyze
+      - calendar
+      - "{{ atlas_usb_reminder_calendar }}"
+  changed_when: false
+  check_mode: false
+  when: atlas_manage_usb_reminder | bool
+
+- name: Inspect the existing 45Drives notifier
+  tags: [atlas, backup, usb_reminder]
+  ansible.builtin.stat:
+    path: "{{ atlas_usb_reminder_notifier }}"
+  register: atlas_usb_reminder_notifier_file
+  when: atlas_manage_usb_reminder | bool
+
+- name: Require the configured 45Drives notifier for USB reminders
+  tags: [atlas, backup, usb_reminder]
+  ansible.builtin.assert:
+    that:
+      - atlas_usb_reminder_notifier_file.stat.executable | default(false)
+    fail_msg: >-
+      The existing 45Drives Houston notifier must be executable.
+  when: atlas_manage_usb_reminder | bool
+
+- name: Install the 45Drives Atlas USB reminder helper
+  tags: [atlas, backup, usb_reminder]
+  ansible.builtin.template:
+    src: atlas-usb-reminder.py.j2
+    dest: /usr/local/libexec/atlas-usb-reminder
+    owner: root
+    group: root
+    mode: "0750"
+  when: atlas_manage_usb_reminder | bool
+
+- name: Install the 45Drives Atlas USB reminder service
+  tags: [atlas, backup, usb_reminder]
+  ansible.builtin.template:
+    src: atlas-usb-reminder.service.j2
+    dest: /etc/systemd/system/atlas-usb-reminder.service
+    owner: root
+    group: root
+    mode: "0644"
+  when: atlas_manage_usb_reminder | bool
+
+- name: Install the 45Drives Atlas USB reminder timer
+  tags: [atlas, backup, usb_reminder]
+  ansible.builtin.template:
+    src: atlas-usb-reminder.timer.j2
+    dest: /etc/systemd/system/atlas-usb-reminder.timer
+    owner: root
+    group: root
+    mode: "0644"
+  when: atlas_manage_usb_reminder | bool
+
+- name: Enable only the Atlas USB notification reminder timer
+  tags: [atlas, backup, usb_reminder]
+  ansible.builtin.systemd:
+    name: atlas-usb-reminder.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  when:
+    - atlas_manage_usb_reminder | bool
+    - not ansible_check_mode

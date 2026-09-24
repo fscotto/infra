@@ -1,0 +1,31 @@
+#!/usr/bin/python3
+"""Submit a manual-backup reminder through Atlas' existing Houston notifier."""
+
+import json
+import subprocess
+from datetime import datetime, timezone
+
+
+now = datetime.now(timezone.utc)
+message = {
+    "timestamp": now.isoformat(timespec="seconds"),
+    "unixtime": int(now.timestamp()),
+    "event": "atlas_usb_backup_reminder",
+    "severity": "warning",
+    "subject": "Promemoria backup USB offline Atlas",
+    "email_message": (
+        "Collega il disco USB di backup ad Atlas ed esegui manualmente il backup offline.\n"
+        "Il promemoria non avvia il backup. Controlla che il disco non sia\n"
+        "montato; poi esegui:\n\n"
+        "  sudo systemctl start atlas-usb-backup.service\n\n"
+        "Verifica l'esito con:\n"
+        "  sudo journalctl -u atlas-usb-backup.service -n 100 --no-pager\n\n"
+        "Dopo la riuscita, scollega fisicamente il disco."
+    ),
+}
+
+subprocess.run(
+    [{{ atlas_usb_reminder_notifier | to_json }}, json.dumps(message)],
+    check=True,
+)
+print("Atlas USB backup reminder submitted to 45Drives Alerts; email delivery is not verified.", flush=True)

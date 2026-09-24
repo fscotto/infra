@@ -1,0 +1,10 @@
+[Unit]
+Description=Remind the administrator to run the manual Atlas offline USB backup
+
+[Timer]
+OnCalendar={{ atlas_usb_reminder_calendar }}
+Persistent=true
+Unit=atlas-usb-reminder.service
+
+[Install]
+WantedBy=timers.target

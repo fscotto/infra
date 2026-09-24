@@ -1,0 +1,22 @@
+[Unit]
+Description=45Drives Alerts reminder to run the manual Atlas offline USB backup
+Requires=houston-dbus.service
+After=houston-dbus.service
+ConditionFileIsExecutable=/usr/local/libexec/atlas-usb-reminder
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/atlas-usb-reminder
+User=root
+Group=root
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX
+RestrictRealtime=true
+LockPersonality=true

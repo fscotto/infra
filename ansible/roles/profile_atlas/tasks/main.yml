@@ -20,6 +20,9 @@
 - name: Import Atlas Borg backup tasks
   ansible.builtin.import_tasks: borg_backup.yml
 
+- name: Import Atlas offline USB backup tasks
+  ansible.builtin.import_tasks: usb_backup.yml
+
 - name: Import Atlas file sharing tasks
   ansible.builtin.import_tasks: sharing.yml
 

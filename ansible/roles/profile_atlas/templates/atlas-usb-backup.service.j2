@@ -1,0 +1,29 @@
+[Unit]
+Description=Run a manual, UUID-bound offline USB backup of Atlas ZFS datasets
+Requires=zfs.target
+After=zfs.target
+ConditionFileIsExecutable=/usr/local/sbin/atlas-usb-backup
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/atlas-usb-backup
+User=root
+Group=root
+UMask=0077
+TimeoutStartSec=infinity
+RuntimeDirectory=atlas-usb-backup
+RuntimeDirectoryMode=0700
+Nice=15
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+PrivateMounts=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/run/atlas-usb-backup /run/lock
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX
+RestrictRealtime=true
+LockPersonality=true

@@ -97,6 +97,17 @@ atlas_borg_cache_dir: /var/cache/atlas-borg
 atlas_borg_lock_path: /var/lib/atlas-borg/backup.lock
 atlas_borg_recovery_export_path: "{{ playbook_dir }}/../secrets/recovery/atlas-borg-repokey.export"
 
+# Manual-only offline backup. No USB device is formatted or mounted by Ansible.
+atlas_manage_usb_backup: false
+atlas_usb_backup_luks_uuid: ""
+atlas_usb_backup_fs_uuid: ""
+atlas_usb_backup_mapper_name: atlas-usb-backup
+atlas_usb_backup_min_free_bytes: 10737418240
+atlas_usb_backup_snapshot_prefix: atlas-usb
+atlas_manage_usb_reminder: false
+atlas_usb_reminder_calendar: ""
+atlas_usb_reminder_notifier: /opt/45drives/houston/houston-notify
+
 atlas_archive_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_archive }}"
 atlas_services_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_services }}"
 atlas_app_data_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_app_data }}"

@@ -1,0 +1,241 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+export LC_ALL=C.utf8
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+
+readonly pool={{ atlas_zfs_pool | quote }}
+readonly mount_root={{ atlas_mount_root | quote }}
+readonly luks_uuid={{ atlas_usb_backup_luks_uuid | quote }}
+readonly fs_uuid={{ atlas_usb_backup_fs_uuid | quote }}
+readonly mapper_name={{ atlas_usb_backup_mapper_name | quote }}
+readonly snapshot_prefix={{ atlas_usb_backup_snapshot_prefix | quote }}
+readonly min_free_bytes={{ atlas_usb_backup_min_free_bytes | int }}
+readonly mapper="/dev/mapper/${mapper_name}"
+readonly outer="/dev/disk/by-uuid/${luks_uuid}"
+readonly runtime_dir=/run/atlas-usb-backup
+readonly source_dir="${runtime_dir}/source"
+readonly usb_mount="${runtime_dir}/target"
+readonly backup_root="${usb_mount}/atlas"
+
+snapshot_name=""
+snapshot_created=false
+mapper_opened_by_script=false
+usb_mounted=false
+published=false
+partial=""
+mounted_targets=()
+
+# shellcheck disable=SC2329
+cleanup() {
+  local status=$?
+  local cleanup_status=0
+  local index
+  local source_mount_failed=false
+  trap - EXIT HUP INT TERM
+  set +e
+
+  if [[ -n "$partial" && "$published" == false && "$usb_mounted" == true ]]; then
+    rm -rf -- "$partial" || cleanup_status=2
+  fi
+  if [[ "$usb_mounted" == true ]]; then
+    umount "$usb_mount" || cleanup_status=2
+  fi
+
+{% raw %}
+  for ((index = ${#mounted_targets[@]} - 1; index >= 0; index--)); do
+{% endraw %}
+    if mountpoint -q "${mounted_targets[$index]}"; then
+      umount "${mounted_targets[$index]}" || source_mount_failed=true
+    fi
+    if ! mountpoint -q "${mounted_targets[$index]}"; then
+      rmdir -- "${mounted_targets[$index]}" 2>/dev/null || true
+    fi
+  done
+  if [[ "$source_mount_failed" == false ]]; then
+    rmdir -- "$source_dir" 2>/dev/null || true
+  else
+    cleanup_status=2
+    printf 'Source bind mount cleanup failed; keeping the snapshot for recovery\n' >&2
+  fi
+
+  if [[ "$snapshot_created" == true && "$source_mount_failed" == false ]]; then
+    flock 9
+    zfs destroy -r "${pool}@${snapshot_name}" || cleanup_status=2
+    flock -u 9
+  fi
+  if [[ "$usb_mounted" == true || "$mapper_opened_by_script" == true ]] &&
+      ! mountpoint -q "$usb_mount" &&
+      ! findmnt -rn -S "$mapper" >/dev/null; then
+    cryptsetup close "$mapper_name" || cleanup_status=2
+  fi
+  rmdir -- "$usb_mount" 2>/dev/null || true
+
+  if ((status == 0 && cleanup_status != 0)); then
+    status=$cleanup_status
+  fi
+  exit "$status"
+}
+
+trap cleanup EXIT
+trap 'exit 143' HUP INT TERM
+
+exec 8>/run/lock/atlas-usb-backup.lock
+flock -n 8 || { printf 'Atlas USB backup is already running\n' >&2; exit 75; }
+exec 9>/run/lock/atlas-zfs-snapshot.lock
+
+zpool list -H -o name "$pool" >/dev/null
+[[ -b "$outer" ]] || { printf 'Configured LUKS UUID is not connected\n' >&2; exit 66; }
+[[ "$(blkid -s TYPE -o value "$outer")" == crypto_LUKS ]] || {
+  printf 'Configured outer UUID is not a LUKS container\n' >&2
+  exit 65
+}
+[[ "$(blkid -s UUID -o value "$outer")" == "$luks_uuid" ]] || exit 65
+if ! cryptsetup status "$mapper_name" >/dev/null; then
+  printf 'Requesting the LUKS passphrase for the configured USB disk\n'
+  systemd-ask-password -n --no-tty --timeout=300 \
+    --id="atlas-usb-backup:${luks_uuid}" \
+    'Atlas offline USB backup LUKS passphrase:' |
+    cryptsetup open --type luks2 --key-file - "$outer" "$mapper_name"
+  mapper_opened_by_script=true
+fi
+backing_device="$(cryptsetup status "$mapper_name" | awk '$1 == "device:" { print $2 }')"
+[[ -n "$backing_device" && "$(readlink -f "$backing_device")" == "$(readlink -f "$outer")" ]] || {
+  printf 'The unlocked mapper does not belong to the configured LUKS UUID\n' >&2
+  exit 65
+}
+[[ "$(blkid -s TYPE -o value "$mapper")" == ext4 ]] || {
+  printf 'The unlocked USB filesystem is not ext4\n' >&2
+  exit 65
+}
+[[ "$(blkid -s UUID -o value "$mapper")" == "$fs_uuid" ]] || {
+  printf 'The unlocked USB filesystem UUID does not match\n' >&2
+  exit 65
+}
+if findmnt -rn -S "$mapper" >/dev/null; then
+  printf 'The USB filesystem is already mounted elsewhere\n' >&2
+  exit 65
+fi
+[[ ! -e "$source_dir" && ! -e "$usb_mount" ]] || {
+  printf 'USB backup staging directories already exist; inspect them manually\n' >&2
+  exit 65
+}
+
+mkdir -m 0700 "$usb_mount"
+mount -t ext4 -o nodev,nosuid,noexec "$mapper" "$usb_mount"
+usb_mounted=true
+[[ "$(readlink -f "$(findmnt -nro SOURCE --target "$usb_mount")")" == "$(readlink -f "$mapper")" ]] || {
+  printf 'Mounted USB source does not match the verified mapper\n' >&2
+  exit 65
+}
+
+for path in "$backup_root" "$backup_root/snapshots"; do
+  [[ ! -L "$path" ]] || { printf 'Unsafe symlink in USB backup destination\n' >&2; exit 65; }
+  mkdir -p -- "$path"
+  [[ -d "$path" ]] || exit 65
+  chown root:root -- "$path"
+  chmod 0700 -- "$path"
+done
+
+free_bytes="$(df -B1 --output=avail "$usb_mount" | tail -n 1 | tr -d ' ')"
+if ((free_bytes < min_free_bytes)); then
+  printf 'USB free space (%s bytes) is below the required reserve (%s bytes)\n' \
+    "$free_bytes" "$min_free_bytes" >&2
+  exit 73
+fi
+
+mkdir -m 0700 "$source_dir"
+flock 9
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+snapshot_name="${snapshot_prefix}-${timestamp}-$$"
+zfs snapshot -r "${pool}@${snapshot_name}"
+snapshot_created=true
+flock -u 9
+printf 'Created recursive USB source snapshot %s@%s\n' "$pool" "$snapshot_name"
+
+while IFS=$'\t' read -r dataset dataset_mountpoint mounted; do
+  if [[ "$mounted" != yes ]]; then
+    printf 'Dataset %s is not mounted; refusing an incomplete backup\n' "$dataset" >&2
+    exit 65
+  fi
+  if [[ "$dataset_mountpoint" != "$mount_root" && "$dataset_mountpoint" != "$mount_root/"* ]]; then
+    printf 'Dataset %s has unexpected mountpoint %s\n' "$dataset" "$dataset_mountpoint" >&2
+    exit 65
+  fi
+  dataset_suffix="${dataset#"$pool"}"
+  source_path="${dataset_mountpoint}/.zfs/snapshot/${snapshot_name}"
+  target_path="${source_dir}${dataset_suffix}"
+  mkdir -p "$target_path"
+  mount --bind "$source_path" "$target_path"
+  mounted_targets+=("$target_path")
+  mount -o remount,bind,ro "$target_path"
+done < <(zfs list -H -o name,mountpoint,mounted -s name -r "$pool")
+
+previous=""
+if [[ -e "$backup_root/latest" || -L "$backup_root/latest" ]]; then
+  [[ -L "$backup_root/latest" ]] || { printf 'latest is not a symlink\n' >&2; exit 65; }
+  previous="$(readlink -e "$backup_root/latest")"
+  [[ -n "$previous" && "$previous" == "$backup_root/snapshots/"* && -d "$previous" ]] || {
+    printf 'latest does not point to a complete snapshot on the USB disk\n' >&2
+    exit 65
+  }
+fi
+
+backup_name="${timestamp}-$$"
+candidate_partial="${backup_root}/snapshots/.incomplete-${backup_name}"
+complete="${backup_root}/snapshots/${backup_name}"
+[[ ! -e "$candidate_partial" && ! -L "$candidate_partial" && ! -e "$complete" && ! -L "$complete" ]] || exit 65
+mkdir -m 0700 "$candidate_partial"
+partial="$candidate_partial"
+
+printf 'Copying the consistent pool tree to USB backup %s\n' "$backup_name"
+# Preserve ACLs and other xattrs, but let SELinux relabel restored data on the
+# destination host instead of trying to write source security.selinux labels to USB.
+rsync_args=(-aHAXS --numeric-ids '--filter=-x security.selinux' "--info=progress2,stats2")
+estimate_args=(-aHAXS --numeric-ids '--filter=-x security.selinux' --dry-run --stats)
+if [[ -n "$previous" ]]; then
+  rsync_args+=("--link-dest=$previous")
+  estimate_args+=("--link-dest=$previous")
+fi
+
+# The rsync dry run estimates changed file bytes after link-dest deduplication.
+# Metadata and filesystem allocation still require the separate free-space reserve.
+estimate="$(rsync "${estimate_args[@]}" "${source_dir}/" "${partial}/")"
+transfer_bytes="$(printf '%s\n' "$estimate" | awk -F: \
+  '/^Total transferred file size:/ { gsub(/[^0-9]/, "", $2); print $2 }')"
+[[ "$transfer_bytes" =~ ^[0-9]+$ ]] || {
+  printf 'Could not determine the USB transfer size\n' >&2
+  exit 74
+}
+if ((free_bytes - transfer_bytes < min_free_bytes)); then
+  printf 'Insufficient USB space: %s bytes free, %s estimated transfer, %s reserved\n' \
+    "$free_bytes" "$transfer_bytes" "$min_free_bytes" >&2
+  exit 73
+fi
+
+rsync "${rsync_args[@]}" "${source_dir}/" "${partial}/"
+
+printf 'Verifying USB backup %s with a checksum-based dry run\n' "$backup_name"
+verification="${runtime_dir}/verification.out"
+rsync -aHAXS --numeric-ids --filter='-x security.selinux' \
+  --checksum --dry-run --delete --itemize-changes \
+  "${source_dir}/" "${partial}/" >"$verification"
+if [[ -s "$verification" ]]; then
+  printf 'USB verification found mismatches; refusing to publish the backup\n' >&2
+  exit 74
+fi
+
+free_bytes="$(df -B1 --output=avail "$usb_mount" | tail -n 1 | tr -d ' ')"
+if ((free_bytes < min_free_bytes)); then
+  printf 'USB backup completed below the free-space reserve; refusing to publish it\n' >&2
+  exit 73
+fi
+
+mv -- "$partial" "$complete"
+partial=""
+ln -s "snapshots/${backup_name}" "${backup_root}/.latest-${backup_name}"
+mv -Tf -- "${backup_root}/.latest-${backup_name}" "${backup_root}/latest"
+published=true
+sync -f "$complete"
+sync -f "$backup_root"
+printf 'USB backup %s verified and published; unmounting and closing LUKS\n' "$backup_name"

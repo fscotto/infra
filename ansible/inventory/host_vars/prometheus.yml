@@ -33,6 +33,7 @@ host_packages:
   - cockpit-navigator
   - cockpit-podman
   - cockpit-storaged
+  - setroubleshoot-server
 
 host_enabled_services:
   - cockpit.socket

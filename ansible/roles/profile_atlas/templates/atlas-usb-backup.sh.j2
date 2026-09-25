@@ -14,12 +14,12 @@ readonly min_free_bytes={{ atlas_usb_backup_min_free_bytes | int }}
 readonly mapper="/dev/mapper/${mapper_name}"
 readonly outer="/dev/disk/by-uuid/${luks_uuid}"
 readonly runtime_dir=/run/atlas-usb-backup
+readonly snapshot_marker="${runtime_dir}/snapshot-name"
 readonly source_dir="${runtime_dir}/source"
 readonly usb_mount="${runtime_dir}/target"
 readonly backup_root="${usb_mount}/atlas"
 
 snapshot_name=""
-snapshot_created=false
 mapper_opened_by_script=false
 usb_mounted=false
 published=false
@@ -45,10 +45,14 @@ cleanup() {
 {% raw %}
   for ((index = ${#mounted_targets[@]} - 1; index >= 0; index--)); do
 {% endraw %}
-    if mountpoint -q "${mounted_targets[$index]}"; then
-      umount "${mounted_targets[$index]}" || source_mount_failed=true
+    if mountpoint -q "${mounted_targets[$index]}" && ! umount -R "${mounted_targets[$index]}"; then
+      printf 'Source snapshot mount cleanup failed: %s\n' "${mounted_targets[$index]}" >&2
+      source_mount_failed=true
     fi
-    if ! mountpoint -q "${mounted_targets[$index]}"; then
+    if mountpoint -q "${mounted_targets[$index]}"; then
+      printf 'Source snapshot mount is still active: %s\n' "${mounted_targets[$index]}" >&2
+      source_mount_failed=true
+    else
       rmdir -- "${mounted_targets[$index]}" 2>/dev/null || true
     fi
   done
@@ -59,11 +63,6 @@ cleanup() {
     printf 'Source bind mount cleanup failed; keeping the snapshot for recovery\n' >&2
   fi
 
-  if [[ "$snapshot_created" == true && "$source_mount_failed" == false ]]; then
-    flock 9
-    zfs destroy -r "${pool}@${snapshot_name}" || cleanup_status=2
-    flock -u 9
-  fi
   if [[ "$usb_mounted" == true || "$mapper_opened_by_script" == true ]] &&
       ! mountpoint -q "$usb_mount" &&
       ! findmnt -rn -S "$mapper" >/dev/null; then
@@ -148,8 +147,8 @@ mkdir -m 0700 "$source_dir"
 flock 9
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 snapshot_name="${snapshot_prefix}-${timestamp}-$$"
+printf '%s\n' "$snapshot_name" >"$snapshot_marker"
 zfs snapshot -r "${pool}@${snapshot_name}"
-snapshot_created=true
 flock -u 9
 printf 'Created recursive USB source snapshot %s@%s\n' "$pool" "$snapshot_name"
 
@@ -189,10 +188,12 @@ mkdir -m 0700 "$candidate_partial"
 partial="$candidate_partial"
 
 printf 'Copying the consistent pool tree to USB backup %s\n' "$backup_name"
-# Preserve ACLs and other xattrs, but let SELinux relabel restored data on the
-# destination host instead of trying to write source security.selinux labels to USB.
-rsync_args=(-aHAXS --numeric-ids '--filter=-x security.selinux' "--info=progress2,stats2")
-estimate_args=(-aHAXS --numeric-ids '--filter=-x security.selinux' --dry-run --stats)
+# Preserve POSIX ACLs, ownership, modes, timestamps, hard links, and sparse
+# files.  Do not preserve generic xattrs: Rocky 9's rsync 3.2.7 fails when
+# combining xattrs with --link-dest, while SELinux labels were intentionally
+# excluded because restores must relabel for their destination host.
+rsync_args=(-aHAS --numeric-ids "--info=progress2,stats2")
+estimate_args=(-aHAS --numeric-ids --dry-run --stats)
 if [[ -n "$previous" ]]; then
   rsync_args+=("--link-dest=$previous")
   estimate_args+=("--link-dest=$previous")
@@ -217,7 +218,7 @@ rsync "${rsync_args[@]}" "${source_dir}/" "${partial}/"
 
 printf 'Verifying USB backup %s with a checksum-based dry run\n' "$backup_name"
 verification="${runtime_dir}/verification.out"
-rsync -aHAXS --numeric-ids --filter='-x security.selinux' \
+rsync -aHAS --numeric-ids \
   --checksum --dry-run --delete --itemize-changes \
   "${source_dir}/" "${partial}/" >"$verification"
 if [[ -s "$verification" ]]; then

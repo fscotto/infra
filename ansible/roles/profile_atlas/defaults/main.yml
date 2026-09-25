@@ -108,6 +108,9 @@ atlas_manage_usb_reminder: false
 atlas_usb_reminder_calendar: ""
 atlas_usb_reminder_notifier: /opt/45drives/houston/houston-notify
 
+# Explicit post-restore relabeling only; never relabel datasets during ordinary runs.
+atlas_restorecon_paths: []
+
 atlas_archive_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_archive }}"
 atlas_services_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_services }}"
 atlas_app_data_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_app_data }}"

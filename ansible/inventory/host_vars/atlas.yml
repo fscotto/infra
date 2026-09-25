@@ -92,6 +92,9 @@ atlas_manage_usb_reminder: true
 atlas_usb_reminder_calendar: "Sat *-*-01..07 10:00:00 Europe/Rome"
 atlas_manage_sharing: true
 atlas_manage_media_stack: false
+# Planned after data-protection validation: move iCloudPD photo ingestion from
+# Aegis to Atlas, with photos under /zpool/archive/Pictures and persistent
+# application/MFA state outside Archive. Do not deploy or cut over yet.
 
 # WireGuard is retired on Atlas. These rootless services are a temporary home
 # until Uranus replaces them.
@@ -117,6 +120,7 @@ host_packages:
   - policycoreutils
   - policycoreutils-python-utils
   - python3-libselinux
+  - setroubleshoot-server
   - samba
   - samba-client
   - samba-common-tools

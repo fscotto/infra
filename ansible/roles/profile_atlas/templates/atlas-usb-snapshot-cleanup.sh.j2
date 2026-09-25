@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+
+readonly pool={{ atlas_zfs_pool | quote }}
+readonly mount_root={{ atlas_mount_root | quote }}
+readonly snapshot_prefix={{ atlas_usb_backup_snapshot_prefix | quote }}
+readonly marker=/run/atlas-usb-backup/snapshot-name
+
+[[ -e "$marker" ]] || exit 0
+[[ -f "$marker" && ! -L "$marker" ]] || {
+  printf 'Unsafe Atlas USB snapshot marker; leaving snapshots unchanged\n' >&2
+  exit 2
+}
+IFS= read -r snapshot_name <"$marker"
+[[ "$snapshot_name" =~ ^${snapshot_prefix}-[0-9]{8}T[0-9]{6}Z-[0-9]+$ ]] || {
+  printf 'Invalid Atlas USB snapshot marker; leaving snapshots unchanged\n' >&2
+  exit 2
+}
+
+exec 9>/run/lock/atlas-zfs-snapshot.lock
+flock 9
+if zfs list -H -t snapshot -o name "${pool}@${snapshot_name}" >/dev/null 2>&1; then
+  # ZFS can leave its on-demand .zfs/snapshot mounts in the host namespace
+  # even after the backup's private bind mounts and process have exited.
+  snapshot_mounts=()
+  snapshot_sources=()
+  while IFS=$'\t' read -r dataset dataset_mountpoint; do
+    [[ "$dataset_mountpoint" == "$mount_root" || "$dataset_mountpoint" == "$mount_root/"* ]] || continue
+    snapshot_mounts+=("${dataset_mountpoint}/.zfs/snapshot/${snapshot_name}")
+    snapshot_sources+=("${dataset}@${snapshot_name}")
+  done < <(zfs list -H -o name,mountpoint -s name -r "$pool")
+
+{% raw %}
+  for ((index = ${#snapshot_mounts[@]} - 1; index >= 0; index--)); do
+{% endraw %}
+    mounted_source="$(findmnt -rn -M "${snapshot_mounts[$index]}" -o SOURCE || true)"
+    [[ -n "$mounted_source" ]] || continue
+    [[ "$mounted_source" == "${snapshot_sources[$index]}" ]] || {
+      printf 'Unexpected source on Atlas USB snapshot mount: %s\n' \
+        "${snapshot_mounts[$index]}" >&2
+      exit 2
+    }
+    umount "${snapshot_mounts[$index]}"
+  done
+
+  zfs destroy -r "${pool}@${snapshot_name}"
+  printf 'Removed recursive Atlas USB source snapshot %s@%s after backup exit\n' \
+    "$pool" "$snapshot_name"
+fi

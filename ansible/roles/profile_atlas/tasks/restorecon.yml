@@ -1,0 +1,27 @@
+---
+- name: Validate requested Atlas post-restore relabel paths
+  tags: [atlas, restorecon, recovery]
+  ansible.builtin.assert:
+    that:
+      - item is string
+      - item.startswith(atlas_mount_root ~ '/')
+      - item != atlas_mount_root
+    fail_msg: >-
+      Post-restore relabeling accepts only explicit paths below the Atlas pool
+      mount root. Do not relabel the whole pool during routine provisioning.
+  loop: "{{ atlas_restorecon_paths }}"
+  when: atlas_restorecon_paths | length > 0
+
+- name: Restore SELinux labels on explicitly restored Atlas paths
+  tags: [atlas, restorecon, recovery]
+  ansible.builtin.command:
+    argv:
+      - restorecon
+      - -RFv
+      - "{{ item }}"
+  register: atlas_restorecon_result
+  changed_when: atlas_restorecon_result.stdout | length > 0
+  loop: "{{ atlas_restorecon_paths }}"
+  when:
+    - atlas_restorecon_paths | length > 0
+    - not ansible_check_mode

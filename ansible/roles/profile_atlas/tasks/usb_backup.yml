@@ -36,6 +36,16 @@
     mode: "0750"
   when: atlas_manage_usb_backup | bool
 
+- name: Install the Atlas USB snapshot cleanup helper
+  tags: [atlas, storage, backup, usb_backup]
+  ansible.builtin.template:
+    src: atlas-usb-snapshot-cleanup.sh.j2
+    dest: /usr/local/sbin/atlas-usb-snapshot-cleanup
+    owner: root
+    group: root
+    mode: "0750"
+  when: atlas_manage_usb_backup | bool
+
 - name: Install the manual Atlas offline USB backup service
   tags: [atlas, storage, backup, usb_backup]
   ansible.builtin.template:

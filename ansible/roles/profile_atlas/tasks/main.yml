@@ -23,6 +23,9 @@
 - name: Import Atlas offline USB backup tasks
   ansible.builtin.import_tasks: usb_backup.yml
 
+- name: Import Atlas post-restore SELinux relabeling tasks
+  ansible.builtin.import_tasks: restorecon.yml
+
 - name: Import Atlas file sharing tasks
   ansible.builtin.import_tasks: sharing.yml
 

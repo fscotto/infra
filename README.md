@@ -390,8 +390,17 @@ copies every dataset to a versioned `atlas/snapshots/<timestamp>/` directory usi
 verifies the result with a checksum-based dry run, atomically updates `atlas/latest`, unmounts and closes
 LUKS. A failed run never replaces `latest` or removes an earlier complete version. Borg and the USB
 backup may run concurrently from separate snapshots; both reading the same pool can reduce throughput.
-The USB copy preserves ACLs and extended attributes except `security.selinux`, which the target
-SELinux policy must recreate during a restore; do not restore data into service paths without relabeling.
+The USB copy preserves ACLs but not generic extended attributes; `security.selinux` is also intentionally
+excluded because the target SELinux policy must recreate labels during a restore. Do not restore data into
+service paths without relabeling. After restoring an explicit dataset path, apply its destination policy with:
+
+```bash
+ansible-playbook ansible/site.yml --limit atlas --tags restorecon \
+  -e '{"atlas_restorecon_paths":["/zpool/archive"]}'
+```
+
+The task accepts only paths below the Atlas pool mount root, runs `restorecon -RFv` only for the paths
+provided at invocation, and is otherwise a no-op. It must not be used on the whole pool during routine runs.
 Old USB versions are not pruned automatically, to avoid deleting the only offline
 copy without an explicitly chosen retention policy; capacity checks include an estimated transfer size
 and a 10 GiB free-space reserve. The disk must be physically disconnected after a successful backup
@@ -402,6 +411,13 @@ To check the USB backup and reminder configuration without starting a backup, ru
 ```bash
 ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
 ansible-playbook ansible/site.yml --limit atlas --tags usb_backup,usb_reminder --check --diff
+```
+
+To validate a planned, explicit post-restore relabel operation without changing labels, run:
+
+```bash
+ansible-playbook ansible/site.yml --limit atlas --tags restorecon --check \
+  -e '{"atlas_restorecon_paths":["/zpool/archive"]}'
 ```
 
 Before the first **manual** service start, safely unmount the currently mounted
@@ -417,8 +433,8 @@ A manual test confirmed a notification in 45Drives Alerts, **not** an email. The
 reports notification submission, not email delivery; the role does not depend on SMTP/OAuth settings.
 The reminder never starts the backup. Check its schedule with
 `systemctl list-timers atlas-usb-reminder.timer` and the result in 45Drives Alerts.
-The timer was verified active with its first scheduled run at 2026-10-03 10:00 CEST. The USB backup
-service was verified inactive after deployment; no successful backup or email delivery is claimed.
+The timer was verified active with its first scheduled run at 2026-10-03 10:00 CEST. No email
+delivery is claimed.
 The first manual USB attempt on 2026-09-23 did not complete: rsync was denied while removing
 `security.selinux` on the USB filesystem, then the interrupted service left its recursive
 `atlas-usb-20260923T185748Z-2469168` snapshot and the `zpool-backup` LUKS mapper open. The
@@ -426,11 +442,24 @@ rsync xattr filter was deployed afterward. The incomplete USB directory was abse
 the exact failed snapshot was removed, the verified and unmounted mapper closed, and the service
 failed state cleared. A final check found no remnant snapshot, mount, mapper, or staging directory.
 The failed attempt is not a valid backup, and no USB restore has been tested.
+On 2026-09-24 a later run reported a checksum-verified, published USB version and closed the LUKS
+mapper, but the service failed while destroying its temporary ZFS snapshot: OpenZFS still had
+on-demand `.zfs/snapshot` mounts open in the host namespace. Those exact temporary snapshots were
+unmounted normally and removed; no force or rollback was used. The backup service now records its
+snapshot name and runs a narrowly scoped `ExecStopPost` cleanup after the private backup process
+exits. The cleanup helper was tested with a disposable recursive snapshot and an active snapshot
+mount, but a complete new backup run and independent USB restore remain unverified.
 
 A temporary Nextcloud deployment on Atlas is also planned before Uranus: it requires separately
 declared persistent application, database, and cache storage, Vault-backed credentials, NPM-only
 publishing through Aegis, and defined backup, upgrade, and eventual migration procedures. Do not deploy
 it before the data-protection checklist is complete.
+
+The desired future iCloud photo-ingestion host is Atlas, not Aegis. After data-protection validation,
+plan an explicit iCloudPD migration with photos under `/zpool/archive/Pictures` and application/MFA
+state outside `Archive`, then test permissions, SELinux, backups and recovery before cutting over.
+The current Aegis iCloudPD service and Atlas Photobook NFS export remain configured until that
+separate migration is approved and validated; the eventual Atlas service is temporary until Uranus.
 
 Prometheus backup pulls, USB backup, monitoring, and disaster-recovery tests remain follow-up work. The
 prioritized operational backlog is kept in `AGENTS.md`.

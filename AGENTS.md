@@ -67,6 +67,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags borg_logging --check --diff`
   - Atlas manual offline USB backup and 45Drives Alerts reminder:
     `ansible-playbook ansible/site.yml --limit atlas --tags usb_backup,usb_reminder --check --diff`
+  - Atlas explicit post-restore SELinux relabeling:
+    `ansible-playbook ansible/site.yml --limit atlas --tags restorecon --check -e '{"atlas_restorecon_paths":["/zpool/archive"]}'`
   - Prometheus/Aegis WireGuard gateway:
     `ansible-playbook ansible/site.yml --limit prometheus,aegis --tags wireguard --check --diff`
   - DuckDNS config only: `ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff`
@@ -202,8 +204,11 @@ scheduled retention prune and monthly scrub remain runtime checks.
   scheduled for the first Saturday of each month at 10:00 Europe/Rome via the existing 45Drives
   notifier. A manual test produced an Alerts notification, not an email. The first USB attempt failed
   on a `security.selinux` xattr and was interrupted; the xattr filter is deployed and the temporary
-  recursive snapshot, open LUKS mapper, and failed service state were cleaned up. No complete backup or
-  tested USB restore exists; do not mark this item complete yet.
+  recursive snapshot and open LUKS mapper were cleaned up. A later run reported checksum verification
+  and published the USB version, but failed while removing host-namespace ZFS snapshot mounts. Those
+  exact mounts and snapshots were cleaned up. An `ExecStopPost` helper now removes only the named
+  temporary snapshot after the backup process exits; a disposable-snapshot test passed. A new full
+  successful service run and an independent USB restore remain unverified; do not mark this item complete yet.
 - [ ] Test restores independently from a ZFS snapshot, Borg, and the offline USB backup before relying on
   any backup path.
 - [ ] Add monitoring and alerting for pool health, scrub/resilver, SMART data, temperatures, free space,
@@ -230,9 +235,11 @@ scheduled retention prune and monthly scrub remain runtime checks.
   container paths, and the required Vault database secret.
 
 ### Priority 4 - Optional workflows
-- [ ] Optionally design iCloud photo ingestion and an Aegis persistent NFS mount as a separate workflow
-  after the storage and backup layers are validated; do not make either a dependency of the Atlas
-  baseline.
+- [ ] After data protection is validated, move iCloudPD photo ingestion from Aegis to Atlas as a
+  temporary service until Uranus is ready. Plan to store photos in `/zpool/archive/Pictures` and
+  persistent application/MFA state outside `Archive`; validate permissions, SELinux, backups and
+  recovery before cutover. Keep the current Aegis service and Photobook NFS export unchanged until
+  the Atlas workflow is tested, then retire them explicitly if no longer needed.
 
 ## Cerberus Management Node (Deferred)
 `cerberus` is postponed until the office in the new house is physically set up. It is not an inventory

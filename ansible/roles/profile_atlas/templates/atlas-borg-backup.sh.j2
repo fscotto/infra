@@ -17,6 +17,7 @@ readonly archive_prefix={{ atlas_borg_archive_prefix | quote }}
 readonly snapshot_prefix={{ atlas_borg_snapshot_prefix | quote }}
 readonly compression={{ atlas_borg_compression | quote }}
 readonly stage=/run/atlas-borg/source
+readonly snapshot_marker=/run/atlas-borg/snapshot-name
 readonly borg_user={{ atlas_borg_username | quote }}
 readonly borg_group={{ atlas_borg_group | quote }}
 readonly borg_home={{ atlas_borg_home | quote }}
@@ -24,7 +25,6 @@ readonly borg_lock={{ atlas_borg_lock_path | quote }}
 readonly progress_filter=/usr/local/libexec/atlas-borg-progress
 
 snapshot_name=""
-snapshot_created=false
 mounted_targets=()
 
 # Invoked through the EXIT trap below.
@@ -33,22 +33,31 @@ cleanup() {
   local status=$?
   local cleanup_status=0
   local index
+  local source_mount_failed=false
   trap - EXIT HUP INT TERM
   set +e
 
 {% raw %}
   for ((index = ${#mounted_targets[@]} - 1; index >= 0; index--)); do
 {% endraw %}
+    if mountpoint -q "${mounted_targets[$index]}" && ! umount -R "${mounted_targets[$index]}"; then
+      printf 'Source snapshot mount cleanup failed: %s\n' "${mounted_targets[$index]}" >&2
+      source_mount_failed=true
+    fi
     if mountpoint -q "${mounted_targets[$index]}"; then
-      umount "${mounted_targets[$index]}" || cleanup_status=2
+      printf 'Source snapshot mount is still active: %s\n' "${mounted_targets[$index]}" >&2
+      source_mount_failed=true
+    else
+      rmdir -- "${mounted_targets[$index]}" 2>/dev/null || true
     fi
   done
-  rm -rf "$stage" || cleanup_status=2
-
-  if [[ "$snapshot_created" == true ]]; then
-    flock 9
-    zfs destroy -r "${pool}@${snapshot_name}" || cleanup_status=2
-    flock -u 9
+  if [[ "$source_mount_failed" == false ]]; then
+    if [[ -d "$stage" ]]; then
+      rmdir -- "$stage" 2>/dev/null || cleanup_status=2
+    fi
+  else
+    cleanup_status=2
+    printf 'Source bind mount cleanup failed; keeping the snapshot for recovery\n' >&2
   fi
 
   if ((status == 0 && cleanup_status != 0)); then
@@ -97,8 +106,8 @@ timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 readonly timestamp
 snapshot_name="${snapshot_prefix}-${timestamp}"
 readonly snapshot_name
+printf '%s\n' "$snapshot_name" >"$snapshot_marker"
 zfs snapshot -r "${pool}@${snapshot_name}"
-snapshot_created=true
 flock -u 9
 printf 'Created recursive Borg source snapshot %s@%s\n' "$pool" "$snapshot_name"
 
@@ -117,9 +126,26 @@ while IFS=$'\t' read -r dataset dataset_mountpoint mounted; do
   target_path="${stage}${dataset_suffix}"
   mkdir -p "$target_path"
   mount --bind "$source_path" "$target_path"
-  mount -o remount,bind,ro "$target_path"
   mounted_targets+=("$target_path")
+  mount -o remount,bind,ro "$target_path"
 done < <(zfs list -H -o name,mountpoint,mounted -s name -r "$pool")
+
+estimated_source_bytes=0
+while IFS=$'\t' read -r source_snapshot logical_bytes; do
+  if [[ "$source_snapshot" == *"@${snapshot_name}" ]]; then
+    [[ "$logical_bytes" =~ ^[0-9]+$ ]] || {
+      printf 'Invalid logical size for Borg source snapshot %s\n' "$source_snapshot" >&2
+      exit 74
+    }
+    estimated_source_bytes=$((estimated_source_bytes + logical_bytes))
+  fi
+done < <(zfs list -H -p -t snapshot -o name,logicalreferenced -r "$pool")
+((estimated_source_bytes > 0)) || {
+  printf 'Could not estimate the Borg source snapshot size\n' >&2
+  exit 74
+}
+printf 'Estimated Borg source logical size: %s bytes (ZFS; progress percentage is approximate)\n' \
+  "$estimated_source_bytes"
 
 archive="${archive_prefix}-${timestamp}"
 readonly archive
@@ -136,7 +162,7 @@ set +e
     --compression "$compression" \
     "${repository}::${archive}" \
     source 2>&1
-) | /usr/bin/python3 -u "$progress_filter"
+) | /usr/bin/python3 -u "$progress_filter" --estimated-total-bytes "$estimated_source_bytes"
 create_pipeline_status=("${PIPESTATUS[@]}")
 set -e
 create_status=${create_pipeline_status[0]}

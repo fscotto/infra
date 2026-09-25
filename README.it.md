@@ -267,90 +267,252 @@ ansible-playbook ansible/site.yml --limit prometheus -e server_username=myuser -
 
 ## NAS
 
-`atlas` e un NAS Rocky Linux 9 raggiunto tramite SSH. Normalmente il pool ZFS esiste gia e il profilo
-gestisce solo i dataset figli. Un bootstrap RAIDZ2 una tantum e disponibile solo con conferma esplicita
-(`atlas_create_pool=true`) e quattro percorsi reali e verificati `/dev/disk/by-id/...` in
-`atlas_zpool_disks`. Non partiziona, forza, distrugge, esegue rollback o modifica il layout vdev di un
-pool esistente. I client Linux usano NFSv4, quelli Windows/WSL SMB; entrambi restano limitati alla LAN
-configurata.
+`atlas` è un NAS Rocky Linux 9 raggiunto via SSH. Normalmente il pool esiste già e il profilo gestisce
+solo i dataset figli. La creazione iniziale del RAIDZ2 richiede esplicitamente `atlas_create_pool=true`
+e quattro percorsi `/dev/disk/by-id/...` verificati in `atlas_zpool_disks`. Il ruolo non partiziona,
+forza, distrugge, ripristina né modifica il layout vdev di un pool esistente. I client Linux usano NFSv4,
+quelli Windows/WSL SMB; l'accesso è limitato alla LAN configurata.
 
-Per il primo avvio fornire `vault_atlas_authorized_ssh_keys`, `vault_atlas_admin_password_hash`,
-`vault_atlas_samba_password` e `vault_atlas_immich_db_password`. Eseguire il bootstrap tramite
-l'amministratore esistente:
+Per il primo avvio servono `vault_atlas_admin_password_hash`, `vault_atlas_samba_password` e
+`vault_atlas_immich_db_password`; il primo è un hash compatibile con `/etc/shadow`, non una password
+Cockpit in chiaro. Il bootstrap usa l'amministratore preesistente:
 
 ```bash
 ansible-playbook ansible/site.yml --limit atlas \
   -e atlas_connection_username=<existing-admin>
 ```
 
-`vault_atlas_admin_password_hash` deve essere un hash compatibile con `/etc/shadow`, non una
-password Cockpit in chiaro. Le esecuzioni successive usano `atlas_admin_username`. Atlas dichiara
-abilitati storage, condivisioni e regole firewall LAN. Prima della prima applicazione verificare pool e
-mountpoint esistenti, subnet LAN e zona firewalld attiva. `atlas_manage_media_stack` resta disabilitato
-finche non saranno validati `/dev/dri`, i percorsi dei container e il segreto del database Immich.
+Le esecuzioni successive usano `atlas_admin_username`. Storage, condivisioni e firewall LAN sono
+abilitati; prima dell'applicazione verificare pool, mountpoint, subnet e zona firewalld. La creazione
+del pool è protetta da un gate esplicito e avviene solo se è assente. Atlas non fa più parte della VPN
+WireGuard: la vecchia interfaccia è stata ritirata manualmente dopo la verifica del collegamento tra
+Prometheus e Aegis. Le chiavi SSH autorizzate sono in file separati sotto
+`~/.ssh/authorized_keys.d/`. `atlas_manage_media_stack` resta disabilitato finché `/dev/dri`, percorsi
+dei container e segreto del database Immich non sono validati.
 
-Con la gestione storage attiva, Atlas crea l'intera gerarchia sotto il pool `zpool` esistente o creato esplicitamente:
-`work`, `archive`, `archive/app_data`, i dataset applicativi separati
-`archive/app_data/navidrome` e `archive/app_data/syncthing`, `media`, `media/music`,
-`media/photobook`, `backups`, `backups/services` e `backup_prometheus`. I dataset applicativi e
-di archivio usano `zstd`; media, Syncthing e backup dei servizi usano `lz4`;
-`backups/services` mantiene inoltre una `refreservation` di `500G`.
-Atlas impone SELinux targeted in modo persistente e segnala, senza avviarlo, l’eventuale reboot necessario per attivarlo. Assegna esplicitamente l’interfaccia LAN primaria alla zona firewalld gestita e applica hardening persistente del kernel di rete: rifiuta redirect e source-route, registra i martian, usa reverse-path filtering loose per WireGuard e disabilita il forwarding IPv4. SSH consente solo l’amministratore dichiarato tramite chiave pubblica; root, password, agent e forwarding
-remoto sono disabilitati, mentre il forwarding locale resta disponibile per tunnel amministrativi privati. SMB3 pubblica `Archive` solo agli account Samba configurati con password in Vault e
-ammette la LAN configurata su SMB3 cifrato e firmato, esclusivamente su TCP/445. NFSv4 esporta soltanto
-`media/photobook` all'IP configurato di Aegis su TCP/2049, con `all_squash` verso UID/GID anonimi `1100`.
+Sotto `zpool` Atlas crea `archive` (SMB), `services/data` con i dataset applicativi
+`services/data/navidrome` e `services/data/syncthing`, `media`, `media/music`, `media/photobook` e
+`backup/hosts/prometheus`. Archivio e applicazioni usano `zstd`; media, Syncthing e backup host usano
+`lz4`. `backup` ha una riserva di `500G` che copre i discendenti. SELinux targeted è persistente;
+l'eventuale riavvio necessario viene segnalato, non eseguito. Atlas assegna l'interfaccia primaria
+alla zona firewalld gestita, rifiuta redirect e source route, registra i martian, mantiene il reverse-path
+filter loose e disabilita il forwarding IPv4. SSH consente soltanto l'amministratore dichiarato con
+chiave pubblica: root, password, agent forwarding e remote forwarding sono disabilitati, mentre il
+forwarding locale resta disponibile per i tunnel amministrativi. SMB3 espone `Archive` agli account
+autorizzati da Vault sulla LAN, solo su TCP/445 con cifratura e firma obbligatorie. NFSv4 espone
+soltanto `media/photobook` all'IP di Aegis su TCP/2049, con `all_squash` verso UID/GID `1100`.
 
-L'account di sistema `immich` usa UID/GID `1100`, shell senza login, nessuna appartenenza a `wheel` e
-i gruppi supplementari `video` e `render`. I Quadlet rootful di Immich Server, ML, cache compatibile
-Redis, PostgreSQL e NPM condividono una rete Podman. Immich viene eseguito come `1100:1100`; Server e
-ML ricevono `/dev/dri` e Photobook e montato in sola lettura su `/external/photobook`. NPM pubblica `80` e
-`443`, mentre l'amministrazione resta vincolata a `127.0.0.1:81` per l'accesso tramite tunnel SSH.
+L'account di sistema `immich` usa UID/GID `1100`, non ha shell di login né gruppo `wheel` e riceve i
+gruppi `video` e `render`. Lo stack Immich futuro prevede Quadlet rootful per Server, ML, cache,
+PostgreSQL e NPM su una rete Podman comune. Immich gira come `1100:1100`, Server e ML ricevono
+`/dev/dri` e Photobook è montato in sola lettura su `/external/photobook`. NPM pubblica `80` e `443`;
+l'interfaccia amministrativa resta su `127.0.0.1:81`, raggiungibile via tunnel SSH.
 
-La fase 1 e limitata ai Quadlet utente rootless di Navidrome e Syncthing su Atlas. E abilitata nella
-configurazione host di Atlas e puo essere impostata a `false` solo per una sospensione intenzionale. Navidrome ufficiale `0.63.2` usa il database SQLite sotto `/data` e
-non supporta `ND_DATABASE_URL` ne un backend PostgreSQL esterno. Il servizio obsoleto `navidromedb`
-e quindi rimosso da Prometheus invece di essere replicato su Atlas. Il ruolo deriva i percorsi dal
-pool `zpool`, montato in `/zpool`: musica in sola lettura da `/zpool/media/music`, stato
-applicativo Navidrome e `navidrome.db` in `/zpool/archive/app_data/navidrome` e dati Syncthing in
-`/zpool/archive/app_data/syncthing`. `profile_atlas` crea questi dataset quando
-`atlas_manage_storage` e attivo; il ruolo backend verifica i mountpoint esatti prima di avviare i
-container. Il ruolo backend non crea mai il pool. Il ruolo separato `wireguard_overlay`
-gestisce `wg0` tra Prometheus (`10.0.0.1`) e Atlas (`10.0.0.2`), genera una sola volta le chiavi
-private sui rispettivi host e scambia tramite Ansible soltanto quelle pubbliche. Solo Prometheus apre
-pubblicamente `51820/udp`. Le porte backend sono ammesse esclusivamente nella zona firewalld WireGuard.
+Atlas ospita temporaneamente Navidrome e Syncthing rootless fino alla sostituzione con Uranus. I
+servizi sono inizializzati **ex novo**, senza migrare lo stato precedente, rispettivamente sotto
+`/zpool/services/data/navidrome` e `/zpool/services/data/syncthing`; la musica in
+`/zpool/media/music` viene popolata separatamente. Sono vincolati all'indirizzo LAN di Atlas
+(`192.168.178.55`), mai a WireGuard. `wireguard_overlay` collega invece Prometheus (`10.0.0.1`)
+e Aegis (`10.0.0.2`): le chiavi private restano sui rispettivi host e Ansible scambia solo le pubbliche.
+Prometheus apre `51820/udp`; Aegis inoltra soltanto il traffico overlay→LAN dichiarato e applica
+source NAT, evitando interfacce VPN su Atlas/Uranus e route statiche sul router. Navidrome (`4533/tcp`)
+e la GUI Syncthing (`8384/tcp`) ammettono solo Aegis, mentre le porte native Syncthing sono limitate
+alla LAN. Dopo la verifica dei servizi, configurare manualmente i Proxy Host NPM verso
+`http://192.168.178.55:4533` e `http://192.168.178.55:8384`. Il peer Prometheus include la LAN
+negli `AllowedIPs`; aggiungere la VIP Uranus quando esisterà. Dopo il reload di firewalld, Ansible
+ricarica le reti Podman rootful di Prometheus per conservare DNS e connettività del proxy.
 
-`backend_phase1_start_services` resta falso durante il trasferimento dello stato applicativo, quindi
-la prima esecuzione reale del backend genera i Quadlet senza creare un database Atlas vuoto. Dopo aver
-arrestato Navidrome su Prometheus, copiare l'intera directory `/opt/navidrome/data/` in
-`/zpool/archive/app_data/navidrome/`, preservando `navidrome.db` e gli eventuali file SQLite laterali.
-Impostare quindi questa variabile a vero e rieseguire il ruolo per abilitare e avviare Navidrome e
-Syncthing. Il playbook non copia e non elimina mai i dati applicativi.
-
-Validare e generare i servizi Atlas con:
+Validare il gateway con:
 
 ```bash
 ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
-ansible-playbook ansible/site.yml --limit atlas --tags storage
-
-ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
-ansible-playbook ansible/site.yml --limit prometheus,atlas --tags wireguard
-
-ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
-ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1 --check --diff
-
-ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
-ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1
+ansible-playbook ansible/site.yml --limit prometheus,aegis --tags wireguard --check --diff
 ```
 
-Per il cutover, arrestare il vecchio Navidrome prima di copiare la sua directory dati, verificare
-l'ownership dell'account `admin` su Atlas e confermare la presenza del database SQLite copiato prima
-di impostare `backend_phase1_start_services: true` in `host_vars/atlas.yml`. Conservare i dati sorgente
-e il container legacy `navidromedb` fermo finche Navidrome su Atlas e una prova di restore non sono
-stati validati.
+La prima esecuzione reale WireGuard deve includere entrambi i peer. Se Aegis ha appena installato il
+layer `wireguard-tools`, riavviarlo manualmente e rieseguire senza `--check`: il ruolo attende un
+handshake effettivo.
 
-Restano da completare retention delle snapshot, topologia Syncthing, validazione WireGuard/firewall,
-pull di backup da Prometheus, backup cifrati con Borg su una Hetzner Storage Box, backup USB,
-monitoraggio e test di disaster recovery. Il backlog operativo dettagliato e in `AGENTS.md`.
+Gli snapshot ZFS ricorsivi coprono l'intero pool: 24 orari al minuto 05, 30 giornalieri alle 00:15,
+8 settimanali la domenica alle 01:00 e 12 mensili il primo giorno alle 02:00. La retention elimina
+solo gli snapshot con prefisso gestito `atlas-auto` e non esegue rollback. Lo scrub OpenZFS mensile è
+previsto la prima domenica alle 03:00; il timer settimanale incompatibile è disabilitato. Il primo
+snapshot orario ricorsivo è riuscito; la prima pulizia pianificata e il primo scrub schedulato
+richiedono ancora una verifica a runtime.
+
+```bash
+ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
+ansible-playbook ansible/site.yml --limit atlas --tags snapshots,scrub --check --diff
+```
+
+Il backup Borg cifrato usa il sub-account Hetzner `u660064-sub1`, il repository relativo `./borg-data`
+e Borg remoto 1.4 su SSH porta 23. La chiave ED25519 del server è fissata; una chiave client dedicata
+appartiene all'account `borg`, bloccato e senza login, sudo o gruppi supplementari. La chiave privata
+resta in `/etc/atlas-borg`; la passphrase proviene da `vault_atlas_borg_passphrase` ed è resa in un
+file `0600`. Solo il wrapper root crea snapshot e mount; avvia il client come `borg` con il minimo
+accesso temporaneo in lettura, senza concedergli gestione ZFS o sudo.
+
+Il backup giornaliero parte alle 04:30 con un ritardo casuale fino a 30 minuti. Crea uno snapshot ZFS
+ricorsivo temporaneo e ricostruisce tutti i dataset sotto `/zpool` in un albero di bind mount in sola
+lettura, per inserirli in un unico archivio coerente. Il wrapper smonta ricorsivamente l'albero privato;
+un helper `ExecStopPost` mirato rimuove eventuali mount dello snapshot nel namespace host e lo snapshot
+temporaneo dopo l'uscita del processo. Borg conserva 30 archivi giornalieri, 8 settimanali e 12
+mensili, poi compatta il repository. Il controllo completo di metadati e repository si svolge il 15
+di ogni mese alle 06:00. Le operazioni usano un lock comune, journal e retry systemd limitati. Le
+nuove esecuzioni riportano al massimo una riga di avanzamento al minuto: percentuale **stimata**,
+dataset, file elaborati e byte originali/compressi/deduplicati. Il denominatore è la somma dei
+`logicalreferenced` ZFS dello snapshot, non un totale Borg: può superare il 100% e non comprende
+retention, compattazione o controlli. Le righe di progresso non riportano i nomi dei file; eventuali
+warning possono farlo. Seguire il job con `sudo journalctl -fu atlas-borg-backup.service`; modifiche
+all'helper non cambiano un'esecuzione già avviata.
+
+Attivazione iniziale esplicita:
+
+1. Inserire una passphrase unica in `secrets/vault.yml` con `ansible-vault edit`.
+2. Generare e mostrare solo la chiave pubblica con
+   `ansible-playbook ansible/site.yml --limit atlas --tags borg_key`.
+3. Installarla nel sub-account Hetzner, poi applicare con
+   `ansible-playbook ansible/site.yml --limit atlas --tags packages,borg`.
+4. Copiare `secrets/recovery/atlas-borg-repokey.export` su un supporto davvero offline: la copia
+   locale ignorata da Git non è di per sé un backup offline.
+
+Il ruolo inizializza solo un repository `repokey` assente, non accetta password SSH né host key non
+fissate e non avvia manualmente il primo backup. Validazione:
+
+```bash
+ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
+ansible-playbook ansible/site.yml --limit atlas --tags packages,borg --check --diff
+```
+
+L'attivazione iniziale è riuscita: backup e controllo del repository, restore completo in una
+directory temporanea confrontato con l'albero `Archive`, esportazione offline della chiave di recupero
+e pulizia di snapshot/mount temporanei. Il 2026-09-25 un test separato da snapshot ZFS giornaliero ha
+copiato un file di `/zpool/archive` in `/var/tmp`, verificando contenuto, proprietario, modalità,
+mtime e ACL POSIX; copia e mount temporanei sono stati rimossi senza interrompere Borg. Non è un test
+di ripristino dell'intero dataset.
+
+Il backup USB offline è distribuito come **servizio solo manuale** (`atlas_manage_usb_backup: true`):
+Ansible non formatta, sblocca, monta né avvia automaticamente il disco. Il disco esistente è stato
+verificato in sola lettura il 2026-09-23: UUID LUKS `577b3c43-ea37-4611-81a9-39d555cdfbd4`,
+UUID ext4 interno `758e2d2e-a427-4797-aad9-39c3a9f17c7e`, mapper `zpool-backup`. All'ispezione
+era montato in `/mnt/zpool-backup`; il servizio richiede invece che il mapper **non sia montato** prima
+dell'avvio. Se serve, `systemd-ask-password` chiede interattivamente la passphrase LUKS tramite
+l'agente di `systemctl start` e la passa direttamente a `cryptsetup`, senza salvarla, esporla negli
+argomenti o memorizzarla nella cache. Lo script monta il disco privatamente, crea uno snapshot ZFS
+ricorsivo, copia tutti i dataset in `atlas/snapshots/<timestamp>/` con `rsync --link-dest`, verifica
+con un dry-run basato sui checksum, aggiorna atomicamente `atlas/latest`, smonta e chiude LUKS. Un
+errore non sostituisce `latest` né cancella versioni complete precedenti. Borg e USB possono operare
+contemporaneamente su snapshot distinti, ma la lettura concorrente può ridurre il throughput.
+
+La copia USB conserva le ACL ma non gli attributi estesi generici, compreso `security.selinux`: la
+policy della destinazione deve ricreare le etichette dopo un restore. Per un percorso esplicito:
+
+```bash
+ansible-playbook ansible/site.yml --limit atlas --tags restorecon \
+  -e '{"atlas_restorecon_paths":["/zpool/archive"]}'
+```
+
+Il task accetta solo percorsi sotto la radice del pool Atlas, esegue `restorecon -RFv` solo su quelli
+indicati ed è altrimenti inattivo; non va lanciato sull'intero pool durante i run ordinari. Le vecchie
+versioni USB non vengono eliminate automaticamente senza una retention deliberata. Il controllo di
+capacità include il trasferimento stimato e una riserva libera di 10 GiB. Dopo un backup riuscito,
+scollegare fisicamente il disco per renderlo davvero offline.
+
+Validare la configurazione senza avviare il backup e, separatamente, un eventuale relabel pianificato:
+
+```bash
+ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
+ansible-playbook ansible/site.yml --limit atlas --tags usb_backup,usb_reminder --check --diff
+ansible-playbook ansible/site.yml --limit atlas --tags restorecon --check \
+  -e '{"atlas_restorecon_paths":["/zpool/archive"]}'
+```
+
+Prima dell'avvio manuale smontare in sicurezza `/mnt/zpool-backup`, se ancora montato. Con il mapper
+chiuso, `sudo systemctl start atlas-usb-backup.service` chiede la passphrase e avvia il backup; né la
+password LUKS né un keyfile vanno in Ansible. Seguire con
+`sudo journalctl -fu atlas-usb-backup.service`. **Non esiste un timer di backup USB.** Soltanto
+`atlas-usb-reminder.timer` è schedulato il primo sabato del mese alle 10:00 `Europe/Rome`: invia un
+promemoria al notifier 45Drives Houston, senza avviare il backup. Un test manuale ha prodotto una
+notifica in 45Drives Alerts, **non un'email**; il log conferma l'invio della notifica, non la consegna
+di posta. Il primo evento pianificato era il 2026-10-03 alle 10:00 CEST. Controllare timer e risultato
+con `systemctl list-timers atlas-usb-reminder.timer` e in 45Drives Alerts.
+
+Il primo tentativo USB del 2026-09-23 fallì su `security.selinux` e, dopo l'interruzione, lasciò
+snapshot e mapper aperti. Applicato il filtro rsync, furono rimossi lo snapshot fallito, il mapper
+smontato e lo stato failed; non rimase una copia valida di quel tentativo. Un run del 2026-09-24
+pubblicò una versione verificata ma fallì nella distruzione dello snapshot a causa di mount
+`.zfs/snapshot` aperti nel namespace host. Dopo la pulizia non forzata, è stato aggiunto un helper
+`ExecStopPost` mirato e testato con uno snapshot usa-e-getta. Un run successivo del 2026-09-24 ha
+verificato i checksum, pubblicato la versione ed è terminato con successo: mapper chiuso, nessuno
+snapshot USB temporaneo e pool sano. Il 2026-09-25 un test di restore indipendente ha aperto il disco
+in sola lettura, montato ext4 con `ro,noload`, copiato un file di 5.707.945 byte da `atlas/latest` in
+una directory vuota sotto `/var/tmp` e confrontato contenuto, proprietario, modalità, dimensione,
+mtime e ACL POSIX. Il test ha rimosso copia e mount temporanei, chiuso LUKS e lasciato il pool sano
+mentre Borg continuava. È un test su file, non un esercizio completo di disaster recovery.
+
+Il monitoraggio Atlas è eseguito ogni 30 minuti da `atlas-health-monitor.timer`. Sonde in sola
+lettura controllano stato/errori del pool e dei vdev, scrub/resilver, SMART dei quattro dischi del
+pool e dell'NVMe di sistema, temperature dei dischi e CPU, spazio di sistema/pool/snapshot, crescita
+di `zpool/backup` e quota Hetzner tramite `df -m` via SSH con l'account `borg` e la chiave fissata.
+La query remota non apre il repository Borg né il suo lock. Gli alert di crescita richiedono una
+baseline di circa 24 ore. Sono controllati anche attivazione e freschezza dei timer; hook systemd
+`OnFailure` segnalano errori di snapshot, scrub, Borg, USB, promemoria e monitoraggio. Il monitor non
+riavvia Borg; avvisa solo se un run supera 14 giorni. Soglie e percorsi stabili dei dischi sono nelle
+variabili host. Gli avvisi usano 45Drives Houston con deduplicazione; **la consegna email non è stata
+verificata**. Il controllo live del 2026-09-25 non ha trovato problemi; la notifica di prova è stata
+inviata e lo Storage Box risultava occupato al 22%. Dimensione dell'archivio Borg e deduplicazione
+dettagliata richiedono ancora la fine del backup in corso.
+
+```bash
+ansible-playbook ansible/site.yml --limit atlas --tags monitoring --check --diff
+sudo /usr/local/libexec/atlas-health-monitor --dry-run
+sudo journalctl -u atlas-health-monitor.service -n 100 --no-pager
+systemctl list-timers atlas-health-monitor.timer
+```
+
+`--dry-run` non invia alert e non modifica lo stato del monitor. Un controllo reale si avvia con
+`sudo systemctl start atlas-health-monitor.service`, senza avviare servizi di backup. Per una prova
+etichettata di 45Drives Alerts usare
+`sudo /usr/local/libexec/atlas-health-monitor --test-notification`.
+
+### Timer systemd di Atlas
+
+Tutti i nove timer gestiti sono abilitati. Gli orari sono locali ad Atlas (`Europe/Rome`); Borg e
+monitoraggio aggiungono il ritardo casuale indicato. Tutti hanno `Persistent=true`: un evento perso
+viene recuperato quando il timer torna attivo.
+
+| Timer | Pianificazione (`OnCalendar`) | Azione |
+| --- | --- | --- |
+| `atlas-zfs-snapshot-hourly.timer` | `*-*-* *:05:00` — ogni ora al minuto 05 | Snapshot ricorsivo orario e retention |
+| `atlas-zfs-snapshot-daily.timer` | `*-*-* 00:15:00` — ogni giorno alle 00:15 | Snapshot ricorsivo giornaliero e retention |
+| `atlas-zfs-snapshot-weekly.timer` | `Sun *-*-* 01:00:00` — domenica alle 01:00 | Snapshot ricorsivo settimanale e retention |
+| `atlas-zfs-snapshot-monthly.timer` | `*-*-01 02:00:00` — primo giorno del mese alle 02:00 | Snapshot ricorsivo mensile e retention |
+| `zfs-scrub-monthly@zpool.timer` | `Sun *-*-01..07 03:00:00` — prima domenica alle 03:00 | Scrub ZFS |
+| `atlas-borg-backup.timer` | `*-*-* 04:30:00` — ogni giorno alle 04:30, più 0–30 min casuali | Backup cifrato offsite |
+| `atlas-borg-check.timer` | `*-*-15 06:00:00` — giorno 15 alle 06:00, più 0–30 min casuali | Controllo repository Borg |
+| `atlas-usb-reminder.timer` | `Sat *-*-01..07 10:00:00 Europe/Rome` — primo sabato alle 10:00 | Solo promemoria 45Drives Alerts |
+| `atlas-health-monitor.timer` | `*:0/30` — ogni mezz'ora, più 0–5 min casuali | Controlli di salute in sola lettura |
+
+`atlas-usb-backup.service` **non ha timer** e va avviato manualmente. Il timer del fornitore
+`zfs-scrub-weekly@zpool.timer` è disabilitato a favore dello scrub mensile. Il futuro pull del backup
+Prometheus non ha ancora un timer, perché non è implementato. Durante un backup Borg attivo,
+`systemctl list-timers` può mostrare `-` per il prossimo evento senza che il timer sia disabilitato.
+Per vedere la pianificazione corrente: `systemctl list-timers --all` su Atlas.
+
+Nextcloud è previsto come servizio temporaneo su Atlas prima di Uranus, ma solo dopo la validazione
+della protezione dei dati: richiede storage applicativo, database e cache separati, segreti Vault,
+pubblicazione solo tramite NPM e Aegis, procedure di backup, aggiornamento e migrazione. Non
+distribuirlo prima di completare la checklist di protezione dei dati.
+
+La destinazione futura per l'importazione foto iCloud è Atlas, non Aegis. Dopo la validazione dei
+backup, pianificare una migrazione esplicita di iCloudPD con foto sotto `/zpool/archive/Pictures` e
+stato applicativo/MFA fuori da `Archive`; testare permessi, SELinux, backup e restore prima del
+cutover. L'attuale iCloudPD su Aegis e l'export NFS Photobook restano configurati fino
+all'approvazione e alla verifica di questa migrazione separata. Anche il servizio Atlas sarà
+temporaneo in attesa di Uranus.
+
+Il pull dei backup di Prometheus, la valutazione delle dimensioni degli archivi Borg e i test completi
+di disaster recovery restano da fare. Il backlog prioritizzato è in `AGENTS.md`.
 
 ---
 

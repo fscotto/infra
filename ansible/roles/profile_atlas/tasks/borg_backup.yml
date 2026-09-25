@@ -233,6 +233,16 @@
     mode: "0750"
   when: atlas_manage_borg_backup | bool
 
+- name: Install the Atlas Borg snapshot cleanup helper
+  tags: [atlas, storage, backup, borg, borg_logging]
+  ansible.builtin.template:
+    src: atlas-borg-snapshot-cleanup.sh.j2
+    dest: /usr/local/sbin/atlas-borg-snapshot-cleanup
+    owner: root
+    group: root
+    mode: "0750"
+  when: atlas_manage_borg_backup | bool
+
 - name: Install the Atlas Borg check helper
   tags: [atlas, storage, backup, borg]
   ansible.builtin.template:
@@ -274,7 +284,7 @@
   when: atlas_manage_borg_backup | bool
 
 - name: Install Atlas Borg systemd units
-  tags: [atlas, storage, backup, borg]
+  tags: [atlas, storage, backup, borg, borg_logging]
   ansible.builtin.template:
     src: "{{ item }}.j2"
     dest: "/etc/systemd/system/{{ item }}"

@@ -90,6 +90,43 @@ atlas_usb_backup_fs_uuid: 758e2d2e-a427-4797-aad9-39c3a9f17c7e
 atlas_usb_backup_mapper_name: zpool-backup
 atlas_manage_usb_reminder: true
 atlas_usb_reminder_calendar: "Sat *-*-01..07 10:00:00 Europe/Rome"
+atlas_manage_monitoring: true
+# Physical pool disks and the system NVMe; the disconnected USB disk is intentionally excluded.
+atlas_monitor_smart_devices:
+  - { name: pool-1, path: "{{ atlas_zpool_disks[0] }}", warning_c: 50, critical_c: 55 }
+  - { name: pool-2, path: "{{ atlas_zpool_disks[1] }}", warning_c: 50, critical_c: 55 }
+  - { name: pool-3, path: "{{ atlas_zpool_disks[2] }}", warning_c: 50, critical_c: 55 }
+  - { name: pool-4, path: "{{ atlas_zpool_disks[3] }}", warning_c: 50, critical_c: 55 }
+  - name: system-nvme
+    path: /dev/disk/by-id/nvme-Patriot_M.2_P320_256GB_P320ADB26011606111
+    warning_c: 70
+    critical_c: 85
+atlas_monitor_timers:
+  - { name: atlas-zfs-snapshot-hourly.timer, max_age_hours: 3 }
+  - { name: atlas-zfs-snapshot-daily.timer, max_age_hours: 36 }
+  - { name: atlas-zfs-snapshot-weekly.timer, max_age_hours: 216 }
+  - { name: atlas-zfs-snapshot-monthly.timer, max_age_hours: 960 }
+  - { name: zfs-scrub-monthly@zpool.timer, max_age_hours: 960 }
+  - { name: atlas-borg-backup.timer, max_age_hours: 48 }
+  - { name: atlas-borg-check.timer, max_age_hours: 960 }
+  # The first manual USB reminder is not due until October; activation is checked, not age.
+  - { name: atlas-usb-reminder.timer, max_age_hours: 0 }
+atlas_monitor_failure_units:
+  - atlas-zfs-snapshot@.service
+  - zfs-scrub@zpool.service
+  - atlas-borg-backup.service
+  - atlas-borg-check.service
+  - atlas-usb-backup.service
+  - atlas-usb-reminder.service
+  - atlas-health-monitor.service
+atlas_monitor_remote_capacity:
+  user: "{{ atlas_borg_repository_user }}"
+  host: "{{ atlas_borg_repository_host }}"
+  run_as: "{{ atlas_borg_username }}"
+  ssh_wrapper: "{{ atlas_borg_ssh_wrapper_path }}"
+  warning_percent: 80
+  critical_percent: 90
+  growth_warning_gib_day: 500
 atlas_manage_sharing: true
 atlas_manage_media_stack: false
 # Planned after data-protection validation: move iCloudPD photo ingestion from
@@ -115,6 +152,9 @@ host_packages:
   - cockpit
   - cockpit-podman
   - cockpit-storaged
+  - realmd
+  - pcp
+  - python3-pcp
   - cryptsetup
   - nfs-utils
   - policycoreutils
@@ -158,4 +198,5 @@ atlas_firewalld_rich_rules:
 host_enabled_services:
   - sshd
   - cockpit.socket
+  - pmlogger.service
   - zfs.target

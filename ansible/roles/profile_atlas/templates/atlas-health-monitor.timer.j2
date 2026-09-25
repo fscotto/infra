@@ -1,0 +1,11 @@
+[Unit]
+Description=Schedule Atlas health checks
+
+[Timer]
+OnCalendar={{ atlas_monitor_calendar }}
+Persistent=true
+RandomizedDelaySec=5min
+Unit=atlas-health-monitor.service
+
+[Install]
+WantedBy=timers.target

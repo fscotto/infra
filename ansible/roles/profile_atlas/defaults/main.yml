@@ -108,6 +108,26 @@ atlas_manage_usb_reminder: false
 atlas_usb_reminder_calendar: ""
 atlas_usb_reminder_notifier: /opt/45drives/houston/houston-notify
 
+# Read-only health probes and 45Drives Alerts; disabled outside Atlas host vars.
+atlas_manage_monitoring: false
+atlas_monitor_calendar: "*:0/30"
+atlas_monitor_notifier: "{{ atlas_usb_reminder_notifier }}"
+atlas_monitor_smart_devices: []
+atlas_monitor_timers: []
+atlas_monitor_failure_units: []
+atlas_monitor_remote_capacity: {}
+atlas_monitor_pool_warning_percent: 80
+atlas_monitor_pool_critical_percent: 90
+atlas_monitor_root_warning_percent: 80
+atlas_monitor_root_critical_percent: 90
+atlas_monitor_snapshot_warning_percent: 10
+atlas_monitor_snapshot_critical_percent: 20
+atlas_monitor_snapshot_growth_warning_gib_day: 100
+atlas_monitor_backup_growth_warning_gib_day: 100
+atlas_monitor_cpu_warning_c: 85
+atlas_monitor_cpu_critical_c: 95
+atlas_monitor_borg_max_runtime_days: 14
+
 # Explicit post-restore relabeling only; never relabel datasets during ordinary runs.
 atlas_restorecon_paths: []
 

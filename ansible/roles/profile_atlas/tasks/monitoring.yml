@@ -1,0 +1,201 @@
+---
+- name: Validate Atlas health monitoring policy
+  tags: [atlas, monitoring]
+  ansible.builtin.assert:
+    that:
+      - atlas_manage_storage | bool
+      - atlas_zfs_pool != 'CHANGEME_ZFS_POOL'
+      - atlas_monitor_calendar | length > 0
+      - atlas_monitor_smart_devices | length > 0
+      - atlas_monitor_timers | length > 0
+      - atlas_monitor_failure_units | length > 0
+      - atlas_monitor_remote_capacity.user == atlas_borg_repository_user
+      - atlas_monitor_remote_capacity.host == atlas_borg_repository_host
+      - atlas_monitor_remote_capacity.run_as == atlas_borg_username
+      - atlas_monitor_remote_capacity.ssh_wrapper == atlas_borg_ssh_wrapper_path
+      - >-
+        0 < atlas_monitor_remote_capacity.warning_percent | int
+        < atlas_monitor_remote_capacity.critical_percent | int < 100
+      - atlas_monitor_remote_capacity.growth_warning_gib_day | int > 0
+      - atlas_monitor_notifier.startswith('/opt/45drives/houston/')
+      - 0 < atlas_monitor_pool_warning_percent | int < atlas_monitor_pool_critical_percent | int < 100
+      - 0 < atlas_monitor_root_warning_percent | int < atlas_monitor_root_critical_percent | int < 100
+      - 0 < atlas_monitor_snapshot_warning_percent | int < atlas_monitor_snapshot_critical_percent | int < 100
+      - atlas_monitor_snapshot_growth_warning_gib_day | int > 0
+      - atlas_monitor_backup_growth_warning_gib_day | int > 0
+      - 0 < atlas_monitor_cpu_warning_c | int < atlas_monitor_cpu_critical_c | int
+      - atlas_monitor_borg_max_runtime_days | int > 0
+    fail_msg: >-
+      Atlas health monitoring needs real devices, job units, a valid calendar,
+      positive ordered thresholds, and the existing Houston notifier.
+  when: atlas_manage_monitoring | bool
+
+- name: Validate monitored Atlas SMART devices
+  tags: [atlas, monitoring]
+  ansible.builtin.assert:
+    that:
+      - item.name is match('^[a-z0-9][a-z0-9_-]*$')
+      - item.path.startswith('/dev/disk/by-id/')
+      - 0 < item.warning_c | int < item.critical_c | int
+    fail_msg: "Every monitored disk needs a stable by-id path and ordered temperature thresholds."
+  loop: "{{ atlas_monitor_smart_devices }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: atlas_manage_monitoring | bool
+
+- name: Validate monitored Atlas timer names and age thresholds
+  tags: [atlas, monitoring]
+  ansible.builtin.assert:
+    that:
+      - item.name is match('^[a-zA-Z0-9@_.-]+\\.timer$')
+      - item.max_age_hours | int >= 0
+  loop: "{{ atlas_monitor_timers }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: atlas_manage_monitoring | bool
+
+- name: Validate monitored Atlas failure unit names
+  tags: [atlas, monitoring]
+  ansible.builtin.assert:
+    that:
+      - item is match('^[a-zA-Z0-9@_.-]+\\.service$')
+  loop: "{{ atlas_monitor_failure_units }}"
+  when: atlas_manage_monitoring | bool
+
+- name: Validate Atlas health monitor calendar
+  tags: [atlas, monitoring]
+  ansible.builtin.command:
+    argv: [systemd-analyze, calendar, "{{ atlas_monitor_calendar }}"]
+  changed_when: false
+  check_mode: false
+  when: atlas_manage_monitoring | bool
+
+- name: Install SMART tooling for Atlas health checks
+  tags: [atlas, monitoring, packages]
+  ansible.builtin.dnf:
+    name: smartmontools
+    state: present
+  when: atlas_manage_monitoring | bool
+
+- name: Inspect the existing 45Drives notifier for monitoring
+  tags: [atlas, monitoring]
+  ansible.builtin.stat:
+    path: "{{ atlas_monitor_notifier }}"
+  register: atlas_monitor_notifier_file
+  when: atlas_manage_monitoring | bool
+
+- name: Require the existing 45Drives notifier for monitoring
+  tags: [atlas, monitoring]
+  ansible.builtin.assert:
+    that:
+      - atlas_monitor_notifier_file.stat.executable | default(false)
+    fail_msg: "The existing 45Drives Houston notifier must be executable."
+  when: atlas_manage_monitoring | bool
+
+- name: Create private Atlas health monitor state directory
+  tags: [atlas, monitoring]
+  ansible.builtin.file:
+    path: /var/lib/atlas-health-monitor
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: atlas_manage_monitoring | bool
+
+- name: Install Atlas health monitor configuration
+  tags: [atlas, monitoring]
+  ansible.builtin.template:
+    src: atlas-health-monitor.json.j2
+    dest: /etc/atlas-health-monitor.json
+    owner: root
+    group: root
+    mode: "0600"
+  when: atlas_manage_monitoring | bool
+
+- name: Install Atlas health monitor helper
+  tags: [atlas, monitoring]
+  ansible.builtin.copy:
+    src: atlas-health-monitor.py
+    dest: /usr/local/libexec/atlas-health-monitor
+    owner: root
+    group: root
+    mode: "0750"
+  when: atlas_manage_monitoring | bool
+
+- name: Install Atlas health monitoring units
+  tags: [atlas, monitoring]
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - atlas-health-monitor.service
+    - atlas-health-monitor.timer
+    - atlas-monitor-failure@.service
+  when: atlas_manage_monitoring | bool
+
+- name: Create failure hook directories for monitored Atlas jobs
+  tags: [atlas, monitoring]
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ item }}.d"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ atlas_monitor_failure_units }}"
+  when: atlas_manage_monitoring | bool
+
+- name: Notify 45Drives Alerts when an Atlas job fails
+  tags: [atlas, monitoring]
+  ansible.builtin.template:
+    src: atlas-monitor-failure.conf.j2
+    dest: "/etc/systemd/system/{{ item }}.d/atlas-monitor.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ atlas_monitor_failure_units }}"
+  when: atlas_manage_monitoring | bool
+
+- name: Reload systemd after installing Atlas monitoring
+  tags: [atlas, monitoring]
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when:
+    - atlas_manage_monitoring | bool
+    - not ansible_check_mode
+
+- name: Enable the Atlas health monitoring timer
+  tags: [atlas, monitoring]
+  ansible.builtin.systemd:
+    name: atlas-health-monitor.timer
+    enabled: true
+    state: started
+  when:
+    - atlas_manage_monitoring | bool
+    - not ansible_check_mode
+
+- name: Validate the deployed Atlas health monitoring units
+  tags: [atlas, monitoring]
+  ansible.builtin.command:
+    argv:
+      - systemd-analyze
+      - verify
+      - atlas-health-monitor.service
+      - atlas-health-monitor.timer
+      - atlas-monitor-failure@.service
+  changed_when: false
+  when:
+    - atlas_manage_monitoring | bool
+    - not ansible_check_mode
+
+- name: Probe Atlas health without sending notifications
+  tags: [atlas, monitoring]
+  ansible.builtin.command:
+    argv: [/usr/local/libexec/atlas-health-monitor, --dry-run]
+  register: atlas_monitor_dry_run
+  changed_when: false
+  when:
+    - atlas_manage_monitoring | bool
+    - not ansible_check_mode

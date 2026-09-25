@@ -67,6 +67,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags borg_logging --check --diff`
   - Atlas manual offline USB backup and 45Drives Alerts reminder:
     `ansible-playbook ansible/site.yml --limit atlas --tags usb_backup,usb_reminder --check --diff`
+  - Atlas pool, disk, capacity, temperature, and job monitoring:
+    `ansible-playbook ansible/site.yml --limit atlas --tags monitoring --check --diff`
   - Atlas explicit post-restore SELinux relabeling:
     `ansible-playbook ansible/site.yml --limit atlas --tags restorecon --check -e '{"atlas_restorecon_paths":["/zpool/archive"]}'`
   - Prometheus/Aegis WireGuard gateway:
@@ -192,12 +194,14 @@ scheduled retention prune and monthly scrub remain runtime checks.
   Borg repository check, and temporary-directory restore completed successfully; the restored `Archive`
   tree matched the live data, and temporary snapshots and mounts were removed. The exported recovery key
   was copied offline. Daily backup retries and logging, 30 daily, 8 weekly and 12 monthly archives,
-  compaction, and monthly repository checks are enabled.
+  compaction, and monthly repository checks are enabled. Future runs report a ZFS-based estimated
+  percentage, and a post-exit helper handles host-namespace temporary snapshot cleanup. The active
+  run predates the new progress logging and still requires an observed final cleanup result.
 - [x] Populate `/zpool/archive` with the currently available data so offsite and offline backup tests run
   against a representative load.
 - [ ] Run and evaluate Borg against the populated pool: duration, repository capacity, deduplication, and
-  a subsequent incremental archive must be observed before relying on the offline USB test.
-- [ ] Add the UUID-bound offline USB backup with versioned rsync, locking, capacity checks, verification,
+  a subsequent incremental archive must be observed before considering the offsite path fully validated.
+- [x] Add the UUID-bound offline USB backup with versioned rsync, locking, capacity checks, verification,
   safe unmounting and a tested restore procedure; never trigger it for an arbitrary USB disk. The
   LUKS/ext4 identities were read-only verified; the manual service and 45Drives Alerts reminder timer were
   deployed on Atlas. Interactive LUKS unlock is part of the manual service; only the reminder is
@@ -207,12 +211,24 @@ scheduled retention prune and monthly scrub remain runtime checks.
   recursive snapshot and open LUKS mapper were cleaned up. A later run reported checksum verification
   and published the USB version, but failed while removing host-namespace ZFS snapshot mounts. Those
   exact mounts and snapshots were cleaned up. An `ExecStopPost` helper now removes only the named
-  temporary snapshot after the backup process exits; a disposable-snapshot test passed. A new full
-  successful service run and an independent USB restore remain unverified; do not mark this item complete yet.
-- [ ] Test restores independently from a ZFS snapshot, Borg, and the offline USB backup before relying on
-  any backup path.
-- [ ] Add monitoring and alerting for pool health, scrub/resilver, SMART data, temperatures, free space,
-  snapshot/backup capacity growth, and failed maintenance or backup timers.
+  temporary snapshot after the backup process exits. A new full run checksum-verified and published a
+  USB version; the service ended successfully, the mapper closed, no temporary USB snapshot remained,
+  and the pool was healthy. On 2026-09-25 an independent, read-only USB restore test copied one file from
+  the published `atlas/latest` version into `/var/tmp` and matched contents, owner, mode, size, mtime and
+  POSIX ACL. The temporary copy and mount were removed, the mapper closed, and the pool remained healthy.
+- [x] Test restores independently from a ZFS snapshot, Borg, and the offline USB backup before relying on
+  any backup path. The earlier Borg temporary-directory restore passed. On 2026-09-25 a separate,
+  read-only ZFS snapshot test restored one file to `/var/tmp`, confirmed matching contents, ownership,
+  mode, mtime and ACL, then removed its temporary copy and on-demand mount. This is a file-level smoke
+  test, not full dataset recovery. An independent USB file restore passed on 2026-09-25 with matching
+  content and metadata; full disaster recovery remains a separate Priority 2 task.
+- [x] Add monitoring and alerting for pool health, scrub/resilver, SMART data, temperatures, free space,
+  snapshot/local-backup growth, Hetzner Storage Box quota, and failed maintenance or backup timers.
+  The half-hourly Atlas health monitor and systemd final-failure hooks are deployed. A live probe
+  found no issues; the service and timer succeeded, and a labelled 45Drives Alerts test notification
+  was submitted. Alerts are deduplicated; email delivery is not claimed. The Storage Box quota probe
+  runs `df -m` over the dedicated pinned-key SSH identity and does not open the Borg repository.
+  Detailed archive size and deduplication remain part of the pending Borg evaluation.
 
 ### Priority 2 - NAS operability and recovery
 - [ ] Document and test disaster recovery: rebuild Atlas with Ansible, import the existing pool, restore

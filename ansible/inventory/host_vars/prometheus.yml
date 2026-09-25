@@ -33,7 +33,11 @@ host_packages:
   - cockpit-navigator
   - cockpit-podman
   - cockpit-storaged
+  - realmd
+  - pcp
+  - python3-pcp
   - setroubleshoot-server
 
 host_enabled_services:
   - cockpit.socket
+  - pmlogger.service

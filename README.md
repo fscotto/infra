@@ -343,15 +343,19 @@ passphrase, cache, and Borg state. Borg receives its passphrase through a mode `
 
 The daily backup starts at 04:30 with up to 30 minutes of randomized delay. It creates a temporary,
 recursive ZFS snapshot and reconstructs every dataset below `/zpool` as a read-only bind-mounted tree,
-so parent and child datasets enter one consistent Borg archive. Cleanup always removes the temporary
-mounts and managed snapshot. Only the root wrapper performs snapshot and mount operations; it launches
-the Borg client as `borg` with temporary read-search capability and no ZFS, sudo, or pool-management
-privileges. Borg retains 30 daily, 8 weekly, and 12 monthly archives, then compacts the standard
+so parent and child datasets enter one consistent Borg archive. The wrapper recursively unmounts its
+private source tree; a narrowly scoped `ExecStopPost` helper removes any remaining host-namespace ZFS
+snapshot mounts and the named temporary snapshot after the backup process exits. Only the root wrapper
+performs snapshot and mount operations; it launches the Borg client as `borg` with temporary read-search
+capability and no ZFS, sudo, or pool-management privileges. Borg retains 30 daily, 8 weekly, and 12
+monthly archives, then compacts the standard
 read-write repository. A full metadata and repository check runs as `borg` on the fifteenth day of each
 month at 06:00. Both operations use a common lock, journal logging, and bounded systemd retries.
-New backup runs also log the create phase and a compact progress line at most once per minute: dataset,
-files processed, and original/compressed/deduplicated bytes. Progress lines omit individual filenames
-and a percentage, since Borg does not know the total in advance; warnings may still name affected files.
+New backup runs also log the create phase and a compact progress line at most once per minute: an
+**estimated** percentage, dataset, files processed, and original/compressed/deduplicated bytes. The
+denominator is the summed ZFS `logicalreferenced` size of the backup's own recursive snapshot, not a
+Borg-reported total: the estimate can exceed 100% and does not cover retention, compaction, or checks.
+Progress lines omit individual filenames; warnings may still name affected files.
 Follow the current run with
 `sudo journalctl -fu atlas-borg-backup.service` on Atlas; changes to the helper do not alter a run
 already in progress.
@@ -377,6 +381,10 @@ ansible-playbook ansible/site.yml --limit atlas --tags packages,borg --check --d
 Atlas runtime activation is complete: the initial backup and repository check succeeded, a full restore
 to a temporary directory was validated against the live `Archive` tree, the recovery-key export was copied
 to offline storage, and the temporary snapshot and bind mounts were cleaned up.
+On 2026-09-25 a separate ZFS restore smoke test copied a small file from an automatic daily
+`zpool/archive` snapshot to `/var/tmp`, then confirmed matching contents, ownership, mode, mtime and
+POSIX ACL. The temporary copy and on-demand snapshot mount were removed; Borg kept running. This
+does not validate a full dataset recovery.
 
 The offline USB backup is deployed as a manual-only service (`atlas_manage_usb_backup: true`):
 Ansible never formats, unlocks, mounts, backs up to, or schedules the disk. Atlas' existing USB disk was verified
@@ -441,14 +449,72 @@ The first manual USB attempt on 2026-09-23 did not complete: rsync was denied wh
 rsync xattr filter was deployed afterward. The incomplete USB directory was absent on inspection;
 the exact failed snapshot was removed, the verified and unmounted mapper closed, and the service
 failed state cleared. A final check found no remnant snapshot, mount, mapper, or staging directory.
-The failed attempt is not a valid backup, and no USB restore has been tested.
+The failed attempt was not a valid backup, and no USB restore had been tested at that point.
 On 2026-09-24 a later run reported a checksum-verified, published USB version and closed the LUKS
 mapper, but the service failed while destroying its temporary ZFS snapshot: OpenZFS still had
 on-demand `.zfs/snapshot` mounts open in the host namespace. Those exact temporary snapshots were
 unmounted normally and removed; no force or rollback was used. The backup service now records its
 snapshot name and runs a narrowly scoped `ExecStopPost` cleanup after the private backup process
 exits. The cleanup helper was tested with a disposable recursive snapshot and an active snapshot
-mount, but a complete new backup run and independent USB restore remain unverified.
+mount. A complete run on 2026-09-24 later checksum-verified and published a new USB version; the
+service ended successfully, the LUKS mapper closed, no temporary USB snapshot remained, and the pool
+was healthy. On 2026-09-25 an independent restore test opened the configured USB disk read-only, mounted
+ext4 with `ro,noload`, restored a 5,707,945-byte file from the published `atlas/latest` version to an
+empty `/var/tmp` directory, and matched its content, owner, mode, size, mtime, and POSIX ACL against
+the USB source. The test removed its temporary copy and mount, closed the LUKS mapper, and left the
+pool healthy while Borg continued running. This is a file-level recovery smoke test, not a full dataset
+or disaster-recovery exercise.
+
+Atlas health monitoring runs every 30 minutes through `atlas-health-monitor.timer`. Its read-only probes
+check pool/vdev state and errors, scrub/resilver status, four pool disks and the system NVMe via SMART,
+disk and CPU temperatures, system/pool/snapshot space, local `zpool/backup` growth, and the Hetzner
+Storage Box quota via `df -m` over the dedicated `borg` account's pinned-key SSH connection. The remote
+query never opens the Borg repository or its lock. Growth alerts compare against a roughly 24-hour
+baseline and therefore begin only after enough samples exist. The monitor also checks
+maintenance/backup timer activation and freshness; systemd `OnFailure` hooks report snapshot,
+scrub, Borg, USB, reminder, and monitoring services when they enter the failed state. The ongoing
+initial Borg run is never restarted by the monitor; only a run exceeding 14 days raises a warning.
+Thresholds and stable disk paths are declared in Atlas host variables. Alerts use the existing 45Drives
+Houston notifier and repeated issues are deduplicated; **email delivery is not verified**. The
+2026-09-25 live probe found no issues and a labelled test notification was submitted. The Storage Box
+reported 22% used. Detailed Borg archive size and deduplication still require the active run to finish.
+
+```bash
+ansible-playbook ansible/site.yml --limit atlas --tags monitoring --check --diff
+sudo /usr/local/libexec/atlas-health-monitor --dry-run
+sudo journalctl -u atlas-health-monitor.service -n 100 --no-pager
+systemctl list-timers atlas-health-monitor.timer
+```
+
+`--dry-run` sends no alerts and does not change monitor state. A real check is
+`sudo systemctl start atlas-health-monitor.service`; do not start the backup services merely to test
+monitoring. For a labelled 45Drives Alerts delivery test, use
+`sudo /usr/local/libexec/atlas-health-monitor --test-notification`.
+
+### Atlas systemd timers
+
+All nine managed timers below are enabled. Times are local to Atlas (`Europe/Rome`); Borg and monitoring
+add the indicated randomized delay. Every timer has `Persistent=true`, so a missed calendar run is
+scheduled after the timer becomes active again.
+
+| Timer | Schedule (`OnCalendar`) | Action |
+| --- | --- | --- |
+| `atlas-zfs-snapshot-hourly.timer` | `*-*-* *:05:00` — every hour at :05 | Recursive hourly snapshot and retention |
+| `atlas-zfs-snapshot-daily.timer` | `*-*-* 00:15:00` — daily at 00:15 | Recursive daily snapshot and retention |
+| `atlas-zfs-snapshot-weekly.timer` | `Sun *-*-* 01:00:00` — Sunday at 01:00 | Recursive weekly snapshot and retention |
+| `atlas-zfs-snapshot-monthly.timer` | `*-*-01 02:00:00` — first day of the month at 02:00 | Recursive monthly snapshot and retention |
+| `zfs-scrub-monthly@zpool.timer` | `Sun *-*-01..07 03:00:00` — first Sunday at 03:00 | ZFS scrub |
+| `atlas-borg-backup.timer` | `*-*-* 04:30:00` — daily at 04:30, plus 0–30 min random delay | Encrypted offsite backup |
+| `atlas-borg-check.timer` | `*-*-15 06:00:00` — 15th of the month at 06:00, plus 0–30 min random delay | Borg repository check |
+| `atlas-usb-reminder.timer` | `Sat *-*-01..07 10:00:00 Europe/Rome` — first Saturday at 10:00 | 45Drives Alerts reminder only |
+| `atlas-health-monitor.timer` | `*:0/30` — every half-hour, plus 0–5 min random delay | Read-only health checks |
+
+`atlas-usb-backup.service` has **no timer**: the encrypted USB backup must be started manually.
+The vendor's `zfs-scrub-weekly@zpool.timer` is intentionally disabled in favor of the monthly scrub.
+The future Prometheus backup pull has no timer yet because that workflow is not implemented. While a
+Borg backup is still running, `systemctl list-timers` may show `-` for its next trigger; this does not
+mean the timer has been disabled. Inspect the current schedule on Atlas with
+`systemctl list-timers --all`.
 
 A temporary Nextcloud deployment on Atlas is also planned before Uranus: it requires separately
 declared persistent application, database, and cache storage, Vault-backed credentials, NPM-only
@@ -461,8 +527,8 @@ state outside `Archive`, then test permissions, SELinux, backups and recovery be
 The current Aegis iCloudPD service and Atlas Photobook NFS export remain configured until that
 separate migration is approved and validated; the eventual Atlas service is temporary until Uranus.
 
-Prometheus backup pulls, USB backup, monitoring, and disaster-recovery tests remain follow-up work. The
-prioritized operational backlog is kept in `AGENTS.md`.
+Prometheus backup pulls, Borg archive-size evaluation, and full disaster-recovery tests remain follow-up
+work. The prioritized operational backlog is kept in `AGENTS.md`.
 
 ## How layering works
 

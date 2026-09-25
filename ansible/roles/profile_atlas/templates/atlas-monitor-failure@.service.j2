@@ -1,0 +1,19 @@
+[Unit]
+Description=Submit a 45Drives Alert for failed Atlas job %I
+Requires=houston-dbus.service
+After=houston-dbus.service
+ConditionFileIsExecutable=/usr/local/libexec/atlas-health-monitor
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/atlas-health-monitor --job-failed %I
+User=root
+Group=root
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX
+RestrictRealtime=true
+LockPersonality=true

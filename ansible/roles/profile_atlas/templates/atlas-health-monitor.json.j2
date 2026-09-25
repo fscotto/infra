@@ -1,0 +1,20 @@
+{
+  "pool": {{ atlas_zfs_pool | to_json }},
+  "backup_dataset": {{ (atlas_zfs_pool ~ '/' ~ atlas_zfs_dataset_backup) | to_json }},
+  "notifier": {{ atlas_monitor_notifier | to_json }},
+  "smart_devices": {{ atlas_monitor_smart_devices | to_json }},
+  "timers": {{ atlas_monitor_timers | to_json }},
+  "failure_units": {{ atlas_monitor_failure_units | to_json }},
+  "remote_capacity": {{ atlas_monitor_remote_capacity | to_json }},
+  "pool_warning_percent": {{ atlas_monitor_pool_warning_percent | int }},
+  "pool_critical_percent": {{ atlas_monitor_pool_critical_percent | int }},
+  "root_warning_percent": {{ atlas_monitor_root_warning_percent | int }},
+  "root_critical_percent": {{ atlas_monitor_root_critical_percent | int }},
+  "snapshot_warning_percent": {{ atlas_monitor_snapshot_warning_percent | int }},
+  "snapshot_critical_percent": {{ atlas_monitor_snapshot_critical_percent | int }},
+  "snapshot_growth_warning_gib_day": {{ atlas_monitor_snapshot_growth_warning_gib_day | int }},
+  "backup_growth_warning_gib_day": {{ atlas_monitor_backup_growth_warning_gib_day | int }},
+  "cpu_warning_c": {{ atlas_monitor_cpu_warning_c | int }},
+  "cpu_critical_c": {{ atlas_monitor_cpu_critical_c | int }},
+  "borg_max_runtime_days": {{ atlas_monitor_borg_max_runtime_days | int }}
+}

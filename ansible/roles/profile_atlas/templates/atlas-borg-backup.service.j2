@@ -14,6 +14,7 @@ ConditionPathExists={{ atlas_borg_known_hosts_path }}
 [Service]
 Type=oneshot
 ExecStart=/usr/local/sbin/atlas-borg-backup
+ExecStopPost=+/usr/local/sbin/atlas-borg-snapshot-cleanup
 User=root
 Group=root
 UMask=0077

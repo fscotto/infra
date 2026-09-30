@@ -87,7 +87,10 @@ exec 9>/run/lock/atlas-zfs-snapshot.lock
 zpool list -H -o name "$pool" >/dev/null
 rm -rf "$stage"
 mkdir -p "$stage"
-chown root:"$borg_group" /run/atlas-borg "$stage"
+# Keep systemd's root:root ownership of RuntimeDirectory: changing it makes
+# ExecStopPost re-chown its contents, which SELinux denies for the marker.
+setfacl -m "u:${borg_user}:rx" /run/atlas-borg
+chown root:"$borg_group" "$stage"
 chmod 0750 /run/atlas-borg "$stage"
 
 flock 9

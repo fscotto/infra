@@ -1,12 +1,12 @@
 [Unit]
-Description=Submit a 45Drives Alert for failed Atlas job %I
+Description=Submit a 45Drives Alert for failed Atlas job %i
 Requires=houston-dbus.service
 After=houston-dbus.service
 ConditionFileIsExecutable=/usr/local/libexec/atlas-health-monitor
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/libexec/atlas-health-monitor --job-failed %I
+ExecStart=/usr/local/libexec/atlas-health-monitor --job-failed %i
 User=root
 Group=root
 UMask=0077

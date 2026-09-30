@@ -226,7 +226,7 @@ successfully. The first monthly scrub remains a runtime check.
   read-only ZFS snapshot test restored one file to `/var/tmp`, confirmed matching contents, ownership,
   mode, mtime and ACL, then removed its temporary copy and on-demand mount. This is a file-level smoke
   test, not full dataset recovery. An independent USB file restore passed on 2026-09-25 with matching
-  content and metadata; full disaster recovery remains a separate Priority 2 task.
+  content and metadata; the later scaled OS-rebuild rehearsal is documented under Priority 2.
 - [x] Add monitoring and alerting for pool health, scrub/resilver, SMART data, temperatures, free space,
   snapshot/local-backup growth, Hetzner Storage Box quota, and failed maintenance or backup timers.
   The half-hourly Atlas health monitor and systemd final-failure hooks are deployed. A live probe
@@ -237,8 +237,13 @@ successfully. The first monthly scrub remains a runtime check.
   on Atlas, but a new real failure notification has not been deliberately triggered.
 
 ### Priority 2 - NAS operability and recovery
-- [ ] Document and test disaster recovery: rebuild Atlas with Ansible, import the existing pool, restore
-  from snapshot/USB/Hetzner, preserve Vault and Borg recovery material offline, and define RPO/RTO.
+- [x] Document and test disaster recovery in `docs/atlas-recovery.md`: the operator confirmed Vault
+  and Borg recovery material is available offline; provisional targets are RPO 24h/RTO 72h. On
+  2026-09-30 an isolated small Rocky VM was rebuilt with the Atlas Ansible roles, imported its
+  preserved RAIDZ2 pool without force/rewind, and restored a file from the preserved snapshot;
+  the second Ansible run was idempotent. Earlier independent production ZFS, USB, and Borg file
+  restore tests remain separate evidence. A production-size full restore, unclean import, and
+  measured 24h/72h compliance are not claimed.
 - [ ] Define a controlled Rocky kernel/OpenZFS update and reboot procedure.
 - [ ] Add the Atlas-initiated least-privilege Prometheus backup pull: Prometheus exposes only prepared
   read-only dumps through a dedicated account and Atlas retains the private SSH key, pinned host key,

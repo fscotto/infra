@@ -244,7 +244,9 @@ successfully. The first monthly scrub remains a runtime check.
   the second Ansible run was idempotent. Earlier independent production ZFS, USB, and Borg file
   restore tests remain separate evidence. A production-size full restore, unclean import, and
   measured 24h/72h compliance are not claimed.
-- [ ] Define a controlled Rocky kernel/OpenZFS update and reboot procedure.
+- [x] Define a controlled Rocky kernel/OpenZFS update and reboot procedure in
+  `docs/atlas-updates.md`. The first real change-window execution is not yet
+  validated; the procedure never reboots automatically or upgrades pool features.
 - [ ] Add the Atlas-initiated least-privilege Prometheus backup pull: Prometheus exposes only prepared
   read-only dumps through a dedicated account and Atlas retains the private SSH key, pinned host key,
   atomic pull, verification, retention and systemd service/timer.

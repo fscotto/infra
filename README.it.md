@@ -337,8 +337,8 @@ Gli snapshot ZFS ricorsivi coprono l'intero pool: 24 orari al minuto 05, 30 gior
 8 settimanali la domenica alle 01:00 e 12 mensili il primo giorno alle 02:00. La retention elimina
 solo gli snapshot con prefisso gestito `atlas-auto` e non esegue rollback. Lo scrub OpenZFS mensile è
 previsto la prima domenica alle 03:00; il timer settimanale incompatibile è disabilitato. Il primo
-snapshot orario ricorsivo è riuscito; la prima pulizia pianificata e il primo scrub schedulato
-richiedono ancora una verifica a runtime.
+snapshot orario ricorsivo è riuscito e la pulizia pianificata della retention è stata osservata il
+2026-09-30. Il primo scrub mensile richiede ancora una verifica a runtime.
 
 ```bash
 ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
@@ -390,6 +390,13 @@ e pulizia di snapshot/mount temporanei. Il 2026-09-25 un test separato da snapsh
 copiato un file di `/zpool/archive` in `/var/tmp`, verificando contenuto, proprietario, modalità,
 mtime e ACL POSIX; copia e mount temporanei sono stati rimossi senza interrompere Borg. Non è un test
 di ripristino dell'intero dataset.
+
+L'archivio del pool popolato del 2026-09-29 ha richiesto 1 h 32 min per 2,18 TB originali / 2,04 TB
+compressi, con 13,49 GB di dimensione deduplicata. Retention e compattazione sono riuscite, ma un
+errore di permessi su `RuntimeDirectory` ha impedito la pulizia dello snapshot dopo il job. Dopo la
+correzione, l'archivio incrementale del 2026-09-30 è terminato in circa 22 secondi, ha rimosso lo
+snapshot residuo e quello corrente ed è terminato con stato 0. Il monitor ha rilevato il 37% della
+quota Storage Box utilizzata. Questi risultati non predicono durata o compressione dei prossimi run.
 
 Il backup USB offline è distribuito come **servizio solo manuale** (`atlas_manage_usb_backup: true`):
 Ansible non formatta, sblocca, monta né avvia automaticamente il disco. Il disco esistente è stato
@@ -459,9 +466,10 @@ baseline di circa 24 ore. Sono controllati anche attivazione e freschezza dei ti
 `OnFailure` segnalano errori di snapshot, scrub, Borg, USB, promemoria e monitoraggio. Il monitor non
 riavvia Borg; avvisa solo se un run supera 14 giorni. Soglie e percorsi stabili dei dischi sono nelle
 variabili host. Gli avvisi usano 45Drives Houston con deduplicazione; **la consegna email non è stata
-verificata**. Il controllo live del 2026-09-25 non ha trovato problemi; la notifica di prova è stata
-inviata e lo Storage Box risultava occupato al 22%. Dimensione dell'archivio Borg e deduplicazione
-dettagliata richiedono ancora la fine del backup in corso.
+verificata**. Il controllo live del 2026-09-25 non ha trovato problemi e ha inviato una notifica di
+prova. Il 2026-09-30 il monitor ha rilevato zero problemi e una quota Storage Box occupata al 37%.
+L'hook per i job falliti ora passa il nome letterale della unità systemd; l'espansione è stata
+verificata senza inviare un falso allarme.
 
 ```bash
 ansible-playbook ansible/site.yml --limit atlas --tags monitoring --check --diff
@@ -511,8 +519,8 @@ cutover. L'attuale iCloudPD su Aegis e l'export NFS Photobook restano configurat
 all'approvazione e alla verifica di questa migrazione separata. Anche il servizio Atlas sarà
 temporaneo in attesa di Uranus.
 
-Il pull dei backup di Prometheus, la valutazione delle dimensioni degli archivi Borg e i test completi
-di disaster recovery restano da fare. Il backlog prioritizzato è in `AGENTS.md`.
+Il pull dei backup di Prometheus e i test completi di disaster recovery restano da fare. Il backlog
+prioritizzato è in `AGENTS.md`.
 
 ---
 

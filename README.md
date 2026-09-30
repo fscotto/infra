@@ -325,8 +325,8 @@ snapshots at minute 05, 30 daily snapshots at 00:15, 8 weekly snapshots on Sunda
 monthly snapshots on the first day at 02:00. The retention helper prunes only snapshots carrying its
 managed `atlas-auto` prefix and never rolls back a dataset. The OpenZFS monthly scrub timer is scheduled
 for the first Sunday at 03:00; the conflicting weekly scrub timer is disabled explicitly. The first recursive
-hourly snapshot completed successfully on Atlas; retention pruning and the first scheduled scrub still await
-live runtime evidence. Validate this layer independently with:
+hourly snapshot completed successfully on Atlas, and scheduled retention pruning was observed on
+2026-09-30. The first monthly scrub still awaits runtime evidence. Validate this layer independently with:
 
 ```bash
 ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
@@ -381,6 +381,12 @@ ansible-playbook ansible/site.yml --limit atlas --tags packages,borg --check --d
 Atlas runtime activation is complete: the initial backup and repository check succeeded, a full restore
 to a temporary directory was validated against the live `Archive` tree, the recovery-key export was copied
 to offline storage, and the temporary snapshot and bind mounts were cleaned up.
+The populated-pool archive on 2026-09-29 took 1 h 32 min for 2.18 TB original / 2.04 TB compressed
+data, with a 13.49 GB deduplicated archive size. Retention and compaction succeeded, but a
+`RuntimeDirectory` permission error prevented post-exit snapshot cleanup. After correction, the
+2026-09-30 incremental archive completed in about 22 seconds, removed the stale and current temporary
+snapshots, and ended with service status 0. The monitor reported 37% Storage Box quota used. These
+observations do not predict the duration or compression ratio of future runs.
 On 2026-09-25 a separate ZFS restore smoke test copied a small file from an automatic daily
 `zpool/archive` snapshot to `/var/tmp`, then confirmed matching contents, ownership, mode, mtime and
 POSIX ACL. The temporary copy and on-demand snapshot mount were removed; Borg kept running. This
@@ -472,12 +478,13 @@ Storage Box quota via `df -m` over the dedicated `borg` account's pinned-key SSH
 query never opens the Borg repository or its lock. Growth alerts compare against a roughly 24-hour
 baseline and therefore begin only after enough samples exist. The monitor also checks
 maintenance/backup timer activation and freshness; systemd `OnFailure` hooks report snapshot,
-scrub, Borg, USB, reminder, and monitoring services when they enter the failed state. The ongoing
-initial Borg run is never restarted by the monitor; only a run exceeding 14 days raises a warning.
+scrub, Borg, USB, reminder, and monitoring services when they enter the failed state. An ongoing
+Borg run is never restarted by the monitor; only a run exceeding 14 days raises a warning.
 Thresholds and stable disk paths are declared in Atlas host variables. Alerts use the existing 45Drives
 Houston notifier and repeated issues are deduplicated; **email delivery is not verified**. The
-2026-09-25 live probe found no issues and a labelled test notification was submitted. The Storage Box
-reported 22% used. Detailed Borg archive size and deduplication still require the active run to finish.
+2026-09-25 live probe found no issues and a labelled test notification was submitted. On 2026-09-30
+the monitor reported zero issues and 37% Storage Box quota used. The failed-job hook now passes the
+literal systemd unit name; its expansion was verified without sending a false failure notification.
 
 ```bash
 ansible-playbook ansible/site.yml --limit atlas --tags monitoring --check --diff
@@ -527,8 +534,8 @@ state outside `Archive`, then test permissions, SELinux, backups and recovery be
 The current Aegis iCloudPD service and Atlas Photobook NFS export remain configured until that
 separate migration is approved and validated; the eventual Atlas service is temporary until Uranus.
 
-Prometheus backup pulls, Borg archive-size evaluation, and full disaster-recovery tests remain follow-up
-work. The prioritized operational backlog is kept in `AGENTS.md`.
+Prometheus backup pulls and full disaster-recovery tests remain follow-up work. The prioritized
+operational backlog is kept in `AGENTS.md`.
 
 ## How layering works
 

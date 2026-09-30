@@ -180,27 +180,32 @@ Prometheus--Aegis WireGuard gateway are operational. The gateway handshake, forw
 and TCP reachability to Atlas were verified. Temporary Navidrome and Syncthing are available through their
 manual NPM Proxy Hosts; Syncthing uses `/data/Org` backed by the SMB-shared Archive dataset. Aegis has also
 validated NFSv4.2 read, write, delete, and `all_squash` mapping to UID/GID `1100` end-to-end. The ZFS
-snapshot timers are active and the first recursive hourly snapshot completed successfully; the first
-scheduled retention prune and monthly scrub remain runtime checks.
+snapshot timers are active; a recursive hourly snapshot and scheduled retention prune completed
+successfully. The first monthly scrub remains a runtime check.
 
 ### Priority 1 - Data protection
 - [x] Deploy Ansible-managed recursive ZFS snapshots with 24 hourly, 30 daily, 8 weekly, and 12 monthly
   generations, plus a monthly scrub on the first Sunday at 03:00. The timers and first hourly snapshot were
-  verified on Atlas. Still observe the first scheduled retention prune and scrub; Cockpit Scheduler is for
-  visibility or manual operations only, and snapshot rollback is never automated.
+  verified on Atlas. Cockpit Scheduler is for visibility or manual operations only, and snapshot
+  rollback is never automated.
+- [ ] Verify the first monthly ZFS scrub from its actual service result. Scheduled retention pruning
+  was observed on 2026-09-30; timer activation alone does not establish a successful scrub.
 - [x] Activate and validate the encrypted offsite Borg backup to the Hetzner Storage Box. Atlas uses the
   dedicated SSH identity, pinned ED25519 host key, Vault-backed `repokey` encryption, and a locked
   non-login `borg` account with no sudo or supplementary groups. The initial snapshot-consistent backup,
   Borg repository check, and temporary-directory restore completed successfully; the restored `Archive`
   tree matched the live data, and temporary snapshots and mounts were removed. The exported recovery key
   was copied offline. Daily backup retries and logging, 30 daily, 8 weekly and 12 monthly archives,
-  compaction, and monthly repository checks are enabled. Future runs report a ZFS-based estimated
-  percentage, and a post-exit helper handles host-namespace temporary snapshot cleanup. The active
-  run predates the new progress logging and still requires an observed final cleanup result.
+  compaction, and monthly repository checks are enabled. Runs report a ZFS-based estimated percentage.
+  On 2026-09-30 a successful incremental run also removed the stale 2026-09-29 snapshot and its own
+  temporary snapshot after exit; the earlier `RuntimeDirectory` cleanup failure is resolved.
 - [x] Populate `/zpool/archive` with the currently available data so offsite and offline backup tests run
   against a representative load.
-- [ ] Run and evaluate Borg against the populated pool: duration, repository capacity, deduplication, and
-  a subsequent incremental archive must be observed before considering the offsite path fully validated.
+- [x] Evaluate Borg against the populated pool. The 2026-09-29 archive took 1 h 32 min for 2.18 TB
+  original / 2.04 TB compressed data, with 13.49 GB deduplicated size; retention and compaction
+  succeeded. On 2026-09-30 a subsequent incremental archive completed in about 22 seconds with
+  successful cleanup. The monitor reported 37% Storage Box quota used. These are observed runs, not
+  a guarantee of future duration or compression ratio.
 - [x] Add the UUID-bound offline USB backup with versioned rsync, locking, capacity checks, verification,
   safe unmounting and a tested restore procedure; never trigger it for an arbitrary USB disk. The
   LUKS/ext4 identities were read-only verified; the manual service and 45Drives Alerts reminder timer were
@@ -228,7 +233,8 @@ scheduled retention prune and monthly scrub remain runtime checks.
   found no issues; the service and timer succeeded, and a labelled 45Drives Alerts test notification
   was submitted. Alerts are deduplicated; email delivery is not claimed. The Storage Box quota probe
   runs `df -m` over the dedicated pinned-key SSH identity and does not open the Borg repository.
-  Detailed archive size and deduplication remain part of the pending Borg evaluation.
+  The failed-job hook was corrected to pass the literal systemd unit name; its expansion was verified
+  on Atlas, but a new real failure notification has not been deliberately triggered.
 
 ### Priority 2 - NAS operability and recovery
 - [ ] Document and test disaster recovery: rebuild Atlas with Ansible, import the existing pool, restore

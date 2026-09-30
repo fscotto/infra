@@ -80,5 +80,30 @@ server_sshd_settings:
 
 server_sshd_allow_users:
   - "{{ server_username }}"
+server_backup_export_enabled: false
+server_backup_username: prometheus-backup
+server_backup_public_key_name: atlas-pull
+server_backup_export_root: /var/lib/prometheus-backup-export
+server_backup_rrsync_path: /usr/share/doc/rsync/support/rrsync
+server_backup_export_calendar: "*-*-* 02:00:00 Europe/Rome"
+server_backup_export_start_timer: false
+server_backup_export_source_keep: 3
+server_backup_export_paths:
+  - opt/npm/data
+  - opt/npm/letsencrypt
+  - opt/gitea/data
+  - home/git/.ssh
+  - opt/docker/server/docker-compose.yml
+  - etc/systemd/system/podman-compose-server.service
+  - etc/ssh/sshd_config
+  - etc/ssh/sshd_config.d
+  - etc/firewalld
+  - etc/wireguard/wg0.conf
+server_backup_export_excludes:
+  - opt/npm/data/logs
+  - opt/gitea/data/gitea/log
+  - opt/gitea/data/gitea/tmp
+  - opt/gitea/data/gitea/sessions
+  - opt/gitea/data/gitea/indexers
 server_ssh_authorized_keys: []
 server_ssh_authorized_key_directory: "{{ server_user_home }}/.ssh/authorized_keys.d"

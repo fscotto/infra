@@ -1,0 +1,103 @@
+---
+- name: Validate Prometheus backup export identity inputs
+  tags: [services, backup, prometheus_backup]
+  ansible.builtin.assert:
+    that:
+      - inventory_hostname == 'prometheus'
+      - server_backup_username is match('^[a-z_][a-z0-9_-]*$')
+      - server_backup_username not in ['root', server_username]
+      - server_backup_export_root.startswith('/var/lib/')
+      - server_backup_public_key_name is match('^[a-z0-9_-]+$')
+      - hostvars['atlas'].atlas_manage_prometheus_backup_pull | default(false) | bool
+    fail_msg: Enable Atlas and Prometheus backup roles together with dedicated identity settings.
+  when: server_backup_export_enabled | bool
+
+- name: Create dedicated Prometheus backup export group
+  tags: [services, backup, prometheus_backup]
+  ansible.builtin.group:
+    name: "{{ server_backup_username }}"
+    system: true
+    state: present
+  when: server_backup_export_enabled | bool
+
+- name: Create locked Prometheus backup export account
+  tags: [services, backup, prometheus_backup]
+  ansible.builtin.user:
+    name: "{{ server_backup_username }}"
+    group: "{{ server_backup_username }}"
+    groups: []
+    append: false
+    comment: Read-only prepared backup export for Atlas
+    home: "{{ server_backup_export_root }}"
+    create_home: false
+    shell: /bin/bash
+    password_lock: true
+    system: true
+    state: present
+  when: server_backup_export_enabled | bool
+
+- name: Require restricted rrsync helper on Prometheus
+  tags: [services, backup, prometheus_backup]
+  ansible.builtin.stat:
+    path: "{{ server_backup_rrsync_path }}"
+  register: server_backup_rrsync_file
+  when: server_backup_export_enabled | bool
+
+- name: Validate restricted rrsync helper
+  tags: [services, backup, prometheus_backup]
+  ansible.builtin.assert:
+    that:
+      - server_backup_rrsync_file.stat.exists
+      - server_backup_rrsync_file.stat.isreg
+      - server_backup_rrsync_file.stat.pw_name == 'root'
+    fail_msg: Rocky rsync must provide the root-owned rrsync support script.
+  when: server_backup_export_enabled | bool
+
+- name: Create prepared backup export root
+  tags: [services, backup, prometheus_backup]
+  ansible.builtin.file:
+    path: "{{ server_backup_export_root }}"
+    state: directory
+    owner: root
+    group: "{{ server_backup_username }}"
+    mode: "0750"
+  when: server_backup_export_enabled | bool
+
+- name: Create restricted Prometheus backup SSH directories
+  tags: [services, backup, prometheus_backup]
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: "{{ server_backup_username }}"
+    mode: "0750"
+  loop:
+    - "{{ server_backup_export_root }}/.ssh"
+    - "{{ server_backup_export_root }}/.ssh/authorized_keys.d"
+  when: server_backup_export_enabled | bool
+
+- name: Read Atlas public key for Prometheus backup pull
+  tags: [services, backup, prometheus_backup]
+  ansible.builtin.slurp:
+    src: "{{ hostvars['atlas'].atlas_prometheus_pull_private_key_path | default('/etc/atlas-prometheus-pull/id_ed25519') }}.pub"
+  delegate_to: atlas
+  become: true
+  register: server_backup_atlas_public_key
+  when:
+    - server_backup_export_enabled | bool
+    - not ansible_check_mode
+
+- name: Authorize only restricted read-only backup access from Atlas
+  tags: [services, backup, prometheus_backup]
+  ansible.builtin.copy:
+    content: >-
+      {{ 'command="/usr/bin/python3 ' ~ server_backup_rrsync_path ~ ' -ro '
+         ~ server_backup_export_root ~ '/versions",restrict '
+         ~ (server_backup_atlas_public_key.content | b64decode | trim) ~ '\n' }}
+    dest: "{{ server_backup_export_root }}/.ssh/authorized_keys.d/{{ server_backup_public_key_name }}"
+    owner: root
+    group: "{{ server_backup_username }}"
+    mode: "0640"
+  when:
+    - server_backup_export_enabled | bool
+    - not ansible_check_mode

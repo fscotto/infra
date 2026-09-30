@@ -485,7 +485,7 @@ etichettata di 45Drives Alerts usare
 
 ### Timer systemd di Atlas
 
-Tutti i nove timer gestiti sono abilitati. Gli orari sono locali ad Atlas (`Europe/Rome`); Borg e
+Tutti i dieci timer gestiti sono abilitati. Gli orari sono locali ad Atlas (`Europe/Rome`); Borg e
 monitoraggio aggiungono il ritardo casuale indicato. Tutti hanno `Persistent=true`: un evento perso
 viene recuperato quando il timer torna attivo.
 
@@ -500,10 +500,12 @@ viene recuperato quando il timer torna attivo.
 | `atlas-borg-check.timer` | `*-*-15 06:00:00` — giorno 15 alle 06:00, più 0–30 min casuali | Controllo repository Borg |
 | `atlas-usb-reminder.timer` | `Sat *-*-01..07 10:00:00 Europe/Rome` — primo sabato alle 10:00 | Solo promemoria 45Drives Alerts |
 | `atlas-health-monitor.timer` | `*:0/30` — ogni mezz'ora, più 0–5 min casuali | Controlli di salute in sola lettura |
+| `atlas-prometheus-pull.timer` | `*-*-* 03:00:00 Europe/Rome` — ogni giorno alle 03:00 | Pull e verifica del backup preparato su Prometheus |
 
 `atlas-usb-backup.service` **non ha timer** e va avviato manualmente. Il timer del fornitore
-`zfs-scrub-weekly@zpool.timer` è disabilitato a favore dello scrub mensile. Il futuro pull del backup
-Prometheus non ha ancora un timer, perché non è implementato. Durante un backup Borg attivo,
+`zfs-scrub-weekly@zpool.timer` è disabilitato a favore dello scrub mensile. Il timer di preparazione
+su Prometheus è attivo alle 02:00 Europe/Rome; export, pull e ripristino temporaneo manuali sono
+riusciti il 2026-09-30, ma il primo ciclo pianificato va ancora verificato. Durante un backup Borg attivo,
 `systemctl list-timers` può mostrare `-` per il prossimo evento senza che il timer sia disabilitato.
 Per vedere la pianificazione corrente: `systemctl list-timers --all` su Atlas.
 
@@ -519,7 +521,10 @@ cutover. L'attuale iCloudPD su Aegis e l'export NFS Photobook restano configurat
 all'approvazione e alla verifica di questa migrazione separata. Anche il servizio Atlas sarà
 temporaneo in attesa di Uranus.
 
-Il pull dei backup di Prometheus e i test completi di disaster recovery restano da fare. Il backlog
+Il primo ciclo pianificato del backup di Prometheus e una prova di disaster recovery a dimensione reale
+restano da verificare. Il 2026-09-30 una VM Rocky isolata ha superato ricostruzione OS con Ansible,
+import del pool RAIDZ2 fittizio e ripristino da snapshot; RPO 24 ore/RTO 72 ore restano obiettivi
+provvisori, non tempi misurati. Dettagli e limiti sono in `docs/atlas-recovery.md`. Il backlog
 prioritizzato è in `AGENTS.md`.
 
 ---

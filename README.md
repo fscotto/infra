@@ -500,7 +500,7 @@ monitoring. For a labelled 45Drives Alerts delivery test, use
 
 ### Atlas systemd timers
 
-All nine managed timers below are enabled. Times are local to Atlas (`Europe/Rome`); Borg and monitoring
+All ten managed timers below are enabled. Times are local to Atlas (`Europe/Rome`); Borg and monitoring
 add the indicated randomized delay. Every timer has `Persistent=true`, so a missed calendar run is
 scheduled after the timer becomes active again.
 
@@ -515,10 +515,12 @@ scheduled after the timer becomes active again.
 | `atlas-borg-check.timer` | `*-*-15 06:00:00` — 15th of the month at 06:00, plus 0–30 min random delay | Borg repository check |
 | `atlas-usb-reminder.timer` | `Sat *-*-01..07 10:00:00 Europe/Rome` — first Saturday at 10:00 | 45Drives Alerts reminder only |
 | `atlas-health-monitor.timer` | `*:0/30` — every half-hour, plus 0–5 min random delay | Read-only health checks |
+| `atlas-prometheus-pull.timer` | `*-*-* 03:00:00 Europe/Rome` — daily at 03:00 | Pull and verify the prepared Prometheus backup |
 
 `atlas-usb-backup.service` has **no timer**: the encrypted USB backup must be started manually.
 The vendor's `zfs-scrub-weekly@zpool.timer` is intentionally disabled in favor of the monthly scrub.
-The future Prometheus backup pull has no timer yet because that workflow is not implemented. While a
+The Prometheus export timer runs at 02:00 Europe/Rome; its first scheduled run and the Atlas pull
+remain to be observed. A manual export, pull, and temporary restore passed. While a
 Borg backup is still running, `systemctl list-timers` may show `-` for its next trigger; this does not
 mean the timer has been disabled. Inspect the current schedule on Atlas with
 `systemctl list-timers --all`.
@@ -534,8 +536,20 @@ state outside `Archive`, then test permissions, SELinux, backups and recovery be
 The current Aegis iCloudPD service and Atlas Photobook NFS export remain configured until that
 separate migration is approved and validated; the eventual Atlas service is temporary until Uranus.
 
-Prometheus backup pulls and full disaster-recovery tests remain follow-up work. The prioritized
+The first scheduled Prometheus backup runs and production-size disaster-recovery tests remain follow-up work. The prioritized
 operational backlog is kept in `AGENTS.md`.
+
+Priority 2 procedures and decisions are recorded in
+[`docs/atlas-recovery.md`](docs/atlas-recovery.md),
+[`docs/atlas-updates.md`](docs/atlas-updates.md), and
+[`docs/atlas-sharing-decision.md`](docs/atlas-sharing-decision.md).
+The provisional Atlas recovery objectives are RPO 24 hours and RTO 72 hours;
+an isolated small-VM OS rebuild, pool import, Ansible reapplication, and
+snapshot restore passed, but full-size recovery time is unmeasured. `Archive` (SMB) and
+`photobook` (NFS) remain deliberately separate.
+The Prometheus pull architecture and manual export/pull/restore evidence are in
+[`docs/prometheus-backup.md`](docs/prometheus-backup.md). Both daily timers are
+enabled; their first scheduled runs remain to be verified.
 
 ## How layering works
 

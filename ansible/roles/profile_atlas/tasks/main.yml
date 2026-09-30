@@ -23,6 +23,12 @@
 - name: Import Atlas offline USB backup tasks
   ansible.builtin.import_tasks: usb_backup.yml
 
+- name: Import Atlas Prometheus backup pull identity tasks
+  ansible.builtin.import_tasks: prometheus_pull_identity.yml
+
+- name: Import Atlas Prometheus backup pull job tasks
+  ansible.builtin.import_tasks: prometheus_pull_job.yml
+
 - name: Import Atlas health monitoring tasks
   ansible.builtin.import_tasks: monitoring.yml
 

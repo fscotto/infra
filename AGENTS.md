@@ -247,9 +247,13 @@ successfully. The first monthly scrub remains a runtime check.
 - [x] Define a controlled Rocky kernel/OpenZFS update and reboot procedure in
   `docs/atlas-updates.md`. The first real change-window execution is not yet
   validated; the procedure never reboots automatically or upgrades pool features.
-- [ ] Add the Atlas-initiated least-privilege Prometheus backup pull: Prometheus exposes only prepared
+- [x] Add the Atlas-initiated least-privilege Prometheus backup pull: Prometheus exposes only prepared
   read-only dumps through a dedicated account and Atlas retains the private SSH key, pinned host key,
-  atomic pull, verification, retention and systemd service/timer.
+  atomic pull, verification, retention and systemd service/timer. The dedicated key/account and unit
+  files are deployed; live read-only SSH, shell denial, and write denial were verified. On 2026-09-30
+  a manual export, Atlas pull, checksum verification, and temporary restore passed; both SQLite
+  databases passed integrity checks and a restored Git repository passed `git fsck`. Both daily
+  timers are enabled for 02:00/03:00 Europe/Rome; their first scheduled results remain unverified.
 - [x] Decide whether a common SMB/NFS namespace is required: no. `Archive` (SMB) and `photobook` (NFS)
   remain intentionally distinct; `docs/atlas-sharing-decision.md` records the decision. No ACL or export
   change is authorized by this decision.

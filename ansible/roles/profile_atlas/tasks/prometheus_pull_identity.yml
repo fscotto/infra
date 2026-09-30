@@ -1,0 +1,66 @@
+---
+- name: Validate Atlas Prometheus pull identity inputs
+  tags: [atlas, backup, prometheus_backup, prometheus_backup_key]
+  ansible.builtin.assert:
+    that:
+      - atlas_prometheus_pull_ssh_dir.startswith('/etc/')
+      - atlas_prometheus_pull_private_key_path.startswith(atlas_prometheus_pull_ssh_dir ~ '/')
+      - atlas_prometheus_pull_known_hosts_path.startswith(atlas_prometheus_pull_ssh_dir ~ '/')
+      - atlas_prometheus_ssh_host_key.startswith(
+          (hostvars['prometheus'].ansible_host | string) ~ ' ssh-ed25519 '
+        )
+    fail_msg: Pin the verified Prometheus ED25519 SSH host key before enabling the pull.
+  when: atlas_manage_prometheus_backup_pull | bool
+
+- name: Create private Atlas Prometheus pull SSH directory
+  tags: [atlas, backup, prometheus_backup, prometheus_backup_key]
+  ansible.builtin.file:
+    path: "{{ atlas_prometheus_pull_ssh_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: atlas_manage_prometheus_backup_pull | bool
+
+- name: Generate Atlas-only Prometheus pull SSH identity
+  tags: [atlas, backup, prometheus_backup, prometheus_backup_key]
+  ansible.builtin.command:
+    argv:
+      - ssh-keygen
+      - -q
+      - -t
+      - ed25519
+      - -N
+      - ""
+      - -C
+      - atlas-prometheus-pull@atlas
+      - -f
+      - "{{ atlas_prometheus_pull_private_key_path }}"
+    creates: "{{ atlas_prometheus_pull_private_key_path }}"
+  when: atlas_manage_prometheus_backup_pull | bool
+
+- name: Protect Atlas-only Prometheus pull SSH identity
+  tags: [atlas, backup, prometheus_backup, prometheus_backup_key]
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ atlas_prometheus_pull_private_key_path }}", mode: "0600" }
+    - { path: "{{ atlas_prometheus_pull_private_key_path }}.pub", mode: "0644" }
+  loop_control:
+    label: "{{ item.path }}"
+  when:
+    - atlas_manage_prometheus_backup_pull | bool
+    - not ansible_check_mode
+
+- name: Pin Prometheus SSH host key on Atlas
+  tags: [atlas, backup, prometheus_backup, prometheus_backup_key]
+  ansible.builtin.copy:
+    content: "{{ atlas_prometheus_ssh_host_key }}\n"
+    dest: "{{ atlas_prometheus_pull_known_hosts_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+  when: atlas_manage_prometheus_backup_pull | bool

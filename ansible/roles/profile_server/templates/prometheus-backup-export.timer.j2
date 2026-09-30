@@ -1,0 +1,10 @@
+[Unit]
+Description=Prepare daily Prometheus application backup for Atlas
+
+[Timer]
+OnCalendar={{ server_backup_export_calendar }}
+Persistent=false
+Unit=prometheus-backup-export.service
+
+[Install]
+WantedBy=timers.target

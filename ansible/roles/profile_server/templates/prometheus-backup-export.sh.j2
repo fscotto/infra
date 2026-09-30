@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+umask 077
+
+export_root={{ server_backup_export_root | quote }}
+versions="$export_root/versions"
+stack_unit=podman-compose-server.service
+stamp=$(date -u +%Y%m%dT%H%M%SZ)
+stage=''
+stack_stopped=false
+
+exec 9>/run/lock/prometheus-backup-export.lock
+flock -n 9 || { echo 'A backup export is already running' >&2; exit 1; }
+
+cleanup() {
+  local rc=$?
+  trap - EXIT
+  if "$stack_stopped"; then
+    if systemctl is-active --quiet "$stack_unit"; then
+      systemctl restart "$stack_unit" || rc=1
+    else
+      systemctl start "$stack_unit" || rc=1
+    fi
+  fi
+  if (( rc != 0 )) && [[ -n "$stage" && -d "$stage" ]]; then
+    rm -rf -- "$stage"
+  fi
+  exit "$rc"
+}
+trap cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+systemctl is-active --quiet "$stack_unit" || {
+  echo 'The managed Compose stack must be active before preparing a backup' >&2
+  exit 1
+}
+
+paths=(
+{% for path in server_backup_export_paths %}
+  {{ path | quote }}
+{% endfor %}
+)
+excludes=(
+{% for path in server_backup_export_excludes %}
+  --exclude={{ path | quote }}
+{% endfor %}
+)
+for path in "${paths[@]}"; do
+  [[ -e "/$path" ]] || { echo "Required backup path missing: /$path" >&2; exit 1; }
+done
+[[ ! -e "$versions/$stamp" ]] || { echo "Export version already exists: $stamp" >&2; exit 1; }
+stage=$(mktemp -d "$export_root/.staging.XXXXXXXX")
+
+# SQLite databases and their accompanying files are copied while both
+# managed containers are stopped. The EXIT trap restarts the stack on error.
+stack_stopped=true
+systemctl stop "$stack_unit"
+tar --acls --xattrs --selinux "${excludes[@]}" -C / -cf "$stage/payload.tar" "${paths[@]}"
+systemctl start "$stack_unit"
+for container in nginx-proxy-manager gitea; do
+  running=false
+  for _ in {1..30}; do
+    if [[ $(podman inspect --format '{{ '{{.State.Running}}' }}' "$container" 2>/dev/null) == true ]]; then
+      running=true
+      break
+    fi
+    sleep 2
+  done
+  "$running" || { echo "Container did not restart: $container" >&2; exit 1; }
+done
+stack_stopped=false
+
+tar -tf "$stage/payload.tar" >/dev/null
+(cd "$stage" && sha256sum payload.tar >payload.sha256)
+printf '{"schema":1,"host":"prometheus","created_utc":"%s"}\n' "$stamp" >"$stage/metadata.json"
+chown root:{{ server_backup_username }} "$stage" "$stage/payload.tar" "$stage/payload.sha256" "$stage/metadata.json"
+chmod 0750 "$stage"
+chmod 0640 "$stage/payload.tar" "$stage/payload.sha256" "$stage/metadata.json"
+mv -- "$stage" "$versions/$stamp"
+stage=''
+ln -s "$stamp" "$versions/.current.new"
+mv -Tf -- "$versions/.current.new" "$versions/current"
+
+# Keep a small source-side safety window; Atlas owns long-term retention.
+mapfile -t old_versions < <(find "$versions" -mindepth 1 -maxdepth 1 -type d \
+  -printf '%f\n' | grep -E '^[0-9]{8}T[0-9]{6}Z$' | sort -r | tail -n +{{ server_backup_export_source_keep + 1 }})
+for old in "${old_versions[@]}"; do
+  rm -rf -- "${versions:?}/$old"
+done
+echo "Prepared Prometheus backup export $stamp"

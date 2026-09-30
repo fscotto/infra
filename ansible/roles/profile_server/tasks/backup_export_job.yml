@@ -1,0 +1,90 @@
+---
+- name: Validate Prometheus backup export job inputs
+  tags: [services, backup, prometheus_backup]
+  ansible.builtin.assert:
+    that:
+      - server_backup_export_source_keep | int >= 2
+      - server_backup_export_paths | length > 0
+      - server_backup_export_paths | unique | length == server_backup_export_paths | length
+      - >-
+        server_backup_export_paths
+        | select('match', '^[a-zA-Z0-9][a-zA-Z0-9._/-]*$') | list | length
+        == server_backup_export_paths | length
+      - >-
+        server_backup_export_paths
+        | reject('search', '(^|/)\.\.(/|$)') | list | length
+        == server_backup_export_paths | length
+      - >-
+        server_backup_export_excludes
+        | select('match', '^[a-zA-Z0-9][a-zA-Z0-9._/-]*$') | list | length
+        == server_backup_export_excludes | length
+      - >-
+        server_backup_export_excludes
+        | reject('search', '(^|/)\.\.(/|$)') | list | length
+        == server_backup_export_excludes | length
+    fail_msg: Define safe relative paths and at least two prepared export versions.
+  when: server_backup_export_enabled | bool
+
+- name: Validate Prometheus backup export calendar
+  tags: [services, backup, prometheus_backup]
+  ansible.builtin.command:
+    argv: [systemd-analyze, calendar, "{{ server_backup_export_calendar }}"]
+  changed_when: false
+  check_mode: false
+  when: server_backup_export_enabled | bool
+
+- name: Ensure prepared Prometheus backup versions directory exists
+  tags: [services, backup, prometheus_backup]
+  ansible.builtin.file:
+    path: "{{ server_backup_export_root }}/versions"
+    state: directory
+    owner: root
+    group: "{{ server_backup_username }}"
+    mode: "0750"
+  when: server_backup_export_enabled | bool
+
+- name: Install Prometheus backup export helper
+  tags: [services, backup, prometheus_backup]
+  ansible.builtin.template:
+    src: prometheus-backup-export.sh.j2
+    dest: /usr/local/sbin/prometheus-backup-export
+    owner: root
+    group: root
+    mode: "0750"
+  when: server_backup_export_enabled | bool
+
+- name: Install Prometheus backup export systemd units
+  tags: [services, backup, prometheus_backup]
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - prometheus-backup-export.service
+    - prometheus-backup-export.timer
+  loop_control:
+    label: "{{ item }}"
+  register: server_backup_export_units
+  when: server_backup_export_enabled | bool
+
+- name: Reload systemd after Prometheus backup export unit changes
+  tags: [services, backup, prometheus_backup]
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when:
+    - server_backup_export_enabled | bool
+    - server_backup_export_units is changed
+    - not ansible_check_mode
+
+- name: Enable Prometheus backup export timer only after explicit activation
+  tags: [services, backup, prometheus_backup]
+  ansible.builtin.systemd:
+    name: prometheus-backup-export.timer
+    enabled: true
+    state: started
+  when:
+    - server_backup_export_enabled | bool
+    - server_backup_export_start_timer | bool
+    - not ansible_check_mode

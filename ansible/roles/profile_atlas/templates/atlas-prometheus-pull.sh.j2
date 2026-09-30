@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+umask 077
+
+backup_root={{ atlas_backup_prometheus_mountpoint | quote }}
+snapshots="$backup_root/snapshots"
+stage=''
+exec 9>/run/lock/atlas-prometheus-pull.lock
+flock -n 9 || { echo 'A Prometheus pull is already running' >&2; exit 1; }
+
+cleanup() {
+  local rc=$?
+  trap - EXIT
+  if (( rc != 0 )) && [[ -n "$stage" && -d "$stage" ]]; then
+    rm -rf -- "$stage"
+  fi
+  exit "$rc"
+}
+trap cleanup EXIT
+
+zpool list -H -o name {{ atlas_zfs_pool | quote }} >/dev/null
+findmnt -rn --mountpoint "$backup_root" >/dev/null
+stage=$(mktemp -d "$backup_root/.staging.XXXXXXXX")
+ssh_cmd='/usr/bin/ssh -F /dev/null -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={{ atlas_prometheus_pull_known_hosts_path }} -o IdentitiesOnly=yes -i {{ atlas_prometheus_pull_private_key_path }} -p {{ atlas_prometheus_pull_source_port }}'
+rsync -a --partial --delay-updates -e "$ssh_cmd" \
+  {{ (atlas_prometheus_pull_source_user ~ '@' ~ hostvars['prometheus'].ansible_host ~ ':current/') | quote }} \
+  "$stage/"
+
+test -s "$stage/payload.tar"
+test -s "$stage/payload.sha256"
+test -s "$stage/metadata.json"
+(cd "$stage" && sha256sum -c payload.sha256)
+tar -tf "$stage/payload.tar" >/dev/null
+stamp=$(python3 - "$stage/metadata.json" <<'PY'
+import json
+import datetime as dt
+import re
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as stream:
+    metadata = json.load(stream)
+stamp = metadata.get("created_utc", "")
+if metadata.get("schema") != 1 or metadata.get("host") != "prometheus":
+    raise SystemExit("Unexpected Prometheus backup metadata")
+if not re.fullmatch(r"[0-9]{8}T[0-9]{6}Z", stamp):
+    raise SystemExit("Invalid Prometheus backup timestamp")
+created = dt.datetime.strptime(stamp, "%Y%m%dT%H%M%SZ").replace(tzinfo=dt.timezone.utc)
+age = dt.datetime.now(dt.timezone.utc) - created
+if age.total_seconds() < -300 or age > dt.timedelta(hours={{ atlas_prometheus_pull_max_age_hours }}):
+    raise SystemExit("Prometheus backup is outside the configured freshness window")
+print(stamp)
+PY
+)
+if [[ -e "$snapshots/$stamp" ]]; then
+  cmp "$stage/payload.sha256" "$snapshots/$stamp/payload.sha256"
+  cmp "$stage/metadata.json" "$snapshots/$stamp/metadata.json"
+  (cd "$snapshots/$stamp" && sha256sum -c payload.sha256)
+  rm -rf -- "${stage:?}"
+  stage=''
+else
+  chown -R root:root "$stage"
+  chmod 0700 "$stage"
+  chmod 0600 "$stage/payload.tar" "$stage/payload.sha256" "$stage/metadata.json"
+  mv -- "$stage" "$snapshots/$stamp"
+  stage=''
+fi
+latest_link=$(readlink "$backup_root/latest" 2>/dev/null || true)
+latest_stamp=${latest_link##*/}
+if [[ -z "$latest_stamp" || "$stamp" > "$latest_stamp" ]]; then
+  ln -s "snapshots/$stamp" "$backup_root/.latest.new"
+  mv -Tf -- "$backup_root/.latest.new" "$backup_root/latest"
+fi
+python3 /usr/local/libexec/atlas-prometheus-prune "$snapshots" \
+  {{ atlas_prometheus_pull_keep_daily }} {{ atlas_prometheus_pull_keep_weekly }} {{ atlas_prometheus_pull_keep_monthly }}
+echo "Verified and published Prometheus backup $stamp"

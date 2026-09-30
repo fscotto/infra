@@ -1,0 +1,19 @@
+[Unit]
+Description=Pull a prepared read-only Prometheus backup to Atlas
+RequiresMountsFor={{ atlas_backup_prometheus_mountpoint }}
+Wants=network-online.target
+After=network-online.target zfs.target
+ConditionFileIsExecutable=/usr/local/sbin/atlas-prometheus-pull
+ConditionPathExists={{ atlas_prometheus_pull_private_key_path }}
+ConditionPathExists={{ atlas_prometheus_pull_known_hosts_path }}
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/atlas-prometheus-pull
+User=root
+Group=root
+UMask=0077
+TimeoutStartSec=infinity
+Nice=15
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

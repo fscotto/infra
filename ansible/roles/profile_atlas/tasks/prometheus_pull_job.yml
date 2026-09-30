@@ -1,0 +1,90 @@
+---
+- name: Validate Atlas Prometheus backup pull inputs
+  tags: [atlas, backup, prometheus_backup]
+  ansible.builtin.assert:
+    that:
+      - atlas_manage_storage | bool
+      - atlas_prometheus_pull_source_user is match('^[a-z_][a-z0-9_-]*$')
+      - atlas_prometheus_pull_source_port | int > 0
+      - atlas_prometheus_pull_source_port | int < 65536
+      - atlas_prometheus_pull_keep_daily | int > 0
+      - atlas_prometheus_pull_keep_weekly | int > 0
+      - atlas_prometheus_pull_keep_monthly | int > 0
+      - atlas_prometheus_pull_max_age_hours | int > 0
+      - atlas_backup_prometheus_mountpoint.startswith(atlas_mount_root ~ '/')
+    fail_msg: Define the Atlas backup destination, source account, and retention before enabling the pull.
+  when: atlas_manage_prometheus_backup_pull | bool
+
+- name: Validate Atlas Prometheus backup pull calendar
+  tags: [atlas, backup, prometheus_backup]
+  ansible.builtin.command:
+    argv: [systemd-analyze, calendar, "{{ atlas_prometheus_pull_calendar }}"]
+  changed_when: false
+  check_mode: false
+  when: atlas_manage_prometheus_backup_pull | bool
+
+- name: Create private Atlas Prometheus backup version directory
+  tags: [atlas, backup, prometheus_backup]
+  ansible.builtin.file:
+    path: "{{ atlas_backup_prometheus_mountpoint }}/snapshots"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: atlas_manage_prometheus_backup_pull | bool
+
+- name: Install Atlas Prometheus backup pull helper
+  tags: [atlas, backup, prometheus_backup]
+  ansible.builtin.template:
+    src: atlas-prometheus-pull.sh.j2
+    dest: /usr/local/sbin/atlas-prometheus-pull
+    owner: root
+    group: root
+    mode: "0750"
+  when: atlas_manage_prometheus_backup_pull | bool
+
+- name: Install Atlas Prometheus backup retention helper
+  tags: [atlas, backup, prometheus_backup]
+  ansible.builtin.copy:
+    src: atlas-prometheus-prune.py
+    dest: /usr/local/libexec/atlas-prometheus-prune
+    owner: root
+    group: root
+    mode: "0750"
+  when: atlas_manage_prometheus_backup_pull | bool
+
+- name: Install Atlas Prometheus backup pull systemd units
+  tags: [atlas, backup, prometheus_backup]
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - atlas-prometheus-pull.service
+    - atlas-prometheus-pull.timer
+  loop_control:
+    label: "{{ item }}"
+  register: atlas_prometheus_pull_units
+  when: atlas_manage_prometheus_backup_pull | bool
+
+- name: Reload systemd after Atlas Prometheus pull unit changes
+  tags: [atlas, backup, prometheus_backup]
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when:
+    - atlas_manage_prometheus_backup_pull | bool
+    - atlas_prometheus_pull_units is changed
+    - not ansible_check_mode
+
+- name: Enable Atlas Prometheus pull timer only after explicit activation
+  tags: [atlas, backup, prometheus_backup]
+  ansible.builtin.systemd:
+    name: atlas-prometheus-pull.timer
+    enabled: true
+    state: started
+  when:
+    - atlas_manage_prometheus_backup_pull | bool
+    - atlas_prometheus_pull_start_timer | bool
+    - not ansible_check_mode

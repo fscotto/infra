@@ -226,7 +226,7 @@ successfully. The first monthly scrub remains a runtime check.
   read-only ZFS snapshot test restored one file to `/var/tmp`, confirmed matching contents, ownership,
   mode, mtime and ACL, then removed its temporary copy and on-demand mount. This is a file-level smoke
   test, not full dataset recovery. An independent USB file restore passed on 2026-09-25 with matching
-  content and metadata; full disaster recovery remains a separate Priority 2 task.
+  content and metadata; the later scaled OS-rebuild rehearsal is documented under Priority 2.
 - [x] Add monitoring and alerting for pool health, scrub/resilver, SMART data, temperatures, free space,
   snapshot/local-backup growth, Hetzner Storage Box quota, and failed maintenance or backup timers.
   The half-hourly Atlas health monitor and systemd final-failure hooks are deployed. A live probe
@@ -237,15 +237,26 @@ successfully. The first monthly scrub remains a runtime check.
   on Atlas, but a new real failure notification has not been deliberately triggered.
 
 ### Priority 2 - NAS operability and recovery
-- [ ] Document and test disaster recovery: rebuild Atlas with Ansible, import the existing pool, restore
-  from snapshot/USB/Hetzner, preserve Vault and Borg recovery material offline, and define RPO/RTO.
-- [ ] Define a controlled Rocky kernel/OpenZFS update and reboot procedure.
-- [ ] Add the Atlas-initiated least-privilege Prometheus backup pull: Prometheus exposes only prepared
+- [x] Document and test disaster recovery in `docs/atlas-recovery.md`: the operator confirmed Vault
+  and Borg recovery material is available offline; provisional targets are RPO 24h/RTO 72h. On
+  2026-09-30 an isolated small Rocky VM was rebuilt with the Atlas Ansible roles, imported its
+  preserved RAIDZ2 pool without force/rewind, and restored a file from the preserved snapshot;
+  the second Ansible run was idempotent. Earlier independent production ZFS, USB, and Borg file
+  restore tests remain separate evidence. A production-size full restore, unclean import, and
+  measured 24h/72h compliance are not claimed.
+- [x] Define a controlled Rocky kernel/OpenZFS update and reboot procedure in
+  `docs/atlas-updates.md`. The first real change-window execution is not yet
+  validated; the procedure never reboots automatically or upgrades pool features.
+- [x] Add the Atlas-initiated least-privilege Prometheus backup pull: Prometheus exposes only prepared
   read-only dumps through a dedicated account and Atlas retains the private SSH key, pinned host key,
-  atomic pull, verification, retention and systemd service/timer.
-- [ ] Decide whether a common SMB/NFS namespace is required. `Archive` (SMB) and `photobook` (NFS) are
-  intentionally distinct today; only if a shared namespace is selected, finalize its UID/GID, group,
-  and POSIX ACL model and test the same files through both protocols.
+  atomic pull, verification, retention and systemd service/timer. The dedicated key/account and unit
+  files are deployed; live read-only SSH, shell denial, and write denial were verified. On 2026-09-30
+  a manual export, Atlas pull, checksum verification, and temporary restore passed; both SQLite
+  databases passed integrity checks and a restored Git repository passed `git fsck`. Both daily
+  timers are enabled for 02:00/03:00 Europe/Rome; their first scheduled results remain unverified.
+- [x] Decide whether a common SMB/NFS namespace is required: no. `Archive` (SMB) and `photobook` (NFS)
+  remain intentionally distinct; `docs/atlas-sharing-decision.md` records the decision. No ACL or export
+  change is authorized by this decision.
 
 ### Priority 3 - Service expansion
 - [ ] After data protection and recovery are validated, populate `/zpool/media/music` and validate Navidrome.

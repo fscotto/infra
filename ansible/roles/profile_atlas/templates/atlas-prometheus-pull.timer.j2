@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule Atlas pull of prepared Prometheus backups
+
+[Timer]
+OnCalendar={{ atlas_prometheus_pull_calendar }}
+Persistent=true
+Unit=atlas-prometheus-pull.service
+
+[Install]
+WantedBy=timers.target

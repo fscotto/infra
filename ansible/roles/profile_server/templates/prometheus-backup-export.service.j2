@@ -1,0 +1,15 @@
+[Unit]
+Description=Prepare a read-only Prometheus application backup for Atlas
+RequiresMountsFor=/opt/npm /opt/gitea {{ server_backup_export_root }}
+ConditionFileIsExecutable=/usr/local/sbin/prometheus-backup-export
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/prometheus-backup-export
+User=root
+Group=root
+UMask=0077
+TimeoutStartSec=infinity
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

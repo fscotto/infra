@@ -53,6 +53,12 @@
   tags: [services, podman]
   ansible.builtin.include_tasks: podman-compose.yml
 
+- name: Import Prometheus backup export identity tasks
+  ansible.builtin.import_tasks: backup_export_identity.yml
+
+- name: Import Prometheus backup export job tasks
+  ansible.builtin.import_tasks: backup_export_job.yml
+
 - name: Ensure server SSH authorized key fragments directory exists
   tags: [services, ssh]
   ansible.builtin.file:
@@ -77,13 +83,17 @@
   when: server_ssh_authorized_keys | length > 0
 
 - name: Configure server SSH authorized key fragments
-  tags: [services, ssh]
+  tags: [services, ssh, prometheus_backup]
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^\s*AuthorizedKeysFile\s+'
     line: >-
-      AuthorizedKeysFile {{ server_ssh_authorized_keys | map(attribute='name')
-      | map('regex_replace', '^', '%h/.ssh/authorized_keys.d/') | join(' ') }}
+      AuthorizedKeysFile {{
+        ((server_ssh_authorized_keys | map(attribute='name')
+          | map('regex_replace', '^', '%h/.ssh/authorized_keys.d/') | list)
+        + (['%h/.ssh/authorized_keys.d/' ~ server_backup_public_key_name]
+           if server_backup_export_enabled | bool else [])) | join(' ')
+      }}
     state: present
     validate: "sshd -t -f %s"
   notify: Reload SSH service
@@ -100,11 +110,13 @@
   notify: Reload SSH service
 
 - name: Restrict SSH login to allowed users on server
-  tags: [services]
+  tags: [services, prometheus_backup]
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^\s*AllowUsers\s+'
-    line: "AllowUsers {{ server_sshd_allow_users | join(' ') }}"
+    line: >-
+      AllowUsers {{ (server_sshd_allow_users
+      + ([server_backup_username] if server_backup_export_enabled | bool else [])) | join(' ') }}
     state: present
     validate: "sshd -t -f %s"
   notify: Reload SSH service

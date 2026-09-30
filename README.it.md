@@ -311,7 +311,9 @@ l'interfaccia amministrativa resta su `127.0.0.1:81`, raggiungibile via tunnel S
 Atlas ospita temporaneamente Navidrome e Syncthing rootless fino alla sostituzione con Uranus. I
 servizi sono inizializzati **ex novo**, senza migrare lo stato precedente, rispettivamente sotto
 `/zpool/services/data/navidrome` e `/zpool/services/data/syncthing`; la musica in
-`/zpool/media/music` viene popolata separatamente. Sono vincolati all'indirizzo LAN di Atlas
+`/zpool/media/music` è stata popolata separatamente da `/zpool/archive/Music` il 2026-09-30;
+Navidrome ha completato la scansione. Alcune playlist originali contengono ancora vecchi percorsi
+Windows. I servizi sono vincolati all'indirizzo LAN di Atlas
 (`192.168.178.55`), mai a WireGuard. `wireguard_overlay` collega invece Prometheus (`10.0.0.1`)
 e Aegis (`10.0.0.2`): le chiavi private restano sui rispettivi host e Ansible scambia solo le pubbliche.
 Prometheus apre `51820/udp`; Aegis inoltra soltanto il traffico overlay→LAN dichiarato e applica

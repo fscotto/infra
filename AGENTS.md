@@ -259,7 +259,12 @@ successfully. The first monthly scrub remains a runtime check.
   change is authorized by this decision.
 
 ### Priority 3 - Service expansion
-- [ ] After data protection and recovery are validated, populate `/zpool/media/music` and validate Navidrome.
+- [x] Populate `/zpool/media/music` and validate Navidrome. On 2026-09-30, 21,158 files
+  (93,937,810,350 regular-file bytes) were copied from `/zpool/archive/Music` using a temporary
+  ZFS snapshot; a checksum-based rsync dry run found no differences or extra files. Navidrome saw
+  all files through its read-only mount, completed a scan, indexed 18,168 tracks, and responded
+  over HTTP. Some imported playlists still reference obsolete Windows paths. The source was left
+  intact and the temporary snapshot was removed.
 - [ ] Design and deploy Nextcloud as another explicitly temporary Atlas service before Uranus. Give it
   separate persistent application, database, and cache storage; keep credentials in Vault; publish it only
   through NPM over the Prometheus--Aegis gateway; and define backup, upgrade, and eventual Uranus-migration

@@ -296,7 +296,8 @@ Atlas temporarily hosts rootless Navidrome and Syncthing until Uranus replaces t
 Atlas' LAN address (`192.168.178.55`); WireGuard remains exclusively between Prometheus (`10.0.0.1`)
 and Aegis (`10.0.0.2`). Their state is initialized ex novo in `/zpool/services/data/navidrome` and
 `/zpool/services/data/syncthing`; no source application state is migrated. The music library at
-`/zpool/media/music` is populated separately.
+`/zpool/media/music` was populated separately from `/zpool/archive/Music` on 2026-09-30;
+Navidrome completed its library scan. Some source playlists still contain obsolete Windows paths.
 
 The separate `wireguard_overlay` role manages `wg0` between Prometheus (`10.0.0.1`) and Aegis
 (`10.0.0.2`), generating private keys once on their respective hosts and exchanging only public keys

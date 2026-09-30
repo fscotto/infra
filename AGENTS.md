@@ -250,9 +250,9 @@ successfully. The first monthly scrub remains a runtime check.
 - [ ] Add the Atlas-initiated least-privilege Prometheus backup pull: Prometheus exposes only prepared
   read-only dumps through a dedicated account and Atlas retains the private SSH key, pinned host key,
   atomic pull, verification, retention and systemd service/timer.
-- [ ] Decide whether a common SMB/NFS namespace is required. `Archive` (SMB) and `photobook` (NFS) are
-  intentionally distinct today; only if a shared namespace is selected, finalize its UID/GID, group,
-  and POSIX ACL model and test the same files through both protocols.
+- [x] Decide whether a common SMB/NFS namespace is required: no. `Archive` (SMB) and `photobook` (NFS)
+  remain intentionally distinct; `docs/atlas-sharing-decision.md` records the decision. No ACL or export
+  change is authorized by this decision.
 
 ### Priority 3 - Service expansion
 - [ ] After data protection and recovery are validated, populate `/zpool/media/music` and validate Navidrome.

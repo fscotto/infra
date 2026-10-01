@@ -57,6 +57,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
   - Server compose render: `podman-compose -f /opt/docker/server/docker-compose.yml config` and `systemctl status podman-compose-server`
   - Atlas media stack:
     `ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff`
+  - Atlas daily Navidrome music copy:
+    `ansible-playbook ansible/site.yml --limit atlas --tags music_sync --check --diff`
   - Atlas network/share hardening:
     `ansible-playbook ansible/site.yml --limit atlas --tags hardening,sharing --check --diff`
   - Atlas ZFS snapshot retention and scrub timers:
@@ -164,7 +166,9 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - `profile_backend_phase1` temporarily runs rootless Navidrome and Syncthing on Atlas until Uranus replaces
   them. It binds only to Atlas' LAN IP, never `wg0`; Navidrome and the Syncthing GUI admit only Aegis as
   the source-NAT gateway, while native Syncthing ports admit the configured LAN. It initializes fresh
-  state only and never migrates or deletes source application data.
+  state only and never migrates or deletes source application data. The enabled rootless
+  `atlas-music-sync.timer` copies `/zpool/archive/Music` to `/zpool/media/music` daily at 00:45
+  Europe/Rome without deleting destination files; it requires both datasets to be mounted.
 - `wireguard_overlay` manages `wg0` between Prometheus (`10.0.0.1`) and Aegis (`10.0.0.2`). It persists private
   keys only on their respective hosts, exchanges only derived public keys through Ansible, and verifies a real peer
   handshake. Prometheus opens `51820/udp`; Aegis is the LAN gateway. Its persistent IPv4 forwarding, narrowly scoped
@@ -264,7 +268,9 @@ successfully. The first monthly scrub remains a runtime check.
   ZFS snapshot; a checksum-based rsync dry run found no differences or extra files. Navidrome saw
   all files through its read-only mount, completed a scan, indexed 18,168 tracks, and responded
   over HTTP. Some imported playlists still reference obsolete Windows paths. The source was left
-  intact and the temporary snapshot was removed.
+  intact and the temporary snapshot was removed. A daily, non-deleting rsync timer now keeps the
+  separate Navidrome music dataset updated from `Archive/Music`. A manual idempotent service run
+  succeeded on 2026-10-01; the first scheduled run remains to be verified.
 - [ ] Design and deploy Nextcloud as another explicitly temporary Atlas service before Uranus. Give it
   separate persistent application, database, and cache storage; keep credentials in Vault; publish it only
   through NPM over the Prometheus--Aegis gateway; and define backup, upgrade, and eventual Uranus-migration

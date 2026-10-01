@@ -61,8 +61,19 @@ with `--network none` answered HTTP internally and listened on internal
 SSH/2222. The container was removed; the user Quadlet remains inactive, with
 no staging listener. The second restore run changed nothing. This copy is
 deliberately stale once new source writes occur and **must not** be used as the
-final cutover copy. Target snapshot/Borg inclusion and an independent restore
-are still pending.
+final cutover copy.
+
+Target backup checks on 2026-10-01: the managed recursive hourly ZFS snapshot
+`atlas-auto-hourly-20261001T193401Z` contains the new dataset. The managed
+Borg service completed archive `atlas-20261001T193420Z`, whose contents list
+includes the staged Gitea database. A separate one-file restore from each
+source into private `/var/tmp` directories matched the live staged database
+and passed SQLite `quick_check`. Temporary files and the on-demand snapshot
+mount were removed; the Borg temporary snapshot was cleaned up and the pool
+remained healthy. This is file-level proof, **not** a full Gitea recovery.
+The UUID-bound offline USB disk is connected but its LUKS mapper is closed;
+its manual backup requires interactive unlock. It has not yet captured or
+restored this new dataset.
 
 1. Provision a dedicated target dataset and non-login service identity via
    Ansible, keeping UID/GID distinct from Atlas' reserved Immich `1100`.
@@ -87,8 +98,9 @@ are still pending.
    container with no production ingress or outbound network. Because the
    source stays active, this is a rehearsal copy, not the final cutover copy.
    Regenerate Git hooks if the changed installation path requires it.
-4. Confirm that Atlas snapshots, Borg, and offline USB include the new dataset;
-   test at least one independent restore before user traffic is accepted.
+4. ZFS and Borg inclusion and one-file restores have passed. Complete a
+   UUID-bound offline USB version and a one-file restore for the new dataset
+   before accepting user traffic.
 
 ## Phase 2: explicit final cutover
 

@@ -278,8 +278,14 @@ successfully. The first monthly scrub remains a runtime check.
   matched. The pinned rootless image answered HTTP and listened on internal SSH/2222 with
   `--network none`; the temporary container was removed and the Quadlet stayed inactive. A second
   restore run made no changes. This is a rehearsal copy, not the final consistent cutover copy.
-- [ ] Verify target Gitea backup coverage with a new recursive ZFS snapshot, Borg archive, and an
-  independent restore of the staged dataset before accepting production writes.
+- [x] Verify ZFS and Borg coverage of the staged Gitea dataset. On 2026-10-01 the managed recursive
+  hourly snapshot `atlas-auto-hourly-20261001T193401Z` included it, and the managed incremental
+  Borg archive `atlas-20261001T193420Z` included its database. A private one-file restore from
+  each independently matched the staged database and passed SQLite `quick_check`; temporary files
+  and snapshot mounts were removed, the Borg service ended successfully, and the pool was healthy.
+- [ ] Include the new Gitea dataset in the next UUID-bound offline USB version and test a file restore
+  from that version before accepting production writes; the UUID-bound disk is connected but its
+  LUKS mapper is closed, so the manual backup still requires interactive unlock.
 - [ ] After an explicit outage approval, perform the final consistent copy and HTTPS/SSH cutover,
   then remove Gitea from Prometheus' desired stack and backup export without deleting source data.
 - [ ] Design and deploy Nextcloud as another explicitly temporary Atlas service before Uranus. Give it

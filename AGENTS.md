@@ -268,9 +268,10 @@ successfully. The first monthly scrub remains a runtime check.
   ZFS snapshot; a checksum-based rsync dry run found no differences or extra files. Navidrome saw
   all files through its read-only mount, completed a scan, indexed 18,168 tracks, and responded
   over HTTP. Some imported playlists still reference obsolete Windows paths. The source was left
-  intact and the temporary snapshot was removed. A daily, non-deleting rsync timer now keeps the
-  separate Navidrome music dataset updated from `Archive/Music`. A manual idempotent service run
-  succeeded on 2026-10-01; the first scheduled run remains to be verified.
+  intact and the temporary snapshot was removed.
+- [x] Schedule a daily, non-deleting copy from `Archive/Music` to the separate Navidrome music
+  dataset. The rootless `atlas-music-sync.timer` is enabled for 00:45 Europe/Rome; a manual
+  idempotent service run succeeded on 2026-10-01. The first scheduled run remains to be verified.
 - [ ] Design and deploy Nextcloud as another explicitly temporary Atlas service before Uranus. Give it
   separate persistent application, database, and cache storage; keep credentials in Vault; publish it only
   through NPM over the Prometheus--Aegis gateway; and define backup, upgrade, and eventual Uranus-migration

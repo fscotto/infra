@@ -1,12 +1,13 @@
 ---
-- name: Rehearse an isolated rootless Gitea restore from the verified Prometheus backup
-  tags: [atlas, gitea_restore]
-  when: atlas_gitea_restore_test | bool
+- name: Restore Gitea from a verified Prometheus backup only on explicit request
+  tags: [atlas, gitea_restore, gitea_final_restore]
+  when: atlas_gitea_restore_test | bool or atlas_gitea_final_restore | bool
   block:
     - name: Require the prepared rootless Gitea target
       ansible.builtin.assert:
         that:
           - atlas_manage_gitea | bool
+          - not (atlas_gitea_restore_test | bool and atlas_gitea_final_restore | bool)
           - atlas_gitea_staging_bind_address == '127.0.0.1'
           - atlas_gitea_mountpoint == atlas_app_data_mountpoint ~ '/gitea'
         fail_msg: Prepare the isolated, loopback-only rootless Gitea target first.
@@ -81,4 +82,26 @@
       register: atlas_gitea_restore_result
       changed_when: atlas_gitea_restore_result.stdout == 'restored'
       no_log: true
-      when: not ansible_check_mode
+      when:
+        - atlas_gitea_restore_test | bool
+        - not ansible_check_mode
+
+    - name: Replace the marked rehearsal with the final consistent Gitea export
+      ansible.builtin.command:
+        argv:
+          - "{{ atlas_gitea_restore_helper }}"
+          - --backup
+          - "{{ atlas_backup_prometheus_mountpoint }}/latest"
+          - --target
+          - "{{ atlas_gitea_mountpoint }}"
+          - --uid
+          - "{{ atlas_gitea_uid | string }}"
+          - --gid
+          - "{{ atlas_gitea_gid | string }}"
+          - --replace-rehearsal
+      register: atlas_gitea_final_restore_result
+      changed_when: atlas_gitea_final_restore_result.stdout == 'restored'
+      no_log: true
+      when:
+        - atlas_gitea_final_restore | bool
+        - not ansible_check_mode

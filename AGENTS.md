@@ -61,6 +61,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea --check --diff`
   - Atlas explicit isolated Gitea restore rehearsal (not part of normal runs):
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea_restore -e atlas_gitea_restore_test=true`
+  - Atlas final Gitea replacement gate (dry-run only until a stopped-source export is pulled):
+    `ansible-playbook ansible/site.yml --limit atlas --tags gitea_final_restore --check --diff -e atlas_gitea_final_restore=true`
   - Prometheus final Gitea export helper (dry-run installs only; outage action remains opt-in):
     `ansible-playbook ansible/site.yml --limit prometheus --tags gitea_final_export --check --diff`
   - Atlas network/share hardening:
@@ -292,6 +294,11 @@ successfully. The first monthly scrub remains a runtime check.
   deployment and `bash -n` passed while Gitea and NPM stayed running. It refuses an active export
   timer, stops only Gitea, verifies SQLite, publishes a checksum-verified Gitea-only version for
   Atlas' existing pull, and leaves the source stopped on success; it has **not** been invoked.
+- [x] Prepare the Atlas final-restore gate without replacing the rehearsal: it accepts only a
+  checksum-verified `gitea-cutover` export, refuses a running target, stages and validates the new
+  layout before replacing the marked rehearsal, and rolls back a failed swap. Synthetic success
+  and rollback tests and a second idempotent rehearsal run passed on 2026-10-01; the final gate
+  has **not** been invoked.
 - [ ] After an explicit outage approval, perform the final consistent copy and HTTPS/SSH cutover,
   then remove Gitea from Prometheus' desired stack and backup export without deleting source data.
 - [ ] Design and deploy Nextcloud as another explicitly temporary Atlas service before Uranus. Give it

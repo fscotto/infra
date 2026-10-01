@@ -3,6 +3,7 @@
 
 import argparse
 import hashlib
+import json
 import os
 from pathlib import Path, PurePosixPath
 import re
@@ -136,12 +137,41 @@ def chown_tree(root, uid, gid):
             os.chown(os.path.join(directory, name), uid, gid)
 
 
+def replace_rehearsal(target, stage, digest, uid, gid):
+    previous_data = target / ".previous-rehearsal-data"
+    previous_config = target / ".previous-rehearsal-config"
+    if previous_data.exists() or previous_config.exists():
+        raise ValueError("An interrupted Gitea replacement needs manual recovery")
+    os.rename(target / "data", previous_data)
+    try:
+        os.rename(target / "config", previous_config)
+        os.rename(stage / "data", target / "data")
+        os.rename(stage / "config", target / "config")
+        final_marker = target / ".final-sha256"
+        final_marker.write_text(digest + "\n")
+        final_marker.chmod(0o600)
+        os.chown(final_marker, uid, gid)
+        (target / ".rehearsal-sha256").unlink()
+    except Exception:
+        for name, previous in (("data", previous_data), ("config", previous_config)):
+            current = target / name
+            if previous.exists():
+                if current.exists():
+                    shutil.rmtree(current)
+                os.rename(previous, current)
+        (target / ".final-sha256").unlink(missing_ok=True)
+        raise
+    shutil.rmtree(previous_data)
+    shutil.rmtree(previous_config)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--backup", type=Path, required=True)
     parser.add_argument("--target", type=Path, required=True)
     parser.add_argument("--uid", type=int, required=True)
     parser.add_argument("--gid", type=int, required=True)
+    parser.add_argument("--replace-rehearsal", action="store_true")
     args = parser.parse_args()
 
     backup = args.backup.resolve(strict=True)
@@ -156,17 +186,28 @@ def main():
     if sha256(backup / "payload.tar") != expected:
         raise ValueError("Prometheus backup SHA-256 mismatch")
 
-    marker = target / ".rehearsal-sha256"
+    marker = target / (".final-sha256" if args.replace_rehearsal else ".rehearsal-sha256")
     if marker.exists():
         if marker.read_text().strip() != expected:
-            raise ValueError("A different Gitea rehearsal already occupies this dataset")
+            raise ValueError("A different Gitea restore already occupies this dataset")
         validate(target / "data", target / "config")
         print("unchanged")
         return
-    for name in ("data", "config"):
-        directory = target / name
-        if not directory.is_dir() or any(directory.iterdir()):
-            raise ValueError("Gitea target is not empty; refusing overwrite")
+    if args.replace_rehearsal:
+        metadata = json.loads((backup / "metadata.json").read_text())
+        if metadata.get("purpose") != "gitea-cutover":
+            raise ValueError("Final restore requires an explicit Gitea cutover export")
+        if not (target / ".rehearsal-sha256").is_file():
+            raise ValueError("Only a marked rehearsal may be replaced")
+        if not all((target / name).is_dir() for name in ("data", "config")):
+            raise ValueError("Prepared Gitea volume paths are missing")
+    else:
+        if (target / ".final-sha256").exists():
+            raise ValueError("Refusing a rehearsal restore over final Gitea data")
+        for name in ("data", "config"):
+            directory = target / name
+            if not directory.is_dir() or any(directory.iterdir()):
+                raise ValueError("Gitea target is not empty; refusing overwrite")
 
     with tempfile.TemporaryDirectory(prefix=".rehearsal-", dir=target) as temporary:
         stage = Path(temporary)
@@ -183,12 +224,15 @@ def main():
         convert_config(staged_config / "app.ini")
         validate(staged_data, staged_config)
         chown_tree(stage, args.uid, args.gid)
-        for name in ("data", "config"):
-            (target / name).rmdir()
-            os.rename(stage / name, target / name)
-    marker.write_text(expected + "\n")
-    marker.chmod(0o600)
-    os.chown(marker, args.uid, args.gid)
+        if args.replace_rehearsal:
+            replace_rehearsal(target, stage, expected, args.uid, args.gid)
+        else:
+            for name in ("data", "config"):
+                (target / name).rmdir()
+                os.rename(stage / name, target / name)
+            marker.write_text(expected + "\n")
+            marker.chmod(0o600)
+            os.chown(marker, args.uid, args.gid)
     print("restored")
 
 

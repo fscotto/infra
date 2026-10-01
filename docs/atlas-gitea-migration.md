@@ -112,6 +112,11 @@ a checksum-verified Gitea-only version for Atlas' existing pull, and leaves
 the source stopped on success. NPM remains running. A failure before
 completion restarts source Gitea. Its Ansible gate is
 `--tags gitea_final_export -e server_gitea_final_export=true`.
+After Atlas pulls that version, its separate
+`--tags gitea_final_restore -e atlas_gitea_final_restore=true` gate accepts
+only metadata marked `gitea-cutover`, validates a private staged replacement,
+and swaps it for the marked rehearsal. The swap and its rollback path passed
+synthetic tests on 2026-10-01; the gate has not been used on live Gitea data.
 
 1. Agree on an outage and record source/target versions, pool health, the
    latest backups, SSH host-key fingerprints, and both current NPM routes.

@@ -1,0 +1,34 @@
+---
+- name: Install the explicit Gitea final-export helper
+  tags: [services, gitea_final_export]
+  ansible.builtin.template:
+    src: prometheus-gitea-final-export.sh.j2
+    dest: /usr/local/sbin/prometheus-gitea-final-export
+    owner: root
+    group: root
+    mode: "0750"
+  when: server_gitea_cutover_tools_enabled | bool
+
+- name: Require the prepared source and explicit final-export approval
+  tags: [services, gitea_final_export]
+  ansible.builtin.assert:
+    that:
+      - server_gitea_cutover_tools_enabled | bool
+      - server_backup_export_enabled | bool
+      - not ansible_check_mode
+    fail_msg: >-
+      Install the cutover helper and perform an explicit non-check-mode run
+      only after the Gitea outage gate has been approved.
+  when: server_gitea_final_export | bool
+
+- name: Stop source Gitea and publish the final consistent export
+  tags: [services, gitea_final_export]
+  ansible.builtin.command:
+    argv:
+      - /usr/local/sbin/prometheus-gitea-final-export
+  register: server_gitea_final_export_result
+  changed_when: server_gitea_final_export_result.rc == 0
+  no_log: true
+  when:
+    - server_gitea_final_export | bool
+    - not ansible_check_mode

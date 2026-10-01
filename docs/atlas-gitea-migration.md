@@ -104,6 +104,15 @@ restored this new dataset.
 
 ## Phase 2: explicit final cutover
 
+The opt-in `/usr/local/sbin/prometheus-gitea-final-export` helper was installed
+on 2026-10-01 and passed `bash -n`; it has **not** been invoked. It refuses to
+run while the scheduled Prometheus export timer is active. When explicitly
+triggered, it stops only the source Gitea container, checks SQLite, publishes
+a checksum-verified Gitea-only version for Atlas' existing pull, and leaves
+the source stopped on success. NPM remains running. A failure before
+completion restarts source Gitea. Its Ansible gate is
+`--tags gitea_final_export -e server_gitea_final_export=true`.
+
 1. Agree on an outage and record source/target versions, pool health, the
    latest backups, SSH host-key fingerprints, and both current NPM routes.
    Stop the Prometheus export timer for the change window so it cannot

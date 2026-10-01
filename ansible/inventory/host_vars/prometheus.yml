@@ -8,6 +8,8 @@ ansible_ssh_private_key_file: /home/fscotto/.ssh/id_ed25519
 server_username: rocky
 server_backup_export_enabled: true
 server_backup_export_start_timer: true
+# Install the final-copy helper only; it is never run by a normal playbook invocation.
+server_gitea_cutover_tools_enabled: true
 server_duckdns_domain: fscotto
 server_ssh_authorized_keys:
   - name: ikaros

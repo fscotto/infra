@@ -61,6 +61,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea --check --diff`
   - Atlas explicit isolated Gitea restore rehearsal (not part of normal runs):
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea_restore -e atlas_gitea_restore_test=true`
+  - Prometheus final Gitea export helper (dry-run installs only; outage action remains opt-in):
+    `ansible-playbook ansible/site.yml --limit prometheus --tags gitea_final_export --check --diff`
   - Atlas network/share hardening:
     `ansible-playbook ansible/site.yml --limit atlas --tags hardening,sharing --check --diff`
   - Atlas ZFS snapshot retention and scrub timers:
@@ -286,6 +288,10 @@ successfully. The first monthly scrub remains a runtime check.
 - [ ] Include the new Gitea dataset in the next UUID-bound offline USB version and test a file restore
   from that version before accepting production writes; the UUID-bound disk is connected but its
   LUKS mapper is closed, so the manual backup still requires interactive unlock.
+- [x] Install a separate opt-in final Gitea export helper on Prometheus. Its 2026-10-01 targeted
+  deployment and `bash -n` passed while Gitea and NPM stayed running. It refuses an active export
+  timer, stops only Gitea, verifies SQLite, publishes a checksum-verified Gitea-only version for
+  Atlas' existing pull, and leaves the source stopped on success; it has **not** been invoked.
 - [ ] After an explicit outage approval, perform the final consistent copy and HTTPS/SSH cutover,
   then remove Gitea from Prometheus' desired stack and backup export without deleting source data.
 - [ ] Design and deploy Nextcloud as another explicitly temporary Atlas service before Uranus. Give it

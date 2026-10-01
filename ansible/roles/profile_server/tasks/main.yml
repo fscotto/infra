@@ -59,6 +59,9 @@
 - name: Import Prometheus backup export job tasks
   ansible.builtin.import_tasks: backup_export_job.yml
 
+- name: Import explicit Prometheus Gitea final-export tasks
+  ansible.builtin.import_tasks: gitea_final_export.yml
+
 - name: Ensure server SSH authorized key fragments directory exists
   tags: [services, ssh]
   ansible.builtin.file:

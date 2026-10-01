@@ -87,6 +87,9 @@ server_backup_export_root: /var/lib/prometheus-backup-export
 server_backup_rrsync_path: /usr/share/doc/rsync/support/rrsync
 server_backup_export_calendar: "*-*-* 02:00:00 Europe/Rome"
 server_backup_export_start_timer: false
+# Explicit Gitea cutover helper: installed separately from any outage action.
+server_gitea_cutover_tools_enabled: false
+server_gitea_final_export: false
 server_backup_export_source_keep: 3
 server_backup_export_paths:
   - opt/npm/data

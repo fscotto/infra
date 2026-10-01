@@ -25,27 +25,37 @@ Uranus; NPM remains on Prometheus.
   Hosts to Atlas over the Prometheus--Aegis gateway, and offers public Gitea
   SSH on port 2222 via the same gateway. Prometheus port 22 is unchanged.
   HTTPS and SSH must be validated together before declaring cutover.
-- Preserve the same **rootful** Gitea image and `/data` layout at first. The
-  upstream rootless image uses different mount paths and SSH implementation;
-  changing image type during a data migration is not a drop-in operation.
-  Pin the same version initially; consider upgrades separately.
+- Run Gitea as a **rootless user Quadlet** under a dedicated, non-login Atlas
+  account, using the pinned `1.25.2-rootless` image. This is an explicit
+  rootful-to-rootless **data-layout conversion**, not a drop-in image swap:
+  the target mounts `/var/lib/gitea` and `/etc/gitea`, and uses Gitea's
+  built-in SSH server instead of the source image's OpenSSH daemon. Keep the
+  application version unchanged until the conversion has passed an isolated
+  restore test. The host's rootful Quadlet directory must not be used.
 
 ## Phase 1: prepare without traffic changes
 
 1. Provision a dedicated target dataset and non-login service identity via
    Ansible, keeping UID/GID distinct from Atlas' reserved Immich `1100`.
-   Install a rootful Quadlet but do not start it or open firewall ports yet.
+   Install the user Quadlet in that identity's
+   `~/.config/containers/systemd/`, **without** an `[Install]` section;
+   do not enable, start, or expose it yet.
 2. Verify the selected Atlas backup SHA-256 and metadata, then extract **only**
    `opt/gitea/data` and `home/git/.ssh` to private staging. Never unpack NPM,
    WireGuard, or other host configuration from this sensitive tarball into a
-   live namespace. Preserve Gitea's existing SSH host keys; adjust ownership
-   to the declared Atlas service UID/GID and apply only path-scoped SELinux
-   labels needed by the container.
+   live namespace. Convert the rootful `/data` tree on a disposable copy:
+   place application data under `/var/lib/gitea`, move `app.ini` to
+   `/etc/gitea`, and rewrite every absolute `/data/...` path for the new
+   layout. Enable `START_SSH_SERVER`, use internal SSH port 2222, and retain
+   the source host-key pairs for the built-in server only after verifying
+   their fingerprints and compatibility. Do not rely on the old
+   `/home/git/.ssh` OpenSSH mount in the rootless image. Set only the target
+   copy's ownership and path-scoped SELinux labels.
 3. Validate SQLite integrity, repository count and representative `git fsck`,
-   LFS/attachment presence, permissions, and a test container with no
-   production ingress or outbound network. Because the source stays active,
-   this is a rehearsal copy, not the final cutover copy. Regenerate Git hooks
-   if the changed installation path requires it, as documented by Gitea.
+   LFS/attachment presence, permissions, and an isolated rootless test
+   container with no production ingress or outbound network. Because the
+   source stays active, this is a rehearsal copy, not the final cutover copy.
+   Regenerate Git hooks if the changed installation path requires it.
 4. Confirm that Atlas snapshots, Borg, and offline USB include the new dataset;
    test at least one independent restore before user traffic is accepted.
 
@@ -61,7 +71,8 @@ Uranus; NPM remains on Prometheus.
    source Gitea to restart after accepting writes on Atlas.
 3. Restore the final Gitea-only payload to the target and repeat integrity
    checks. Set Gitea's advertised SSH port to 2222 while retaining its
-   existing HTTPS `ROOT_URL` and host keys. Start the pinned Atlas container,
+   existing HTTPS `ROOT_URL` and verified host keys. Start the pinned rootless
+   Atlas user Quadlet,
    initially without public ingress; validate local HTTP, SQLite, repositories,
    LFS/attachments, and SSH host-key identity.
 4. Permit only Aegis' source-NAT address to reach Atlas' Gitea HTTP and SSH
@@ -85,5 +96,7 @@ SQLite database and repositories are stale. Quiesce Atlas, capture its new
 data, and decide a reverse migration or an extended outage explicitly.
 
 Upstream references: [rootful container layout](https://docs.gitea.com/1.25/installation/install-with-docker/),
-[rootless incompatibility](https://docs.gitea.com/installation/install-with-docker-rootless/),
+[rootless image layout and incompatibility](https://docs.gitea.com/installation/install-with-docker-rootless/),
+[rootless Podman Quadlet](https://docs.gitea.com/installation/install-with-podman-quadlet/),
+[standard-image conversion](https://docs.gitea.com/1.24/installation/install-with-docker-rootless/),
 and [restore and hook regeneration](https://docs.gitea.com/1.26/administration/backup-and-restore/).

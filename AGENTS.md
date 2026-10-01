@@ -262,8 +262,9 @@ successfully. The first monthly scrub remains a runtime check.
 - [ ] After data protection and recovery are validated, populate `/zpool/media/music` and validate Navidrome.
 - [x] Design the staged Prometheus-to-Atlas Gitea migration in `docs/atlas-gitea-migration.md`.
   The approved topology keeps NPM on Prometheus and moves HTTPS and public SSH (TCP/2222) together;
-  the existing rootful image/data layout is retained. No data has been moved or traffic changed.
-- [ ] Prepare a separate Atlas Gitea dataset, disabled Quadlet, and isolated restore test from the
+  Gitea must run as a dedicated rootless user Quadlet on Atlas. The rootful-to-rootless data-layout
+  conversion requires an isolated restore test. No data has been moved or traffic changed.
+- [ ] Prepare a separate Atlas Gitea dataset, disabled rootless user Quadlet, and isolated restore test from the
   verified Prometheus backup; validate SQLite, repositories, SSH host keys, and target backups.
 - [ ] After an explicit outage approval, perform the final consistent copy and HTTPS/SSH cutover,
   then remove Gitea from Prometheus' desired stack and backup export without deleting source data.

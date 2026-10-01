@@ -17,6 +17,9 @@
 - name: Import staged Atlas rootless Gitea tasks
   ansible.builtin.import_tasks: gitea.yml
 
+- name: Import explicit Atlas Gitea restore rehearsal tasks
+  ansible.builtin.import_tasks: gitea_restore.yml
+
 - name: Import Atlas ZFS maintenance tasks
   ansible.builtin.import_tasks: zfs_maintenance.yml
 

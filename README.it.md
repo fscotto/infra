@@ -324,7 +324,8 @@ ricarica le reti Podman rootful di Prometheus per conservare DNS e connettività
 
 La migrazione Gitea da Prometheus ad Atlas è predisposta in
 [`docs/atlas-gitea-migration.md`](docs/atlas-gitea-migration.md). Atlas ha un dataset e un account
-dedicati con Quadlet utente rootless inattivo. I dati Gitea non sono ancora stati ripristinati o spostati.
+dedicati con Quadlet utente rootless inattivo. Una copia isolata del backup Prometheus ha superato
+i controlli SQLite, Git e del container rootless senza rete; non è la copia finale per il cutover.
 NPM resta su Prometheus; stack sorgente e instradamento pubblico rimangono invariati fino a un cutover
 HTTPS e SSH separato e validato.
 

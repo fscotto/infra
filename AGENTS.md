@@ -59,6 +59,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff`
   - Atlas rootless Gitea staging (does not start Gitea):
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea --check --diff`
+  - Atlas explicit isolated Gitea restore rehearsal (not part of normal runs):
+    `ansible-playbook ansible/site.yml --limit atlas --tags gitea_restore -e atlas_gitea_restore_test=true`
   - Atlas network/share hardening:
     `ansible-playbook ansible/site.yml --limit atlas --tags hardening,sharing --check --diff`
   - Atlas ZFS snapshot retention and scrub timers:
@@ -265,13 +267,19 @@ successfully. The first monthly scrub remains a runtime check.
 - [x] Design the staged Prometheus-to-Atlas Gitea migration in `docs/atlas-gitea-migration.md`.
   The approved topology keeps NPM on Prometheus and moves HTTPS and public SSH (TCP/2222) together;
   Gitea must run as a dedicated rootless user Quadlet on Atlas. The rootful-to-rootless data-layout
-  conversion requires an isolated restore test. No Gitea data has been moved or traffic changed.
+  conversion passed an isolated restore rehearsal. No production traffic has changed.
 - [x] Prepare the dedicated Atlas Gitea dataset, non-login UID/GID 1101 with a separate rootless Podman
   sub-ID range, and disabled user Quadlet. On 2026-10-01 the targeted Ansible run and a second idempotent
   run passed; the generated unit was inactive, with no staging HTTP/SSH listener. POSIX ACLs on only the
   service-namespace parents grant this account traversal without access to sibling datasets.
-- [ ] Perform an isolated rootless restore test from the verified Prometheus backup; validate SQLite,
-  repositories, SSH host keys, and target backups before any traffic cutover.
+- [x] Perform an isolated rootless restore rehearsal from the verified Prometheus backup. On 2026-10-01
+  the SHA-256-checked selective extraction and path/SSH conversion succeeded; SQLite `quick_check`
+  passed, all 33 repositories passed `git fsck`, and source/target public SSH host-key fingerprints
+  matched. The pinned rootless image answered HTTP and listened on internal SSH/2222 with
+  `--network none`; the temporary container was removed and the Quadlet stayed inactive. A second
+  restore run made no changes. This is a rehearsal copy, not the final consistent cutover copy.
+- [ ] Verify target Gitea backup coverage with a new recursive ZFS snapshot, Borg archive, and an
+  independent restore of the staged dataset before accepting production writes.
 - [ ] After an explicit outage approval, perform the final consistent copy and HTTPS/SSH cutover,
   then remove Gitea from Prometheus' desired stack and backup export without deleting source data.
 - [ ] Design and deploy Nextcloud as another explicitly temporary Atlas service before Uranus. Give it

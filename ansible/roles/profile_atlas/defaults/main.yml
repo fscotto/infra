@@ -181,6 +181,8 @@ atlas_gitea_image: docker.gitea.com/gitea:1.25.2-rootless
 atlas_gitea_staging_bind_address: 127.0.0.1
 atlas_gitea_staging_http_port: 3001
 atlas_gitea_staging_ssh_port: 2223
+atlas_gitea_restore_test: false
+atlas_gitea_restore_helper: /usr/local/libexec/atlas-gitea-restore-test
 
 atlas_45drives_repo_url: https://repo.45drives.com/repofiles/rocky/45drives-enterprise.repo
 atlas_45drives_repo_file: /etc/yum.repos.d/45drives-enterprise.repo

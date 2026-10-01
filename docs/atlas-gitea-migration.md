@@ -42,7 +42,27 @@ user Quadlet under `/var/lib/atlas-gitea/.config/containers/systemd/`. The
 Quadlet has no `[Install]` section and, until the final cutover, binds only
 loopback staging ports 3001/2223 if started manually. A second targeted
 Ansible run changed nothing; the generated service was inactive and neither
-staging port listened. **No Gitea payload has been restored to the target.**
+staging port listened.
+
+The explicit rehearsal is managed by:
+
+```bash
+ansible-playbook ansible/site.yml --limit atlas --tags gitea_restore \
+  -e atlas_gitea_restore_test=true
+```
+
+On 2026-10-01 this selected the latest verified Prometheus backup, checked its
+SHA-256, extracted only `opt/gitea/data`, moved `app.ini` into the rootless
+config mount, rewrote `/data/` paths, enabled built-in SSH on internal port
+2222, and retained the three source SSH host-key pairs. SQLite `quick_check`
+passed, all 33 restored repositories passed `git fsck`, and each source/target
+public host-key fingerprint matched. A temporary `1.25.2-rootless` container
+with `--network none` answered HTTP internally and listened on internal
+SSH/2222. The container was removed; the user Quadlet remains inactive, with
+no staging listener. The second restore run changed nothing. This copy is
+deliberately stale once new source writes occur and **must not** be used as the
+final cutover copy. Target snapshot/Borg inclusion and an independent restore
+are still pending.
 
 1. Provision a dedicated target dataset and non-login service identity via
    Ansible, keeping UID/GID distinct from Atlas' reserved Immich `1100`.
@@ -50,7 +70,9 @@ staging port listened. **No Gitea payload has been restored to the target.**
    `~/.config/containers/systemd/`, **without** an `[Install]` section;
    do not enable, start, or expose it yet.
 2. Verify the selected Atlas backup SHA-256 and metadata, then extract **only**
-   `opt/gitea/data` and `home/git/.ssh` to private staging. Never unpack NPM,
+   `opt/gitea/data` to private staging. Keep `home/git/.ssh` in the source
+   backup for rollback; the rootless image does not consume its OpenSSH mount.
+   Never unpack NPM,
    WireGuard, or other host configuration from this sensitive tarball into a
    live namespace. Convert the rootful `/data` tree on a disposable copy:
    place application data under `/var/lib/gitea`, move `app.ini` to

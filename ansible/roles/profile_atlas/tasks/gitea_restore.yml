@@ -1,0 +1,84 @@
+---
+- name: Rehearse an isolated rootless Gitea restore from the verified Prometheus backup
+  tags: [atlas, gitea_restore]
+  when: atlas_gitea_restore_test | bool
+  block:
+    - name: Require the prepared rootless Gitea target
+      ansible.builtin.assert:
+        that:
+          - atlas_manage_gitea | bool
+          - atlas_gitea_staging_bind_address == '127.0.0.1'
+          - atlas_gitea_mountpoint == atlas_app_data_mountpoint ~ '/gitea'
+        fail_msg: Prepare the isolated, loopback-only rootless Gitea target first.
+
+    - name: Confirm the rootless Gitea service is inactive
+      become_user: "{{ atlas_gitea_username }}"
+      ansible.builtin.command:
+        argv:
+          - systemctl
+          - --user
+          - is-active
+          - atlas-gitea.service
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ atlas_gitea_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ atlas_gitea_uid }}/bus"
+      register: atlas_gitea_restore_service_state
+      changed_when: false
+      failed_when: false
+      when: not ansible_check_mode
+
+    - name: Refuse to overwrite an active rootless Gitea service
+      ansible.builtin.assert:
+        that:
+          - atlas_gitea_restore_service_state.stdout == 'inactive'
+        fail_msg: The rootless Gitea user service must be known and inactive before restoring data.
+      when: not ansible_check_mode
+
+    - name: Check for a manually running rootless Gitea container
+      become_user: "{{ atlas_gitea_username }}"
+      ansible.builtin.command:
+        argv:
+          - podman
+          - ps
+          - --quiet
+          - --filter
+          - name=atlas-gitea
+      args:
+        chdir: "{{ atlas_gitea_home }}"
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ atlas_gitea_uid }}"
+      register: atlas_gitea_restore_container_state
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: Refuse to overwrite a running rootless Gitea container
+      ansible.builtin.assert:
+        that:
+          - atlas_gitea_restore_container_state.stdout | length == 0
+        fail_msg: Stop every rootless Atlas Gitea container before restoring data.
+      when: not ansible_check_mode
+
+    - name: Install the selective rootless Gitea restore helper
+      ansible.builtin.copy:
+        src: atlas-gitea-restore-test.py
+        dest: "{{ atlas_gitea_restore_helper }}"
+        owner: root
+        group: root
+        mode: "0700"
+
+    - name: Restore only Gitea data into the isolated target
+      ansible.builtin.command:
+        argv:
+          - "{{ atlas_gitea_restore_helper }}"
+          - --backup
+          - "{{ atlas_backup_prometheus_mountpoint }}/latest"
+          - --target
+          - "{{ atlas_gitea_mountpoint }}"
+          - --uid
+          - "{{ atlas_gitea_uid | string }}"
+          - --gid
+          - "{{ atlas_gitea_gid | string }}"
+      register: atlas_gitea_restore_result
+      changed_when: atlas_gitea_restore_result.stdout == 'restored'
+      no_log: true
+      when: not ansible_check_mode

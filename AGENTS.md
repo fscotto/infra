@@ -257,7 +257,8 @@ successfully. The first monthly scrub remains a runtime check.
   files are deployed; live read-only SSH, shell denial, and write denial were verified. On 2026-09-30
   a manual export, Atlas pull, checksum verification, and temporary restore passed; both SQLite
   databases passed integrity checks and a restored Git repository passed `git fsck`. Both daily
-  timers are enabled for 02:00/03:00 Europe/Rome; their first scheduled results remain unverified.
+  timers are enabled for 02:00/03:00 Europe/Rome. On 2026-10-01 their first scheduled export and
+  pull succeeded: Atlas verified the payload checksum and published `20261001T000001Z` as `latest`.
 - [x] Decide whether a common SMB/NFS namespace is required: no. `Archive` (SMB) and `photobook` (NFS)
   remain intentionally distinct; `docs/atlas-sharing-decision.md` records the decision. No ACL or export
   change is authorized by this decision.

@@ -65,6 +65,9 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea_final_restore --check --diff -e atlas_gitea_final_restore=true`
   - Prometheus final Gitea export helper (dry-run installs only; outage action remains opt-in):
     `ansible-playbook ansible/site.yml --limit prometheus --tags gitea_final_export --check --diff`
+  - Gitea cutover network configuration before activation:
+    `ansible-playbook ansible/site.yml --limit prometheus --tags gitea_cutover,prometheus_backup --check --diff -e server_gitea_on_atlas=true`
+    and `ansible-playbook ansible/site.yml --limit atlas --tags gitea --check --diff`
   - Atlas network/share hardening:
     `ansible-playbook ansible/site.yml --limit atlas --tags hardening,sharing --check --diff`
   - Atlas ZFS snapshot retention and scrub timers:
@@ -289,7 +292,8 @@ successfully. The first monthly scrub remains a runtime check.
   and snapshot mounts were removed, the Borg service ended successfully, and the pool was healthy.
 - [ ] Include the new Gitea dataset in the next UUID-bound offline USB version and test a file restore
   from that version before accepting production writes; the UUID-bound disk is connected but its
-  LUKS mapper is closed, so the manual backup still requires interactive unlock.
+  LUKS mapper is closed, so the manual backup still requires interactive unlock. On 2026-10-01 the
+  operator could not unlock it and chose to defer traffic cutover until this check passes.
 - [x] Install a separate opt-in final Gitea export helper on Prometheus. Its 2026-10-01 targeted
   deployment and `bash -n` passed while Gitea and NPM stayed running. It refuses an active export
   timer, stops only Gitea, verifies SQLite, publishes a checksum-verified Gitea-only version for
@@ -299,6 +303,12 @@ successfully. The first monthly scrub remains a runtime check.
   layout before replacing the marked rehearsal, and rolls back a failed swap. Synthetic success
   and rollback tests and a second idempotent rehearsal run passed on 2026-10-01; the final gate
   has **not** been invoked.
+- [x] Prepare, but do not activate, the Atlas LAN rootless Quadlet and Prometheus TCP/2222 socket
+  proxy. NPM's two existing `gitea:3000` Proxy Hosts will resolve that name to Atlas through a
+  managed Compose `extra_hosts` entry after the source container is removed; no NPM database edit
+  is needed. The future-mode Prometheus check-run passed, both current-mode runs were idempotent,
+  the new systemd units passed verification, and source HTTP remained 200 on 2026-10-01. Public
+  2222 is closed and the target remains inactive until the explicit cutover flags are enabled.
 - [ ] After an explicit outage approval, perform the final consistent copy and HTTPS/SSH cutover,
   then remove Gitea from Prometheus' desired stack and backup export without deleting source data.
 - [ ] Design and deploy Nextcloud as another explicitly temporary Atlas service before Uranus. Give it

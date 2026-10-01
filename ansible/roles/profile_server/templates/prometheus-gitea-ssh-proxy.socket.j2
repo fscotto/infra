@@ -1,0 +1,9 @@
+[Unit]
+Description=Public Gitea SSH socket on Prometheus
+
+[Socket]
+ListenStream=0.0.0.0:{{ server_gitea_ssh_public_port }}
+NoDelay=true
+
+[Install]
+WantedBy=sockets.target

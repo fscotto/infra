@@ -1,0 +1,12 @@
+[Unit]
+Description=Forward public Gitea SSH to Atlas through Aegis
+Requires=prometheus-gitea-ssh-proxy.socket
+After=network-online.target wg-quick@wg0.service
+
+[Service]
+ExecStart=/usr/lib/systemd/systemd-socket-proxyd {{ server_gitea_atlas_address }}:{{ server_gitea_ssh_target_port }}
+DynamicUser=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true

@@ -90,23 +90,22 @@ server_backup_export_start_timer: false
 # Explicit Gitea cutover helper: installed separately from any outage action.
 server_gitea_cutover_tools_enabled: false
 server_gitea_final_export: false
+server_gitea_on_atlas: false
+server_gitea_atlas_address: "{{ hostvars['atlas'].ansible_host }}"
+server_gitea_ssh_public_port: 2222
+server_gitea_ssh_target_port: 2222
 server_backup_export_source_keep: 3
-server_backup_export_paths:
-  - opt/npm/data
-  - opt/npm/letsencrypt
-  - opt/gitea/data
-  - home/git/.ssh
-  - opt/docker/server/docker-compose.yml
-  - etc/systemd/system/podman-compose-server.service
-  - etc/ssh/sshd_config
-  - etc/ssh/sshd_config.d
-  - etc/firewalld
-  - etc/wireguard/wg0.conf
-server_backup_export_excludes:
-  - opt/npm/data/logs
-  - opt/gitea/data/gitea/log
-  - opt/gitea/data/gitea/tmp
-  - opt/gitea/data/gitea/sessions
-  - opt/gitea/data/gitea/indexers
+server_backup_export_paths: >-
+  {{ ['opt/npm/data', 'opt/npm/letsencrypt']
+     + ([] if server_gitea_on_atlas | bool else ['opt/gitea/data', 'home/git/.ssh'])
+     + ['opt/docker/server/docker-compose.yml',
+        'etc/systemd/system/podman-compose-server.service',
+        'etc/ssh/sshd_config', 'etc/ssh/sshd_config.d',
+        'etc/firewalld', 'etc/wireguard/wg0.conf'] }}
+server_backup_export_excludes: >-
+  {{ ['opt/npm/data/logs']
+     + ([] if server_gitea_on_atlas | bool else
+        ['opt/gitea/data/gitea/log', 'opt/gitea/data/gitea/tmp',
+         'opt/gitea/data/gitea/sessions', 'opt/gitea/data/gitea/indexers']) }}
 server_ssh_authorized_keys: []
 server_ssh_authorized_key_directory: "{{ server_user_home }}/.ssh/authorized_keys.d"

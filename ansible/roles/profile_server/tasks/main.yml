@@ -37,7 +37,7 @@
     label: "{{ item.dest }}"
 
 - name: Render server templates
-  tags: [dotfiles, dotfiles:server]
+  tags: [dotfiles, dotfiles:server, gitea_cutover]
   ansible.builtin.template:
     src: "{{ item.src }}"
     dest: "{{ item.dest if item.dest.startswith('/') else server_user_home ~ '/' ~ item.dest }}"
@@ -61,6 +61,9 @@
 
 - name: Import explicit Prometheus Gitea final-export tasks
   ansible.builtin.import_tasks: gitea_final_export.yml
+
+- name: Import Prometheus Gitea SSH proxy tasks
+  ansible.builtin.import_tasks: gitea_ssh_proxy.yml
 
 - name: Ensure server SSH authorized key fragments directory exists
   tags: [services, ssh]

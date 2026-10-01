@@ -178,6 +178,10 @@ atlas_gitea_dataset: "{{ atlas_zfs_pool }}/services/data/gitea"
 atlas_gitea_mountpoint: "{{ atlas_app_data_mountpoint }}/gitea"
 atlas_gitea_quadlet_dir: "{{ atlas_gitea_home }}/.config/containers/systemd"
 atlas_gitea_image: docker.gitea.com/gitea:1.25.2-rootless
+atlas_gitea_production_enabled: false
+atlas_gitea_bind_address: "{{ ansible_host }}"
+atlas_gitea_http_port: 3000
+atlas_gitea_ssh_port: 2222
 atlas_gitea_staging_bind_address: 127.0.0.1
 atlas_gitea_staging_http_port: 3001
 atlas_gitea_staging_ssh_port: 2223

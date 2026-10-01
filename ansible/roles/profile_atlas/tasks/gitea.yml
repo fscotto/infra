@@ -14,9 +14,24 @@
           - atlas_gitea_gid | int != atlas_admin_gid | int
           - atlas_gitea_gid | int != atlas_immich_gid | int
           - atlas_gitea_staging_bind_address == '127.0.0.1'
+          - not (atlas_gitea_production_enabled | bool) or atlas_manage_firewall | bool
+          - not (atlas_gitea_production_enabled | bool) or atlas_gitea_bind_address == ansible_host
         fail_msg: >-
           Rootless Gitea preparation requires Atlas storage, an isolated service
           identity and dataset, and loopback-only staging ports.
+
+    - name: Inspect the final-restore marker before production activation
+      ansible.builtin.stat:
+        path: "{{ atlas_gitea_mountpoint }}/.final-sha256"
+      register: atlas_gitea_final_marker
+      when: atlas_gitea_production_enabled | bool
+
+    - name: Refuse production activation without the final consistent restore
+      ansible.builtin.assert:
+        that:
+          - atlas_gitea_final_marker.stat.isreg | default(false)
+        fail_msg: Restore the final stopped-source Gitea export before enabling production.
+      when: atlas_gitea_production_enabled | bool
 
     - name: Create the dedicated Gitea group
       ansible.builtin.group:
@@ -114,13 +129,27 @@
         state: started
       when: not ansible_check_mode
 
-    - name: Render the disabled rootless Gitea Quadlet
+    - name: Render the rootless Gitea Quadlet
       ansible.builtin.template:
         src: atlas-gitea.container.j2
         dest: "{{ atlas_gitea_quadlet_dir }}/atlas-gitea.container"
         owner: "{{ atlas_gitea_username }}"
         group: "{{ atlas_gitea_group }}"
         mode: "0644"
+
+    - name: Permit only Aegis to reach production Gitea HTTP and SSH
+      ansible.posix.firewalld:
+        rich_rule: >-
+          rule family="ipv4" source address="{{ atlas_aegis_ip }}"
+          port port="{{ item }}" protocol="tcp" accept
+        zone: "{{ atlas_firewalld_zone }}"
+        state: "{{ 'enabled' if atlas_gitea_production_enabled | bool else 'disabled' }}"
+        permanent: true
+        immediate: true
+      loop:
+        - "{{ atlas_gitea_http_port }}"
+        - "{{ atlas_gitea_ssh_port }}"
+      when: atlas_manage_firewall | bool
 
     - name: Reload the rootless Gitea user manager without starting Gitea
       become_user: "{{ atlas_gitea_username }}"
@@ -131,3 +160,17 @@
         XDG_RUNTIME_DIR: "/run/user/{{ atlas_gitea_uid }}"
         DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ atlas_gitea_uid }}/bus"
       when: not ansible_check_mode
+
+    - name: Start and enable the rootless Gitea user Quadlet after final restore
+      become_user: "{{ atlas_gitea_username }}"
+      ansible.builtin.systemd:
+        name: atlas-gitea.service
+        scope: user
+        state: started
+        enabled: true
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ atlas_gitea_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ atlas_gitea_uid }}/bus"
+      when:
+        - atlas_gitea_production_enabled | bool
+        - not ansible_check_mode

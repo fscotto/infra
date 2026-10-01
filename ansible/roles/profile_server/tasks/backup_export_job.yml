@@ -44,7 +44,7 @@
   when: server_backup_export_enabled | bool
 
 - name: Install Prometheus backup export helper
-  tags: [services, backup, prometheus_backup]
+  tags: [services, backup, prometheus_backup, gitea_cutover]
   ansible.builtin.template:
     src: prometheus-backup-export.sh.j2
     dest: /usr/local/sbin/prometheus-backup-export

@@ -59,7 +59,7 @@ stack_stopped=true
 systemctl stop "$stack_unit"
 tar --acls --xattrs --selinux "${excludes[@]}" -C / -cf "$stage/payload.tar" "${paths[@]}"
 systemctl start "$stack_unit"
-for container in nginx-proxy-manager gitea; do
+for container in nginx-proxy-manager{% if not server_gitea_on_atlas | bool %} gitea{% endif %}; do
   running=false
   for _ in {1..30}; do
     if [[ $(podman inspect --format '{{ '{{.State.Running}}' }}' "$container" 2>/dev/null) == true ]]; then

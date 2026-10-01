@@ -35,6 +35,15 @@ Uranus; NPM remains on Prometheus.
 
 ## Phase 1: prepare without traffic changes
 
+Preparation completed on 2026-10-01: Ansible created
+`zpool/services/data/gitea`, a dedicated non-login `gitea` account (UID/GID
+1101), separate subordinate IDs, parent-dataset traverse ACLs, and an inactive
+user Quadlet under `/var/lib/atlas-gitea/.config/containers/systemd/`. The
+Quadlet has no `[Install]` section and, until the final cutover, binds only
+loopback staging ports 3001/2223 if started manually. A second targeted
+Ansible run changed nothing; the generated service was inactive and neither
+staging port listened. **No Gitea payload has been restored to the target.**
+
 1. Provision a dedicated target dataset and non-login service identity via
    Ansible, keeping UID/GID distinct from Atlas' reserved Immich `1100`.
    Install the user Quadlet in that identity's

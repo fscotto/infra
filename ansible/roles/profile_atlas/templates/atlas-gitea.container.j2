@@ -1,0 +1,20 @@
+# Managed by Ansible. Staging only: no [Install], no automatic start.
+[Unit]
+Description=Atlas rootless Gitea staging target
+RequiresMountsFor={{ atlas_gitea_mountpoint }}
+
+[Container]
+ContainerName=atlas-gitea
+Image={{ atlas_gitea_image }}
+UserNS=keep-id:uid=1000,gid=1000
+PublishPort={{ atlas_gitea_staging_bind_address }}:{{ atlas_gitea_staging_http_port }}:3000
+PublishPort={{ atlas_gitea_staging_bind_address }}:{{ atlas_gitea_staging_ssh_port }}:2222
+Volume={{ atlas_gitea_mountpoint }}/data:/var/lib/gitea:Z
+Volume={{ atlas_gitea_mountpoint }}/config:/etc/gitea:Z
+NoNewPrivileges=true
+DropCapability=all
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=900

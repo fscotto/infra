@@ -165,6 +165,23 @@ atlas_prometheus_pull_keep_monthly: 12
 atlas_prometheus_pull_max_age_hours: 24
 atlas_photobook_mountpoint: "{{ atlas_mount_root }}/{{ atlas_zfs_dataset_photobook }}"
 
+# Staged rootless Gitea target. Preparation never starts the user Quadlet or opens ingress.
+atlas_manage_gitea: false
+atlas_gitea_username: gitea
+atlas_gitea_group: gitea
+atlas_gitea_uid: 1101
+atlas_gitea_gid: 1101
+atlas_gitea_subid_start: 165536
+atlas_gitea_subid_count: 65536
+atlas_gitea_home: /var/lib/atlas-gitea
+atlas_gitea_dataset: "{{ atlas_zfs_pool }}/services/data/gitea"
+atlas_gitea_mountpoint: "{{ atlas_app_data_mountpoint }}/gitea"
+atlas_gitea_quadlet_dir: "{{ atlas_gitea_home }}/.config/containers/systemd"
+atlas_gitea_image: docker.gitea.com/gitea:1.25.2-rootless
+atlas_gitea_staging_bind_address: 127.0.0.1
+atlas_gitea_staging_http_port: 3001
+atlas_gitea_staging_ssh_port: 2223
+
 atlas_45drives_repo_url: https://repo.45drives.com/repofiles/rocky/45drives-enterprise.repo
 atlas_45drives_repo_file: /etc/yum.repos.d/45drives-enterprise.repo
 atlas_45drives_packages:

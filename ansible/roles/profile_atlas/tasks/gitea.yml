@@ -1,0 +1,133 @@
+---
+- name: Prepare the isolated rootless Atlas Gitea target
+  tags: [atlas, gitea]
+  when: atlas_manage_gitea | bool
+  block:
+    - name: Require the existing Atlas application-data dataset
+      ansible.builtin.assert:
+        that:
+          - atlas_manage_storage | bool
+          - atlas_gitea_dataset == atlas_zfs_pool ~ '/services/data/gitea'
+          - atlas_gitea_mountpoint == atlas_app_data_mountpoint ~ '/gitea'
+          - atlas_gitea_uid | int != atlas_admin_uid | int
+          - atlas_gitea_uid | int != atlas_immich_uid | int
+          - atlas_gitea_gid | int != atlas_admin_gid | int
+          - atlas_gitea_gid | int != atlas_immich_gid | int
+          - atlas_gitea_staging_bind_address == '127.0.0.1'
+        fail_msg: >-
+          Rootless Gitea preparation requires Atlas storage, an isolated service
+          identity and dataset, and loopback-only staging ports.
+
+    - name: Create the dedicated Gitea group
+      ansible.builtin.group:
+        name: "{{ atlas_gitea_group }}"
+        gid: "{{ atlas_gitea_gid }}"
+        system: true
+        state: present
+
+    - name: Create the non-login Gitea service account
+      ansible.builtin.user:
+        name: "{{ atlas_gitea_username }}"
+        uid: "{{ atlas_gitea_uid }}"
+        group: "{{ atlas_gitea_group }}"
+        home: "{{ atlas_gitea_home }}"
+        shell: /sbin/nologin
+        create_home: true
+        system: true
+        state: present
+
+    - name: Restrict the Gitea service home
+      ansible.builtin.file:
+        path: "{{ atlas_gitea_home }}"
+        state: directory
+        owner: "{{ atlas_gitea_username }}"
+        group: "{{ atlas_gitea_group }}"
+        mode: "0700"
+
+    - name: Reserve dedicated rootless UID and GID ranges for Gitea
+      ansible.builtin.lineinfile:
+        path: "{{ item }}"
+        regexp: '^{{ atlas_gitea_username }}:'
+        line: >-
+          {{ atlas_gitea_username }}:{{ atlas_gitea_subid_start }}:{{ atlas_gitea_subid_count }}
+        create: false
+        mode: "0644"
+      loop:
+        - /etc/subuid
+        - /etc/subgid
+
+    - name: Enable POSIX ACLs only on the service-namespace parents
+      community.general.zfs:
+        name: "{{ item }}"
+        state: present
+        extra_zfs_properties:
+          acltype: posix
+      loop:
+        - "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_services }}"
+        - "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_app_data }}"
+
+    - name: Permit Gitea to traverse only the application-data parents
+      ansible.posix.acl:
+        path: "{{ item }}"
+        entity: "{{ atlas_gitea_username }}"
+        etype: user
+        permissions: x
+        state: present
+      loop:
+        - "{{ atlas_services_mountpoint }}"
+        - "{{ atlas_app_data_mountpoint }}"
+
+    - name: Create the dedicated Gitea ZFS dataset
+      community.general.zfs:
+        name: "{{ atlas_gitea_dataset }}"
+        state: present
+        extra_zfs_properties:
+          compression: zstd
+          mountpoint: "{{ atlas_gitea_mountpoint }}"
+
+    - name: Restrict the Gitea dataset and create rootless volume paths
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ atlas_gitea_username }}"
+        group: "{{ atlas_gitea_group }}"
+        mode: "0700"
+      loop:
+        - "{{ atlas_gitea_mountpoint }}"
+        - "{{ atlas_gitea_mountpoint }}/data"
+        - "{{ atlas_gitea_mountpoint }}/config"
+        - "{{ atlas_gitea_home }}/.config"
+        - "{{ atlas_gitea_home }}/.config/containers"
+        - "{{ atlas_gitea_quadlet_dir }}"
+
+    - name: Enable lingering for the dedicated rootless account
+      ansible.builtin.command:
+        argv:
+          - loginctl
+          - enable-linger
+          - "{{ atlas_gitea_username }}"
+        creates: "/var/lib/systemd/linger/{{ atlas_gitea_username }}"
+
+    - name: Start the dedicated rootless user manager
+      ansible.builtin.systemd:
+        name: "user@{{ atlas_gitea_uid }}.service"
+        state: started
+      when: not ansible_check_mode
+
+    - name: Render the disabled rootless Gitea Quadlet
+      ansible.builtin.template:
+        src: atlas-gitea.container.j2
+        dest: "{{ atlas_gitea_quadlet_dir }}/atlas-gitea.container"
+        owner: "{{ atlas_gitea_username }}"
+        group: "{{ atlas_gitea_group }}"
+        mode: "0644"
+
+    - name: Reload the rootless Gitea user manager without starting Gitea
+      become_user: "{{ atlas_gitea_username }}"
+      ansible.builtin.systemd:
+        scope: user
+        daemon_reload: true
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ atlas_gitea_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ atlas_gitea_uid }}/bus"
+      when: not ansible_check_mode

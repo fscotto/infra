@@ -14,6 +14,9 @@
 - name: Import Atlas storage tasks
   ansible.builtin.import_tasks: storage.yml
 
+- name: Import staged Atlas rootless Gitea tasks
+  ansible.builtin.import_tasks: gitea.yml
+
 - name: Import Atlas ZFS maintenance tasks
   ansible.builtin.import_tasks: zfs_maintenance.yml
 

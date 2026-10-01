@@ -322,6 +322,10 @@ alla LAN. Dopo la verifica dei servizi, configurare manualmente i Proxy Host NPM
 negli `AllowedIPs`; aggiungere la VIP Uranus quando esisterà. Dopo il reload di firewalld, Ansible
 ricarica le reti Podman rootful di Prometheus per conservare DNS e connettività del proxy.
 
+La migrazione Gitea da Prometheus ad Atlas è pianificata, ma non ancora eseguita, in
+[`docs/atlas-gitea-migration.md`](docs/atlas-gitea-migration.md). NPM resta su Prometheus;
+stack sorgente e instradamento pubblico rimangono invariati fino a un cutover separato e validato.
+
 Validare il gateway con:
 
 ```bash

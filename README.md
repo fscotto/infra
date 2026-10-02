@@ -224,8 +224,8 @@ opened and closed manually during initial setup. The profile disables the local 
 stub and points `/etc/resolv.conf` to its full resolver data, freeing port 53 for AdGuard. LAN clients
 may use AdGuard on Aegis, while Aegis itself uses the independent upstream DNS declared by
 `aegis_host_dns_servers`; this prevents Greenboot from depending on the AdGuard container during
-startup. Reboot Aegis after changing its NetworkManager DNS profile. The retired Aegis iCloudPD service, Quadlet and `/var/lib/icloudpd` state are removed by the
-Aegis role when applied with interactive sudo; Atlas iCloudPD configuration and MFA are manual.
+startup. Reboot Aegis after changing its NetworkManager DNS profile. iCloudPD was retired from Aegis;
+the Aegis role no longer contains iCloudPD tasks. Atlas iCloudPD configuration and MFA are manual.
 
 New Aegis images create the `admin` account in Butane. Before configuring a newly imaged node, run its
 first playbook execution with `-e ansible_user=admin`; the SSH hardening role then permits that same
@@ -545,8 +545,8 @@ it before the data-protection checklist is complete.
 Atlas is the declared future iCloud photo-ingestion host. Ansible manages only an inactive rootless
 Quadlet and separate storage for photos under `/zpool/archive/Pictures/iCloudPD` and private state in
 `zpool/services/data/icloudpd`; it does not configure, start, or enable the app. The operator will
-configure and initialize it manually. Aegis iCloudPD is removed from desired state, including its
-service data; live removal still requires an interactive-sudo deployment and verification. The
+configure and initialize it manually. Aegis iCloudPD, including its service data, has been removed
+and verified; the Aegis role no longer manages it. The
 Photobook NFS export remains untouched. See
 [`docs/atlas-icloudpd-migration.md`](docs/atlas-icloudpd-migration.md).
 

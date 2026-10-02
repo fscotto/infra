@@ -7,9 +7,9 @@ inactive rootless Quadlet; it does not manage Apple configuration or MFA.
 Do not place cookies, keyring files, passwords, or the Apple ID in this document,
 the repository, or a terminal transcript.
 
-## Observed source and destination (2026-10-02)
+## Historical source and current destination (2026-10-02)
 
-- Aegis' rootful `icloudpd.service` is active (no reported restarts, running
+- Before retirement, Aegis' rootful `icloudpd.service` was active (no reported restarts, running
   since 2026-07-25), but its declared data bind `/var/lib/icloudpd/data`
   has **zero top-level entries** and is 4 KiB as observed on 2026-10-02.
   Its persistent config has two top-level entries. `pi` cannot run passwordless
@@ -26,8 +26,8 @@ the repository, or a terminal transcript.
   Do not copy this config or assume that its MFA state is usable on Atlas.
 - Atlas' `zpool` is healthy. `/zpool/archive/Pictures` already contains about
   25 GiB of unrelated data; iCloudPD gets only a new managed
-  `/zpool/archive/Pictures/iCloudPD` subtree. Neither that subtree nor
-  `zpool/services/data/icloudpd` exists. Never rsync with `--delete` into
+  `/zpool/archive/Pictures/iCloudPD` subtree. Both that subtree and
+  `zpool/services/data/icloudpd` were created on 2026-10-02. Never rsync with `--delete` into
   Pictures or adopt its existing contents. `/zpool/media/photobook` is reserved
   for Immich and remains untouched, including its Aegis-only NFS export.
 
@@ -98,15 +98,13 @@ completed backup or restore of iCloudPD data**, which does not exist yet.
 
 ## Remaining validation
 
-- Apply the Aegis desired-absent role with interactive sudo (`-K`) and verify
-  `icloudpd.service` stopped/disabled, the rootful Quadlet absent, and
-  `/var/lib/icloudpd` absent. The operator explicitly authorized deletion of
-  this data and MFA state despite the uninspected container overlay. Ansible
-  refuses deletion if a mount exists under that path. The Podman image cache
-  may remain; it is not service data.
-- Apply the Atlas `icloudpd` tag to create only the state dataset, photo
-  subtree, marker, and inactive `admin` Quadlet. Confirm no service/container
-  was started and that `/zpool/media/photobook` was unchanged.
+- Aegis retirement is complete: `icloudpd.service` is `not-found`/`inactive`,
+  the rootful Quadlet and `/var/lib/icloudpd` are absent, and AdGuard is active.
+  The temporary retirement tasks are no longer in the Aegis role. The Podman
+  image cache may remain; it is not service data.
+- Atlas storage and the inactive `admin` Quadlet are deployed. The second
+  Ansible run changed nothing; no config was rendered or service started.
+  `/zpool/media/photobook` was unchanged.
 - The operator must write `/zpool/services/data/icloudpd/config/icloudpd.conf`
   privately, handle Apple authentication/MFA, and start the generated user
   service manually. Do not put credentials or MFA codes in Ansible extra-vars,
@@ -120,8 +118,7 @@ completed backup or restore of iCloudPD data**, which does not exist yet.
 
 On 2026-10-02 Atlas storage and the inactive Quadlet were deployed; a second
 Ansible run made zero changes. The generated service was inactive, and no
-`icloudpd.conf` existed. An interactive-sudo Aegis run on 2026-10-02 removed the Quadlet and
-`/var/lib/icloudpd`; AdGuard stayed active. The retired unit is `not-found`
-but retains a `failed` record because Podman needed SIGKILL while stopping.
-The role now clears that record on a subsequent run. The earlier unassisted
-Ansible dry-run failed at fact gathering with `Missing sudo password`.
+`icloudpd.conf` existed. Two interactive-sudo Aegis runs removed its service,
+Quadlet and `/var/lib/icloudpd`, then cleared the failed-unit record left by a
+SIGKILL during shutdown. Read-only verification found `LoadState=not-found`,
+`ActiveState=inactive`, both paths absent, and AdGuard active.

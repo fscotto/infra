@@ -18,7 +18,3 @@
     - adguardhome.service
   loop_control:
     label: "{{ item }}"
-
-- name: Reload Aegis systemd
-  ansible.builtin.systemd:
-    daemon_reload: true

@@ -49,8 +49,6 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
   - Atlas NAS: `ansible-playbook ansible/site.yml --limit atlas --check --diff`
   - Aegis IoT: `ansible-playbook ansible/site.yml --limit aegis --check --diff`
   - Aegis NFS client layer: `ansible-playbook ansible/site.yml --limit aegis --tags nfs --list-tasks`
-  - Aegis iCloudPD retirement (stops service and deletes its Quadlet and state; interactive sudo):
-    `ansible-playbook ansible/site.yml --limit aegis --tags icloudpd -K`
   - Aegis host DNS: `ansible-playbook ansible/site.yml --limit aegis --tags dns --check --diff`
 - Focused checks:
   - Emacs is disabled by default; temporary Emacs check: `ansible-playbook ansible/site.yml --limit <host> --tags emacs --check --diff -e emacs_enabled=true`
@@ -373,13 +371,11 @@ successfully. The first monthly scrub remains a runtime check.
   and start it manually. The isolated no-network layout test is documented in
   `docs/atlas-icloudpd-migration.md`. On 2026-10-02 Atlas deployment and a second idempotent run
   passed; the service was inactive and no app config existed. No real Atlas download has been verified.
-- [ ] Retire Aegis iCloudPD completely. The user authorized stopping/disabling the service and
-  deleting its Quadlet, `/var/lib/icloudpd` data, and MFA state despite an unaudited container
-  overlay. The desired Aegis role is declaratively absent and guards mounted state, but runtime
-  removal requires an Ansible run with interactive sudo (`-K`). The 2026-10-02 run removed the
-  Quadlet and `/var/lib/icloudpd`; AdGuard remained active. The old unit is `not-found` but retains
-  a `failed` record after Podman needed SIGKILL during stop. Rerun the role to clear that record
-  before marking retirement complete.
+- [x] Retire Aegis iCloudPD completely. The operator authorized deleting its Quadlet,
+  `/var/lib/icloudpd` data, and MFA state despite an unaudited container overlay. After two
+  interactive-sudo runs on 2026-10-02, the unit is `not-found`/`inactive`, the Quadlet and state
+  directory are absent, and AdGuard remains active. The temporary retirement tasks have since
+  been removed from the Aegis role; it no longer manages iCloudPD.
 - [ ] Validate Atlas iCloudPD authentication, actual ingestion, filesystem/SELinux/SMB permissions,
   ZFS/Borg/USB backup inclusion, and isolated restore. The first monthly scrub remains a separate
   open data-protection check. The recursive Borg/USB source scope includes Archive and the proposed
@@ -459,6 +455,5 @@ validated exports of older historical data will use a dedicated Atlas NFS datase
   `/etc/resolv.conf` linked to `/run/systemd/resolve/resolv.conf`. LAN clients may use AdGuard, but
   Aegis must use the independent upstream DNS declared by `aegis_host_dns_servers` so Greenboot does
   not depend on the AdGuard container during startup.
-- Aegis iCloudPD is retired from desired state. A normal Aegis run stops/disables its service,
-  removes its Quadlet, and deletes `/var/lib/icloudpd` after checking for mounts. Use interactive
-  sudo locally (`-K`); never pass a sudo password in chat. This deletion was explicitly authorized.
+- Aegis iCloudPD has been retired and is no longer managed by this role. Its service, Quadlet,
+  data, and MFA state were removed with the operator's explicit authorization.

@@ -52,7 +52,7 @@ path, user/UID, and folder format as the bind mounts. References:
 | Image | Digest-pinned `docker.io/boredazfcuk/icloudpd`, with no registry auto-update |
 | SELinux | Private `:Z` config bind; shared `:z` photo bind for the NFS-visible subtree |
 | Access | A POSIX ACL grants `admin` traversal, not listing or writing, of the existing Photobook root. The new subtree is `admin:immich`, setgid, with a default read/traverse ACL for `immich` (NFS UID 1100). Rootless-created files need not retain group 1100; the inherited named ACL is the intended read path. Real NFS reads still require runtime testing. |
-| Sync policy | Daily interval; no iCloud deletion and no deletion of destination-only files |
+| Sync policy | Daily interval; explicit directory/file modes 750/640; no iCloud deletion and no deletion of destination-only files |
 
 The photo subtree receives a managed marker and the image's `.mounted` file.
 An existing unmarked path is refused rather than taken over. The existing

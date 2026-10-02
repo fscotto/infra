@@ -202,7 +202,7 @@ atlas_icloudpd_data_protection_verified: false
 atlas_icloudpd_dataset: "{{ atlas_zfs_pool }}/services/data/icloudpd"
 atlas_icloudpd_state_dir: "{{ atlas_app_data_mountpoint }}/icloudpd"
 atlas_icloudpd_config_dir: "{{ atlas_icloudpd_state_dir }}/config"
-atlas_icloudpd_photos_dir: "{{ atlas_photobook_mountpoint }}/iCloudPD"
+atlas_icloudpd_photos_dir: "{{ atlas_archive_mountpoint }}/Pictures/iCloudPD"
 atlas_icloudpd_image: >-
   docker.io/boredazfcuk/icloudpd@sha256:9966c31ddf0b5b306ac2410b4edd5d626806d96e80c92b83cbb689972dc9389f
 atlas_icloudpd_apple_id: "{{ vault_aegis_icloudpd_apple_id | default('') }}"

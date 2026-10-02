@@ -365,18 +365,19 @@ successfully. The first monthly scrub remains a runtime check.
 
 ### Priority 4 - Optional workflows
 - [ ] After data protection is validated, move iCloudPD photo ingestion from Aegis to Atlas as a
-  temporary service until Uranus is ready. Plan to store photos in `/zpool/media/photobook/iCloudPD` and
-  persistent application/MFA state outside `photobook`; validate permissions, SELinux, backups and
-  recovery before cutover. Keep the current Aegis service and Photobook NFS export unchanged until
-  the Atlas workflow is tested, then retire them explicitly if no longer needed. The gated design
-  and isolated, no-network container layout and ACL tests are documented in `docs/atlas-icloudpd-migration.md`.
+  temporary service until Uranus is ready. Store photos in a new managed
+  `/zpool/archive/Pictures/iCloudPD` subtree and persistent application/MFA state outside `Archive`;
+  validate permissions, SELinux, backups and recovery before cutover. Photobook remains reserved
+  for Immich. Keep the current Aegis service and Photobook NFS export unchanged until the Atlas
+  workflow is tested, then retire the Aegis service explicitly if no longer needed. The gated
+  design and isolated, no-network container layout test are documented in `docs/atlas-icloudpd-migration.md`.
   On 2026-10-02 Aegis' service was active but its declared data directory had zero top-level entries;
   container-overlay contents remain unaudited because `pi` lacks non-interactive sudo. Its
-  its persisted folder format contained a systemd generator path rather than the intended date
+  persisted folder format contained a systemd generator path rather than the intended date
   format; do not infer a healthy source from `systemctl is-active`. Atlas' existing 25 GiB Pictures
-  tree is not a migration target. The first scrub, real Atlas download, MFA, backup/restore and
+  tree must not be replaced or deleted. The first scrub, real Atlas download, MFA, backup/restore and
   explicit cutover remain unverified; neither host's ingestion service was changed. The existing
-  recursive Borg/USB source scope includes Photobook and the proposed state dataset; Borg's
+  recursive Borg/USB source scope includes Archive and the proposed state dataset; Borg's
   `CAP_DAC_READ_SEARCH` access was checked, but no iCloudPD version or restore exists yet.
 
 ## Cerberus Management Node (Deferred)

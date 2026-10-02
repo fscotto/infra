@@ -23,15 +23,11 @@ the repository, or a terminal transcript.
   cause. A running unit therefore does not prove that Aegis ingests photos.
   Do not copy this config or assume that its MFA state is usable on Atlas.
 - Atlas' `zpool` is healthy. `/zpool/archive/Pictures` already contains about
-  25 GiB of unrelated data and is **not** the destination. The approved photo
-  namespace is `/zpool/media/photobook`; its dataset is owned by `immich`
-  (UID/GID 1100), mode 0770, and exported only to Aegis with `all_squash`
-  to 1100. It currently has `acltype=off`. Neither the proposed
-  `/zpool/media/photobook/iCloudPD` subtree nor `zpool/services/data/icloudpd`
-  exists. The current ZFS mountpoint label is `unlabeled_t`, while Atlas has
-  `nfs_export_all_ro/rw` enabled; the effect of the proposed container `:z`
-  label on real NFS reads remains untested. Never rsync with `--delete` into
-  Photobook or adopt its contents.
+  25 GiB of unrelated data; iCloudPD gets only a new managed
+  `/zpool/archive/Pictures/iCloudPD` subtree. Neither that subtree nor
+  `zpool/services/data/icloudpd` exists. Never rsync with `--delete` into
+  Pictures or adopt its existing contents. `/zpool/media/photobook` is reserved
+  for Immich and remains untouched, including its Aegis-only NFS export.
 
 The upstream image documents `/config/icloudpd.conf` as its primary
 configuration (environment configuration is deprecated), an exact
@@ -45,18 +41,18 @@ path, user/UID, and folder format as the bind mounts. References:
 
 | Item | Location or policy |
 | --- | --- |
-| Downloaded photos | `/zpool/media/photobook/iCloudPD`, a new managed subtree of the existing Aegis-only NFS dataset |
-| Config, keyring, MFA cookies | `zpool/services/data/icloudpd` at `/zpool/services/data/icloudpd/config`, outside Photobook |
+| Downloaded photos | `/zpool/archive/Pictures/iCloudPD`, a new managed subtree of the SMB `Archive` dataset |
+| Config, keyring, MFA cookies | `zpool/services/data/icloudpd` at `/zpool/services/data/icloudpd/config`, outside Archive |
 | Host service owner | `admin` rootless user manager; no rootful Quadlet or published port |
 | Container identity | Entry process root in its user namespace; downloader UID/GID 1000 maps to host `admin` |
 | Image | Digest-pinned `docker.io/boredazfcuk/icloudpd`, with no registry auto-update |
-| SELinux | Private `:Z` config bind; shared `:z` photo bind for the NFS-visible subtree |
-| Access | A POSIX ACL grants `admin` traversal, not listing or writing, of the existing Photobook root. The new subtree is `admin:immich`, setgid, with a default read/traverse ACL for `immich` (NFS UID 1100). Rootless-created files need not retain group 1100; the inherited named ACL is the intended read path. Real NFS reads still require runtime testing. |
+| SELinux | Private `:Z` config bind; shared `:z` photo bind because Archive is also exposed through SMB and used by Syncthing. The label and SMB behavior require runtime testing. |
+| Access | The new subtree is `admin:admin` mode 0750. No Photobook ownership, ACL, or export changes. |
 | Sync policy | Daily interval; explicit directory/file modes 750/640; no iCloud deletion and no deletion of destination-only files |
 
 The photo subtree receives a managed marker and the image's `.mounted` file.
 An existing unmarked path is refused rather than taken over. The existing
-Photobook root is not chowned or emptied. The rootless
+Pictures tree is not chowned or emptied. The rootless
 Quadlet has no `[Install]` section and is not started while
 `atlas_icloudpd_start=false`. Preparation itself is disabled by default and
 requires `atlas_icloudpd_data_protection_verified=true`, which must only be
@@ -70,7 +66,7 @@ The gating paths were checked on Atlas on 2026-10-02: the default
 request without the data-protection flag failed at the first assertion with
 zero changes; and a startup request without preparation also failed at its
 first assertion with zero changes. A simulated approved preparation completed
-in check mode, showing only prospective dataset, ACL, directory, marker and
+in check mode, showing only prospective dataset, directory, marker and
 disabled-Quadlet changes. These checks do not authorize setting the flags.
 Separately, Atlas' actual Podman 5.8.2 user Quadlet generator accepted a
 secret-free rendering of the inactive template from a disposable `/var/tmp`
@@ -93,25 +89,20 @@ capabilities prevents its root entrypoint from reading an admin-owned 0600
 config; with the default rootless user-namespace capabilities it could read
 and write that file. The Quadlet retains `NoNewPrivileges=true` but does not
 drop every capability. This proves only the container layout and namespace mapping,
-**not** Apple authentication, a real download, NFS visibility, scheduled
+**not** Apple authentication, a real download, SMB visibility, scheduled
 operation, backup coverage, or recovery.
 
-An additional 2026-10-02 test used only a disposable `/var/tmp` tree on Atlas:
-an `immich:immich` mode-0770 parent granted `admin` execute-only ACL access,
-and an `admin:immich` mode-2750 child had the proposed default ACL. The pinned
-image, run rootless as downloader UID 1000 with no network, created a nested
-directory and file. Their host IDs were `1000:100000`, not group 1100, but
-the inherited ACL let host UID 1100 read/traverse them; it could not write to
-the top-level photo directory, and `admin` could not list the parent. The
-temporary tree and container were removed. This confirms local namespace/ACL
-behavior, **not** an Aegis NFS read or behavior on the actual ZFS dataset.
+The earlier disposable Photobook ACL test is superseded by the operator's
+clarification that Photobook belongs to Immich. It is not evidence for the
+current Archive destination, and the proposed Photobook ACL change was never
+deployed.
 
 Backup path review on 2026-10-02: the managed Borg and USB scripts snapshot
 the pool recursively and bind every mounted child dataset, so both
-`media/photobook` and the proposed `services/data/icloudpd` fall within their
+`archive` and the proposed `services/data/icloudpd` fall within their
 declared source scope. Borg's runner switches to the dedicated `borg` account
 with only `CAP_DAC_READ_SEARCH`; a read-only check using those exact `setpriv`
-capability flags could traverse/read both Photobook and Archive, whereas plain
+capability flags could traverse/read Archive, whereas plain
 `sudo -u borg` could not. USB copies as root and preserves POSIX ACLs, but not
 generic xattrs/SELinux labels. **This is scope and permission evidence, not a
 completed backup or restore of iCloudPD data**, which does not exist yet.
@@ -142,9 +133,9 @@ completed backup or restore of iCloudPD data**, which does not exist yet.
    inspect disk growth and Apple's response before allowing ongoing runs.
 4. Verify that actual photos arrive only under the new subtree with the
    declared date structure, owner/mode and SELinux label. Compare file count,
-   representative hashes/metadata, Aegis NFS read access as UID 1100, next
+   representative hashes/metadata, SMB read access, next
    scheduled result, and absence of unwanted deletions. The pre-existing
-   25 GiB under Archive/Pictures must remain unchanged.
+   unrelated 25 GiB under Archive/Pictures must remain unchanged.
 5. Verify recursive ZFS snapshot inclusion, a completed Borg archive, and a
    published USB version containing **both** photos and private state. Restore
    representative photos and the app config into an isolated 0700 directory;

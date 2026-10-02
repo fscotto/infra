@@ -140,7 +140,7 @@ atlas_monitor_remote_capacity:
 atlas_manage_sharing: true
 atlas_manage_media_stack: false
 # Planned after data-protection validation: move iCloudPD photo ingestion from
-# Aegis to Atlas, with photos under /zpool/media/photobook and persistent
+# Aegis to Atlas, with photos under /zpool/archive/Pictures/iCloudPD and
 # application/MFA state in a separate dataset. Do not deploy or cut over yet.
 
 # WireGuard is retired on Atlas. These rootless services are a temporary home

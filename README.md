@@ -544,7 +544,7 @@ publishing through Aegis, and defined backup, upgrade, and eventual migration pr
 it before the data-protection checklist is complete.
 
 The desired future iCloud photo-ingestion host is Atlas, not Aegis. After data-protection validation,
-plan an explicit iCloudPD migration with photos under `/zpool/archive/Pictures` and application/MFA
+plan an explicit iCloudPD migration with photos under `/zpool/archive/Pictures/iCloudPD` and application/MFA
 state outside `Archive`, then test permissions, SELinux, backups and recovery before cutting over.
 The current Aegis iCloudPD service and Atlas Photobook NFS export remain configured until that
 separate migration is approved and validated; the eventual Atlas service is temporary until Uranus.

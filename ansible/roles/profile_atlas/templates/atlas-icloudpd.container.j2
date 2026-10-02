@@ -1,0 +1,25 @@
+# Managed by Ansible. No install target until an explicit startup approval.
+[Unit]
+Description=Atlas rootless iCloud Photos Downloader
+RequiresMountsFor={{ atlas_icloudpd_state_dir }} {{ atlas_icloudpd_photos_dir }}
+
+[Container]
+ContainerName=atlas-icloudpd
+Image={{ atlas_icloudpd_image }}
+UserNS=keep-id:uid=1000,gid=1000
+# The image initialises its unprivileged UID 1000 account as container root.
+User=0
+Environment=TZ={{ atlas_icloudpd_timezone }}
+Volume={{ atlas_icloudpd_photos_dir }}:/home/user/iCloud:z
+Volume={{ atlas_icloudpd_config_dir }}:/config:Z
+NoNewPrivileges=true
+
+[Service]
+Restart=on-failure
+RestartSec=300
+TimeoutStartSec=900
+{% if atlas_icloudpd_start | bool %}
+
+[Install]
+WantedBy=default.target
+{% endif %}

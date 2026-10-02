@@ -1,0 +1,13 @@
+# Managed by Ansible. Keep MFA cookies and keyring in this private /config volume.
+[icloudpd]
+apple_id = {{ atlas_icloudpd_apple_id }}
+authentication_type = MFA
+user = user
+user_id = 1000
+group = group
+group_id = 1000
+download_path = /home/user/iCloud
+folder_structure = {:%Y/%m/%d}
+download_interval = {{ atlas_icloudpd_download_interval }}
+auto_delete = false
+delete_after_download = false

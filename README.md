@@ -548,6 +548,9 @@ plan an explicit iCloudPD migration with photos under `/zpool/archive/Pictures` 
 state outside `Archive`, then test permissions, SELinux, backups and recovery before cutting over.
 The current Aegis iCloudPD service and Atlas Photobook NFS export remain configured until that
 separate migration is approved and validated; the eventual Atlas service is temporary until Uranus.
+The gated Atlas layout, source-state caveats and cutover checks are in
+[`docs/atlas-icloudpd-migration.md`](docs/atlas-icloudpd-migration.md). No Atlas iCloudPD service
+has been started.
 
 The first scheduled Prometheus backup runs and production-size disaster-recovery tests remain follow-up work. The prioritized
 operational backlog is kept in `AGENTS.md`.

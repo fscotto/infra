@@ -527,7 +527,10 @@ della protezione dei dati: richiede storage applicativo, database e cache separa
 pubblicazione solo tramite NPM e Aegis, procedure di backup, aggiornamento e migrazione. Non
 distribuirlo prima di completare la checklist di protezione dei dati.
 
-La destinazione futura per l'importazione foto iCloud è Atlas, non Aegis. Dopo la validazione dei
+La destinazione futura per l'importazione foto iCloud è Atlas, non Aegis. Il progetto con gate,
+test isolato e verifiche prima del cutover è in
+[`docs/atlas-icloudpd-migration.md`](docs/atlas-icloudpd-migration.md); nessun servizio Atlas
+iCloudPD è stato avviato. Dopo la validazione dei
 backup, pianificare una migrazione esplicita di iCloudPD con foto sotto `/zpool/archive/Pictures` e
 stato applicativo/MFA fuori da `Archive`; testare permessi, SELinux, backup e restore prima del
 cutover. L'attuale iCloudPD su Aegis e l'export NFS Photobook restano configurati fino

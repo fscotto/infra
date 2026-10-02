@@ -59,6 +59,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff`
   - Atlas rootless Gitea staging (does not start Gitea):
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea --check --diff`
+  - Atlas gated iCloudPD design (disabled by default; does not start it):
+    `ansible-playbook ansible/site.yml --limit atlas --tags icloudpd --check --diff`
   - Atlas explicit Gitea host-owner migration (live outage; never a normal run):
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea_owner_migration -e atlas_gitea_owner_migration=true`
   - Atlas explicit isolated Gitea restore rehearsal (not part of normal runs):
@@ -366,7 +368,13 @@ successfully. The first monthly scrub remains a runtime check.
   temporary service until Uranus is ready. Plan to store photos in `/zpool/archive/Pictures` and
   persistent application/MFA state outside `Archive`; validate permissions, SELinux, backups and
   recovery before cutover. Keep the current Aegis service and Photobook NFS export unchanged until
-  the Atlas workflow is tested, then retire them explicitly if no longer needed.
+  the Atlas workflow is tested, then retire them explicitly if no longer needed. The gated design
+  and isolated, no-network container layout test are documented in `docs/atlas-icloudpd-migration.md`.
+  On 2026-10-02 Aegis' service was active but its declared data directory exposed no files, and
+  its persisted folder format contained a systemd generator path rather than the intended date
+  format; do not infer a healthy source from `systemctl is-active`. Atlas' existing 25 GiB Pictures
+  tree is not a migration target. The first scrub, real Atlas download, MFA, backup/restore and
+  explicit cutover remain unverified; neither host's ingestion service was changed.
 
 ## Cerberus Management Node (Deferred)
 `cerberus` is postponed until the office in the new house is physically set up. It is not an inventory

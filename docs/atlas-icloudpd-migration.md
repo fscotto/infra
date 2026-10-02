@@ -65,6 +65,14 @@ Apple ID is read from the existing Vault value only on explicit startup;
 Ansible renders the private config with `no_log` and no diff. Aegis remains
 unchanged throughout preparation.
 
+The gating paths were checked on Atlas on 2026-10-02: the default
+`--tags icloudpd --check --diff` run proposed zero changes; a preparation
+request without the data-protection flag failed at the first assertion with
+zero changes; and a startup request without preparation also failed at its
+first assertion with zero changes. A simulated approved preparation completed
+in check mode, showing only prospective dataset, ACL, directory, marker and
+disabled-Quadlet changes. These checks do not authorize setting the flags.
+
 ## Evidence already gathered without production writes
 
 The digest-pinned image was pulled into **admin's** Atlas Podman store. An
@@ -107,6 +115,9 @@ completed backup or restore of iCloudPD data**, which does not exist yet.
 1. Verify the first completed monthly scrub from its service result, current
    pool/backup/alert health, free capacity, and a recent recoverable ZFS,
    Borg, and UUID-bound USB version. Do not treat active timers as proof.
+   On 2026-10-02 the pool was healthy and Borg's last service result was a
+   successful 09:31 CEST run, but `zfs-scrub-monthly@zpool.service` still had
+   no execution timestamp; the timer's next run was 2026-10-04 03:00 CEST.
    Before changing the Aegis service, inspect the running container's actual
    `/home/user/iCloud` and `/home/root/iCloud` sizes with local root access,
    without copying or displaying filenames, credentials, or MFA material.

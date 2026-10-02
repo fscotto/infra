@@ -110,10 +110,10 @@
     - name: Require the Vault-backed iCloudPD Apple ID
       ansible.builtin.assert:
         that:
-          - vault_aegis_icloudpd_apple_id is defined
-          - vault_aegis_icloudpd_apple_id | length > 0
-          - vault_aegis_icloudpd_apple_id != 'REPLACE_ME'
-          - vault_aegis_icloudpd_apple_id.splitlines() | length == 1
+          - vault_atlas_icloudpd_apple_id is defined
+          - vault_atlas_icloudpd_apple_id | length > 0
+          - vault_atlas_icloudpd_apple_id != 'REPLACE_ME'
+          - vault_atlas_icloudpd_apple_id.splitlines() | length == 1
         fail_msg: Configure the existing iCloudPD Apple ID in Vault.
       no_log: true
 
@@ -137,7 +137,7 @@
         group: "{{ atlas_admin_group }}"
         mode: "0600"
       loop:
-        - {key: apple_id, value: "{{ vault_aegis_icloudpd_apple_id }}"}
+        - {key: apple_id, value: "{{ vault_atlas_icloudpd_apple_id }}"}
         - {key: authentication_type, value: MFA}
         - {key: user, value: user}
         - {key: user_id, value: "1000"}

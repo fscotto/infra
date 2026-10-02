@@ -135,9 +135,9 @@ The 2026-10-02 Atlas `icloudpd` run rendered the Vault-backed template without
 printing its contents; the second run made zero changes. File owner is
 `admin:admin`, mode 0600, and the Apple ID field is nonempty. The rootless
 service remained active with zero restarts. Keyring initialization, cookie
-creation and a real download are still unverified. The existing Vault variable
-retains its historical `vault_aegis_icloudpd_apple_id` name; no password or
-MFA code was added to Vault.
+creation and a real download are still unverified. The template now reads
+`vault_atlas_icloudpd_apple_id`, which is already present in the encrypted
+Vault; no password or MFA code was added to the template.
 
 The attempted interactive initialization then lost its container. Diagnosis
 found that the image launcher requires `traceroute` to pass its iCloud

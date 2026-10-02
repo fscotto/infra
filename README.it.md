@@ -531,8 +531,8 @@ La destinazione futura per l'importazione foto iCloud è Atlas, non Aegis. Il pr
 test isolato e verifiche prima del cutover è in
 [`docs/atlas-icloudpd-migration.md`](docs/atlas-icloudpd-migration.md); nessun servizio Atlas
 iCloudPD è stato avviato. Dopo la validazione dei
-backup, pianificare una migrazione esplicita di iCloudPD con foto sotto `/zpool/archive/Pictures` e
-stato applicativo/MFA fuori da `Archive`; testare permessi, SELinux, backup e restore prima del
+backup, pianificare una migrazione esplicita di iCloudPD con foto sotto `/zpool/media/photobook/iCloudPD` e
+stato applicativo/MFA fuori da `photobook`; testare permessi, SELinux, backup e restore prima del
 cutover. L'attuale iCloudPD su Aegis e l'export NFS Photobook restano configurati fino
 all'approvazione e alla verifica di questa migrazione separata. Anche il servizio Atlas sarà
 temporaneo in attesa di Uranus.

@@ -19,9 +19,12 @@ the repository, or a terminal transcript.
   cause. A running unit therefore does not prove that Aegis ingests photos.
   Do not copy this config or assume that its MFA state is usable on Atlas.
 - Atlas' `zpool` is healthy. `/zpool/archive/Pictures` already contains about
-  25 GiB of unrelated data. Neither `/zpool/archive/Pictures/iCloudPD` nor
-  `zpool/services/data/icloudpd` exists. Never rsync with `--delete` into
-  `Pictures`, adopt its existing contents, or repurpose `photobook` NFS.
+  25 GiB of unrelated data and is **not** the destination. The approved photo
+  namespace is `/zpool/media/photobook`; its dataset is owned by `immich`
+  (UID/GID 1100), mode 0770, and exported only to Aegis with `all_squash`
+  to 1100. It currently has `acltype=off`. Neither the proposed
+  `/zpool/media/photobook/iCloudPD` subtree nor `zpool/services/data/icloudpd`
+  exists. Never rsync with `--delete` into Photobook or adopt its contents.
 
 The upstream image documents `/config/icloudpd.conf` as its primary
 configuration (environment configuration is deprecated), an exact
@@ -35,16 +38,18 @@ path, user/UID, and folder format as the bind mounts. References:
 
 | Item | Location or policy |
 | --- | --- |
-| Downloaded photos | `/zpool/archive/Pictures/iCloudPD`, a new managed subtree of the SMB `Archive` dataset |
-| Config, keyring, MFA cookies | `zpool/services/data/icloudpd` at `/zpool/services/data/icloudpd/config`, outside `Archive` |
+| Downloaded photos | `/zpool/media/photobook/iCloudPD`, a new managed subtree of the existing Aegis-only NFS dataset |
+| Config, keyring, MFA cookies | `zpool/services/data/icloudpd` at `/zpool/services/data/icloudpd/config`, outside Photobook |
 | Host service owner | `admin` rootless user manager; no rootful Quadlet or published port |
 | Container identity | Entry process root in its user namespace; downloader UID/GID 1000 maps to host `admin` |
 | Image | Digest-pinned `docker.io/boredazfcuk/icloudpd`, with no registry auto-update |
-| SELinux | Private `:Z` config bind; shared `:z` photo bind because Archive is also used by Samba/Syncthing |
+| SELinux | Private `:Z` config bind; shared `:z` photo bind for the NFS-visible subtree |
+| Access | A POSIX ACL grants `admin` traversal, not listing or writing, of the existing Photobook root. The new subtree is `admin:immich`, setgid, with a default read/traverse ACL for `immich` (NFS UID 1100). Real file modes and NFS reads still require runtime testing. |
 | Sync policy | Daily interval; no iCloud deletion and no deletion of destination-only files |
 
 The photo subtree receives a managed marker and the image's `.mounted` file.
-An existing unmarked path is refused rather than taken over. The rootless
+An existing unmarked path is refused rather than taken over. The existing
+Photobook root is not chowned or emptied. The rootless
 Quadlet has no `[Install]` section and is not started while
 `atlas_icloudpd_start=false`. Preparation itself is disabled by default and
 requires `atlas_icloudpd_data_protection_verified=true`, which must only be
@@ -67,7 +72,7 @@ capabilities prevents its root entrypoint from reading an admin-owned 0600
 config; with the default rootless user-namespace capabilities it could read
 and write that file. The Quadlet retains `NoNewPrivileges=true` but does not
 drop every capability. This proves only the container layout and namespace mapping,
-**not** Apple authentication, a real download, SMB visibility, scheduled
+**not** Apple authentication, a real download, NFS visibility, scheduled
 operation, backup coverage, or recovery.
 
 ## Validation and cutover gates
@@ -88,9 +93,9 @@ operation, backup coverage, or recovery.
    inspect disk growth and Apple's response before allowing ongoing runs.
 4. Verify that actual photos arrive only under the new subtree with the
    declared date structure, owner/mode and SELinux label. Compare file count,
-   representative hashes/metadata, SMB read access, next scheduled result,
-   and absence of unwanted deletions. The pre-existing 25 GiB under Pictures
-   must remain unchanged.
+   representative hashes/metadata, Aegis NFS read access as UID 1100, next
+   scheduled result, and absence of unwanted deletions. The pre-existing
+   25 GiB under Archive/Pictures must remain unchanged.
 5. Verify recursive ZFS snapshot inclusion, a completed Borg archive, and a
    published USB version containing **both** photos and private state. Restore
    representative photos and the app config into an isolated 0700 directory;

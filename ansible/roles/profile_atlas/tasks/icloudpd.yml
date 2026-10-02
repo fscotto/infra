@@ -18,7 +18,7 @@
           - atlas_icloudpd_dataset == atlas_zfs_pool ~ '/services/data/icloudpd'
           - atlas_icloudpd_state_dir == atlas_app_data_mountpoint ~ '/icloudpd'
           - atlas_icloudpd_config_dir == atlas_icloudpd_state_dir ~ '/config'
-          - atlas_icloudpd_photos_dir == atlas_archive_mountpoint ~ '/Pictures/iCloudPD'
+          - atlas_icloudpd_photos_dir == atlas_photobook_mountpoint ~ '/iCloudPD'
           - atlas_admin_uid | int == 1000
           - atlas_admin_gid | int == 1000
           - atlas_icloudpd_image is search('@sha256:[0-9a-f]{64}$')
@@ -27,13 +27,13 @@
           Verify Atlas data protection and the fixed, separate photo/state
           paths before preparing the temporary iCloudPD target.
 
-    - name: Inspect the existing Archive and application-data datasets
+    - name: Inspect the existing Photobook and application-data datasets
       community.general.zfs_facts:
         name: "{{ item.dataset }}"
         properties: name,mounted,mountpoint
       loop:
-        - dataset: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_archive }}"
-          mountpoint: "{{ atlas_archive_mountpoint }}"
+        - dataset: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_photobook }}"
+          mountpoint: "{{ atlas_photobook_mountpoint }}"
         - dataset: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_app_data }}"
           mountpoint: "{{ atlas_app_data_mountpoint }}"
       loop_control:
@@ -50,28 +50,45 @@
       loop_control:
         label: "{{ item.item.dataset }}"
 
-    - name: Inspect the existing Pictures namespace and proposed target
+    - name: Inspect the existing Photobook namespace and proposed target
       ansible.builtin.stat:
         path: "{{ item }}"
         follow: false
       loop:
-        - "{{ atlas_archive_mountpoint }}/Pictures"
+        - "{{ atlas_photobook_mountpoint }}"
         - "{{ atlas_icloudpd_photos_dir }}"
         - "{{ atlas_icloudpd_photos_dir }}/.atlas-icloudpd-managed"
       register: atlas_icloudpd_photo_paths
 
-    - name: Refuse to adopt unrelated Pictures data or a symlink
+    - name: Refuse to adopt unrelated Photobook data or a symlink
       ansible.builtin.assert:
         that:
           - atlas_icloudpd_photo_paths.results[0].stat.isdir | default(false)
-          - atlas_icloudpd_photo_paths.results[0].stat.uid | int == atlas_admin_uid | int
+          - atlas_icloudpd_photo_paths.results[0].stat.uid | int == atlas_immich_uid | int
+          - atlas_icloudpd_photo_paths.results[0].stat.gid | int == atlas_immich_gid | int
+          - atlas_icloudpd_photo_paths.results[0].stat.mode == '0770'
           - >-
             not atlas_icloudpd_photo_paths.results[1].stat.exists or
             (atlas_icloudpd_photo_paths.results[1].stat.isdir | default(false) and
              atlas_icloudpd_photo_paths.results[2].stat.isreg | default(false))
         fail_msg: >-
-          Pictures must exist and be admin-owned; an existing iCloudPD target
+          Photobook must exist and be immich-owned; an existing iCloudPD target
           must carry its managed marker. Never adopt or replace unrelated data.
+
+    - name: Enable POSIX ACLs only on Photobook for a targeted traversal grant
+      community.general.zfs:
+        name: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_photobook }}"
+        state: present
+        extra_zfs_properties:
+          acltype: posix
+
+    - name: Allow the rootless administrator to traverse Photobook without listing it
+      ansible.posix.acl:
+        path: "{{ atlas_photobook_mountpoint }}"
+        etype: user
+        entity: "{{ atlas_admin_username }}"
+        permissions: x
+        state: present
 
     - name: Create a dedicated ZFS dataset for iCloudPD configuration and MFA
       community.general.zfs:
@@ -81,12 +98,12 @@
           compression: zstd
           mountpoint: "{{ atlas_icloudpd_state_dir }}"
 
-    - name: Restrict iCloudPD state and the new photo subtree
+    - name: Restrict iCloudPD state and create the new photo subtree
       ansible.builtin.file:
         path: "{{ item.path }}"
         state: directory
         owner: "{{ atlas_admin_username }}"
-        group: "{{ atlas_admin_group }}"
+        group: "{{ item.group | default(atlas_admin_group) }}"
         mode: "{{ item.mode }}"
       loop:
         - path: "{{ atlas_icloudpd_state_dir }}"
@@ -94,11 +111,22 @@
         - path: "{{ atlas_icloudpd_config_dir }}"
           mode: "0700"
         - path: "{{ atlas_icloudpd_photos_dir }}"
-          mode: "0750"
+          group: "{{ atlas_immich_group }}"
+          mode: "2750"
         - path: "{{ atlas_icloudpd_quadlet_dir }}"
           mode: "0700"
       loop_control:
         label: "{{ item.path }}"
+
+    - name: Let the NFS-mapped Immich identity read future iCloudPD files
+      ansible.posix.acl:
+        path: "{{ atlas_icloudpd_photos_dir }}"
+        default: true
+        etype: user
+        entity: "{{ atlas_immich_username }}"
+        permissions: rx
+        state: present
+      when: not ansible_check_mode or atlas_icloudpd_photo_paths.results[1].stat.exists
 
     - name: Mark only the newly managed iCloudPD photo subtree
       ansible.builtin.copy:

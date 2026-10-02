@@ -365,8 +365,8 @@ successfully. The first monthly scrub remains a runtime check.
 
 ### Priority 4 - Optional workflows
 - [ ] After data protection is validated, move iCloudPD photo ingestion from Aegis to Atlas as a
-  temporary service until Uranus is ready. Plan to store photos in `/zpool/archive/Pictures` and
-  persistent application/MFA state outside `Archive`; validate permissions, SELinux, backups and
+  temporary service until Uranus is ready. Plan to store photos in `/zpool/media/photobook/iCloudPD` and
+  persistent application/MFA state outside `photobook`; validate permissions, SELinux, backups and
   recovery before cutover. Keep the current Aegis service and Photobook NFS export unchanged until
   the Atlas workflow is tested, then retire them explicitly if no longer needed. The gated design
   and isolated, no-network container layout test are documented in `docs/atlas-icloudpd-migration.md`.

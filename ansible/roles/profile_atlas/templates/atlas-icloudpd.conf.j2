@@ -1,0 +1,14 @@
+# Managed by Ansible. Password, keyring and MFA cookies are stored separately in /config.
+apple_id={{ vault_aegis_icloudpd_apple_id }}
+authentication_type=MFA
+user=user
+user_id=1000
+group=group
+group_id=1000
+download_path=/home/user/iCloud
+folder_structure={:%Y/%m/%d}
+directory_permissions=750
+file_permissions=640
+download_interval=86400
+auto_delete=false
+delete_after_download=false

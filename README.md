@@ -225,7 +225,7 @@ stub and points `/etc/resolv.conf` to its full resolver data, freeing port 53 fo
 may use AdGuard on Aegis, while Aegis itself uses the independent upstream DNS declared by
 `aegis_host_dns_servers`; this prevents Greenboot from depending on the AdGuard container during
 startup. Reboot Aegis after changing its NetworkManager DNS profile. iCloudPD was retired from Aegis;
-the Aegis role no longer contains iCloudPD tasks. Atlas iCloudPD configuration and MFA are manual.
+the Aegis role no longer contains iCloudPD tasks. Atlas iCloudPD config is Vault-backed; MFA is manual.
 
 New Aegis images create the `admin` account in Butane. Before configuring a newly imaged node, run its
 first playbook execution with `-e ansible_user=admin`; the SSH hardening role then permits that same
@@ -542,10 +542,10 @@ declared persistent application, database, and cache storage, Vault-backed crede
 publishing through Aegis, and defined backup, upgrade, and eventual migration procedures. Do not deploy
 it before the data-protection checklist is complete.
 
-Atlas is the declared future iCloud photo-ingestion host. Ansible manages only an inactive rootless
-Quadlet and separate storage for photos under `/zpool/archive/Pictures/iCloudPD` and private state in
-`zpool/services/data/icloudpd`; it does not configure, start, or enable the app. The operator will
-configure and initialize it manually. Aegis iCloudPD, including its service data, has been removed
+Atlas is the declared iCloud photo-ingestion host. Ansible manages the rootless Quadlet, a private
+Vault-backed `icloudpd.conf`, photos under `/zpool/archive/Pictures/iCloudPD`, and separate state in
+`zpool/services/data/icloudpd`. The service was started manually; Ansible does not enable automatic
+startup or manage the password and MFA keyring. The operator must initialize MFA interactively. Aegis iCloudPD, including its service data, has been removed
 and verified; the Aegis role no longer manages it. The
 Photobook NFS export remains untouched. See
 [`docs/atlas-icloudpd-migration.md`](docs/atlas-icloudpd-migration.md).

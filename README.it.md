@@ -527,9 +527,10 @@ della protezione dei dati: richiede storage applicativo, database e cache separa
 pubblicazione solo tramite NPM e Aegis, procedure di backup, aggiornamento e migrazione. Non
 distribuirlo prima di completare la checklist di protezione dei dati.
 
-Atlas è la destinazione dichiarata per iCloudPD. Ansible gestisce soltanto dataset e Quadlet
-rootless inattivo: foto in `/zpool/archive/Pictures/iCloudPD`, stato privato in
-`zpool/services/data/icloudpd`. Configurazione, MFA e primo avvio restano manuali. Su Aegis
+Atlas è la destinazione dichiarata per iCloudPD. Ansible gestisce dataset, Quadlet rootless e
+`icloudpd.conf` privato con Apple ID dal Vault: foto in `/zpool/archive/Pictures/iCloudPD`,
+stato in `zpool/services/data/icloudpd`. Il primo avvio è stato manuale; password e MFA restano
+da inizializzare interattivamente, senza avvio automatico al boot. Su Aegis
 il servizio, il Quadlet e `/var/lib/icloudpd` sono stati rimossi e verificati; il playbook Aegis
 non contiene più task iCloudPD. L'export NFS Photobook resta
 invariato. Dettagli in [`docs/atlas-icloudpd-migration.md`](docs/atlas-icloudpd-migration.md).

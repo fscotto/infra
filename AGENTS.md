@@ -366,13 +366,13 @@ successfully. The first monthly scrub remains a runtime check.
 ### Priority 4 - Optional workflows
 - [x] Deploy the declared Atlas iCloudPD state dataset and inactive rootless `admin` Quadlet.
   Photos belong under `/zpool/archive/Pictures/iCloudPD`; private config/MFA state belongs in
-  `zpool/services/data/icloudpd`. Photobook remains reserved for Immich. Ansible does not render
-  credentials, pull the image, start/enable the service, or manage MFA. The operator will configure
-  and start it manually. The isolated no-network layout test is documented in
+  `zpool/services/data/icloudpd`. Photobook remains reserved for Immich. Ansible now renders
+  `icloudpd.conf` with the Apple ID from the existing Vault key, but does not store the password,
+  manage MFA, or enable automatic startup. The isolated no-network layout test is documented in
   `docs/atlas-icloudpd-migration.md`. On 2026-10-02 Atlas deployment and a second idempotent run
   passed; no app config existed at deployment. A manual first start on 2026-10-02 generated
-  `icloudpd.conf` (tightened to mode 0600); the service is active but Apple ID/MFA are still
-  unconfigured and no real download has been verified.
+  `icloudpd.conf`; an Ansible run then replaced it with a private mode-0600 Vault-backed template
+  and an idempotent second run. The service is active, but MFA and real downloads remain unverified.
 - [x] Retire Aegis iCloudPD completely. The operator authorized deleting its Quadlet,
   `/var/lib/icloudpd` data, and MFA state despite an unaudited container overlay. After two
   interactive-sudo runs on 2026-10-02, the unit is `not-found`/`inactive`, the Quadlet and state

@@ -1,9 +1,10 @@
 # iCloudPD: Aegis to Atlas
 
-Atlas is the temporary ingestion host until Uranus. The operator authorized
-retiring Aegis iCloudPD, including its data and MFA state, although Atlas is
-not configured or started yet. Ansible declares only Atlas storage and an
-inactive rootless Quadlet; it does not manage Apple configuration or MFA.
+Atlas is the temporary ingestion host until Uranus. Aegis iCloudPD and its
+state were retired. Ansible declares Atlas storage, the rootless Quadlet,
+and a private `icloudpd.conf` with the Apple ID from the existing Vault key.
+The password, keyring and MFA cookies remain application-managed; initialization
+is interactive.
 Do not place cookies, keyring files, passwords, or the Apple ID in this document,
 the repository, or a terminal transcript.
 
@@ -55,10 +56,10 @@ path, user/UID, and folder format as the bind mounts. References:
 The photo subtree receives a managed marker and the image's `.mounted` file.
 An existing unmarked path is refused rather than taken over. The existing
 Pictures tree is not chowned or emptied. The Quadlet has no `[Install]`
-section, so Ansible does not start or enable it. Ansible does not render
-`icloudpd.conf`, pull the image, initialize MFA, or run a cutover task. The
-operator will configure and start it separately. The service will not start
-automatically after reboot under this design.
+section, so Ansible does not start or enable it. Ansible renders a mode-0600
+`icloudpd.conf` with `no_log` and no diff, but does not pull the image,
+initialize MFA, or run a cutover task. The service was started manually and
+will not start automatically after reboot under this design.
 
 The previous gated check-mode tests and isolated Quadlet-generator test proved
 only the proposed layout; they predate the simplified declarative role. They
@@ -106,9 +107,10 @@ completed backup or restore of iCloudPD data**, which does not exist yet.
   run changed nothing and did not start the service; a later manual start
   generated the config. `/zpool/media/photobook` was unchanged.
 - The image generated `/zpool/services/data/icloudpd/config/icloudpd.conf`
-  on first start. The operator must set the Apple ID privately and handle
-  authentication/MFA; never put credentials or codes in the repository, chat,
-  Ansible extra-vars, or logs. The Quadlet has no automatic boot start;
+  on first start. Ansible replaced that default file with a private template
+  using the Apple ID already in Vault. The operator must initialize password
+  and MFA interactively; never put credentials or codes in the repository,
+  chat, or Ansible extra-vars. The Quadlet has no automatic boot start;
   enablement requires a separate deliberate design change.
 - After a real download, check folder structure, ownership, SELinux, SMB
   access, no unintended deletions, recursive ZFS snapshot inclusion, completed
@@ -128,3 +130,11 @@ service stayed active, and the image generated `icloudpd.conf` under the
 private config dataset. Its mode was tightened from 0644 to 0600. The generated
 `apple_id` field is empty; no MFA or download is verified. The service has no
 boot-time install target, so it is not configured for automatic startup.
+
+The 2026-10-02 Atlas `icloudpd` run rendered the Vault-backed template without
+printing its contents; the second run made zero changes. File owner is
+`admin:admin`, mode 0600, and the Apple ID field is nonempty. The rootless
+service remained active with zero restarts. Keyring initialization, cookie
+creation and a real download are still unverified. The existing Vault variable
+retains its historical `vault_aegis_icloudpd_apple_id` name; no password or
+MFA code was added to Vault.

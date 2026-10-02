@@ -107,6 +107,26 @@
         mode: "0644"
         force: false
 
+    - name: Require the Vault-backed iCloudPD Apple ID
+      ansible.builtin.assert:
+        that:
+          - vault_aegis_icloudpd_apple_id is defined
+          - vault_aegis_icloudpd_apple_id | length > 0
+          - vault_aegis_icloudpd_apple_id != 'REPLACE_ME'
+          - vault_aegis_icloudpd_apple_id.splitlines() | length == 1
+        fail_msg: Configure the existing iCloudPD Apple ID in Vault.
+      no_log: true
+
+    - name: Render private Atlas iCloudPD configuration
+      ansible.builtin.template:
+        src: atlas-icloudpd.conf.j2
+        dest: "{{ atlas_icloudpd_config_dir }}/icloudpd.conf"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0600"
+      no_log: true
+      diff: false
+
     - name: Render the rootless Atlas iCloudPD Quadlet
       ansible.builtin.template:
         src: atlas-icloudpd.container.j2

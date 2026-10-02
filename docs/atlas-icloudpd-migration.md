@@ -1,7 +1,9 @@
 # iCloudPD: Aegis to Atlas
 
-Atlas is the temporary ingestion host until Uranus. This is a **gated design
-and staging path**, not authorization to stop Aegis or start a second downloader.
+Atlas is the temporary ingestion host until Uranus. The operator authorized
+retiring Aegis iCloudPD, including its data and MFA state, although Atlas is
+not configured or started yet. Ansible declares only Atlas storage and an
+inactive rootless Quadlet; it does not manage Apple configuration or MFA.
 Do not place cookies, keyring files, passwords, or the Apple ID in this document,
 the repository, or a terminal transcript.
 
@@ -52,28 +54,15 @@ path, user/UID, and folder format as the bind mounts. References:
 
 The photo subtree receives a managed marker and the image's `.mounted` file.
 An existing unmarked path is refused rather than taken over. The existing
-Pictures tree is not chowned or emptied. The rootless
-Quadlet has no `[Install]` section and is not started while
-`atlas_icloudpd_start=false`. Preparation itself is disabled by default and
-requires `atlas_icloudpd_data_protection_verified=true`, which must only be
-set after the actual first scrub and current backup health are checked. The
-Apple ID is read from the existing Vault value only on explicit startup;
-Ansible renders the private config with `no_log` and no diff. Aegis remains
-unchanged throughout preparation.
+Pictures tree is not chowned or emptied. The Quadlet has no `[Install]`
+section, so Ansible does not start or enable it. Ansible does not render
+`icloudpd.conf`, pull the image, initialize MFA, or run a cutover task. The
+operator will configure and start it separately. The service will not start
+automatically after reboot under this design.
 
-The gating paths were checked on Atlas on 2026-10-02: the default
-`--tags icloudpd --check --diff` run proposed zero changes; a preparation
-request without the data-protection flag failed at the first assertion with
-zero changes; and a startup request without preparation also failed at its
-first assertion with zero changes. A simulated approved preparation completed
-in check mode, showing only prospective dataset, directory, marker and
-disabled-Quadlet changes. These checks do not authorize setting the flags.
-Separately, Atlas' actual Podman 5.8.2 user Quadlet generator accepted a
-secret-free rendering of the inactive template from a disposable `/var/tmp`
-directory. Its generated `ExecStart` contained the expected digest, `keep-id`
-mapping, photo/config bind paths, SELinux flags, and no-new-privileges option;
-the inactive rendering had no install target. The temporary source was
-removed, and no Atlas iCloudPD unit or container was installed or started.
+The previous gated check-mode tests and isolated Quadlet-generator test proved
+only the proposed layout; they predate the simplified declarative role. They
+were not a production deployment or an authentication test.
 
 ## Evidence already gathered without production writes
 
@@ -107,51 +96,30 @@ capability flags could traverse/read Archive, whereas plain
 generic xattrs/SELinux labels. **This is scope and permission evidence, not a
 completed backup or restore of iCloudPD data**, which does not exist yet.
 
-## Validation and cutover gates
+## Remaining validation
 
-1. Verify the first completed monthly scrub from its service result, current
-   pool/backup/alert health, free capacity, and a recent recoverable ZFS,
-   Borg, and UUID-bound USB version. Do not treat active timers as proof.
-   On 2026-10-02 the pool was healthy and Borg's last service result was a
-   successful 09:31 CEST run, but `zfs-scrub-monthly@zpool.service` still had
-   no execution timestamp; the timer's next run was 2026-10-04 03:00 CEST.
-   Before changing the Aegis service, inspect the running container's actual
-   `/home/user/iCloud` and `/home/root/iCloud` sizes with local root access,
-   without copying or displaying filenames, credentials, or MFA material.
-   If the overlay holds photos, include a deliberate, non-deleting export in
-   the cutover plan; the empty host bind does not rule this out.
-2. After that gate, set the three `atlas_icloudpd_*` flags deliberately in
-   Atlas host vars. First prepare only (`prepare=true`,
-   `data_protection_verified=true`, `start=false`) using `--tags icloudpd`.
-   Check the new dataset, managed photo subtree, SELinux labels, Quadlet
-   generation, and an inactive service. Do not modify Aegis.
-3. Approve a separate start (`start=true`). Render the Vault-backed config,
-   then run the interactive initialization locally or over a private SSH TTY
-   as `admin`: `podman exec -it atlas-icloudpd sync-icloud.sh --Initialise`.
-   Enter the password and MFA code **only into that session**, never into
-   Ansible extra-vars, a chat, or a log. Initial synchronization may be large;
-   inspect disk growth and Apple's response before allowing ongoing runs.
-4. Verify that actual photos arrive only under the new subtree with the
-   declared date structure, owner/mode and SELinux label. Compare file count,
-   representative hashes/metadata, SMB read access, next
-   scheduled result, and absence of unwanted deletions. The pre-existing
-   unrelated 25 GiB under Archive/Pictures must remain unchanged.
-5. Verify recursive ZFS snapshot inclusion, a completed Borg archive, and a
-   published USB version containing **both** photos and private state. Restore
-   representative photos and the app config into an isolated 0700 directory;
-   verify checksums, ownership, ACL/SELinux relabel procedure, and an isolated
-   re-authentication/restore path. Never print or export live cookies.
-6. Only after those tests and explicit cutover approval, set
-   `aegis_icloudpd_enabled: false` in Aegis host vars and apply
-   `--limit aegis --tags icloudpd_cutover -K` from a local interactive
-   terminal, never passing the sudo password in chat or extra-vars. Confirm `icloudpd.service` is
-   stopped and disabled. The normal Aegis play then omits its Quadlet render,
-   service start, and restart handler. Preserve its existing Quadlet and
-   data/config for rollback; do not
-   delete or restart stale ingestion blindly. Leave the Atlas `photobook`
-   NFS export unchanged. Document the eventual Uranus handoff separately.
+- Apply the Aegis desired-absent role with interactive sudo (`-K`) and verify
+  `icloudpd.service` stopped/disabled, the rootful Quadlet absent, and
+  `/var/lib/icloudpd` absent. The operator explicitly authorized deletion of
+  this data and MFA state despite the uninspected container overlay. Ansible
+  refuses deletion if a mount exists under that path. The Podman image cache
+  may remain; it is not service data.
+- Apply the Atlas `icloudpd` tag to create only the state dataset, photo
+  subtree, marker, and inactive `admin` Quadlet. Confirm no service/container
+  was started and that `/zpool/media/photobook` was unchanged.
+- The operator must write `/zpool/services/data/icloudpd/config/icloudpd.conf`
+  privately, handle Apple authentication/MFA, and start the generated user
+  service manually. Do not put credentials or MFA codes in Ansible extra-vars,
+  the repository, chat, or logs. The inactive Quadlet has no automatic boot
+  start; enablement requires a separate deliberate design change.
+- After a real download, check folder structure, ownership, SELinux, SMB
+  access, no unintended deletions, recursive ZFS snapshot inclusion, completed
+  Borg and USB versions, and isolated restore of photos and private state.
+  The first real scrub and measured recovery targets are still separate open
+  items. Nothing here claims a completed Atlas ingestion or recoverable backup.
 
-The current source state and lack of Aegis sudo access prevent declaring the
-real migration validated. An unattended 2026-10-02 cutover dry-run failed at
-fact gathering with `Missing sudo password`, before any changes. The first
-scrub has also not yet been observed.
+On 2026-10-02 Atlas storage and the inactive Quadlet were deployed; a second
+Ansible run made zero changes. The generated service was inactive, and no
+`icloudpd.conf` existed. At the last Aegis read-only inspection its service
+was still running and non-interactive sudo was unavailable. The unassisted Ansible dry-run failed at
+fact gathering with `Missing sudo password` before making changes.

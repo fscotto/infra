@@ -210,8 +210,8 @@ ansible/bootstrap/generate-aegis-ign.sh --write IMAGE DEVICE
 ```
 
 The controller manages it remotely as `pi@aegis`; unlike local desktop profiles, Aegis is
-intentionally an SSH inventory target. `profile_aegis` manages rootful Podman Quadlets for AdGuard
-Home and iCloudPD, persistent data under `/var/lib`, the Podman auto-update timer, LAN-restricted
+intentionally an SSH inventory target. `profile_aegis` manages a rootful Podman Quadlet for AdGuard
+Home, its persistent data under `/var/lib`, the Podman auto-update timer, LAN-restricted
 firewalld rules, SSH key-only access for `pi`, the `nfs-utils` and `wireguard-tools` rpm-ostree layers,
 and `wake-ikaros`. `wireguard_overlay` makes Aegis the internal endpoint and LAN gateway for Prometheus:
 it enables persistent IPv4 forwarding, installs a scoped WireGuard-to-LAN firewalld policy, and source-NATs
@@ -224,9 +224,8 @@ opened and closed manually during initial setup. The profile disables the local 
 stub and points `/etc/resolv.conf` to its full resolver data, freeing port 53 for AdGuard. LAN clients
 may use AdGuard on Aegis, while Aegis itself uses the independent upstream DNS declared by
 `aegis_host_dns_servers`; this prevents Greenboot from depending on the AdGuard container during
-startup. Reboot Aegis after changing its NetworkManager DNS profile. Define
-`vault_aegis_icloudpd_apple_id` in Vault before applying it. iCloudPD still requires interactive MFA
-initialization after its first deployment.
+startup. Reboot Aegis after changing its NetworkManager DNS profile. The retired Aegis iCloudPD service, Quadlet and `/var/lib/icloudpd` state are removed by the
+Aegis role when applied with interactive sudo; Atlas iCloudPD configuration and MFA are manual.
 
 New Aegis images create the `admin` account in Butane. Before configuring a newly imaged node, run its
 first playbook execution with `-e ansible_user=admin`; the SSH hardening role then permits that same
@@ -543,14 +542,13 @@ declared persistent application, database, and cache storage, Vault-backed crede
 publishing through Aegis, and defined backup, upgrade, and eventual migration procedures. Do not deploy
 it before the data-protection checklist is complete.
 
-The desired future iCloud photo-ingestion host is Atlas, not Aegis. After data-protection validation,
-plan an explicit iCloudPD migration with photos under `/zpool/archive/Pictures/iCloudPD` and application/MFA
-state outside `Archive`, then test permissions, SELinux, backups and recovery before cutting over.
-The current Aegis iCloudPD service and Atlas Photobook NFS export remain configured until that
-separate migration is approved and validated; the eventual Atlas service is temporary until Uranus.
-The gated Atlas layout, source-state caveats and cutover checks are in
-[`docs/atlas-icloudpd-migration.md`](docs/atlas-icloudpd-migration.md). No Atlas iCloudPD service
-has been started.
+Atlas is the declared future iCloud photo-ingestion host. Ansible manages only an inactive rootless
+Quadlet and separate storage for photos under `/zpool/archive/Pictures/iCloudPD` and private state in
+`zpool/services/data/icloudpd`; it does not configure, start, or enable the app. The operator will
+configure and initialize it manually. Aegis iCloudPD is removed from desired state, including its
+service data; live removal still requires an interactive-sudo deployment and verification. The
+Photobook NFS export remains untouched. See
+[`docs/atlas-icloudpd-migration.md`](docs/atlas-icloudpd-migration.md).
 
 The first scheduled Prometheus backup runs and production-size disaster-recovery tests remain follow-up work. The prioritized
 operational backlog is kept in `AGENTS.md`.

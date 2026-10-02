@@ -49,8 +49,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
   - Atlas NAS: `ansible-playbook ansible/site.yml --limit atlas --check --diff`
   - Aegis IoT: `ansible-playbook ansible/site.yml --limit aegis --check --diff`
   - Aegis NFS client layer: `ansible-playbook ansible/site.yml --limit aegis --tags nfs --list-tasks`
-  - Aegis iCloudPD retirement gate (dry-run; keep host flag true until cutover):
-    `ansible-playbook ansible/site.yml --limit aegis --tags icloudpd_cutover --check --diff -e aegis_icloudpd_enabled=false -K`
+  - Aegis iCloudPD retirement (stops service and deletes its Quadlet and state; interactive sudo):
+    `ansible-playbook ansible/site.yml --limit aegis --tags icloudpd -K`
   - Aegis host DNS: `ansible-playbook ansible/site.yml --limit aegis --tags dns --check --diff`
 - Focused checks:
   - Emacs is disabled by default; temporary Emacs check: `ansible-playbook ansible/site.yml --limit <host> --tags emacs --check --diff -e emacs_enabled=true`
@@ -61,7 +61,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff`
   - Atlas rootless Gitea staging (does not start Gitea):
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea --check --diff`
-  - Atlas gated iCloudPD design (disabled by default; does not start it):
+  - Atlas iCloudPD storage and inactive Quadlet (does not start it):
     `ansible-playbook ansible/site.yml --limit atlas --tags icloudpd --check --diff`
   - Atlas explicit Gitea host-owner migration (live outage; never a normal run):
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea_owner_migration -e atlas_gitea_owner_migration=true`
@@ -366,21 +366,22 @@ successfully. The first monthly scrub remains a runtime check.
   container paths, and the required Vault database secret.
 
 ### Priority 4 - Optional workflows
-- [ ] After data protection is validated, move iCloudPD photo ingestion from Aegis to Atlas as a
-  temporary service until Uranus is ready. Store photos in a new managed
-  `/zpool/archive/Pictures/iCloudPD` subtree and persistent application/MFA state outside `Archive`;
-  validate permissions, SELinux, backups and recovery before cutover. Photobook remains reserved
-  for Immich. Keep the current Aegis service and Photobook NFS export unchanged until the Atlas
-  workflow is tested, then retire the Aegis service explicitly if no longer needed. The gated
-  design and isolated, no-network container layout test are documented in `docs/atlas-icloudpd-migration.md`.
-  On 2026-10-02 Aegis' service was active but its declared data directory had zero top-level entries;
-  container-overlay contents remain unaudited because `pi` lacks non-interactive sudo. Its
-  persisted folder format contained a systemd generator path rather than the intended date
-  format; do not infer a healthy source from `systemctl is-active`. Atlas' existing 25 GiB Pictures
-  tree must not be replaced or deleted. The first scrub, real Atlas download, MFA, backup/restore and
-  explicit cutover remain unverified; neither host's ingestion service was changed. The existing
-  recursive Borg/USB source scope includes Archive and the proposed state dataset; Borg's
-  `CAP_DAC_READ_SEARCH` access was checked, but no iCloudPD version or restore exists yet.
+- [x] Deploy the declared Atlas iCloudPD state dataset and inactive rootless `admin` Quadlet.
+  Photos belong under `/zpool/archive/Pictures/iCloudPD`; private config/MFA state belongs in
+  `zpool/services/data/icloudpd`. Photobook remains reserved for Immich. Ansible does not render
+  credentials, pull the image, start/enable the service, or manage MFA. The operator will configure
+  and start it manually. The isolated no-network layout test is documented in
+  `docs/atlas-icloudpd-migration.md`. On 2026-10-02 Atlas deployment and a second idempotent run
+  passed; the service was inactive and no app config existed. No real Atlas download has been verified.
+- [ ] Retire Aegis iCloudPD completely. The user authorized stopping/disabling the service and
+  deleting its Quadlet, `/var/lib/icloudpd` data, and MFA state despite an unaudited container
+  overlay. The desired Aegis role is declaratively absent and guards mounted state, but runtime
+  removal requires an Ansible run with interactive sudo (`-K`). At the last inspection the Aegis
+  service was still active; do not claim retirement until live checks pass.
+- [ ] Validate Atlas iCloudPD authentication, actual ingestion, filesystem/SELinux/SMB permissions,
+  ZFS/Borg/USB backup inclusion, and isolated restore. The first monthly scrub remains a separate
+  open data-protection check. The recursive Borg/USB source scope includes Archive and the proposed
+  state dataset, but no iCloudPD backup version or restore has been verified.
 
 ## Cerberus Management Node (Deferred)
 `cerberus` is postponed until the office in the new house is physically set up. It is not an inventory
@@ -456,8 +457,6 @@ validated exports of older historical data will use a dedicated Atlas NFS datase
   `/etc/resolv.conf` linked to `/run/systemd/resolve/resolv.conf`. LAN clients may use AdGuard, but
   Aegis must use the independent upstream DNS declared by `aegis_host_dns_servers` so Greenboot does
   not depend on the AdGuard container during startup.
-- iCloudPD requires post-deployment interactive MFA initialization; its cookie/configuration state is
-  persisted in `/var/lib/icloudpd/config`.
-- Keep `aegis_icloudpd_enabled=true` until Atlas photo ingestion and restore checks pass. The explicit
-  `icloudpd_cutover` tag stops/disables the source only after that host variable is set false; normal
-  Aegis runs and restart handlers must not restart it. Preserve its Quadlet and `/var/lib/icloudpd` for rollback.
+- Aegis iCloudPD is retired from desired state. A normal Aegis run stops/disables its service,
+  removes its Quadlet, and deletes `/var/lib/icloudpd` after checking for mounts. Use interactive
+  sudo locally (`-K`); never pass a sudo password in chat. This deletion was explicitly authorized.

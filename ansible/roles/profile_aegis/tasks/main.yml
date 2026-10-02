@@ -13,15 +13,6 @@
     msg: Reboot Aegis to activate the newly layered packages, then rerun the playbook.
   when: aegis_layered_packages_result.needs_reboot | default(false)
 
-- name: Require Aegis iCloudPD Apple ID
-  tags: [aegis, icloudpd]
-  ansible.builtin.assert:
-    that:
-      - aegis_icloudpd_apple_id | length > 0
-    fail_msg: Define vault_aegis_icloudpd_apple_id before applying the Aegis profile.
-  no_log: true
-  when: aegis_icloudpd_enabled | bool
-
 - name: Require completed Aegis network placeholders
   tags: [aegis, dns, firewall, network, services]
   ansible.builtin.assert:
@@ -120,8 +111,6 @@
   loop:
     - /var/lib/adguard/work
     - /var/lib/adguard/conf
-    - /var/lib/icloudpd/data
-    - /var/lib/icloudpd/config
 
 - name: Create Quadlet configuration directory
   tags: [aegis, containers]
@@ -131,6 +120,49 @@
     owner: root
     group: root
     mode: "0755"
+
+- name: Inspect retired Aegis iCloudPD unit
+  tags: [aegis, containers, icloudpd]
+  ansible.builtin.command:
+    argv: [systemctl, show, icloudpd.service, --property=LoadState, --value]
+  register: aegis_icloudpd_load_state
+  changed_when: false
+
+- name: Stop and disable retired Aegis iCloudPD
+  tags: [aegis, containers, icloudpd]
+  ansible.builtin.systemd:
+    name: icloudpd.service
+    state: stopped
+    enabled: false
+  when: aegis_icloudpd_load_state.stdout == 'loaded'
+
+- name: Remove retired Aegis iCloudPD Quadlet
+  tags: [aegis, containers, icloudpd]
+  ansible.builtin.file:
+    path: /etc/containers/systemd/icloudpd.container
+    state: absent
+  notify: Reload Aegis systemd
+
+- name: Inspect mounts before removing retired Aegis iCloudPD state
+  tags: [aegis, containers, icloudpd]
+  ansible.builtin.command:
+    argv: [findmnt, -rn, -o, TARGET]
+  register: aegis_icloudpd_mounts
+  changed_when: false
+
+- name: Refuse deletion across Aegis iCloudPD mounts
+  tags: [aegis, containers, icloudpd]
+  ansible.builtin.assert:
+    that: >-
+      aegis_icloudpd_mounts.stdout_lines |
+      select('match', '^/var/lib/icloudpd(/|$)') | list | length == 0
+    fail_msg: Refusing to remove /var/lib/icloudpd with a mounted path beneath it.
+
+- name: Remove retired Aegis iCloudPD data and MFA state
+  tags: [aegis, containers, icloudpd]
+  ansible.builtin.file:
+    path: /var/lib/icloudpd
+    state: absent
 
 - name: Render Aegis Quadlet units
   tags: [aegis, containers]
@@ -143,13 +175,9 @@
   loop:
     - src: adguardhome.container.j2
       dest: adguardhome.container
-    - src: icloudpd.container.j2
-      dest: icloudpd.container
   loop_control:
     label: "{{ item.dest }}"
-  no_log: "{{ item.dest == 'icloudpd.container' }}"
-  notify: Restart Aegis Quadlet services
-  when: item.dest != 'icloudpd.container' or aegis_icloudpd_enabled | bool
+  notify: Restart Aegis AdGuard Quadlet
 
 - name: Create Aegis systemd-resolved configuration directory
   tags: [aegis, adguard, dns, services]
@@ -170,7 +198,7 @@
     mode: "0644"
   notify:
     - Restart Aegis systemd-resolved
-    - Restart Aegis Quadlet services
+    - Restart Aegis AdGuard Quadlet
 
 - name: Point Aegis resolver at the full systemd-resolved configuration
   tags: [aegis, adguard, dns, services]
@@ -363,7 +391,7 @@
     group: root
     mode: "0755"
 
-- name: Enable Aegis Quadlet services and automatic updates
+- name: Enable Aegis AdGuard Quadlet and automatic updates
   tags: [aegis, containers, services]
   ansible.builtin.systemd:
     name: "{{ item }}"
@@ -372,16 +400,6 @@
     daemon_reload: true
   loop:
     - adguardhome.service
-    - icloudpd.service
     - podman-auto-update.timer
   loop_control:
     label: "{{ item }}"
-  when: item != 'icloudpd.service' or aegis_icloudpd_enabled | bool
-
-- name: Stop Aegis iCloudPD only after the explicit Atlas cutover flag
-  tags: [aegis, icloudpd, icloudpd_cutover]
-  ansible.builtin.systemd:
-    name: icloudpd.service
-    enabled: false
-    state: stopped
-  when: not aegis_icloudpd_enabled | bool

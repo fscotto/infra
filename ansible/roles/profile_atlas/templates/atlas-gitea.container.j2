@@ -6,7 +6,7 @@ RequiresMountsFor={{ atlas_gitea_mountpoint }}
 [Container]
 ContainerName=atlas-gitea
 Image={{ atlas_gitea_image }}
-UserNS=keep-id:uid=1000,gid=1000
+UserNS=keep-id:uid={{ atlas_gitea_container_uid }},gid={{ atlas_gitea_container_gid }}
 {% if atlas_gitea_production_enabled | bool %}
 PublishPort={{ atlas_gitea_bind_address }}:{{ atlas_gitea_http_port }}:3000
 PublishPort={{ atlas_gitea_bind_address }}:{{ atlas_gitea_ssh_port }}:2222

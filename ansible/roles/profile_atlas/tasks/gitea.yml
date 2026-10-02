@@ -9,16 +9,18 @@
           - atlas_manage_storage | bool
           - atlas_gitea_dataset == atlas_zfs_pool ~ '/services/data/gitea'
           - atlas_gitea_mountpoint == atlas_app_data_mountpoint ~ '/gitea'
-          - atlas_gitea_uid | int != atlas_admin_uid | int
-          - atlas_gitea_uid | int != atlas_immich_uid | int
-          - atlas_gitea_gid | int != atlas_admin_gid | int
-          - atlas_gitea_gid | int != atlas_immich_gid | int
+          - atlas_gitea_username == atlas_admin_username
+          - atlas_gitea_group == atlas_admin_group
+          - atlas_gitea_uid | int == atlas_admin_uid | int
+          - atlas_gitea_gid | int == atlas_admin_gid | int
+          - atlas_gitea_container_uid | int == 1000
+          - atlas_gitea_container_gid | int == 1000
           - atlas_gitea_staging_bind_address == '127.0.0.1'
           - not (atlas_gitea_production_enabled | bool) or atlas_manage_firewall | bool
           - not (atlas_gitea_production_enabled | bool) or atlas_gitea_bind_address == ansible_host
         fail_msg: >-
-          Rootless Gitea preparation requires Atlas storage, an isolated service
-          identity and dataset, and loopback-only staging ports.
+          Rootless Gitea requires Atlas storage, the admin user manager, the
+          dedicated dataset, and loopback-only staging ports.
 
     - name: Inspect the final-restore marker before production activation
       ansible.builtin.stat:
@@ -33,43 +35,32 @@
         fail_msg: Restore the final stopped-source Gitea export before enabling production.
       when: atlas_gitea_production_enabled | bool
 
-    - name: Create the dedicated Gitea group
-      ansible.builtin.group:
-        name: "{{ atlas_gitea_group }}"
-        gid: "{{ atlas_gitea_gid }}"
-        system: true
-        state: present
+    - name: Verify the production Gitea dataset belongs to admin
+      ansible.builtin.stat:
+        path: "{{ atlas_gitea_mountpoint }}"
+      register: atlas_gitea_dataset_owner
+      when: atlas_gitea_production_enabled | bool
 
-    - name: Create the non-login Gitea service account
-      ansible.builtin.user:
-        name: "{{ atlas_gitea_username }}"
-        uid: "{{ atlas_gitea_uid }}"
-        group: "{{ atlas_gitea_group }}"
-        home: "{{ atlas_gitea_home }}"
-        shell: /sbin/nologin
-        create_home: true
-        system: true
-        state: present
+    - name: Refuse to overlap the legacy host-account service
+      ansible.builtin.assert:
+        that:
+          - atlas_gitea_dataset_owner.stat.uid | int == atlas_admin_uid | int
+          - atlas_gitea_dataset_owner.stat.gid | int == atlas_admin_gid | int
+        fail_msg: >-
+          Run the explicit Gitea owner migration before enabling the admin
+          Quadlet; never chown an active legacy service in a normal run.
+      when: atlas_gitea_production_enabled | bool
 
-    - name: Restrict the Gitea service home
-      ansible.builtin.file:
-        path: "{{ atlas_gitea_home }}"
-        state: directory
-        owner: "{{ atlas_gitea_username }}"
-        group: "{{ atlas_gitea_group }}"
-        mode: "0700"
-
-    - name: Reserve dedicated rootless UID and GID ranges for Gitea
-      ansible.builtin.lineinfile:
+    - name: Remove the retired account's parent-dataset traverse ACL
+      ansible.posix.acl:
         path: "{{ item }}"
-        regexp: '^{{ atlas_gitea_username }}:'
-        line: >-
-          {{ atlas_gitea_username }}:{{ atlas_gitea_subid_start }}:{{ atlas_gitea_subid_count }}
-        create: false
-        mode: "0644"
+        etype: user
+        entity: "{{ atlas_gitea_legacy_username }}"
+        state: absent
       loop:
-        - /etc/subuid
-        - /etc/subgid
+        - "{{ atlas_services_mountpoint }}"
+        - "{{ atlas_app_data_mountpoint }}"
+      when: atlas_gitea_production_enabled | bool
 
     - name: Enable POSIX ACLs only on the service-namespace parents
       community.general.zfs:
@@ -80,17 +71,6 @@
       loop:
         - "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_services }}"
         - "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_app_data }}"
-
-    - name: Permit Gitea to traverse only the application-data parents
-      ansible.posix.acl:
-        path: "{{ item }}"
-        entity: "{{ atlas_gitea_username }}"
-        etype: user
-        permissions: x
-        state: present
-      loop:
-        - "{{ atlas_services_mountpoint }}"
-        - "{{ atlas_app_data_mountpoint }}"
 
     - name: Create the dedicated Gitea ZFS dataset
       community.general.zfs:
@@ -115,7 +95,7 @@
         - "{{ atlas_gitea_home }}/.config/containers"
         - "{{ atlas_gitea_quadlet_dir }}"
 
-    - name: Enable lingering for the dedicated rootless account
+    - name: Ensure lingering for the admin rootless account
       ansible.builtin.command:
         argv:
           - loginctl
@@ -123,11 +103,14 @@
           - "{{ atlas_gitea_username }}"
         creates: "/var/lib/systemd/linger/{{ atlas_gitea_username }}"
 
-    - name: Start the dedicated rootless user manager
+    - name: Start the admin rootless user manager
       ansible.builtin.systemd:
         name: "user@{{ atlas_gitea_uid }}.service"
         state: started
       when: not ansible_check_mode
+
+    - name: Prepare the admin-owned Gitea image
+      ansible.builtin.import_tasks: gitea_image.yml
 
     - name: Render the rootless Gitea Quadlet
       ansible.builtin.template:

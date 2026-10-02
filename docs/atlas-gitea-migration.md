@@ -24,8 +24,8 @@ Prometheus data, but do not restart its stale Gitea after Atlas accepts writes.
   Hosts' effective upstream to Atlas over the Prometheus--Aegis gateway, and offers public Gitea
   SSH on port 2222 via the same gateway. Prometheus port 22 is unchanged.
   HTTPS and SSH must be validated together before declaring cutover.
-- Run Gitea as a **rootless user Quadlet** under a dedicated, non-login Atlas
-  account, using the pinned `1.25.2-rootless` image. This is an explicit
+- The initial staging ran as a **rootless user Quadlet** under a dedicated,
+  non-login Atlas account, using the pinned `1.25.2-rootless` image. This was an explicit
   rootful-to-rootless **data-layout conversion**, not a drop-in image swap:
   the target mounts `/var/lib/gitea` and `/etc/gitea`, and uses Gitea's
   built-in SSH server instead of the source image's OpenSSH daemon. Keep the
@@ -150,6 +150,34 @@ The Prometheus export timer resumed with NPM-only paths. A recursive ZFS
 snapshot at `20261002T073032Z` and encrypted Borg archive
 `atlas-20261002T073044Z` captured the Atlas target after cutover; Borg exited
 successfully, cleaned its temporary snapshot, and the pool was healthy.
+
+## Corrected Atlas service owner (2026-10-02)
+
+The operator required the host Quadlet to belong to `admin`, while the Unix
+user **inside** the container must be named `gitea`. The pinned derived
+`Containerfile.gitea-rootless` changes only the base image's UID/GID 1000
+passwd/group names from `git` to `gitea`; it retains the rootless image's
+paths and entrypoint. Gitea's `RUN_USER` is `gitea`, while its built-in SSH
+user and advertised clone user remain `git`, preserving `git@` URLs. The
+selective restore helper now generates the same three settings for any future
+explicit restore, instead of recreating a `RUN_USER = git` target.
+
+A disposable, loopback-only container using a copy of a Gitea ZFS snapshot
+passed HTTP, SQLite, internal-user and SSH host-key checks without touching
+live data. After explicit outage approval, the opt-in
+`--tags gitea_owner_migration -e atlas_gitea_owner_migration=true` run stopped
+the old user service, took safety snapshot
+`zpool/services/data/gitea@gitea-owner-migration-20261002T100104`, transferred
+only the Gitea dataset to `admin`, tested an `admin` staging Quadlet on
+loopback, then promoted it to the production LAN ports. The old Atlas Quadlet
+was removed. The old host `gitea` account and its sub-ID range are retained
+for a deliberate rollback; they must not restart stale Gitea. The parent
+traverse ACL is removed by the normal Gitea role once the new owner is live.
+
+The new service returned HTTP 200 locally and through public primary HTTPS;
+Navidrome and Syncthing remained active under `admin`, the pool was healthy,
+and a second normal Gitea Ansible run was idempotent. This does **not** close
+the separate external TCP/2222 or authenticated clone/push validation gap.
 
 1. Agree on an outage and record source/target versions, pool health, the
    latest backups, SSH host-key fingerprints, and both current NPM routes.

@@ -322,12 +322,13 @@ alla LAN. Dopo la verifica dei servizi, configurare manualmente i Proxy Host NPM
 negli `AllowedIPs`; aggiungere la VIP Uranus quando esisterà. Dopo il reload di firewalld, Ansible
 ricarica le reti Podman rootful di Prometheus per conservare DNS e connettività del proxy.
 
-La migrazione Gitea da Prometheus ad Atlas è predisposta in
-[`docs/atlas-gitea-migration.md`](docs/atlas-gitea-migration.md). Atlas ha un dataset e un account
-dedicati con Quadlet utente rootless inattivo. Una copia isolata del backup Prometheus ha superato
-i controlli SQLite, Git e del container rootless senza rete; non è la copia finale per il cutover.
-NPM resta su Prometheus; stack sorgente e instradamento pubblico rimangono invariati fino a un cutover
-HTTPS e SSH separato e validato.
+La migrazione Gitea da Prometheus ad Atlas è descritta in
+[`docs/atlas-gitea-migration.md`](docs/atlas-gitea-migration.md). Gitea usa un Quadlet rootless
+di `admin` su un dataset dedicato; l'immagine derivata mantiene UID/GID 1000 ma chiama l'utente
+interno `gitea`. NPM resta su Prometheus e l'HTTPS pubblico primario serve Atlas. L'SSH pubblico
+su TCP/2222 non era ancora raggiungibile dall'esterno il 2026-10-02; non considerare completo
+il cutover HTTPS+SSH finché non sono validati clone/push autenticati. I dati sorgente restano
+conservati su Prometheus senza avviarne il vecchio container.
 
 Validare il gateway con:
 

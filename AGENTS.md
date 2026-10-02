@@ -59,6 +59,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff`
   - Atlas rootless Gitea staging (does not start Gitea):
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea --check --diff`
+  - Atlas explicit Gitea host-owner migration (live outage; never a normal run):
+    `ansible-playbook ansible/site.yml --limit atlas --tags gitea_owner_migration -e atlas_gitea_owner_migration=true`
   - Atlas explicit isolated Gitea restore rehearsal (not part of normal runs):
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea_restore -e atlas_gitea_restore_test=true`
   - Atlas final Gitea replacement gate (dry-run only until a stopped-source export is pulled):
@@ -273,7 +275,8 @@ successfully. The first monthly scrub remains a runtime check.
 - [ ] After data protection and recovery are validated, populate `/zpool/media/music` and validate Navidrome.
 - [x] Design the staged Prometheus-to-Atlas Gitea migration in `docs/atlas-gitea-migration.md`.
   The approved topology keeps NPM on Prometheus and moves HTTPS and public SSH (TCP/2222) together;
-  Gitea must run as a dedicated rootless user Quadlet on Atlas. The rootful-to-rootless data-layout
+  Gitea runs as an `admin`-owned rootless user Quadlet on Atlas with an internal `gitea` user.
+  The rootful-to-rootless data-layout
   conversion passed an isolated restore rehearsal. The later partial cutover is tracked below.
 - [x] Prepare the dedicated Atlas Gitea dataset, non-login UID/GID 1101 with a separate rootless Podman
   sub-ID range, and disabled user Quadlet. On 2026-10-01 the targeted Ansible run and a second idempotent
@@ -316,6 +319,15 @@ successfully. The first monthly scrub remains a runtime check.
   Gitea container was removed from the desired Compose stack without deleting its data; the
   Prometheus backup export timer resumed for NPM only. A post-cutover recursive ZFS snapshot and
   encrypted Borg archive `atlas-20261002T073044Z` completed successfully.
+- [x] Move the live Gitea Quadlet and dataset from the legacy host `gitea` account to `admin`
+  after a disposable snapshot-copy test of the pinned derived image. On 2026-10-02 the explicit
+  outage run stopped only legacy Gitea, made safety snapshot
+  `zpool/services/data/gitea@gitea-owner-migration-20261002T100104`, changed dataset ownership,
+  and validated loopback staging (HTTP 200, internal `gitea` UID/GID 1000, SQLite `quick_check`)
+  before promoting the `admin` Quadlet. Production LAN and public HTTPS returned 200; Navidrome
+  and Syncthing remained active, the pool was healthy, and the normal Gitea run changed nothing.
+  The old host account and data on Prometheus remain preserved; the old Atlas Quadlet and its
+  parent-dataset traverse ACL were removed. A subsequent normal run changed nothing.
 - [ ] Complete public SSH/2222 and representative authenticated HTTPS/SSH clone/push validation.
   Prometheus' TCP/2222 socket and firewalld rule are active and the local proxy presents the
   matching Atlas host key, but Ikaros' external TCP connection timed out and no SYN reached

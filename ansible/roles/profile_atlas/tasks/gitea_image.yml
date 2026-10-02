@@ -1,0 +1,51 @@
+---
+- name: Create the admin-owned Gitea image build directory
+  ansible.builtin.file:
+    path: "{{ atlas_gitea_image_build_dir }}"
+    state: directory
+    owner: "{{ atlas_admin_username }}"
+    group: "{{ atlas_admin_group }}"
+    mode: "0700"
+
+- name: Install the pinned rootless Gitea Containerfile
+  ansible.builtin.copy:
+    src: Containerfile.gitea-rootless
+    dest: "{{ atlas_gitea_image_build_dir }}/Containerfile"
+    owner: "{{ atlas_admin_username }}"
+    group: "{{ atlas_admin_group }}"
+    mode: "0644"
+
+- name: Check the admin-owned Gitea image
+  become_user: "{{ atlas_admin_username }}"
+  ansible.builtin.command:
+    argv: [podman, image, exists, "{{ atlas_gitea_image }}"]
+  args:
+    chdir: "{{ atlas_gitea_image_build_dir }}"
+  environment:
+    HOME: "{{ atlas_admin_home }}"
+    XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"
+  register: atlas_gitea_image_present
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Build the pinned Gitea image with the internal gitea identity
+  become_user: "{{ atlas_admin_username }}"
+  ansible.builtin.command:
+    argv:
+      - podman
+      - build
+      - --pull=always
+      - --tag
+      - "{{ atlas_gitea_image }}"
+      - --file
+      - Containerfile
+      - .
+  args:
+    chdir: "{{ atlas_gitea_image_build_dir }}"
+  environment:
+    HOME: "{{ atlas_admin_home }}"
+    XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"
+  when:
+    - atlas_gitea_image_present.rc != 0
+    - not ansible_check_mode

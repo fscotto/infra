@@ -1,0 +1,10 @@
+FROM docker.gitea.com/gitea@sha256:f1943db2d2f1e447e857b3f0aee4ebb7b184500f86e5b80eae110fd435435906
+
+# Preserve the official image's UID/GID, paths and entrypoint; change only the
+# internal Unix identity. The host-side rootless owner is Atlas admin.
+USER 0
+RUN sed -i 's/^git:x:1000:1000:/gitea:x:1000:1000:/' /etc/passwd \
+    && sed -i 's/^git:x:1000:/gitea:x:1000:/' /etc/group \
+    && grep -q '^gitea:x:1000:1000:' /etc/passwd \
+    && grep -q '^gitea:x:1000:' /etc/group
+USER 1000:1000

@@ -21,6 +21,8 @@ HOST_KEYS = (
 )
 SERVER_SETTINGS = {
     "START_SSH_SERVER": "true",
+    "BUILTIN_SSH_SERVER_USER": "git",
+    "SSH_USER": "git",
     "SSH_PORT": "2222",
     "SSH_LISTEN_PORT": "2222",
     "SSH_SERVER_HOST_KEYS": ", ".join(
@@ -52,6 +54,7 @@ def convert_config(config):
     section = ""
     server_seen = set()
     server_found = False
+    run_user_seen = False
 
     def append_missing_server_settings():
         for key, value in SERVER_SETTINGS.items():
@@ -61,6 +64,9 @@ def convert_config(config):
     for line in original.splitlines(keepends=True):
         match = re.match(r"^\s*\[([^]]+)\]\s*$", line)
         if match:
+            if not run_user_seen:
+                output.append("RUN_USER = gitea\n")
+                run_user_seen = True
             if section == "server":
                 append_missing_server_settings()
             section = match.group(1).lower()
@@ -68,7 +74,10 @@ def convert_config(config):
             output.append(line)
             continue
         setting = re.match(r"^(\s*)([A-Z_]+)(\s*=\s*)(.*?)(\r?\n?)$", line)
-        if setting and section == "server" and setting.group(2) in SERVER_SETTINGS:
+        if setting and section == "" and setting.group(2) == "RUN_USER":
+            run_user_seen = True
+            line = f"{setting.group(1)}RUN_USER{setting.group(3)}gitea{setting.group(5)}"
+        elif setting and section == "server" and setting.group(2) in SERVER_SETTINGS:
             key = setting.group(2)
             server_seen.add(key)
             line = f"{setting.group(1)}{key}{setting.group(3)}{SERVER_SETTINGS[key]}{setting.group(5)}"
@@ -180,8 +189,8 @@ def main():
         raise ValueError("Refusing backup outside the Atlas Prometheus snapshots")
     if str(target) != "/zpool/services/data/gitea":
         raise ValueError("Refusing target outside the dedicated Gitea dataset")
-    if args.uid != 1101 or args.gid != 1101:
-        raise ValueError("Unexpected dedicated Gitea account IDs")
+    if args.uid != 1000 or args.gid != 1000:
+        raise ValueError("Unexpected admin-owned Gitea account IDs")
     expected = expected_digest(backup)
     if sha256(backup / "payload.tar") != expected:
         raise ValueError("Prometheus backup SHA-256 mismatch")

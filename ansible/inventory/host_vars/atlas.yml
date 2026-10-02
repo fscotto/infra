@@ -52,9 +52,6 @@ atlas_manage_storage: true
 # Rootless Gitea was restored from the stopped-source export before production activation.
 atlas_manage_gitea: true
 atlas_gitea_production_enabled: true
-# Dedicated rootless Podman range; admin owns 100000-165535 on this host.
-atlas_gitea_subid_start: 165536
-atlas_gitea_subid_count: 65536
 atlas_prometheus_pull_start_timer: true
 atlas_manage_zfs_snapshots: true
 atlas_zfs_snapshot_prefix: atlas-auto

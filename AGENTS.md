@@ -49,6 +49,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
   - Atlas NAS: `ansible-playbook ansible/site.yml --limit atlas --check --diff`
   - Aegis IoT: `ansible-playbook ansible/site.yml --limit aegis --check --diff`
   - Aegis NFS client layer: `ansible-playbook ansible/site.yml --limit aegis --tags nfs --list-tasks`
+  - Aegis iCloudPD retirement gate (dry-run; keep host flag true until cutover):
+    `ansible-playbook ansible/site.yml --limit aegis --tags icloudpd_cutover --check --diff -e aegis_icloudpd_enabled=false -K`
   - Aegis host DNS: `ansible-playbook ansible/site.yml --limit aegis --tags dns --check --diff`
 - Focused checks:
   - Emacs is disabled by default; temporary Emacs check: `ansible-playbook ansible/site.yml --limit <host> --tags emacs --check --diff -e emacs_enabled=true`
@@ -456,3 +458,6 @@ validated exports of older historical data will use a dedicated Atlas NFS datase
   not depend on the AdGuard container during startup.
 - iCloudPD requires post-deployment interactive MFA initialization; its cookie/configuration state is
   persisted in `/var/lib/icloudpd/config`.
+- Keep `aegis_icloudpd_enabled=true` until Atlas photo ingestion and restore checks pass. The explicit
+  `icloudpd_cutover` tag stops/disables the source only after that host variable is set false; normal
+  Aegis runs and restart handlers must not restart it. Preserve its Quadlet and `/var/lib/icloudpd` for rollback.

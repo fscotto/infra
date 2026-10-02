@@ -44,3 +44,5 @@ aegis_ssh_authorized_keys:
     key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA95wYlzpfN3rjUhpMeP4KHn8I6ZrjQXoDTgwgRIa++b siren"
 
 aegis_icloudpd_apple_id: "{{ vault_aegis_icloudpd_apple_id | default('') }}"
+# Flip to false only after Atlas ingestion, backups and restores pass.
+aegis_icloudpd_enabled: true

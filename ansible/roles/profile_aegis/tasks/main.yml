@@ -20,6 +20,7 @@
       - aegis_icloudpd_apple_id | length > 0
     fail_msg: Define vault_aegis_icloudpd_apple_id before applying the Aegis profile.
   no_log: true
+  when: aegis_icloudpd_enabled | bool
 
 - name: Require completed Aegis network placeholders
   tags: [aegis, dns, firewall, network, services]
@@ -148,6 +149,7 @@
     label: "{{ item.dest }}"
   no_log: "{{ item.dest == 'icloudpd.container' }}"
   notify: Restart Aegis Quadlet services
+  when: item.dest != 'icloudpd.container' or aegis_icloudpd_enabled | bool
 
 - name: Create Aegis systemd-resolved configuration directory
   tags: [aegis, adguard, dns, services]
@@ -374,3 +376,12 @@
     - podman-auto-update.timer
   loop_control:
     label: "{{ item }}"
+  when: item != 'icloudpd.service' or aegis_icloudpd_enabled | bool
+
+- name: Stop Aegis iCloudPD only after the explicit Atlas cutover flag
+  tags: [aegis, icloudpd, icloudpd_cutover]
+  ansible.builtin.systemd:
+    name: icloudpd.service
+    enabled: false
+    state: stopped
+  when: not aegis_icloudpd_enabled | bool

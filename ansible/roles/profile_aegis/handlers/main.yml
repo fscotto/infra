@@ -19,3 +19,4 @@
     - icloudpd.service
   loop_control:
     label: "{{ item }}"
+  when: item != 'icloudpd.service' or aegis_icloudpd_enabled | bool

@@ -141,11 +141,17 @@ completed backup or restore of iCloudPD data**, which does not exist yet.
    representative photos and the app config into an isolated 0700 directory;
    verify checksums, ownership, ACL/SELinux relabel procedure, and an isolated
    re-authentication/restore path. Never print or export live cookies.
-6. Only after those tests and explicit cutover approval, stop/disable Aegis'
-   `icloudpd.service` through a separate Aegis playbook change. Preserve its
-   data/config for rollback; do not delete or restart stale ingestion blindly.
-   Leave the Atlas `photobook` NFS export unchanged. Document the eventual
-   Uranus handoff separately.
+6. Only after those tests and explicit cutover approval, set
+   `aegis_icloudpd_enabled: false` in Aegis host vars and apply
+   `--limit aegis --tags icloudpd_cutover -K` from a local interactive
+   terminal, never passing the sudo password in chat or extra-vars. Confirm `icloudpd.service` is
+   stopped and disabled. The normal Aegis play then omits its Quadlet render,
+   service start, and restart handler. Preserve its existing Quadlet and
+   data/config for rollback; do not
+   delete or restart stale ingestion blindly. Leave the Atlas `photobook`
+   NFS export unchanged. Document the eventual Uranus handoff separately.
 
 The current source state and lack of Aegis sudo access prevent declaring the
-real migration validated. The first scrub has also not yet been observed.
+real migration validated. An unattended 2026-10-02 cutover dry-run failed at
+fact gathering with `Missing sudo password`, before any changes. The first
+scrub has also not yet been observed.

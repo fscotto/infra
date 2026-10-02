@@ -375,7 +375,9 @@ successfully. The first monthly scrub remains a runtime check.
   its persisted folder format contained a systemd generator path rather than the intended date
   format; do not infer a healthy source from `systemctl is-active`. Atlas' existing 25 GiB Pictures
   tree is not a migration target. The first scrub, real Atlas download, MFA, backup/restore and
-  explicit cutover remain unverified; neither host's ingestion service was changed.
+  explicit cutover remain unverified; neither host's ingestion service was changed. The existing
+  recursive Borg/USB source scope includes Photobook and the proposed state dataset; Borg's
+  `CAP_DAC_READ_SEARCH` access was checked, but no iCloudPD version or restore exists yet.
 
 ## Cerberus Management Node (Deferred)
 `cerberus` is postponed until the office in the new house is physically set up. It is not an inventory

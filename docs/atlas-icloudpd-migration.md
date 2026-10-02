@@ -92,6 +92,16 @@ the top-level photo directory, and `admin` could not list the parent. The
 temporary tree and container were removed. This confirms local namespace/ACL
 behavior, **not** an Aegis NFS read or behavior on the actual ZFS dataset.
 
+Backup path review on 2026-10-02: the managed Borg and USB scripts snapshot
+the pool recursively and bind every mounted child dataset, so both
+`media/photobook` and the proposed `services/data/icloudpd` fall within their
+declared source scope. Borg's runner switches to the dedicated `borg` account
+with only `CAP_DAC_READ_SEARCH`; a read-only check using those exact `setpriv`
+capability flags could traverse/read both Photobook and Archive, whereas plain
+`sudo -u borg` could not. USB copies as root and preserves POSIX ACLs, but not
+generic xattrs/SELinux labels. **This is scope and permission evidence, not a
+completed backup or restore of iCloudPD data**, which does not exist yet.
+
 ## Validation and cutover gates
 
 1. Verify the first completed monthly scrub from its service result, current

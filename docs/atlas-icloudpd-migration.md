@@ -120,6 +120,8 @@ completed backup or restore of iCloudPD data**, which does not exist yet.
 
 On 2026-10-02 Atlas storage and the inactive Quadlet were deployed; a second
 Ansible run made zero changes. The generated service was inactive, and no
-`icloudpd.conf` existed. At the last Aegis read-only inspection its service
-was still running and non-interactive sudo was unavailable. The unassisted Ansible dry-run failed at
-fact gathering with `Missing sudo password` before making changes.
+`icloudpd.conf` existed. An interactive-sudo Aegis run on 2026-10-02 removed the Quadlet and
+`/var/lib/icloudpd`; AdGuard stayed active. The retired unit is `not-found`
+but retains a `failed` record because Podman needed SIGKILL while stopping.
+The role now clears that record on a subsequent run. The earlier unassisted
+Ansible dry-run failed at fact gathering with `Missing sudo password`.

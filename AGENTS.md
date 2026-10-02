@@ -376,8 +376,10 @@ successfully. The first monthly scrub remains a runtime check.
 - [ ] Retire Aegis iCloudPD completely. The user authorized stopping/disabling the service and
   deleting its Quadlet, `/var/lib/icloudpd` data, and MFA state despite an unaudited container
   overlay. The desired Aegis role is declaratively absent and guards mounted state, but runtime
-  removal requires an Ansible run with interactive sudo (`-K`). At the last inspection the Aegis
-  service was still active; do not claim retirement until live checks pass.
+  removal requires an Ansible run with interactive sudo (`-K`). The 2026-10-02 run removed the
+  Quadlet and `/var/lib/icloudpd`; AdGuard remained active. The old unit is `not-found` but retains
+  a `failed` record after Podman needed SIGKILL during stop. Rerun the role to clear that record
+  before marking retirement complete.
 - [ ] Validate Atlas iCloudPD authentication, actual ingestion, filesystem/SELinux/SMB permissions,
   ZFS/Borg/USB backup inclusion, and isolated restore. The first monthly scrub remains a separate
   open data-protection check. The recursive Borg/USB source scope includes Archive and the proposed

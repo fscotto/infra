@@ -136,6 +136,22 @@
     enabled: false
   when: aegis_icloudpd_load_state.stdout == 'loaded'
 
+- name: Inspect retired Aegis iCloudPD failure state
+  tags: [aegis, containers, icloudpd]
+  ansible.builtin.command:
+    argv: [systemctl, show, icloudpd.service, --property=ActiveState, --value]
+  register: aegis_icloudpd_active_state
+  changed_when: false
+
+- name: Clear retired Aegis iCloudPD failed-unit record
+  tags: [aegis, containers, icloudpd]
+  ansible.builtin.command:
+    argv: [systemctl, reset-failed, icloudpd.service]
+  changed_when: true
+  when:
+    - aegis_icloudpd_active_state.stdout == 'failed'
+    - not ansible_check_mode
+
 - name: Remove retired Aegis iCloudPD Quadlet
   tags: [aegis, containers, icloudpd]
   ansible.builtin.file:

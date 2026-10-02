@@ -49,8 +49,9 @@ atlas_zfs_backup_reservation: 500G
 atlas_zfs_dataset_photobook: media/photobook
 atlas_mount_root: /zpool
 atlas_manage_storage: true
-# Prepare only the isolated rootless Gitea target; no restore, start, or cutover.
+# Rootless Gitea was restored from the stopped-source export before production activation.
 atlas_manage_gitea: true
+atlas_gitea_production_enabled: true
 # Dedicated rootless Podman range; admin owns 100000-165535 on this host.
 atlas_gitea_subid_start: 165536
 atlas_gitea_subid_count: 65536

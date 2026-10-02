@@ -1,11 +1,10 @@
 # Gitea migration from Prometheus to Atlas
 
-This is a staged migration plan, not a cutover authorization. Keep the source
-Gitea, its data, both NPM Proxy Hosts, and public DNS unchanged until the
-target and rollback have been tested. Gitea is temporary on Atlas until
-Uranus; NPM remains on Prometheus.
+This records the staged migration and its observed partial cutover. Gitea is
+temporary on Atlas until Uranus; NPM remains on Prometheus. Preserve the old
+Prometheus data, but do not restart its stale Gitea after Atlas accepts writes.
 
-## Observed source and chosen topology (2026-10-01)
+## Observed source before cutover and chosen topology (2026-10-01)
 
 - Prometheus runs the rootful `docker.gitea.com/gitea:1.25.2` image in its
   managed Compose stack. `/opt/gitea/data` is about 280 MiB, uses SQLite,
@@ -108,7 +107,7 @@ not a complete Gitea recovery rehearsal from USB.
 ## Phase 2: explicit final cutover
 
 The opt-in `/usr/local/sbin/prometheus-gitea-final-export` helper was installed
-on 2026-10-01 and passed `bash -n`; it has **not** been invoked. It refuses to
+on 2026-10-01 and passed `bash -n`. It refuses to
 run while the scheduled Prometheus export timer is active. When explicitly
 triggered, it stops only the source Gitea container, checks SQLite, publishes
 a checksum-verified Gitea-only version for Atlas' existing pull, and leaves
@@ -119,26 +118,38 @@ After Atlas pulls that version, its separate
 `--tags gitea_final_restore -e atlas_gitea_final_restore=true` gate accepts
 only metadata marked `gitea-cutover`, validates a private staged replacement,
 and swaps it for the marked rehearsal. The swap and its rollback path passed
-synthetic tests on 2026-10-01; the gate has not been used on live Gitea data.
+synthetic tests on 2026-10-01; the live gate succeeded on 2026-10-02.
 
-The network change is also prepared but inactive. `server_gitea_on_atlas=true`
-removes the rootful Gitea service from the desired Prometheus Compose stack,
-adds `gitea:192.168.178.55` to NPM's container hosts file, and removes Gitea
-from future Prometheus backup exports. Both existing NPM Proxy Host records
-remain at `gitea:3000`, but that name then resolves to Atlas; no direct SQLite
-edit or NPM login is required. A separate systemd socket on public TCP/2222
-proxies SSH to Atlas TCP/2222 over the gateway, leaving administrative TCP/22
-unchanged. Atlas' production flag changes the user Quadlet from loopback
-staging ports to LAN ports 3000/2222, grants only Aegis access in firewalld,
-and starts it **only** after the `.final-sha256` marker exists. Neither flag
-is enabled yet. The future Prometheus configuration passed a check-run; the
-installed socket units passed `systemd-analyze verify` while remaining
-inactive. Source Gitea still answered HTTP 200 after preparation.
+On 2026-10-02 the operator approved the outage. The final stopped-source
+export `20261002T071525Z` passed the Atlas pull checksum; the guarded restore
+replaced the rehearsal. SQLite `quick_check`, all 33 repository `git fsck`
+checks, and the source/target SSH host-key comparison passed. The rootless
+Atlas Quadlet serves LAN HTTP/3000 and SSH/2222, reachable from Prometheus
+through Aegis; its firewall admits only Aegis. The final marker gates startup.
 
-The previously agreed USB prerequisite is now met, but the final export,
-production flags, and public cutover remain uninvoked. The prepared
-configuration alone does not constitute a migration; confirm a fresh outage
-window before stopping the source or switching traffic.
+Prometheus now runs the NPM-only Compose stack. Both NPM database records still
+say `gitea:3000`, but Nginx evaluates this variable upstream through its
+runtime DNS resolver, which **does not** use a Compose `extra_hosts` alias.
+The initial alias attempt returned 502. A managed `server_proxy.conf` override
+sets `$server` to Atlas' IP for only the two declared Gitea domains; it passed
+`nginx -t` and primary HTTPS/API returned 200 after a clean NPM restart
+without the alias; a representative public `git ls-remote` also succeeded.
+Navidrome and Syncthing Proxy Hosts still responded. No NPM SQLite records
+or credentials were changed. The
+secondary hostname `git.ov-ad3410.infomaniak.ch` did not resolve from Ikaros
+and had no generated NPM config file at the time of inspection.
+
+Prometheus' public TCP/2222 socket proxies to Atlas without changing admin
+SSH/22. The local socket presents the preserved Gitea ED25519 host key, but
+an external TCP/2222 connection from Ikaros timed out. During the test no SYN
+reached Prometheus `eth0`; its socket and firewalld port were active. Check
+upstream/provider filtering before declaring public SSH complete. Do not
+restart the stale source after public HTTPS has accepted target writes.
+
+The Prometheus export timer resumed with NPM-only paths. A recursive ZFS
+snapshot at `20261002T073032Z` and encrypted Borg archive
+`atlas-20261002T073044Z` captured the Atlas target after cutover; Borg exited
+successfully, cleaned its temporary snapshot, and the pool was healthy.
 
 1. Agree on an outage and record source/target versions, pool health, the
    latest backups, SSH host-key fingerprints, and both current NPM routes.
@@ -157,23 +168,22 @@ window before stopping the source or switching traffic.
    and the target service before switching NPM.
 4. Enable the public TCP/2222 socket proxy on Prometheus to Atlas over Aegis
    without changing administrative TCP/22. Switch Prometheus to the desired
-   NPM-only Compose stack and recreate NPM with the managed `gitea` host alias
-   so **both** existing Proxy Hosts reach Atlas without changing their database
-   records. The old Gitea data stays intact. Do not change public DNS.
+   NPM-only Compose stack and use the managed Gitea-only NPM runtime upstream
+   override. Do not use Compose `extra_hosts`: Nginx bypasses it for the
+   variable upstream. The old Gitea data stays intact. Do not change public DNS.
 5. Test HTTPS login, representative clone/push, LFS, and public SSH clone/push
    on port 2222 from outside the Atlas LAN. Record the last source write and
    first healthy target service times; do not claim RPO/RTO without measuring.
-6. After successful traffic validation, resume the Prometheus NPM-only backup
-   export timer and verify its next result. Verify the next Atlas snapshot/Borg
+6. Resume the Prometheus NPM-only backup export timer after the desired stack
+   is active and verify its next result. Verify the next Atlas snapshot/Borg
    run covers Gitea and test a restored target copy. Do not delete old source
    data.
 
 ## Rollback gate
 
-Before Atlas accepts writes, restore the old Compose definition (removing the
-NPM `gitea` host alias), disable the public 2222 proxy, and restart the
-unchanged source Gitea if target validation
-fails. **After Atlas accepts writes, do not blindly restart the source:** its
+Before Atlas accepts writes, restore the old Compose definition and remove the
+NPM override, disable the public 2222 proxy, and restart the unchanged source
+Gitea if target validation fails. **After Atlas accepts writes, do not blindly restart the source:** its
 SQLite database and repositories are stale. Quiesce Atlas, capture its new
 data, and decide a reverse migration or an extended outage explicitly.
 

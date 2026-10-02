@@ -1,0 +1,6 @@
+# Managed by Ansible. NPM's variable proxy upstream uses Nginx DNS, not /etc/hosts.
+{% for domain in server_gitea_npm_domains %}
+if ($host = {{ domain }}) {
+  set $server {{ server_gitea_atlas_address }};
+}
+{% endfor %}

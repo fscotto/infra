@@ -274,7 +274,7 @@ successfully. The first monthly scrub remains a runtime check.
 - [x] Design the staged Prometheus-to-Atlas Gitea migration in `docs/atlas-gitea-migration.md`.
   The approved topology keeps NPM on Prometheus and moves HTTPS and public SSH (TCP/2222) together;
   Gitea must run as a dedicated rootless user Quadlet on Atlas. The rootful-to-rootless data-layout
-  conversion passed an isolated restore rehearsal. No production traffic has changed.
+  conversion passed an isolated restore rehearsal. The later partial cutover is tracked below.
 - [x] Prepare the dedicated Atlas Gitea dataset, non-login UID/GID 1101 with a separate rootless Podman
   sub-ID range, and disabled user Quadlet. On 2026-10-01 the targeted Ansible run and a second idempotent
   run passed; the generated unit was inactive, with no staging HTTP/SSH listener. POSIX ACLs on only the
@@ -300,20 +300,29 @@ successfully. The first monthly scrub remains a runtime check.
 - [x] Install a separate opt-in final Gitea export helper on Prometheus. Its 2026-10-01 targeted
   deployment and `bash -n` passed while Gitea and NPM stayed running. It refuses an active export
   timer, stops only Gitea, verifies SQLite, publishes a checksum-verified Gitea-only version for
-  Atlas' existing pull, and leaves the source stopped on success; it has **not** been invoked.
+  Atlas' existing pull, and leaves the source stopped on success. It was invoked on 2026-10-02
+  after the export timer was stopped; version `20261002T071525Z` was pulled and verified on Atlas.
 - [x] Prepare the Atlas final-restore gate without replacing the rehearsal: it accepts only a
   checksum-verified `gitea-cutover` export, refuses a running target, stages and validates the new
   layout before replacing the marked rehearsal, and rolls back a failed swap. Synthetic success
-  and rollback tests and a second idempotent rehearsal run passed on 2026-10-01; the final gate
-  has **not** been invoked.
-- [x] Prepare, but do not activate, the Atlas LAN rootless Quadlet and Prometheus TCP/2222 socket
-  proxy. NPM's two existing `gitea:3000` Proxy Hosts will resolve that name to Atlas through a
-  managed Compose `extra_hosts` entry after the source container is removed; no NPM database edit
-  is needed. The future-mode Prometheus check-run passed, both current-mode runs were idempotent,
-  the new systemd units passed verification, and source HTTP remained 200 on 2026-10-01. Public
-  2222 is closed and the target remains inactive until the explicit cutover flags are enabled.
-- [ ] After an explicit outage approval, perform the final consistent copy and HTTPS/SSH cutover,
-  then remove Gitea from Prometheus' desired stack and backup export without deleting source data.
+  and rollback tests passed on 2026-10-01. On 2026-10-02 the final gate replaced the rehearsal;
+  SQLite `quick_check`, all 33 repository `git fsck` checks, checksum and SSH host-key comparison passed.
+- [x] Start the rootless Atlas Gitea Quadlet and move the primary HTTPS route. On 2026-10-02 Atlas
+  answered HTTP 200 through the Aegis gateway. NPM stayed on Prometheus; its variable upstream
+  required a managed Nginx `server_proxy.conf` override because runtime DNS ignores Compose
+  `extra_hosts`. The primary public HTTPS page and API returned 200, and `git ls-remote` succeeded
+  for a representative repository after NPM restart; the Navidrome and Syncthing Proxy Hosts also
+  responded. The source
+  Gitea container was removed from the desired Compose stack without deleting its data; the
+  Prometheus backup export timer resumed for NPM only. A post-cutover recursive ZFS snapshot and
+  encrypted Borg archive `atlas-20261002T073044Z` completed successfully.
+- [ ] Complete public SSH/2222 and representative authenticated HTTPS/SSH clone/push validation.
+  Prometheus' TCP/2222 socket and firewalld rule are active and the local proxy presents the
+  matching Atlas host key, but Ikaros' external TCP connection timed out and no SYN reached
+  Prometheus `eth0` during the test. Investigate upstream/provider filtering; do not claim the
+  approved simultaneous HTTPS+SSH cutover complete. The secondary NPM hostname
+  `git.ov-ad3410.infomaniak.ch` did not resolve from Ikaros and had no generated NPM config file.
+  Do not restart the stale source Gitea after Atlas has accepted writes.
 - [ ] Design and deploy Nextcloud as another explicitly temporary Atlas service before Uranus. Give it
   separate persistent application, database, and cache storage; keep credentials in Vault; publish it only
   through NPM over the Prometheus--Aegis gateway; and define backup, upgrade, and eventual Uranus-migration

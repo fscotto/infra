@@ -65,6 +65,9 @@
 - name: Import Prometheus Gitea SSH proxy tasks
   ansible.builtin.import_tasks: gitea_ssh_proxy.yml
 
+- name: Import Prometheus Gitea NPM proxy override tasks
+  ansible.builtin.import_tasks: gitea_npm_proxy.yml
+
 - name: Ensure server SSH authorized key fragments directory exists
   tags: [services, ssh]
   ansible.builtin.file:

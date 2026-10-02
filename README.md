@@ -298,12 +298,13 @@ and Aegis (`10.0.0.2`). Their state is initialized ex novo in `/zpool/services/d
 `/zpool/services/data/syncthing`; no source application state is migrated. The music library at
 `/zpool/media/music` is populated separately.
 
-The Gitea move from Prometheus to Atlas is staged in
-[`docs/atlas-gitea-migration.md`](docs/atlas-gitea-migration.md). Atlas has a dedicated dataset and
-non-login account with an inactive rootless user Quadlet. An isolated copy from the verified
-Prometheus backup passed SQLite, Git, and network-disabled
-rootless-container checks; it is not the final cutover copy. NPM remains on Prometheus; the source
-stack and public routes stay unchanged until a separately validated HTTPS and SSH cutover.
+The Gitea move from Prometheus to Atlas is tracked in
+[`docs/atlas-gitea-migration.md`](docs/atlas-gitea-migration.md). The final consistent copy runs in
+Atlas' dedicated dataset under a rootless user Quadlet. NPM remains on Prometheus and the primary
+public HTTPS route serves Atlas. The public SSH/2222 socket works locally on Prometheus, but an
+external connection did not reach its interface on 2026-10-02; check upstream filtering before
+declaring the HTTPS+SSH cutover complete. The old Gitea data remains on Prometheus, but its container
+is absent from the desired stack.
 
 The separate `wireguard_overlay` role manages `wg0` between Prometheus (`10.0.0.1`) and Aegis
 (`10.0.0.2`), generating private keys once on their respective hosts and exchanging only public keys

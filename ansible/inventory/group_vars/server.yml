@@ -92,6 +92,7 @@ server_gitea_cutover_tools_enabled: false
 server_gitea_final_export: false
 server_gitea_on_atlas: false
 server_gitea_atlas_address: "{{ hostvars['atlas'].ansible_host }}"
+server_gitea_npm_domains: []
 server_gitea_ssh_public_port: 2222
 server_gitea_ssh_target_port: 2222
 server_backup_export_source_keep: 3

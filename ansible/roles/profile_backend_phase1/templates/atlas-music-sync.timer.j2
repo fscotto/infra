@@ -1,0 +1,11 @@
+# Managed by Ansible. Do not edit manually.
+[Unit]
+Description=Schedule the daily Atlas Navidrome music copy
+
+[Timer]
+OnCalendar={{ backend_phase1_music_sync_calendar }}
+Persistent=true
+Unit=atlas-music-sync.service
+
+[Install]
+WantedBy=timers.target

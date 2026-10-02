@@ -1,0 +1,10 @@
+# Managed by Ansible. Do not edit manually.
+[Unit]
+Description=Copy Atlas Archive music to the Navidrome library
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/mountpoint -q {{ backend_phase1_archive_dir }}
+ExecStartPre=/usr/bin/mountpoint -q {{ backend_phase1_music_dir }}
+ExecStartPre=/usr/bin/test -d {{ backend_phase1_music_source_dir }}
+ExecStart=/usr/bin/rsync -aH --no-perms --no-owner --no-group --delay-updates --stats -- {{ backend_phase1_music_source_dir }}/ {{ backend_phase1_music_dir }}/

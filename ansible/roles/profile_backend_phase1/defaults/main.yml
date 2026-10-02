@@ -30,3 +30,7 @@ backend_phase1_timezone: Europe/Rome
 backend_phase1_services:
   - atlas-navidrome.service
   - atlas-syncthing.service
+backend_phase1_music_sync_enabled: false
+backend_phase1_music_source_dir: "{{ backend_phase1_archive_dir }}/Music"
+backend_phase1_music_sync_calendar: "*-*-* 00:45:00 Europe/Rome"
+backend_phase1_user_systemd_dir: "{{ backend_phase1_user_home }}/.config/systemd/user"

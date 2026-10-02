@@ -296,7 +296,11 @@ Atlas temporarily hosts rootless Navidrome and Syncthing until Uranus replaces t
 Atlas' LAN address (`192.168.178.55`); WireGuard remains exclusively between Prometheus (`10.0.0.1`)
 and Aegis (`10.0.0.2`). Their state is initialized ex novo in `/zpool/services/data/navidrome` and
 `/zpool/services/data/syncthing`; no source application state is migrated. The music library at
-`/zpool/media/music` is populated separately.
+`/zpool/media/music` was populated separately from `/zpool/archive/Music` on 2026-09-30;
+Navidrome completed its library scan. The rootless `atlas-music-sync.timer` copies new and changed
+files daily at 00:45 Europe/Rome, without deleting destination-only files. Both ZFS datasets must
+be mounted. Its first scheduled run succeeded on 2026-10-02. Some source playlists still contain
+obsolete Windows paths.
 
 The Gitea move from Prometheus to Atlas is tracked in
 [`docs/atlas-gitea-migration.md`](docs/atlas-gitea-migration.md). The final consistent copy runs in
@@ -731,6 +735,7 @@ ansible-lint ansible/roles/<role>
 yamllint ansible/path/to/file.yml
 podman-compose -f /opt/docker/server/docker-compose.yml config
 ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff
+ansible-playbook ansible/site.yml --limit atlas --tags music_sync --check --diff
 ```
 
 ## Tags

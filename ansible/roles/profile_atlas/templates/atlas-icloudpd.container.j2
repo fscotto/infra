@@ -9,6 +9,8 @@ Image={{ atlas_icloudpd_image }}
 UserNS=keep-id:uid=1000,gid=1000
 # The image initialises its unprivileged UID 1000 account as container root.
 User=0
+# Upstream launcher requires traceroute for its iCloud reachability check.
+AddCapability=NET_RAW
 Environment=TZ={{ atlas_icloudpd_timezone }}
 Volume={{ atlas_icloudpd_photos_dir }}:/home/user/iCloud:z
 Volume={{ atlas_icloudpd_config_dir }}:/config:Z

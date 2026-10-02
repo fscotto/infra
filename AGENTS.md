@@ -372,7 +372,10 @@ successfully. The first monthly scrub remains a runtime check.
   `docs/atlas-icloudpd-migration.md`. On 2026-10-02 Atlas deployment and a second idempotent run
   passed; no app config existed at deployment. A manual first start on 2026-10-02 generated
   `icloudpd.conf`; an Ansible run then replaced it with a private mode-0600 Vault-backed template
-  and an idempotent second run. The service is active, but MFA and real downloads remain unverified.
+  and an idempotent second run. The image later expanded the config, so Ansible now seeds it
+  only when absent and maintains the declared fields. Its launcher requires `traceroute`; the
+  rootless Quadlet grants only `NET_RAW`, tested in isolation and after restart. The service
+  is active and waits for `--Initialise`; MFA and real downloads remain unverified.
 - [x] Retire Aegis iCloudPD completely. The operator authorized deleting its Quadlet,
   `/var/lib/icloudpd` data, and MFA state despite an unaudited container overlay. After two
   interactive-sudo runs on 2026-10-02, the unit is `not-found`/`inactive`, the Quadlet and state

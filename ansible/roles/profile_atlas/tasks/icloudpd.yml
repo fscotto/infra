@@ -117,13 +117,41 @@
         fail_msg: Configure the existing iCloudPD Apple ID in Vault.
       no_log: true
 
-    - name: Render private Atlas iCloudPD configuration
+    - name: Seed private Atlas iCloudPD configuration when absent
       ansible.builtin.template:
         src: atlas-icloudpd.conf.j2
         dest: "{{ atlas_icloudpd_config_dir }}/icloudpd.conf"
         owner: "{{ atlas_admin_username }}"
         group: "{{ atlas_admin_group }}"
         mode: "0600"
+        force: false
+      no_log: true
+      diff: false
+
+    - name: Keep declared iCloudPD options in the image-managed configuration
+      ansible.builtin.lineinfile:
+        path: "{{ atlas_icloudpd_config_dir }}/icloudpd.conf"
+        regexp: "^{{ item.key }}="
+        line: "{{ item.key }}={{ item.value }}"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0600"
+      loop:
+        - {key: apple_id, value: "{{ vault_aegis_icloudpd_apple_id }}"}
+        - {key: authentication_type, value: MFA}
+        - {key: user, value: user}
+        - {key: user_id, value: "1000"}
+        - {key: group, value: group}
+        - {key: group_id, value: "1000"}
+        - {key: download_path, value: /home/user/iCloud}
+        - {key: folder_structure, value: "{:%Y/%m/%d}"}
+        - {key: directory_permissions, value: "750"}
+        - {key: file_permissions, value: "640"}
+        - {key: download_interval, value: "86400"}
+        - {key: auto_delete, value: "false"}
+        - {key: delete_after_download, value: "false"}
+      loop_control:
+        label: "{{ item.key }}"
       no_log: true
       diff: false
 

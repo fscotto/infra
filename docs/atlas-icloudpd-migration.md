@@ -138,3 +138,15 @@ service remained active with zero restarts. Keyring initialization, cookie
 creation and a real download are still unverified. The existing Vault variable
 retains its historical `vault_aegis_icloudpd_apple_id` name; no password or
 MFA code was added to Vault.
+
+The attempted interactive initialization then lost its container. Diagnosis
+found that the image launcher requires `traceroute` to pass its iCloud
+reachability check. Rootless Podman without `NET_RAW` returned `Operation not
+permitted` despite working Atlas/container DNS and host HTTPS. An isolated
+container with only `CAP_NET_RAW` passed the same check. The Quadlet now grants
+that single capability while keeping `NoNewPrivileges=true`; a manual restart
+passed `traceroute`, and the app stayed running. Logs now show only the missing
+keyring and wait for `--Initialise` again. The app expanded the generated config
+on startup, so Ansible now seeds it only when absent and idempotently maintains
+only its declared options. A second live Ansible run made zero changes. MFA,
+actual ingestion, and backup/restore remain unverified.

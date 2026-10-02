@@ -370,7 +370,8 @@ successfully. The first monthly scrub remains a runtime check.
   recovery before cutover. Keep the current Aegis service and Photobook NFS export unchanged until
   the Atlas workflow is tested, then retire them explicitly if no longer needed. The gated design
   and isolated, no-network container layout and ACL tests are documented in `docs/atlas-icloudpd-migration.md`.
-  On 2026-10-02 Aegis' service was active but its declared data directory exposed no files, and
+  On 2026-10-02 Aegis' service was active but its declared data directory had zero top-level entries;
+  container-overlay contents remain unaudited because `pi` lacks non-interactive sudo. Its
   its persisted folder format contained a systemd generator path rather than the intended date
   format; do not infer a healthy source from `systemctl is-active`. Atlas' existing 25 GiB Pictures
   tree is not a migration target. The first scrub, real Atlas download, MFA, backup/restore and

@@ -7,10 +7,14 @@ the repository, or a terminal transcript.
 
 ## Observed source and destination (2026-10-02)
 
-- Aegis' rootful `icloudpd.service` is active, but its declared data bind
-  `/var/lib/icloudpd/data` is 4 KiB and exposed no files to the unprivileged
-  inspection. Its persistent config is 12 KiB. `pi` cannot run passwordless
-  sudo, so root-only state and container logs were not audited. The current
+- Aegis' rootful `icloudpd.service` is active (no reported restarts, running
+  since 2026-07-25), but its declared data bind `/var/lib/icloudpd/data`
+  has **zero top-level entries** and is 4 KiB as observed on 2026-10-02.
+  Its persistent config has two top-level entries. `pi` cannot run passwordless
+  sudo, so the container's internal filesystem and root-only state have **not**
+  been audited. Do not conclude there are no photos to preserve: they could be
+  inside the container overlay because the declared bind targets the wrong
+  home. The current
   Quadlet mounts that data directory at `/home/root/iCloud`; the image's
   documented default is `/home/user/iCloud` with its default `user=user`.
 - The non-secret `folder_structure` value in the persisted Aegis config is a
@@ -24,7 +28,10 @@ the repository, or a terminal transcript.
   (UID/GID 1100), mode 0770, and exported only to Aegis with `all_squash`
   to 1100. It currently has `acltype=off`. Neither the proposed
   `/zpool/media/photobook/iCloudPD` subtree nor `zpool/services/data/icloudpd`
-  exists. Never rsync with `--delete` into Photobook or adopt its contents.
+  exists. The current ZFS mountpoint label is `unlabeled_t`, while Atlas has
+  `nfs_export_all_ro/rw` enabled; the effect of the proposed container `:z`
+  label on real NFS reads remains untested. Never rsync with `--delete` into
+  Photobook or adopt its contents.
 
 The upstream image documents `/config/icloudpd.conf` as its primary
 configuration (environment configuration is deprecated), an exact
@@ -90,6 +97,11 @@ behavior, **not** an Aegis NFS read or behavior on the actual ZFS dataset.
 1. Verify the first completed monthly scrub from its service result, current
    pool/backup/alert health, free capacity, and a recent recoverable ZFS,
    Borg, and UUID-bound USB version. Do not treat active timers as proof.
+   Before changing the Aegis service, inspect the running container's actual
+   `/home/user/iCloud` and `/home/root/iCloud` sizes with local root access,
+   without copying or displaying filenames, credentials, or MFA material.
+   If the overlay holds photos, include a deliberate, non-deleting export in
+   the cutover plan; the empty host bind does not rule this out.
 2. After that gate, set the three `atlas_icloudpd_*` flags deliberately in
    Atlas host vars. First prepare only (`prepare=true`,
    `data_protection_verified=true`, `start=false`) using `--tags icloudpd`.

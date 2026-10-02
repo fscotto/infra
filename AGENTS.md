@@ -328,13 +328,15 @@ successfully. The first monthly scrub remains a runtime check.
   and Syncthing remained active, the pool was healthy, and the normal Gitea run changed nothing.
   The old host account and data on Prometheus remain preserved; the old Atlas Quadlet and its
   parent-dataset traverse ACL were removed. A subsequent normal run changed nothing.
-- [ ] Complete public SSH/2222 and representative authenticated HTTPS/SSH clone/push validation.
-  Prometheus' TCP/2222 socket and firewalld rule are active and the local proxy presents the
-  matching Atlas host key, but Ikaros' external TCP connection timed out and no SYN reached
-  Prometheus `eth0` during the test. Investigate upstream/provider filtering; do not claim the
-  approved simultaneous HTTPS+SSH cutover complete. The secondary NPM hostname
-  `git.ov-ad3410.infomaniak.ch` did not resolve from Ikaros and had no generated NPM config file.
-  Do not restart the stale source Gitea after Atlas has accepted writes.
+- [x] Validate public Gitea SSH/2222 and an authenticated read from Ikaros. After the VPS
+  firewall was opened on 2026-10-02, TCP/2222 connected, the public ED25519 host-key
+  fingerprint matched Atlas, Gitea authenticated `fscotto` using the `ikaros` key, and
+  `git ls-remote` returned HEAD for `fscotto/infra.git` over public SSH.
+- [ ] Validate a representative authenticated SSH push and HTTPS write/login before declaring
+  the full cutover complete. Do not push to an existing repository merely as a test. The
+  secondary NPM hostname `git.ov-ad3410.infomaniak.ch` did not resolve from Ikaros and had
+  no generated NPM config file at the previous inspection. Do not restart the stale source
+  Gitea after Atlas has accepted writes.
 - [ ] Design and deploy Nextcloud as another explicitly temporary Atlas service before Uranus. Give it
   separate persistent application, database, and cache storage; keep credentials in Vault; publish it only
   through NPM over the Prometheus--Aegis gateway; and define backup, upgrade, and eventual Uranus-migration

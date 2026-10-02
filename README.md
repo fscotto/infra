@@ -302,9 +302,8 @@ The Gitea move from Prometheus to Atlas is tracked in
 [`docs/atlas-gitea-migration.md`](docs/atlas-gitea-migration.md). The final consistent copy runs in
 Atlas' dedicated dataset under `admin`'s rootless user Quadlet. Its pinned derived image uses an
 internal Unix user named `gitea` (UID/GID 1000), while clone URLs keep `git@`. NPM remains on Prometheus and the primary
-public HTTPS route serves Atlas. The public SSH/2222 socket works locally on Prometheus, but an
-external connection did not reach its interface on 2026-10-02; check upstream filtering before
-declaring the HTTPS+SSH cutover complete. The old Gitea data remains on Prometheus, but its container
+public HTTPS route serves Atlas. Public SSH/2222 now authenticates the `ikaros` key and serves
+read-only `git ls-remote`; authenticated push and HTTPS writes remain untested. The old Gitea data remains on Prometheus, but its container
 is absent from the desired stack.
 
 The separate `wireguard_overlay` role manages `wg0` between Prometheus (`10.0.0.1`) and Aegis

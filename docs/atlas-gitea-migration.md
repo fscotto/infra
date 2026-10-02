@@ -141,9 +141,12 @@ and had no generated NPM config file at the time of inspection.
 
 Prometheus' public TCP/2222 socket proxies to Atlas without changing admin
 SSH/22. The local socket presents the preserved Gitea ED25519 host key, but
-an external TCP/2222 connection from Ikaros timed out. During the test no SYN
-reached Prometheus `eth0`; its socket and firewalld port were active. Check
-upstream/provider filtering before declaring public SSH complete. Do not
+an external TCP/2222 connection from Ikaros initially timed out. During that
+test no SYN reached Prometheus `eth0`; its socket and firewalld port were active.
+After the VPS firewall was opened later on 2026-10-02, the public port connected,
+its ED25519 host-key fingerprint matched Atlas, Gitea authenticated the `ikaros`
+key as `fscotto`, and a public SSH `git ls-remote` for `fscotto/infra.git`
+returned HEAD. Authenticated push and HTTPS write/login remain untested. Do not
 restart the stale source after public HTTPS has accepted target writes.
 
 The Prometheus export timer resumed with NPM-only paths. A recursive ZFS

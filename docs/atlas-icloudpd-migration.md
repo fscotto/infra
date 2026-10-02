@@ -44,7 +44,7 @@ path, user/UID, and folder format as the bind mounts. References:
 | Container identity | Entry process root in its user namespace; downloader UID/GID 1000 maps to host `admin` |
 | Image | Digest-pinned `docker.io/boredazfcuk/icloudpd`, with no registry auto-update |
 | SELinux | Private `:Z` config bind; shared `:z` photo bind for the NFS-visible subtree |
-| Access | A POSIX ACL grants `admin` traversal, not listing or writing, of the existing Photobook root. The new subtree is `admin:immich`, setgid, with a default read/traverse ACL for `immich` (NFS UID 1100). Real file modes and NFS reads still require runtime testing. |
+| Access | A POSIX ACL grants `admin` traversal, not listing or writing, of the existing Photobook root. The new subtree is `admin:immich`, setgid, with a default read/traverse ACL for `immich` (NFS UID 1100). Rootless-created files need not retain group 1100; the inherited named ACL is the intended read path. Real NFS reads still require runtime testing. |
 | Sync policy | Daily interval; no iCloud deletion and no deletion of destination-only files |
 
 The photo subtree receives a managed marker and the image's `.mounted` file.
@@ -74,6 +74,16 @@ and write that file. The Quadlet retains `NoNewPrivileges=true` but does not
 drop every capability. This proves only the container layout and namespace mapping,
 **not** Apple authentication, a real download, NFS visibility, scheduled
 operation, backup coverage, or recovery.
+
+An additional 2026-10-02 test used only a disposable `/var/tmp` tree on Atlas:
+an `immich:immich` mode-0770 parent granted `admin` execute-only ACL access,
+and an `admin:immich` mode-2750 child had the proposed default ACL. The pinned
+image, run rootless as downloader UID 1000 with no network, created a nested
+directory and file. Their host IDs were `1000:100000`, not group 1100, but
+the inherited ACL let host UID 1100 read/traverse them; it could not write to
+the top-level photo directory, and `admin` could not list the parent. The
+temporary tree and container were removed. This confirms local namespace/ACL
+behavior, **not** an Aegis NFS read or behavior on the actual ZFS dataset.
 
 ## Validation and cutover gates
 

@@ -72,6 +72,12 @@ zero changes; and a startup request without preparation also failed at its
 first assertion with zero changes. A simulated approved preparation completed
 in check mode, showing only prospective dataset, ACL, directory, marker and
 disabled-Quadlet changes. These checks do not authorize setting the flags.
+Separately, Atlas' actual Podman 5.8.2 user Quadlet generator accepted a
+secret-free rendering of the inactive template from a disposable `/var/tmp`
+directory. Its generated `ExecStart` contained the expected digest, `keep-id`
+mapping, photo/config bind paths, SELinux flags, and no-new-privileges option;
+the inactive rendering had no install target. The temporary source was
+removed, and no Atlas iCloudPD unit or container was installed or started.
 
 ## Evidence already gathered without production writes
 

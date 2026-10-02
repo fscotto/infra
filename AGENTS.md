@@ -290,10 +290,13 @@ successfully. The first monthly scrub remains a runtime check.
   Borg archive `atlas-20261001T193420Z` included its database. A private one-file restore from
   each independently matched the staged database and passed SQLite `quick_check`; temporary files
   and snapshot mounts were removed, the Borg service ended successfully, and the pool was healthy.
-- [ ] Include the new Gitea dataset in the next UUID-bound offline USB version and test a file restore
-  from that version before accepting production writes; the UUID-bound disk is connected but its
-  LUKS mapper is closed, so the manual backup still requires interactive unlock. On 2026-10-01 the
-  operator could not unlock it and chose to defer traffic cutover until this check passes.
+- [x] Include the new Gitea dataset in a UUID-bound offline USB version and test a file restore
+  before accepting production writes. The operator's 2026-10-01 manual run published version
+  `20261001T201220Z-254397` successfully on 2026-10-02. Its Gitea database was restored to a
+  temporary directory from a read-only mount: contents, owner, group, mode, size, mtime and POSIX
+  ACL matched, and SQLite `quick_check` passed. Temporary files and mounts were removed, LUKS
+  was closed, and the pool remained healthy. A redundant run was stopped during verification;
+  its temporary snapshot was cleaned up and the service's resulting failed state was reset.
 - [x] Install a separate opt-in final Gitea export helper on Prometheus. Its 2026-10-01 targeted
   deployment and `bash -n` passed while Gitea and NPM stayed running. It refuses an active export
   timer, stops only Gitea, verifies SQLite, publishes a checksum-verified Gitea-only version for

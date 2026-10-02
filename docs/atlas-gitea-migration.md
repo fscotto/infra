@@ -71,9 +71,13 @@ source into private `/var/tmp` directories matched the live staged database
 and passed SQLite `quick_check`. Temporary files and the on-demand snapshot
 mount were removed; the Borg temporary snapshot was cleaned up and the pool
 remained healthy. This is file-level proof, **not** a full Gitea recovery.
-The UUID-bound offline USB disk is connected but its LUKS mapper is closed;
-its manual backup requires interactive unlock. It has not yet captured or
-restored this new dataset.
+The operator's UUID-bound offline USB run published version
+`20261001T201220Z-254397` on 2026-10-02. A separate read-only mount and
+temporary restore of `services/data/gitea/data/gitea/gitea.db` matched
+contents, owner, group, mode, size, mtime and POSIX ACL; SQLite
+`quick_check` returned `ok`. The temporary mount and copy were removed,
+LUKS was closed, and the pool was healthy. This is a file-level restore test,
+not a complete Gitea recovery rehearsal from USB.
 
 1. Provision a dedicated target dataset and non-login service identity via
    Ansible, keeping UID/GID distinct from Atlas' reserved Immich `1100`.
@@ -98,9 +102,8 @@ restored this new dataset.
    container with no production ingress or outbound network. Because the
    source stays active, this is a rehearsal copy, not the final cutover copy.
    Regenerate Git hooks if the changed installation path requires it.
-4. ZFS and Borg inclusion and one-file restores have passed. Complete a
-   UUID-bound offline USB version and a one-file restore for the new dataset
-   before accepting user traffic.
+4. ZFS, Borg and UUID-bound offline USB inclusion and one-file restores have
+   passed. These do not replace the final consistent source copy.
 
 ## Phase 2: explicit final cutover
 
@@ -132,10 +135,10 @@ is enabled yet. The future Prometheus configuration passed a check-run; the
 installed socket units passed `systemd-analyze verify` while remaining
 inactive. Source Gitea still answered HTTP 200 after preparation.
 
-The operator cannot unlock the UUID-bound USB disk now and chose to defer
-traffic activation until a new USB version covers Gitea and its file restore
-passes. This blocks the final export, production flags, and public cutover;
-the prepared configuration alone does not constitute a migration.
+The previously agreed USB prerequisite is now met, but the final export,
+production flags, and public cutover remain uninvoked. The prepared
+configuration alone does not constitute a migration; confirm a fresh outage
+window before stopping the source or switching traffic.
 
 1. Agree on an outage and record source/target versions, pool health, the
    latest backups, SSH host-key fingerprints, and both current NPM routes.

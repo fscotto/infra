@@ -332,8 +332,10 @@ successfully. The first monthly scrub remains a runtime check.
   firewall was opened on 2026-10-02, TCP/2222 connected, the public ED25519 host-key
   fingerprint matched Atlas, Gitea authenticated `fscotto` using the `ikaros` key, and
   `git ls-remote` returned HEAD for `fscotto/infra.git` over public SSH.
-- [ ] Validate a representative authenticated SSH push and HTTPS write/login before declaring
-  the full cutover complete. Do not push to an existing repository merely as a test. The
+- [x] Validate authenticated SSH pull and push. On 2026-10-02 the operator reported both
+  operations working through the public SSH endpoint; the earlier agent-run `git ls-remote`
+  remains the independent read-only check. The agent did not perform a test push.
+- [ ] Validate HTTPS write/login before declaring the full cutover complete. The
   secondary NPM hostname `git.ov-ad3410.infomaniak.ch` did not resolve from Ikaros and had
   no generated NPM config file at the previous inspection. Do not restart the stale source
   Gitea after Atlas has accepted writes.

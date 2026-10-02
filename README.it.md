@@ -326,8 +326,8 @@ La migrazione Gitea da Prometheus ad Atlas è descritta in
 [`docs/atlas-gitea-migration.md`](docs/atlas-gitea-migration.md). Gitea usa un Quadlet rootless
 di `admin` su un dataset dedicato; l'immagine derivata mantiene UID/GID 1000 ma chiama l'utente
 interno `gitea`. NPM resta su Prometheus e l'HTTPS pubblico primario serve Atlas. L'SSH pubblico
-su TCP/2222 autentica la chiave `ikaros` e un `git ls-remote` è riuscito; restano da provare
-push autenticato e scrittura via HTTPS prima di considerare completo il cutover. I dati sorgente restano
+su TCP/2222 autentica la chiave `ikaros` e un `git ls-remote` è riuscito; l'operatore ha
+confermato pull e push SSH. Resta da provare la scrittura via HTTPS. I dati sorgente restano
 conservati su Prometheus senza avviarne il vecchio container.
 
 Validare il gateway con:

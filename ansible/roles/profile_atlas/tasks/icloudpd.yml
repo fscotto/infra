@@ -1,32 +1,21 @@
 ---
-- name: Refuse iCloudPD startup without explicit preparation
+- name: Require exact Atlas iCloudPD paths and rootless identity
   tags: [atlas, icloudpd]
   ansible.builtin.assert:
-    that: atlas_icloudpd_prepare | bool
-    fail_msg: Enable atlas_icloudpd_prepare before requesting Atlas iCloudPD startup.
-  when: atlas_icloudpd_start | bool
+    that:
+      - atlas_manage_storage | bool
+      - atlas_icloudpd_dataset == atlas_zfs_pool ~ '/services/data/icloudpd'
+      - atlas_icloudpd_state_dir == atlas_app_data_mountpoint ~ '/icloudpd'
+      - atlas_icloudpd_config_dir == atlas_icloudpd_state_dir ~ '/config'
+      - atlas_icloudpd_photos_dir == atlas_archive_mountpoint ~ '/Pictures/iCloudPD'
+      - atlas_admin_uid | int == 1000
+      - atlas_admin_gid | int == 1000
+      - atlas_icloudpd_image is search('@sha256:[0-9a-f]{64}$')
+    fail_msg: Verify the fixed, separate Atlas iCloudPD photo and state paths.
 
-- name: Prepare the isolated Atlas iCloudPD target without changing Aegis
+- name: Declare inactive rootless Atlas iCloudPD storage and Quadlet
   tags: [atlas, icloudpd]
-  when: atlas_icloudpd_prepare | bool
   block:
-    - name: Require data-protection approval and exact Atlas paths
-      ansible.builtin.assert:
-        that:
-          - atlas_icloudpd_data_protection_verified | bool
-          - atlas_manage_storage | bool
-          - atlas_icloudpd_dataset == atlas_zfs_pool ~ '/services/data/icloudpd'
-          - atlas_icloudpd_state_dir == atlas_app_data_mountpoint ~ '/icloudpd'
-          - atlas_icloudpd_config_dir == atlas_icloudpd_state_dir ~ '/config'
-          - atlas_icloudpd_photos_dir == atlas_archive_mountpoint ~ '/Pictures/iCloudPD'
-          - atlas_admin_uid | int == 1000
-          - atlas_admin_gid | int == 1000
-          - atlas_icloudpd_image is search('@sha256:[0-9a-f]{64}$')
-          - atlas_icloudpd_download_interval | int == 86400
-        fail_msg: >-
-          Verify Atlas data protection and the fixed, separate photo/state
-          paths before preparing the temporary iCloudPD target.
-
     - name: Inspect the existing Archive and application-data datasets
       community.general.zfs_facts:
         name: "{{ item.dataset }}"
@@ -125,70 +114,4 @@
         owner: "{{ atlas_admin_username }}"
         group: "{{ atlas_admin_group }}"
         mode: "0644"
-
-    - name: Check whether admin already has the pinned iCloudPD image
-      become_user: "{{ atlas_admin_username }}"
-      ansible.builtin.command:
-        argv: [podman, image, exists, "{{ atlas_icloudpd_image }}"]
-      environment:
-        HOME: "{{ atlas_admin_home }}"
-        XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"
-      register: atlas_icloudpd_image_present
-      changed_when: false
-      failed_when: false
-      check_mode: false
-
-    - name: Pull only the declared, digest-pinned iCloudPD image
-      become_user: "{{ atlas_admin_username }}"
-      ansible.builtin.command:
-        argv: [podman, pull, "{{ atlas_icloudpd_image }}"]
-      environment:
-        HOME: "{{ atlas_admin_home }}"
-        XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"
-      when:
-        - atlas_icloudpd_image_present.rc != 0
-        - not ansible_check_mode
-
-    - name: Require the existing Apple ID only for explicit startup
-      ansible.builtin.assert:
-        that:
-          - atlas_icloudpd_apple_id | length > 0
-          - "'\n' not in atlas_icloudpd_apple_id"
-        fail_msg: Store the iCloudPD Apple ID in Vault before starting Atlas.
-      no_log: true
-      when: atlas_icloudpd_start | bool
-
-    - name: Render private iCloudPD configuration before explicit startup
-      ansible.builtin.template:
-        src: atlas-icloudpd.conf.j2
-        dest: "{{ atlas_icloudpd_config_dir }}/icloudpd.conf"
-        owner: "{{ atlas_admin_username }}"
-        group: "{{ atlas_admin_group }}"
-        mode: "0600"
-      no_log: true
-      diff: false
-      when: atlas_icloudpd_start | bool
-
-    - name: Reload admin's user manager without starting iCloudPD
-      become_user: "{{ atlas_admin_username }}"
-      ansible.builtin.systemd:
-        scope: user
-        daemon_reload: true
-      environment:
-        XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"
-        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ atlas_admin_uid }}/bus"
-      when: not ansible_check_mode
-
-    - name: Start the rootless iCloudPD service only after explicit approval
-      become_user: "{{ atlas_admin_username }}"
-      ansible.builtin.systemd:
-        name: atlas-icloudpd.service
-        scope: user
-        state: started
-        enabled: true
-      environment:
-        XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"
-        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ atlas_admin_uid }}/bus"
-      when:
-        - atlas_icloudpd_start | bool
-        - not ansible_check_mode
+      notify: Reload Atlas admin user manager

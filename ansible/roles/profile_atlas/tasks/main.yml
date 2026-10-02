@@ -20,7 +20,7 @@
 - name: Import staged Atlas rootless Gitea tasks
   ansible.builtin.import_tasks: gitea.yml
 
-- name: Import gated Atlas iCloudPD migration preparation
+- name: Import Atlas iCloudPD storage and inactive Quadlet tasks
   ansible.builtin.import_tasks: icloudpd.yml
 
 - name: Import explicit Atlas Gitea restore rehearsal tasks

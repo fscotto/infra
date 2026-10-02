@@ -1,4 +1,4 @@
-# Managed by Ansible. No install target until an explicit startup approval.
+# Managed by Ansible. No install target or automatic start.
 [Unit]
 Description=Atlas rootless iCloud Photos Downloader
 RequiresMountsFor={{ atlas_icloudpd_state_dir }} {{ atlas_icloudpd_photos_dir }}
@@ -18,8 +18,3 @@ NoNewPrivileges=true
 Restart=on-failure
 RestartSec=300
 TimeoutStartSec=900
-{% if atlas_icloudpd_start | bool %}
-
-[Install]
-WantedBy=default.target
-{% endif %}

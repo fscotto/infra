@@ -370,7 +370,9 @@ successfully. The first monthly scrub remains a runtime check.
   credentials, pull the image, start/enable the service, or manage MFA. The operator will configure
   and start it manually. The isolated no-network layout test is documented in
   `docs/atlas-icloudpd-migration.md`. On 2026-10-02 Atlas deployment and a second idempotent run
-  passed; the service was inactive and no app config existed. No real Atlas download has been verified.
+  passed; no app config existed at deployment. A manual first start on 2026-10-02 generated
+  `icloudpd.conf` (tightened to mode 0600); the service is active but Apple ID/MFA are still
+  unconfigured and no real download has been verified.
 - [x] Retire Aegis iCloudPD completely. The operator authorized deleting its Quadlet,
   `/var/lib/icloudpd` data, and MFA state despite an unaudited container overlay. After two
   interactive-sudo runs on 2026-10-02, the unit is `not-found`/`inactive`, the Quadlet and state

@@ -102,14 +102,14 @@ completed backup or restore of iCloudPD data**, which does not exist yet.
   the rootful Quadlet and `/var/lib/icloudpd` are absent, and AdGuard is active.
   The temporary retirement tasks are no longer in the Aegis role. The Podman
   image cache may remain; it is not service data.
-- Atlas storage and the inactive `admin` Quadlet are deployed. The second
-  Ansible run changed nothing; no config was rendered or service started.
-  `/zpool/media/photobook` was unchanged.
-- The operator must write `/zpool/services/data/icloudpd/config/icloudpd.conf`
-  privately, handle Apple authentication/MFA, and start the generated user
-  service manually. Do not put credentials or MFA codes in Ansible extra-vars,
-  the repository, chat, or logs. The inactive Quadlet has no automatic boot
-  start; enablement requires a separate deliberate design change.
+- Atlas storage and the `admin` Quadlet are deployed. The second Ansible
+  run changed nothing and did not start the service; a later manual start
+  generated the config. `/zpool/media/photobook` was unchanged.
+- The image generated `/zpool/services/data/icloudpd/config/icloudpd.conf`
+  on first start. The operator must set the Apple ID privately and handle
+  authentication/MFA; never put credentials or codes in the repository, chat,
+  Ansible extra-vars, or logs. The Quadlet has no automatic boot start;
+  enablement requires a separate deliberate design change.
 - After a real download, check folder structure, ownership, SELinux, SMB
   access, no unintended deletions, recursive ZFS snapshot inclusion, completed
   Borg and USB versions, and isolated restore of photos and private state.
@@ -122,3 +122,9 @@ Ansible run made zero changes. The generated service was inactive, and no
 Quadlet and `/var/lib/icloudpd`, then cleared the failed-unit record left by a
 SIGKILL during shutdown. Read-only verification found `LoadState=not-found`,
 `ActiveState=inactive`, both paths absent, and AdGuard active.
+
+On 2026-10-02 the operator requested the first manual start. The rootless
+service stayed active, and the image generated `icloudpd.conf` under the
+private config dataset. Its mode was tightened from 0644 to 0600. The generated
+`apple_id` field is empty; no MFA or download is verified. The service has no
+boot-time install target, so it is not configured for automatic startup.

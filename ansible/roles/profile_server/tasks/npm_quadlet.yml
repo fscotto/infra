@@ -1,0 +1,64 @@
+---
+- name: Validate staged NPM Quadlet inputs
+  tags: [services, npm_quadlet]
+  ansible.builtin.assert:
+    that:
+      - server_npm_quadlet_image is defined
+      - server_npm_quadlet_image is match('^docker\.io/jc21/nginx-proxy-manager@sha256:[a-f0-9]{64}$')
+      - server_gitea_on_atlas | bool
+    fail_msg: Stage the exact running NPM image only after Gitea has left Compose.
+  when: server_npm_quadlet_stage | bool
+
+- name: Ensure rootful Quadlet directory exists for NPM
+  tags: [services, npm_quadlet]
+  ansible.builtin.file:
+    path: /etc/containers/systemd
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: server_npm_quadlet_stage | bool
+
+- name: Render staged NPM container and network Quadlets
+  tags: [services, npm_quadlet]
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/containers/systemd/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - prometheus-npm.container
+    - server-web.network
+  loop_control:
+    label: "{{ item }}"
+  register: server_npm_quadlet_units
+  when: server_npm_quadlet_stage | bool
+
+- name: Reload systemd after staging NPM Quadlets
+  tags: [services, npm_quadlet]
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when:
+    - server_npm_quadlet_stage | bool
+    - server_npm_quadlet_units is changed
+    - not ansible_check_mode
+
+- name: Verify the staged NPM Quadlet was generated
+  tags: [services, npm_quadlet]
+  ansible.builtin.command:
+    argv: [systemctl, show, prometheus-npm.service, --property=LoadState, --value]
+  register: server_npm_quadlet_load_state
+  changed_when: false
+  when:
+    - server_npm_quadlet_stage | bool
+    - not ansible_check_mode
+
+- name: Reject an invalid staged NPM Quadlet
+  tags: [services, npm_quadlet]
+  ansible.builtin.assert:
+    that: server_npm_quadlet_load_state.stdout == 'loaded'
+    fail_msg: Quadlet generator did not produce prometheus-npm.service.
+  when:
+    - server_npm_quadlet_stage | bool
+    - not ansible_check_mode

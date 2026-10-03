@@ -4,7 +4,20 @@ umask 077
 
 export_root={{ server_backup_export_root | quote }}
 versions="$export_root/versions"
-stack_unit=podman-compose-server.service
+stack_unit=''
+compose_active=false
+quadlet_active=false
+systemctl is-active --quiet podman-compose-server.service && compose_active=true
+systemctl is-active --quiet prometheus-npm.service && quadlet_active=true
+if [[ "$compose_active" == "$quadlet_active" ]]; then
+  echo 'Expected exactly one active NPM service (Compose or Quadlet)' >&2
+  exit 1
+fi
+if "$quadlet_active"; then
+  stack_unit=prometheus-npm.service
+else
+  stack_unit=podman-compose-server.service
+fi
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
 stage=''
 stack_stopped=false
@@ -33,7 +46,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 systemctl is-active --quiet "$stack_unit" || {
-  echo 'The managed Compose stack must be active before preparing a backup' >&2
+  echo "The managed NPM unit $stack_unit must be active before preparing a backup" >&2
   exit 1
 }
 
@@ -70,6 +83,15 @@ for container in nginx-proxy-manager{% if not server_gitea_on_atlas | bool %} gi
   done
   "$running" || { echo "Container did not restart: $container" >&2; exit 1; }
 done
+ready=false
+for _ in {1..60}; do
+  if curl -fsS --connect-timeout 2 --max-time 3 -o /dev/null http://127.0.0.1:81/; then
+    ready=true
+    break
+  fi
+  sleep 2
+done
+"$ready" || { echo 'NPM administration did not become ready after backup' >&2; exit 1; }
 stack_stopped=false
 
 tar -tf "$stage/payload.tar" >/dev/null

@@ -530,9 +530,11 @@ distribuirlo prima di completare la checklist di protezione dei dati.
 Atlas è la destinazione dichiarata per iCloudPD. Ansible gestisce dataset, Quadlet rootless e
 `icloudpd.conf` privato con Apple ID dal Vault: foto in `/zpool/archive/Pictures/iCloudPD`,
 stato in `zpool/services/data/icloudpd`. Il primo avvio è stato manuale; password e MFA restano
-da inizializzare interattivamente, senza avvio automatico al boot. Su Aegis
+gestiti interattivamente, senza avvio automatico al boot. L'inizializzazione è stata completata e
+il download iniziale di foto e video è terminato il 2026-10-03. Su Aegis
 il servizio, il Quadlet e `/var/lib/icloudpd` sono stati rimossi e verificati; il playbook Aegis
-non contiene più task iCloudPD. L'export NFS Photobook resta
+non contiene più task iCloudPD. L'accesso SMB e il ripristino dai backup dei nuovi dati restano
+da verificare. L'export NFS Photobook resta
 invariato. Dettagli in [`docs/atlas-icloudpd-migration.md`](docs/atlas-icloudpd-migration.md).
 
 Il primo ciclo pianificato del backup di Prometheus e una prova di disaster recovery a dimensione reale

@@ -545,9 +545,10 @@ it before the data-protection checklist is complete.
 Atlas is the declared iCloud photo-ingestion host. Ansible manages the rootless Quadlet, a private
 Vault-backed `icloudpd.conf`, photos under `/zpool/archive/Pictures/iCloudPD`, and separate state in
 `zpool/services/data/icloudpd`. The service was started manually; Ansible does not enable automatic
-startup or manage the password and MFA keyring. The operator must initialize MFA interactively. Aegis iCloudPD, including its service data, has been removed
-and verified; the Aegis role no longer manages it. The
-Photobook NFS export remains untouched. See
+startup or manage the password and MFA keyring. The operator initialized MFA interactively; on
+2026-10-03 the initial photo/video download completed. Aegis iCloudPD, including its service data,
+has been removed and verified; the Aegis role no longer manages it. Backup/restore and SMB access
+for the new data remain unverified. The Photobook NFS export remains untouched. See
 [`docs/atlas-icloudpd-migration.md`](docs/atlas-icloudpd-migration.md).
 
 The first scheduled Prometheus backup runs and production-size disaster-recovery tests remain follow-up work. The prioritized

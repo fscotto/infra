@@ -375,16 +375,25 @@ successfully. The first monthly scrub remains a runtime check.
   and an idempotent second run. The image later expanded the config, so Ansible now seeds it
   only when absent and maintains the declared fields. Its launcher requires `traceroute`; the
   rootless Quadlet grants only `NET_RAW`, tested in isolation and after restart. The service
-  is active and waits for `--Initialise`; MFA and real downloads remain unverified.
+  was subsequently initialized interactively; initial ingestion is tracked below.
 - [x] Retire Aegis iCloudPD completely. The operator authorized deleting its Quadlet,
   `/var/lib/icloudpd` data, and MFA state despite an unaudited container overlay. After two
   interactive-sudo runs on 2026-10-02, the unit is `not-found`/`inactive`, the Quadlet and state
   directory are absent, and AdGuard remains active. The temporary retirement tasks have since
   been removed from the Aegis role; it no longer manages iCloudPD.
-- [ ] Validate Atlas iCloudPD authentication, actual ingestion, filesystem/SELinux/SMB permissions,
-  ZFS/Borg/USB backup inclusion, and isolated restore. The first monthly scrub remains a separate
-  open data-protection check. The recursive Borg/USB source scope includes Archive and the proposed
-  state dataset, but no iCloudPD backup version or restore has been verified.
+- [x] Validate Atlas iCloudPD authentication and initial ingestion. On 2026-10-03 the active
+  rootless service logged `All photos and videos have been downloaded` at 02:16 and reported
+  completion for the user. The destination held 11,658 files (86,020,430,015 bytes); the preceding 24h
+  logs showed download activity without authentication failures or errors. A later read-only check
+  found the service still active. This confirms the initial download, not the next daily cycle.
+- [x] Declare HEIC decoding for Fedora graphical desktops without converting the originals on Atlas.
+  The Fedora role installs RPM Fusion Free with a pinned signing-key fingerprint and
+  `libheif-freeworld` on Ikaros and Nymph. The package was confirmed installed on Ikaros on
+  2026-10-03; Nymph deployment and an actual image-opening test were not observed.
+- [ ] Validate Atlas iCloudPD filesystem/SELinux/SMB access, the next daily sync, ZFS/Borg/USB
+  backup inclusion, and isolated restore of photos and private state. A recursive hourly snapshot
+  of `zpool/archive` exists after ingestion, but no iCloudPD-specific backup version or restore
+  has been verified. The first monthly scrub remains a separate open data-protection check.
 
 ## Cerberus Management Node (Deferred)
 `cerberus` is postponed until the office in the new house is physically set up. It is not an inventory

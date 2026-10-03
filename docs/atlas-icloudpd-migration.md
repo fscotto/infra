@@ -6,7 +6,7 @@ and a private `icloudpd.conf` with the Apple ID from the existing Vault key.
 The password, keyring and MFA cookies remain application-managed; initialization
 is interactive.
 Do not place cookies, keyring files, passwords, or the Apple ID in this document,
-the repository, or a terminal transcript.
+unencrypted repository content, or a terminal transcript.
 
 ## Historical source and current destination (2026-10-02)
 
@@ -94,10 +94,10 @@ declared source scope. Borg's runner switches to the dedicated `borg` account
 with only `CAP_DAC_READ_SEARCH`; a read-only check using those exact `setpriv`
 capability flags could traverse/read Archive, whereas plain
 `sudo -u borg` could not. USB copies as root and preserves POSIX ACLs, but not
-generic xattrs/SELinux labels. **This is scope and permission evidence, not a
-completed backup or restore of iCloudPD data**, which does not exist yet.
+generic xattrs/SELinux labels. **This was scope and permission evidence, not a
+completed backup or restore of iCloudPD data**, which did not exist at the time.
 
-## Remaining validation
+## Validation status and remaining checks
 
 - Aegis retirement is complete: `icloudpd.service` is `not-found`/`inactive`,
   the rootful Quadlet and `/var/lib/icloudpd` are absent, and AdGuard is active.
@@ -108,15 +108,16 @@ completed backup or restore of iCloudPD data**, which does not exist yet.
   generated the config. `/zpool/media/photobook` was unchanged.
 - The image generated `/zpool/services/data/icloudpd/config/icloudpd.conf`
   on first start. Ansible replaced that default file with a private template
-  using the Apple ID already in Vault. The operator must initialize password
+  using the Apple ID already in Vault. The operator initialized password
   and MFA interactively; never put credentials or codes in the repository,
   chat, or Ansible extra-vars. The Quadlet has no automatic boot start;
   enablement requires a separate deliberate design change.
-- After a real download, check folder structure, ownership, SELinux, SMB
-  access, no unintended deletions, recursive ZFS snapshot inclusion, completed
-  Borg and USB versions, and isolated restore of photos and private state.
-  The first real scrub and measured recovery targets are still separate open
-  items. Nothing here claims a completed Atlas ingestion or recoverable backup.
+- Initial ingestion completed on 2026-10-03. Still check folder structure,
+  ownership, SELinux and SMB access, no unintended deletions, the next daily
+  cycle, completed Borg and USB versions, and isolated restore of photos and
+  private state. A recursive hourly `zpool/archive` snapshot exists after
+  ingestion, but no iCloudPD-specific backup restore has passed. The first
+  real scrub and measured recovery targets are separate open items.
 
 On 2026-10-02 Atlas storage and the inactive Quadlet were deployed; a second
 Ansible run made zero changes. The generated service was inactive, and no
@@ -134,8 +135,8 @@ boot-time install target, so it is not configured for automatic startup.
 The 2026-10-02 Atlas `icloudpd` run rendered the Vault-backed template without
 printing its contents; the second run made zero changes. File owner is
 `admin:admin`, mode 0600, and the Apple ID field is nonempty. The rootless
-service remained active with zero restarts. Keyring initialization, cookie
-creation and a real download are still unverified. The template now reads
+service remained active with zero restarts. At that point keyring initialization,
+cookie creation and a real download were unverified. The template now reads
 `vault_atlas_icloudpd_apple_id`, which is already present in the encrypted
 Vault; no password or MFA code was added to the template.
 
@@ -145,8 +146,18 @@ reachability check. Rootless Podman without `NET_RAW` returned `Operation not
 permitted` despite working Atlas/container DNS and host HTTPS. An isolated
 container with only `CAP_NET_RAW` passed the same check. The Quadlet now grants
 that single capability while keeping `NoNewPrivileges=true`; a manual restart
-passed `traceroute`, and the app stayed running. Logs now show only the missing
-keyring and wait for `--Initialise` again. The app expanded the generated config
+passed `traceroute`, and the app stayed running. Logs then showed only the missing
+keyring and a wait for `--Initialise` again. The app expanded the generated config
 on startup, so Ansible now seeds it only when absent and idempotently maintains
-only its declared options. A second live Ansible run made zero changes. MFA,
-actual ingestion, and backup/restore remain unverified.
+only its declared options. A second live Ansible run made zero changes. At
+that point MFA, actual ingestion, and backup/restore were unverified.
+
+On 2026-10-03, after interactive initialization, the rootless service was
+active and the previous 24h of logs showed download activity with no
+authentication failures or errors. At 02:16 the application reported `All
+photos and videos have been downloaded` and `Download complete for user`.
+The destination contained 11,658 files totaling 86,020,430,015 bytes; this
+is a filesystem file count, not a count of distinct iCloud assets. A later
+read-only check found the service still active. This closes initial
+authentication and ingestion only: a subsequent daily cycle and end-to-end
+recovery of the new photos and private state remain untested.

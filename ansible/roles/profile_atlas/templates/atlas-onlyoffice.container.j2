@@ -1,0 +1,26 @@
+[Unit]
+Description=Atlas ONLYOFFICE Docs Community
+RequiresMountsFor={{ atlas_nextcloud_root }}/office
+
+[Container]
+ContainerName=atlas-onlyoffice
+Image={{ atlas_onlyoffice_image }}
+Network=atlas-nextcloud.network
+NetworkAlias=atlas-onlyoffice
+PublishPort={{ ansible_host }}:{{ atlas_onlyoffice_http_port }}:80
+PublishPort=127.0.0.1:{{ atlas_onlyoffice_http_port }}:80
+EnvironmentFile={{ atlas_nextcloud_private_dir }}/onlyoffice.env
+Volume={{ atlas_nextcloud_root }}/office/data:/var/www/onlyoffice/Data:Z
+Volume={{ atlas_nextcloud_root }}/office/lib:/var/lib/onlyoffice:Z
+Volume={{ atlas_nextcloud_root }}/office/logs:/var/log/onlyoffice:Z
+Volume={{ atlas_nextcloud_root }}/office/database:/var/lib/postgresql:Z
+PodmanArgs=--memory=4g --shm-size=256m
+NoNewPrivileges=true
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=1200
+
+[Install]
+WantedBy=default.target

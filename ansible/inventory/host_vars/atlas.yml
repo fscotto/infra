@@ -49,6 +49,38 @@ atlas_zfs_backup_reservation: 500G
 atlas_zfs_dataset_photobook: media/photobook
 atlas_mount_root: /zpool
 atlas_manage_storage: true
+atlas_manage_nextcloud: true
+atlas_nextcloud_domain: cloud.fscotto.co
+atlas_onlyoffice_domain: office.fscotto.co
+# Resolved official amd64 images on 2026-10-03; updates are deliberate.
+atlas_nextcloud_image: docker.io/library/nextcloud:33.0.9-apache@sha256:a97666d6ae931bde78a80cfba8abdf46d436d7b540f31895803f6fb0a012d689
+atlas_nextcloud_postgres_image: docker.io/library/postgres:17-bookworm@sha256:639ab7ceb90e13123085b741fb31ef493fba25463002f6da665352e7b534b652
+atlas_nextcloud_redis_image: docker.io/library/redis:7.4-bookworm@sha256:c6eabf748fc7a61dbb5a705c78bcf3d6377b1127a97d0ce965c11c44ba46896f
+atlas_onlyoffice_image: docker.io/onlyoffice/documentserver:9.4.0.1@sha256:3ab6ebc7c605e5a32b7ae3ff19daed4925090245acc8100ce2230bd766c88212
+atlas_nextcloud_users:
+  - username: fabio
+    display_name: Fabio
+    password: "{{ vault_nextcloud_fabio_password }}"
+  - username: chiara
+    display_name: Chiara
+    password: "{{ vault_nextcloud_chiara_password }}"
+atlas_nextcloud_apps:
+  - id: groupfolders
+    version: 21.0.9
+    url: https://github.com/nextcloud-releases/groupfolders/releases/download/v21.0.9/groupfolders-v21.0.9.tar.gz
+    checksum: sha256:d8b95f0778425f646f2311ba5b42d8e2fcfdf37dc2fd35fcac8d3f01bde38a21
+  - id: onlyoffice
+    version: 10.2.1
+    url: https://github.com/ONLYOFFICE/onlyoffice-nextcloud/releases/download/v10.2.1/onlyoffice.tar.gz
+    checksum: sha256:144998af0610ccd17ee8d7025e2f8001472da03f6dab90ff38039247825e3a9b
+  - id: contacts
+    version: 8.9.1
+    url: https://github.com/nextcloud-releases/contacts/releases/download/v8.9.1/contacts-v8.9.1.tar.gz
+    checksum: sha256:a25cdf448b192631b8e8eb7addc31b40382b33871b10521f4308ac5a6e0457bf
+  - id: calendar
+    version: 6.6.2
+    url: https://github.com/nextcloud-releases/calendar/releases/download/v6.6.2/calendar-v6.6.2.tar.gz
+    checksum: sha256:7e83632d4436d3037a34d1c73cbc06d5ccb6e8fc10f096a86a43a0515588529c
 # Rootless Gitea was restored from the stopped-source export before production activation.
 atlas_manage_gitea: true
 atlas_gitea_production_enabled: true

@@ -1,0 +1,22 @@
+[Unit]
+Description=Atlas Nextcloud private Redis
+RequiresMountsFor={{ atlas_nextcloud_root }}/cache
+
+[Container]
+ContainerName=atlas-nextcloud-redis
+Image={{ atlas_nextcloud_redis_image }}
+Network=atlas-nextcloud.network
+NetworkAlias=atlas-nextcloud-redis
+Volume={{ atlas_nextcloud_private_dir }}/redis.conf:/usr/local/etc/redis/atlas.conf:ro,z
+Volume={{ atlas_nextcloud_root }}/cache:/data:Z
+Exec=redis-server /usr/local/etc/redis/atlas.conf
+PodmanArgs=--memory=256m
+NoNewPrivileges=true
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

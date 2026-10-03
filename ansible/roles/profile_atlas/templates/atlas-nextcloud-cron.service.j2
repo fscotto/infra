@@ -1,0 +1,10 @@
+[Unit]
+Description=Atlas recurring Nextcloud background jobs
+Requires=atlas-nextcloud.service
+After=atlas-nextcloud.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/podman exec --user 33 atlas-nextcloud php -f /var/www/html/cron.php
+TimeoutStartSec=15min
+NoNewPrivileges=true

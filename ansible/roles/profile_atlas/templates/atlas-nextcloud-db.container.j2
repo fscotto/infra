@@ -1,0 +1,27 @@
+[Unit]
+Description=Atlas Nextcloud PostgreSQL
+RequiresMountsFor={{ atlas_nextcloud_root }}/database
+
+[Container]
+ContainerName=atlas-nextcloud-db
+Image={{ atlas_nextcloud_postgres_image }}
+Network=atlas-nextcloud.network
+NetworkAlias=atlas-nextcloud-db
+Environment=POSTGRES_DB=nextcloud
+Environment=POSTGRES_USER=nextcloud
+Environment=POSTGRES_PASSWORD_FILE=/run/secrets/postgres-password
+Volume={{ atlas_nextcloud_private_dir }}/postgres-password:/run/secrets/postgres-password:ro,z
+Volume={{ atlas_nextcloud_root }}/database:/var/lib/postgresql/data:Z
+PodmanArgs=--memory=1g
+HealthCmd=pg_isready -U nextcloud -d nextcloud
+HealthInterval=30s
+HealthStartPeriod=60s
+NoNewPrivileges=true
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

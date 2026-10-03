@@ -66,6 +66,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea --check --diff`
   - Atlas canonical Gitea domain (restarts only Gitea on a real configuration change):
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea_public_domain --check --diff`
+  - Atlas Nextcloud/ONLYOFFICE steady state:
+    `ansible-playbook ansible/site.yml --limit atlas --tags nextcloud --check --diff`
   - Atlas iCloudPD storage and boot-started Quadlet:
     `ansible-playbook ansible/site.yml --limit atlas --tags icloudpd --check --diff`
   - Ongoing Gitea proxy configuration:
@@ -363,10 +365,21 @@ successfully. The first monthly scrub remains a runtime check.
 - [x] Validate Gitea login and write via HTTPS. On 2026-10-03 the operator confirmed
   authenticated web login and Git clone/pull/push through the public HTTPS endpoint. Do not
   restart the stale source Gitea after Atlas has accepted writes.
-- [ ] Design and deploy Nextcloud as another explicitly temporary Atlas service before Uranus. Give it
-  separate persistent application, database, and cache storage; keep credentials in Vault; publish it only
-  through NPM over the Prometheus--Aegis gateway; and define backup, upgrade, and eventual Uranus-migration
-  procedures before exposing user data. Do not deploy Nextcloud before the data-protection checklist is complete.
+- [x] Design and deploy the empty temporary Atlas Nextcloud/ONLYOFFICE stack on 2026-10-03.
+  The operator explicitly authorized empty internal service startup before the first scrub;
+  this does not close the scrub or protection checks. Four rootless Quadlets, separate
+  component datasets, pinned images/apps, Vault secrets, standard fabio/chiara users, a
+  separate application admin and the Famiglia folder are deployed. Cron and internal Office
+  connection checks succeeded; repeat deployment changed nothing. See `docs/atlas-nextcloud.md`.
+- [x] Complete the authorized empty-stack public cutover on 2026-10-03 after operator
+  DNS/NPM configuration. Both hostnames passed TLS and HTTPS redirects; authenticated
+  web login, WebDAV, private-file isolation, Famiglia cross-user create/read/update/delete and
+  CalDAV/CardDAV discovery passed. The Office connector and public health/API asset passed.
+  Temporary test files were removed; no iCloud data was imported.
+- [ ] Complete Nextcloud desktop/mobile editing and synchronization acceptance, and
+  application-consistent backup/restore validation. Close the first actual scrub and
+  protection checks before importing family data.
+  iCloud migration and future Uranus transfer remain separate operations, not playbook flags.
 - [x] Move Gitea canonical HTTPS and SSH hostname to `git.fscotto.co` on
   2026-10-03 through Ansible. Only Gitea restarted; second run changed nothing.
   HTTPS and authenticated SSH reads returned the same repository HEAD.

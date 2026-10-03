@@ -1,0 +1,171 @@
+---
+- name: Inspect installed application state
+  ansible.builtin.command:
+    argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, app:list, --output=json]
+  register: atlas_nextcloud_current_apps
+  changed_when: false
+
+- name: Record enabled and disabled application versions
+  ansible.builtin.set_fact:
+    atlas_nextcloud_installed_apps: >-
+      {{ (atlas_nextcloud_current_apps.stdout | from_json).enabled |
+         combine((atlas_nextcloud_current_apps.stdout | from_json).disabled) }}
+
+- name: Refuse implicit application upgrades or downgrades
+  ansible.builtin.assert:
+    that:
+      - item.id not in atlas_nextcloud_installed_apps or atlas_nextcloud_installed_apps[item.id] == item.version
+    fail_msg: Application versions must be changed in a deliberate upgrade window.
+  loop: "{{ atlas_nextcloud_apps }}"
+  loop_control:
+    label: "{{ item.id }}"
+
+- name: Install only absent checksum-verified application archives
+  ansible.builtin.command:
+    argv:
+      - podman
+      - exec
+      - --user
+      - '33'
+      - atlas-nextcloud
+      - tar
+      - -xzf
+      - "/mnt/atlas-apps/{{ item.id }}-{{ item.version }}.tar.gz"
+      - -C
+      - /var/www/html/custom_apps
+  loop: "{{ atlas_nextcloud_apps }}"
+  loop_control:
+    label: "{{ item.id }}"
+  when: item.id not in atlas_nextcloud_installed_apps
+  changed_when: true
+
+- name: Enable the declared applications
+  ansible.builtin.command:
+    argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, app:enable, "{{ item.id }}"]
+  loop: "{{ atlas_nextcloud_apps }}"
+  loop_control:
+    label: "{{ item.id }}"
+  when: item.id not in (atlas_nextcloud_current_apps.stdout | from_json).enabled
+  changed_when: true
+
+- name: Inspect existing application users without exposing passwords
+  ansible.builtin.command:
+    argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, user:list, --output=json]
+  register: atlas_nextcloud_current_users
+  changed_when: false
+
+- name: Ensure the two standard users exist without resetting existing passwords
+  ansible.builtin.command:
+    argv:
+      - podman
+      - exec
+      - --user
+      - '33'
+      - --env
+      - OC_PASS
+      - atlas-nextcloud
+      - php
+      - occ
+      - user:add
+      - --password-from-env
+      - --display-name
+      - "{{ item.display_name }}"
+      - "{{ item.username }}"
+  environment:
+    OC_PASS: "{{ item.password }}"
+  loop: "{{ atlas_nextcloud_users }}"
+  when: item.username not in (atlas_nextcloud_current_users.stdout | from_json)
+  changed_when: true
+  no_log: true
+  diff: false
+
+- name: Inspect standard-user group membership and quota
+  ansible.builtin.command:
+    argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, user:info, --output=json, "{{ item.username }}"]
+  loop: "{{ atlas_nextcloud_users }}"
+  loop_control:
+    label: "{{ item.username }}"
+  register: atlas_nextcloud_user_info
+  changed_when: false
+  no_log: true
+
+- name: Require that family users are not administrators
+  ansible.builtin.assert:
+    that:
+      - "'admin' not in (item.stdout | from_json).groups"
+  loop: "{{ atlas_nextcloud_user_info.results }}"
+  no_log: true
+
+- name: Maintain unlimited initial standard-user quotas
+  ansible.builtin.command:
+    argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, user:setting, "{{ item.item.username }}", files, quota, none]
+  loop: "{{ atlas_nextcloud_user_info.results }}"
+  when: (item.stdout | from_json).quota != 'none'
+  changed_when: true
+  no_log: true
+
+- name: Inspect the family group
+  ansible.builtin.command:
+    argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, group:list, --output=json]
+  register: atlas_nextcloud_groups
+  changed_when: false
+
+- name: Ensure the family group exists
+  ansible.builtin.command:
+    argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, group:add, famiglia]
+  when: "'famiglia' not in (atlas_nextcloud_groups.stdout | from_json)"
+  changed_when: true
+
+- name: Ensure both standard users belong to the family group
+  ansible.builtin.command:
+    argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, group:adduser, famiglia, "{{ item.username }}"]
+  loop: "{{ atlas_nextcloud_users }}"
+  when: item.username not in ((atlas_nextcloud_groups.stdout | from_json).get('famiglia', []))
+  changed_when: true
+  no_log: true
+
+- name: Inspect configured family folders
+  ansible.builtin.command:
+    argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, groupfolders:list, --output=json]
+  register: atlas_nextcloud_folders_before
+  changed_when: false
+
+- name: Ensure a shared Famiglia folder exists
+  ansible.builtin.command:
+    argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, groupfolders:create, Famiglia]
+  when: >-
+    (atlas_nextcloud_folders_before.stdout | from_json |
+    selectattr('mountPoint', 'equalto', 'Famiglia') | list | length) == 0
+  changed_when: true
+
+- name: Inspect the resulting family folder
+  ansible.builtin.command:
+    argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, groupfolders:list, --output=json]
+  register: atlas_nextcloud_folders_after
+  changed_when: false
+
+- name: Select the existing family folder without changing unrelated folders
+  ansible.builtin.set_fact:
+    atlas_nextcloud_family_folder: >-
+      {{ atlas_nextcloud_folders_after.stdout | from_json |
+         selectattr('mountPoint', 'equalto', 'Famiglia') | first }}
+
+- name: Maintain family read, create, write and delete permissions
+  ansible.builtin.command:
+    argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, groupfolders:group,
+           "{{ atlas_nextcloud_family_folder.id }}", famiglia, write, delete]
+  when: (atlas_nextcloud_family_folder.groups_list | default({}, true)).get('famiglia', 0) | int != 15
+  changed_when: true
+
+- name: Inspect the background job mode
+  ansible.builtin.command:
+    argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, config:app:get, core, backgroundjobs_mode]
+  register: atlas_nextcloud_background_mode
+  changed_when: false
+  failed_when: atlas_nextcloud_background_mode.rc not in [0, 1]
+
+- name: Maintain cron background processing
+  ansible.builtin.command:
+    argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, background:cron]
+  when: atlas_nextcloud_background_mode.stdout | trim != 'cron'
+  changed_when: true

@@ -1,5 +1,29 @@
 ---
 atlas_manage_storage: false
+atlas_manage_nextcloud: false
+atlas_nextcloud_root: "{{ atlas_app_data_mountpoint }}/nextcloud"
+atlas_nextcloud_dataset: "{{ atlas_zfs_pool }}/services/data/nextcloud"
+atlas_nextcloud_domain: ""
+atlas_onlyoffice_domain: ""
+atlas_nextcloud_http_port: 8080
+atlas_onlyoffice_http_port: 8081
+atlas_nextcloud_network_subnet: 10.90.10.0/24
+atlas_nextcloud_network_gateway: 10.90.10.1
+atlas_nextcloud_quadlet_dir: "{{ atlas_admin_home }}/.config/containers/systemd"
+atlas_nextcloud_private_dir: "{{ atlas_admin_home }}/.config/atlas-nextcloud"
+atlas_nextcloud_app_cache: "{{ atlas_admin_home }}/.cache/atlas-nextcloud-apps"
+atlas_nextcloud_image: ""
+atlas_nextcloud_postgres_image: ""
+atlas_nextcloud_redis_image: ""
+atlas_onlyoffice_image: ""
+atlas_nextcloud_admin: admin
+atlas_nextcloud_users: []
+atlas_nextcloud_apps: []
+atlas_nextcloud_services:
+  - atlas-nextcloud-db.service
+  - atlas-nextcloud-redis.service
+  - atlas-nextcloud.service
+  - atlas-onlyoffice.service
 atlas_manage_sharing: false
 # Destructive first-boot action; normally false once the pool exists.
 atlas_create_pool: false

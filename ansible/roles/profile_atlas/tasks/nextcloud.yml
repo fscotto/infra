@@ -1,0 +1,309 @@
+---
+- name: Manage the empty Atlas Nextcloud and ONLYOFFICE stack
+  tags: [atlas, nextcloud]
+  when: atlas_manage_nextcloud | bool
+  block:
+    - name: Validate dedicated paths, domains and pinned images
+      ansible.builtin.assert:
+        that:
+          - atlas_manage_storage | bool
+          - atlas_manage_firewall | bool
+          - atlas_nextcloud_root == atlas_app_data_mountpoint ~ '/nextcloud'
+          - atlas_nextcloud_dataset == atlas_zfs_pool ~ '/services/data/nextcloud'
+          - atlas_nextcloud_domain is match('^[a-z0-9.-]+$')
+          - atlas_onlyoffice_domain is match('^[a-z0-9.-]+$')
+          - atlas_nextcloud_domain != atlas_onlyoffice_domain
+          - atlas_nextcloud_http_port | int > 1024
+          - atlas_onlyoffice_http_port | int > 1024
+          - atlas_nextcloud_http_port != atlas_onlyoffice_http_port
+          - "['calendar', 'contacts', 'onlyoffice', 'groupfolders'] | difference(atlas_nextcloud_apps | map(attribute='id') | list) | length == 0"
+          - atlas_nextcloud_users | length > 0
+          - atlas_nextcloud_admin not in (atlas_nextcloud_users | map(attribute='username') | list)
+          - atlas_nextcloud_users | map(attribute='username') | unique | list | length == atlas_nextcloud_users | length
+          - item is search('@sha256:[0-9a-f]{64}$')
+      loop:
+        - "{{ atlas_nextcloud_image }}"
+        - "{{ atlas_nextcloud_postgres_image }}"
+        - "{{ atlas_nextcloud_redis_image }}"
+        - "{{ atlas_onlyoffice_image }}"
+
+    - name: Require dedicated Vault secrets without exposing them
+      ansible.builtin.assert:
+        that:
+          - item | default('') is match('^[a-zA-Z0-9]{32,}$')
+      loop: >-
+        {{ [vault_nextcloud_database_password | default(''),
+            vault_nextcloud_redis_password | default(''),
+            vault_nextcloud_admin_password | default(''),
+            vault_nextcloud_onlyoffice_jwt | default('')] +
+           (atlas_nextcloud_users | map(attribute='password') | list) }}
+      no_log: true
+
+    - name: Verify the existing application-data parent is mounted
+      community.general.zfs_facts:
+        name: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_app_data }}"
+        properties: name,mounted,mountpoint
+      register: atlas_nextcloud_parent
+
+    - name: Require the verified application-data parent
+      ansible.builtin.assert:
+        that:
+          - atlas_nextcloud_parent.ansible_facts.ansible_zfs_datasets | length == 1
+          - atlas_nextcloud_parent.ansible_facts.ansible_zfs_datasets[0].mounted == 'yes'
+          - atlas_nextcloud_parent.ansible_facts.ansible_zfs_datasets[0].mountpoint == atlas_app_data_mountpoint
+
+    - name: Create the dedicated Nextcloud namespace and component datasets
+      community.general.zfs:
+        name: "{{ atlas_nextcloud_dataset }}{{ item }}"
+        state: present
+        extra_zfs_properties:
+          compression: zstd
+          mountpoint: "{{ atlas_nextcloud_root }}{{ item }}"
+      loop: ['', /app, /files, /database, /cache, /office]
+
+    - name: Inspect component directories before seeding ownership
+      ansible.builtin.stat:
+        path: "{{ atlas_nextcloud_root }}{{ item }}"
+        follow: false
+        get_checksum: false
+      loop: [/app, /files, /database, /cache, /office]
+      register: atlas_nextcloud_component_paths
+
+    - name: Seed only root-owned new dataset roots without recursive ownership changes
+      ansible.builtin.file:
+        path: "{{ item.stat.path }}"
+        state: directory
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0700"
+      loop: "{{ atlas_nextcloud_component_paths.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when:
+        - item.stat.exists
+        - item.stat.uid | default(-1) | int == 0
+
+    - name: Ensure private rootless stack configuration directories exist
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - {path: "{{ atlas_nextcloud_private_dir }}", mode: "0700"}
+        - {path: "{{ atlas_nextcloud_app_cache }}", mode: "0755"}
+        - {path: "{{ atlas_nextcloud_quadlet_dir }}", mode: "0700"}
+        - {path: "{{ atlas_admin_home }}/.config/systemd/user", mode: "0700"}
+
+    - name: Inspect the dedicated ONLYOFFICE bind directories
+      ansible.builtin.stat:
+        path: "{{ atlas_nextcloud_root }}/office/{{ item }}"
+        follow: false
+        get_checksum: false
+      loop: [data, lib, logs, database]
+      register: atlas_onlyoffice_bind_paths
+
+    - name: Create ONLYOFFICE bind directories only when absent
+      ansible.builtin.file:
+        path: "{{ item.invocation.module_args.path }}"
+        state: directory
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0700"
+      loop: "{{ atlas_onlyoffice_bind_paths.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when: not item.stat.exists
+
+    - name: Store private mounted password files inside a restricted host directory
+      ansible.builtin.copy:
+        content: "{{ item.value }}\n"
+        dest: "{{ atlas_nextcloud_private_dir }}/{{ item.name }}"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0644"
+      loop:
+        - {name: postgres-password, value: "{{ vault_nextcloud_database_password }}"}
+        - {name: redis-password, value: "{{ vault_nextcloud_redis_password }}"}
+        - {name: admin-password, value: "{{ vault_nextcloud_admin_password }}"}
+        - {name: onlyoffice-jwt, value: "{{ vault_nextcloud_onlyoffice_jwt }}"}
+      no_log: true
+      diff: false
+      register: atlas_nextcloud_secret_files
+
+    - name: Render private Redis and ONLYOFFICE configuration
+      ansible.builtin.template:
+        src: "{{ item.src }}"
+        dest: "{{ atlas_nextcloud_private_dir }}/{{ item.dest }}"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - {src: atlas-nextcloud-redis.conf.j2, dest: redis.conf, mode: "0644"}
+        - {src: atlas-onlyoffice.env.j2, dest: onlyoffice.env, mode: "0600"}
+      no_log: true
+      diff: false
+      register: atlas_nextcloud_private_configuration
+
+    - name: Download checksum-pinned compatible application releases
+      ansible.builtin.get_url:
+        url: "{{ item.url }}"
+        dest: "{{ atlas_nextcloud_app_cache }}/{{ item.id }}-{{ item.version }}.tar.gz"
+        checksum: "{{ item.checksum }}"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0644"
+      loop: "{{ atlas_nextcloud_apps }}"
+      loop_control:
+        label: "{{ item.id }} {{ item.version }}"
+      when: not ansible_check_mode
+
+    - name: Admit only the Aegis gateway to the Nextcloud and Office HTTP listeners
+      ansible.posix.firewalld:
+        rich_rule: >-
+          rule family="ipv4" source address="{{ atlas_aegis_ip }}"
+          port port="{{ item }}" protocol="tcp" accept
+        zone: "{{ atlas_firewalld_zone }}"
+        state: enabled
+        permanent: true
+        immediate: true
+      loop: ["{{ atlas_nextcloud_http_port }}", "{{ atlas_onlyoffice_http_port }}"]
+
+    - name: Enable lingering for the declared rootless owner
+      ansible.builtin.command:
+        argv: [loginctl, enable-linger, "{{ atlas_admin_username }}"]
+        creates: "/var/lib/systemd/linger/{{ atlas_admin_username }}"
+
+    - name: Render Nextcloud component and network Quadlets
+      ansible.builtin.template:
+        src: "{{ item }}.j2"
+        dest: "{{ atlas_nextcloud_quadlet_dir }}/{{ item }}"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0644"
+      loop:
+        - atlas-nextcloud.network
+        - atlas-nextcloud-db.container
+        - atlas-nextcloud-redis.container
+        - atlas-nextcloud.container
+        - atlas-onlyoffice.container
+      register: atlas_nextcloud_quadlets
+
+    - name: Render recurring Nextcloud cron user units
+      ansible.builtin.template:
+        src: "{{ item }}.j2"
+        dest: "{{ atlas_admin_home }}/.config/systemd/user/{{ item }}"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0644"
+      loop: [atlas-nextcloud-cron.service, atlas-nextcloud-cron.timer]
+      register: atlas_nextcloud_cron_units
+
+    - name: Manage and verify rootless Nextcloud services
+      become_user: "{{ atlas_admin_username }}"
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ atlas_admin_uid }}/bus"
+      when: not ansible_check_mode
+      block:
+        - name: Pull the pinned images before starting services
+          containers.podman.podman_image:
+            name: "{{ item }}"
+            state: present
+          loop:
+            - "{{ atlas_nextcloud_image }}"
+            - "{{ atlas_nextcloud_postgres_image }}"
+            - "{{ atlas_nextcloud_redis_image }}"
+            - "{{ atlas_onlyoffice_image }}"
+
+        - name: Reload the user manager to generate component units
+          ansible.builtin.systemd:
+            scope: user
+            daemon_reload: true
+
+        - name: Start the declared Nextcloud and ONLYOFFICE services
+          ansible.builtin.systemd:
+            scope: user
+            name: "{{ item }}"
+            state: >-
+              {{ 'restarted' if (atlas_nextcloud_quadlets is changed or
+                 atlas_nextcloud_private_configuration is changed or
+                 atlas_nextcloud_secret_files is changed) else 'started' }}
+          loop: "{{ atlas_nextcloud_services }}"
+
+        - name: Wait for the application configuration directory to be initialized
+          become: true
+          become_user: root
+          ansible.builtin.wait_for:
+            path: "{{ atlas_nextcloud_root }}/app/config/config.php"
+            timeout: 600
+
+        - name: Derive container web-user host IDs from the actual rootless maps
+          ansible.builtin.command:
+            argv:
+              - podman
+              - unshare
+              - python3
+              - -c
+              - >-
+                import json;
+                print(json.dumps({k: next(int(b)+33-int(a) for a,b,n in
+                (l.split() for l in open('/proc/self/'+k+'_map'))
+                if int(a)<=33<int(a)+int(n)) for k in ['uid','gid']}))
+          register: atlas_nextcloud_web_mapping
+          changed_when: false
+
+        - name: Read the current application SELinux label without changing it
+          become: true
+          become_user: root
+          ansible.builtin.command:
+            argv: [stat, -c, '%C', "{{ atlas_nextcloud_root }}/app/config"]
+          register: atlas_nextcloud_config_label
+          changed_when: false
+
+        - name: Maintain the managed Nextcloud configuration include
+          become: true
+          become_user: root
+          ansible.builtin.template:
+            src: atlas-nextcloud.config.php.j2
+            dest: "{{ atlas_nextcloud_root }}/app/config/atlas.config.php"
+            owner: "{{ (atlas_nextcloud_web_mapping.stdout | from_json).uid }}"
+            group: "{{ (atlas_nextcloud_web_mapping.stdout | from_json).gid }}"
+            mode: "0640"
+            seuser: "{{ atlas_nextcloud_config_label.stdout.split(':')[0] }}"
+            serole: "{{ atlas_nextcloud_config_label.stdout.split(':')[1] }}"
+            setype: "{{ atlas_nextcloud_config_label.stdout.split(':')[2] }}"
+            selevel: "{{ atlas_nextcloud_config_label.stdout.split(':')[3:] | join(':') }}"
+          diff: false
+
+        - name: Wait for Nextcloud to complete its initial installation
+          ansible.builtin.command:
+            argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, status, --output=json]
+          register: atlas_nextcloud_status
+          changed_when: false
+          retries: 60
+          delay: 10
+          until: >-
+            atlas_nextcloud_status.rc == 0 and
+            atlas_nextcloud_status.stdout.startswith('{') and
+            (atlas_nextcloud_status.stdout | from_json).installed | default(false)
+
+        - name: Import declared ongoing application and account configuration
+          ansible.builtin.include_tasks: nextcloud_application.yml
+
+        - name: Enable and start the recurring Nextcloud cron timer
+          ansible.builtin.systemd:
+            scope: user
+            name: atlas-nextcloud-cron.timer
+            state: "{{ 'restarted' if atlas_nextcloud_cron_units is changed else 'started' }}"
+            enabled: true
+
+        - name: Verify ONLYOFFICE local health without publishing the domain
+          ansible.builtin.uri:
+            url: "http://127.0.0.1:{{ atlas_onlyoffice_http_port }}/healthcheck"
+            return_content: true
+          register: atlas_onlyoffice_health
+          retries: 60
+          delay: 10
+          until: atlas_onlyoffice_health.status | default(0) == 200 and atlas_onlyoffice_health.content | default('') | trim == 'true'

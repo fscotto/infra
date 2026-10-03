@@ -1,0 +1,23 @@
+<?php
+// Managed ongoing application settings; never import or migrate user data.
+$CONFIG = [
+    'trusted_domains' => ['{{ atlas_nextcloud_domain }}', 'atlas-nextcloud'],
+    'trusted_proxies' => ['{{ atlas_aegis_ip }}', '{{ atlas_nextcloud_network_gateway }}'],
+    'overwrite.cli.url' => 'https://{{ atlas_nextcloud_domain }}',
+    'overwritehost' => '{{ atlas_nextcloud_domain }}',
+    'overwriteprotocol' => 'https',
+    'allow_local_remote_servers' => true,
+    'default_quota' => 'none',
+    'skeletondirectory' => '',
+    'maintenance_window_start' => 1,
+    'default_phone_region' => 'IT',
+    'twofactor_enforced' => false,
+    'onlyoffice' => [
+        'DocumentServerUrl' => 'https://{{ atlas_onlyoffice_domain }}/',
+        'DocumentServerInternalUrl' => 'http://atlas-onlyoffice/',
+        'StorageUrl' => 'http://atlas-nextcloud/',
+        'jwt_secret' => trim(file_get_contents('/run/secrets/onlyoffice-jwt')),
+        'jwt_header' => 'AuthorizationJwt',
+        'allow_local_address' => true,
+    ],
+];

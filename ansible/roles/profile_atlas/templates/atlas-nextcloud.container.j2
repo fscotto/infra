@@ -1,0 +1,42 @@
+[Unit]
+Description=Atlas Nextcloud
+Requires=atlas-nextcloud-db.service atlas-nextcloud-redis.service
+After=atlas-nextcloud-db.service atlas-nextcloud-redis.service
+RequiresMountsFor={{ atlas_nextcloud_root }}/app {{ atlas_nextcloud_root }}/files
+
+[Container]
+ContainerName=atlas-nextcloud
+Image={{ atlas_nextcloud_image }}
+Network=atlas-nextcloud.network
+NetworkAlias=atlas-nextcloud
+PublishPort={{ ansible_host }}:{{ atlas_nextcloud_http_port }}:80
+PublishPort=127.0.0.1:{{ atlas_nextcloud_http_port }}:80
+Environment=POSTGRES_HOST=atlas-nextcloud-db
+Environment=POSTGRES_DB=nextcloud
+Environment=POSTGRES_USER=nextcloud
+Environment=POSTGRES_PASSWORD_FILE=/run/secrets/postgres-password
+Environment=NEXTCLOUD_ADMIN_USER={{ atlas_nextcloud_admin }}
+Environment=NEXTCLOUD_ADMIN_PASSWORD_FILE=/run/secrets/admin-password
+Environment="NEXTCLOUD_TRUSTED_DOMAINS={{ atlas_nextcloud_domain }} atlas-nextcloud"
+Environment=REDIS_HOST=atlas-nextcloud-redis
+Environment=REDIS_HOST_PASSWORD_FILE=/run/secrets/redis-password
+Environment=APACHE_DISABLE_REWRITE_IP=1
+Environment=PHP_MEMORY_LIMIT=512M
+Environment=PHP_UPLOAD_LIMIT=2G
+Volume={{ atlas_nextcloud_root }}/app:/var/www/html:Z
+Volume={{ atlas_nextcloud_root }}/files:/var/www/html/data:Z
+Volume={{ atlas_nextcloud_app_cache }}:/mnt/atlas-apps:ro,z
+Volume={{ atlas_nextcloud_private_dir }}/postgres-password:/run/secrets/postgres-password:ro,z
+Volume={{ atlas_nextcloud_private_dir }}/admin-password:/run/secrets/admin-password:ro,z
+Volume={{ atlas_nextcloud_private_dir }}/redis-password:/run/secrets/redis-password:ro,z
+Volume={{ atlas_nextcloud_private_dir }}/onlyoffice-jwt:/run/secrets/onlyoffice-jwt:ro,z
+PodmanArgs=--memory=2g
+NoNewPrivileges=true
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

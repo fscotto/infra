@@ -20,6 +20,9 @@
 - name: Import the declared Atlas Gitea public domain
   ansible.builtin.import_tasks: gitea_public_domain.yml
 
+- name: Import Atlas Nextcloud steady-state stack
+  ansible.builtin.import_tasks: nextcloud.yml
+
 - name: Import Atlas iCloudPD storage and boot-started Quadlet tasks
   ansible.builtin.import_tasks: icloudpd.yml
 

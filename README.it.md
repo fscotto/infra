@@ -201,24 +201,26 @@ Lo stato attuale del profilo server include:
 - installazione pacchetti Rocky via DNF, EPEL e CRB
 - installazione di Podman e podman-compose
 - abilitazione dei servizi systemd dichiarati in inventory/group vars
-- copia dei dotfiles server e rendering del `docker-compose.yml` per Nginx Proxy Manager e Gitea,
-  piu l'unita `podman-compose-server` (attivazione manuale)
+- copia dei dotfiles server e rendering del Quadlet rootful `prometheus-npm.service` per Nginx Proxy
+  Manager; il vecchio `podman-compose-server` resta disabilitato soltanto per un rollback controllato
 - attivazione di firewalld con SSH, Cockpit (`9090/tcp`), HTTP e HTTPS abilitati
 - Syncthing escluso dal profilo server Rocky
 
-Il Compose desiderato su Prometheus non include piu Navidrome ne il database PostgreSQL obsoleto.
+Il Compose desiderato su Prometheus non include piu Gitea, Navidrome ne il database PostgreSQL obsoleto.
 Navidrome e Syncthing appartengono ad Atlas; Navidrome ufficiale usa invece SQLite. Il profilo non
 arresta o rimuove automaticamente eventuali container legacy e non elimina `/opt/postgres/data`.
+Il cutover NPM, le verifiche dei dati e del backup e i limiti del rollback sono documentati in
+[`docs/prometheus-npm-quadlet.md`](docs/prometheus-npm-quadlet.md).
 
 Nginx Proxy Manager pubblica solo `80/tcp` e `443/tcp`; la sua interfaccia di amministrazione e
 associata a `127.0.0.1:81` ed e raggiungibile da Ikaros o Nymph con l'alias Bash `npm-tunnel`.
 Nextcloud resta disabilitato e il profilo non crea directory `/srv/nextcloud`.
 
-La fase 1 su Atlas non modifica questo deployment NPM ne i suoi dati persistenti. Dopo aver attivato
-WireGuard e i servizi Atlas, configurare i proxy host NPM correnti con upstream Navidrome
-`http://10.0.0.2:4533` e upstream per la GUI Syncthing `http://10.0.0.2:8384`. Solo la GUI web di
-Syncthing usa NPM; il traffico di sincronizzazione resta sulle porte native pubblicate esplicitamente solo
-sull'indirizzo WireGuard di Atlas. Configurare l'autenticazione Syncthing e una policy di accesso NPM adeguata prima di pubblicare la GUI.
+La fase 1 su Atlas non modifica i dati persistenti NPM. I proxy host NPM usano gli upstream LAN
+`http://192.168.178.55:4533` per Navidrome e `http://192.168.178.55:8384` per la GUI Syncthing;
+Prometheus li raggiunge attraverso Aegis come gateway WireGuard. Solo la GUI web di Syncthing usa
+NPM; il traffico di sincronizzazione resta sulle porte native esposte sulla LAN dichiarata.
+Mantenere l'autenticazione Syncthing e una policy di accesso NPM adeguata.
 
 ### DuckDNS
 
@@ -332,7 +334,7 @@ La migrazione Gitea da Prometheus ad Atlas è descritta in
 di `admin` su un dataset dedicato; l'immagine derivata mantiene UID/GID 1000 ma chiama l'utente
 interno `gitea`. NPM resta su Prometheus e l'HTTPS pubblico primario serve Atlas. L'SSH pubblico
 su TCP/2222 autentica la chiave `ikaros` e un `git ls-remote` è riuscito; l'operatore ha
-confermato pull e push SSH. Resta da provare la scrittura via HTTPS. I dati sorgente restano
+confermato pull e push SSH. Login e scrittura Git via HTTPS sono stati confermati il 2026-10-03. I dati sorgente restano
 conservati su Prometheus senza avviarne il vecchio container.
 
 Validare il gateway con:
@@ -517,8 +519,9 @@ viene recuperato quando il timer torna attivo.
 
 `atlas-usb-backup.service` **non ha timer** e va avviato manualmente. Il timer del fornitore
 `zfs-scrub-weekly@zpool.timer` è disabilitato a favore dello scrub mensile. Il timer di preparazione
-su Prometheus è attivo alle 02:00 Europe/Rome; export, pull e ripristino temporaneo manuali sono
-riusciti il 2026-09-30, ma il primo ciclo pianificato va ancora verificato. Durante un backup Borg attivo,
+su Prometheus è attivo alle 02:00 Europe/Rome; il primo ciclo pianificato è riuscito il 2026-10-01.
+Un export, pull e ripristino temporaneo post-cutover NPM Quadlet sono riusciti il 2026-10-03;
+il primo ciclo pianificato dopo quel cutover resta da osservare. Durante un backup Borg attivo,
 `systemctl list-timers` può mostrare `-` per il prossimo evento senza che il timer sia disabilitato.
 Per vedere la pianificazione corrente: `systemctl list-timers --all` su Atlas.
 
@@ -638,8 +641,8 @@ Questo significa che, allo stato attuale:
 - `deadalus` riceve il profilo Fedora WSL tramite play dev dedicati
 - il server Rocky (`prometheus`) e gestito con pacchetti, servizi, dotfiles server e firewalld
 - il NAS Rocky (`atlas`) usa un pool ZFS gia esistente, condivisioni NFSv4/SMB limitate alla LAN e Cockpit/45Drives
-- lo stack Compose server include soltanto `gitea` e `nginx-proxy-manager`; Navidrome e Syncthing
-  della fase 1 sono Quadlet rootless su Atlas
+- NPM è un Quadlet rootful su Prometheus, mentre Gitea, Navidrome e Syncthing sono Quadlet
+  rootless su Atlas; il Compose server resta disabilitato per rollback
 
 # Dotfiles
 

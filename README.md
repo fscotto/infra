@@ -126,15 +126,17 @@ That gives it Fedora packages through DNF, Docker from the official repository, 
 ## Server
 
 `prometheus` is the Rocky Linux 9 server. It has no graphical environment and gets server-specific
-dotfiles and templates. The profile provisions configuration only: it does not transfer data, start
-the Compose stack, update DNS, or perform a cutover.
+dotfiles and templates. The profile does not transfer application data, update DNS, or perform an
+implicit service cutover.
 
 The server profile installs platform-specific packages, Podman and podman-compose, declared systemd
-services, and firewalld. The manually activated `podman-compose-server` unit contains the existing
-Nginx Proxy Manager and Gitea services. The desired Compose file no longer includes Navidrome,
-Syncthing, or the obsolete Navidrome PostgreSQL database; their temporary Atlas deployment is managed
-by `profile_backend_phase1`. Applying the profile does not stop or remove legacy containers and does
-not delete `/opt/postgres/data`.
+services, and firewalld. Nginx Proxy Manager now runs as the rootful `prometheus-npm.service` Quadlet;
+the old `podman-compose-server` unit is disabled and retained only for controlled rollback. The
+Compose file no longer includes Gitea, Navidrome, Syncthing, or the obsolete Navidrome PostgreSQL
+database. The temporary Navidrome and Syncthing deployment on Atlas is managed by
+`profile_backend_phase1`. Applying the profile does not delete legacy data or `/opt/postgres/data`.
+The NPM cutover, data checks, backup evidence, and rollback boundaries are documented in
+[`docs/prometheus-npm-quadlet.md`](docs/prometheus-npm-quadlet.md).
 
 Firewalld enables SSH, Cockpit (`9090/tcp`), HTTP and HTTPS. Nginx Proxy Manager publishes only
 `80/tcp` and `443/tcp`; its administration interface is bound to `127.0.0.1:81` and can be reached
@@ -305,9 +307,9 @@ The Gitea move from Prometheus to Atlas is tracked in
 [`docs/atlas-gitea-migration.md`](docs/atlas-gitea-migration.md). The final consistent copy runs in
 Atlas' dedicated dataset under `admin`'s rootless user Quadlet. Its pinned derived image uses an
 internal Unix user named `gitea` (UID/GID 1000), while clone URLs keep `git@`. NPM remains on Prometheus and the primary
-public HTTPS route serves Atlas. Public SSH/2222 now authenticates the `ikaros` key and serves
-read-only `git ls-remote`; the operator also confirmed SSH pull and push. HTTPS writes remain
-untested. The old Gitea data remains on Prometheus, but its container
+public HTTPS route serves Atlas. Public SSH/2222 authenticates the `ikaros` key and serves
+`git ls-remote`; the operator also confirmed SSH pull and push. HTTPS login and Git writes were
+confirmed on 2026-10-03. The old Gitea data remains on Prometheus, but its container
 is absent from the desired stack.
 
 The separate `wireguard_overlay` role manages `wg0` between Prometheus (`10.0.0.1`) and Aegis
@@ -531,8 +533,9 @@ scheduled after the timer becomes active again.
 
 `atlas-usb-backup.service` has **no timer**: the encrypted USB backup must be started manually.
 The vendor's `zfs-scrub-weekly@zpool.timer` is intentionally disabled in favor of the monthly scrub.
-The Prometheus export timer runs at 02:00 Europe/Rome; its first scheduled run and the Atlas pull
-remain to be observed. A manual export, pull, and temporary restore passed. While a
+The Prometheus export timer runs at 02:00 Europe/Rome. Its first scheduled export and Atlas pull
+passed on 2026-10-01; a manual post-NPM-Quadlet export, pull, and temporary restore passed on
+2026-10-03. The first scheduled cycle after that cutover remains to be observed. While a
 Borg backup is still running, `systemctl list-timers` may show `-` for its next trigger; this does not
 mean the timer has been disabled. Inspect the current schedule on Atlas with
 `systemctl list-timers --all`.

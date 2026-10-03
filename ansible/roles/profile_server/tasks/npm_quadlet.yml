@@ -1,4 +1,11 @@
 ---
+- name: Require staged NPM Quadlet for an active cutover
+  tags: [services, npm_quadlet]
+  ansible.builtin.assert:
+    that:
+      - not server_npm_quadlet_cutover | bool or server_npm_quadlet_stage | bool
+    fail_msg: The NPM Quadlet cutover requires the staged container and network.
+
 - name: Validate staged NPM Quadlet inputs
   tags: [services, npm_quadlet]
   ansible.builtin.assert:

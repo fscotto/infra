@@ -54,7 +54,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
   - Emacs is disabled by default; temporary Emacs check: `ansible-playbook ansible/site.yml --limit <host> --tags emacs --check --diff -e emacs_enabled=true`
   - AI coding agents: `ansible-playbook ansible/site.yml --limit <host> --tags ai_agents --check --diff`
   - Mail bootstrap: `sh -n scripts/bootstrap_mail.sh` and `shellcheck scripts/bootstrap_mail.sh`
-  - Server compose render: `podman-compose -f /opt/docker/server/docker-compose.yml config` and `systemctl status podman-compose-server`
+  - Server NPM Quadlet: `systemctl status prometheus-npm.service`; disabled Compose fallback render:
+    `podman-compose -f /opt/docker/server/docker-compose.yml config`
   - Atlas media stack:
     `ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff`
   - Atlas rootless Gitea staging (does not start Gitea):
@@ -90,6 +91,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags restorecon --check -e '{"atlas_restorecon_paths":["/zpool/archive"]}'`
   - Prometheus/Aegis WireGuard gateway:
     `ansible-playbook ansible/site.yml --limit prometheus,aegis --tags wireguard --check --diff`
+  - Prometheus NPM Quadlet steady state (does not perform a cutover):
+    `ansible-playbook ansible/site.yml --limit prometheus --tags npm_quadlet --check --diff`
   - DuckDNS config only: `ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff`
 
 ## Conventions
@@ -140,10 +143,12 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   and disables diffs. Provisioning does not execute the updater or change its external schedule.
 - `rocky_server` is a child of both `platform_rocky` and `server`; `prometheus` is its active target.
 - The target must already provide `server_username` with local sudo access before the profile runs.
-- The Rocky profile installs Podman and podman-compose, uses firewalld, preserves SELinux enforcement, and renders the
-  existing Nginx Proxy Manager/Gitea Compose stack with a `podman-compose-server` systemd unit. PostgreSQL and
-  Navidrome are no longer part of the desired Prometheus configuration. The role does not stop or remove legacy
-  containers, delete `/opt/postgres/data`, start the Compose stack, update DNS, or cut over traffic.
+- The Rocky profile installs Podman and podman-compose and renders the disabled legacy
+  `podman-compose-server` unit for rollback. On Prometheus, Nginx Proxy Manager is now the rootful
+  `prometheus-npm.service` Quadlet with a pinned image digest and the existing `/opt/npm/data` and
+  `/opt/npm/letsencrypt` bind mounts. The rootful `server_web` bridge remains `10.89.0.0/24`.
+  Gitea runs on Atlas; PostgreSQL and Navidrome are absent from the desired Prometheus stack.
+  The profile does not delete legacy data, update DNS, or perform an implicit cutover.
 - Firewalld enables SSH, Cockpit (`9090/tcp`), HTTP and HTTPS. Nginx Proxy Manager publishes `80/tcp` and
   `443/tcp`; bind its administration interface only to `127.0.0.1:81` and use `npm-tunnel` from Ikaros or Nymph.
   Nextcloud remains disabled; do not provision `/srv/nextcloud` directories.
@@ -393,6 +398,23 @@ successfully. The first monthly scrub remains a runtime check.
   backup inclusion, and isolated restore of photos and private state. A recursive hourly snapshot
   of `zpool/archive` exists after ingestion, but no iCloudPD-specific backup version or restore
   has been verified. The first monthly scrub remains a separate open data-protection check.
+
+## Prometheus NPM Quadlet cutover
+- [x] Stage a rootful NPM Quadlet using the exact running image and the existing data/certificate
+  mounts, bridge subnet, public HTTP/HTTPS ports, and loopback-only administration port.
+  The generated service depends on `server-web-network.service` and is wanted by `multi-user.target`.
+- [x] Take and verify the stopped-source export before switching owners. Version
+  `20261003T091009Z` was pulled to Atlas and its NPM SQLite database checked in isolation.
+- [x] Cut over NPM to `prometheus-npm.service` on 2026-10-03. The legacy Compose unit is inactive
+  and disabled; the Quadlet is active with zero recorded restarts. Public Gitea and Syncthing
+  HTTPS returned 200 with valid TLS, while public TCP/81 remained unreachable.
+- [x] Validate the post-cutover backup path. The export and Atlas pull published
+  `20261003T091633Z`; checksum, SQLite `quick_check`, ten proxy hosts, six certificate records,
+  both Quadlet files were present, and the complete Let's Encrypt tree (70 regular files plus
+  12 symlinks) matched the live data. A targeted normal Ansible run changed nothing. Details and rollback
+  boundaries are in `docs/prometheus-npm-quadlet.md`.
+- [ ] Observe the first scheduled export and Atlas pull after the cutover; the manual end-to-end
+  cycle passed, but the next unattended cycle has not yet occurred.
 
 ## Cerberus Management Node (Deferred)
 `cerberus` is postponed until the office in the new house is physically set up. It is not an inventory

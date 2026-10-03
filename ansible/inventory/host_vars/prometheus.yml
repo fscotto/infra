@@ -8,8 +8,8 @@ ansible_ssh_private_key_file: /home/fscotto/.ssh/id_ed25519
 server_username: rocky
 server_npm_quadlet_stage: true
 server_npm_quadlet_image: docker.io/jc21/nginx-proxy-manager@sha256:52b2c59994f3d36acfcf70a1626f29734df0ed8c71bacc0269f78b6f939858bb
-# Switch only after the stopped-source backup and live Quadlet checks pass.
-server_npm_quadlet_cutover: false
+# The stopped-source export and live Quadlet cutover passed on 2026-10-03.
+server_npm_quadlet_cutover: true
 server_backup_export_enabled: true
 server_backup_export_start_timer: true
 # Install the final-copy helper only; it is never run by a normal playbook invocation.

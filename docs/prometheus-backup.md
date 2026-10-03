@@ -2,19 +2,23 @@
 
 The playbook and both hosts have the dedicated identity, restricted SSH
 access, helpers, and systemd units. A manual export, pull, and temporary
-restore passed on 2026-09-30. Both timers are enabled; their first scheduled
-runs are pending, so daily operation is not yet verified.
+restore passed on 2026-09-30. The first scheduled export and pull passed on
+2026-10-01. After NPM moved to its Quadlet, another manual export, pull, and
+isolated restore passed on 2026-10-03. The first scheduled cycle after that
+cutover is still pending. See `docs/prometheus-npm-quadlet.md`.
 
 ## Declared design
 
-- Prometheus prepares a tar archive of Nginx Proxy Manager and Gitea data,
-  their managed Compose configuration, SSH/firewalld/WireGuard configuration,
-  and the Gitea SSH path. NPM access logs and regenerable Gitea logs, sessions,
-  temporary files, and indexers are excluded. The archive contains credentials,
-  certificates, and the WireGuard private key: protect both copies accordingly.
-- The approved consistency mode stops the managed Compose stack for the local
-  tar creation at 02:00 Europe/Rome, then restarts it even if archiving fails.
-  A manual test outside that window requires separate approval.
+- Prometheus prepares a tar archive of Nginx Proxy Manager data and certificates,
+  its active Quadlet and network definitions, the disabled Compose fallback,
+  and SSH/firewalld/WireGuard configuration. Gitea now runs on Atlas and is no
+  longer included in new Prometheus exports. NPM access logs are excluded.
+  The archive contains credentials, certificates, and the WireGuard private
+  key: protect both copies accordingly.
+- The approved consistency mode stops the one active NPM service (Quadlet now,
+  Compose before cutover) for local tar creation at 02:00 Europe/Rome, then
+  restarts it even if archiving fails. The helper refuses both services active
+  or both inactive. A manual test outside that window requires separate approval.
 - Prometheus publishes the archive with its checksum as a versioned, read-only
   source under `/var/lib/prometheus-backup-export`. A locked service account
   has no sudo or supplementary groups. Its only authorized SSH key is forced
@@ -51,18 +55,20 @@ runs are pending, so daily operation is not yet verified.
    account's key, and verify `sshd -T -C user=prometheus-backup,...` plus
    read-only SSH denial tests after any SSH configuration change.
 3. During an agreed window, start the Prometheus export service manually.
-   Confirm Compose is healthy afterward, inspect the archive without exposing
-   file contents, and verify the checksum/metadata.
+   Confirm the active NPM service is healthy afterward, inspect the archive
+   without exposing file contents, and verify the checksum/metadata.
 4. Start the Atlas pull service manually. Confirm the SSH host pin, source
    freshness, checksum, tar listing, published `latest`, retention behavior,
    clean temporary directories, and healthy pool.
 5. Independently restore the selected archive to an empty staging directory
-   (never `/`) and compare the SQLite databases, Git repositories, NPM data,
-   Compose file, permissions, and representative files. Test application
-   startup only in an isolated environment or an approved restore window.
-6. The two timers were enabled after the manual test. Verify their calendars
-   and the next actual run. A successful manual test is not proof of scheduled
-   operation.
+   (never `/`) and compare NPM SQLite, data, active Quadlet files, certificates,
+   permissions, and representative files. Historical pre-Gitea-cutover
+   versions also include Gitea repositories; current versions do not. Test
+   application startup only in an isolated environment or an approved restore
+   window.
+6. Both timers are enabled. Verify their calendars and the next actual run
+   after any service-ownership change. A successful manual test is not proof
+   of a later scheduled cycle.
 
 Narrow static validation:
 
@@ -100,7 +106,16 @@ repository passed `git fsck`. The temporary restore directory was removed.
 This did not test application startup on an isolated host.
 
 After these checks, Ansible enabled the Prometheus 02:00 Europe/Rome export
-timer and Atlas 03:00 Europe/Rome pull timer. The next scheduled occurrences
-were displayed for 2026-10-01. Atlas' health monitor now includes the pull
-timer. Check both actual service results after the first scheduled run before
-claiming unattended operation.
+timer and Atlas 03:00 Europe/Rome pull timer. Their first scheduled run passed
+on 2026-10-01; Atlas verified and published `20261001T000001Z` as `latest`.
+Atlas' health monitor includes the pull timer.
+
+On 2026-10-03 the stopped-source version `20261003T091009Z` was verified and
+pulled before the NPM cutover. The post-cutover version `20261003T091633Z`
+was exported by the Quadlet-aware helper, checksum-verified, pulled to Atlas,
+and restored to an isolated temporary directory. NPM SQLite `quick_check`
+passed with ten proxy hosts and six certificate records. The archive contains
+both Quadlet definitions. A manifest of all 70 regular Let's Encrypt files
+and 12 symlinks, including content hashes and link targets, matched the live
+Prometheus tree. No private key or secret content was printed. The next
+scheduled export/pull is still pending observation.

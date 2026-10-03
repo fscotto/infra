@@ -3,7 +3,7 @@
   tags: [services, gitea_cutover]
   ansible.builtin.assert:
     that:
-      - server_gitea_cutover_tools_enabled | bool
+      - server_gitea_proxy_enabled | bool
       - server_gitea_atlas_address is match('^[0-9]{1,3}(\.[0-9]{1,3}){3}$')
       - server_gitea_ssh_public_port | int > 1024
       - server_gitea_ssh_public_port | int < 65536
@@ -27,14 +27,14 @@
   loop_control:
     label: "{{ item }}"
   register: server_gitea_ssh_proxy_units
-  when: server_gitea_cutover_tools_enabled | bool
+  when: server_gitea_proxy_enabled | bool
 
 - name: Reload systemd after Gitea SSH proxy unit changes
   tags: [services, gitea_cutover]
   ansible.builtin.systemd:
     daemon_reload: true
   when:
-    - server_gitea_cutover_tools_enabled | bool
+    - server_gitea_proxy_enabled | bool
     - server_gitea_ssh_proxy_units is changed
     - not ansible_check_mode
 
@@ -45,7 +45,7 @@
     state: "{{ 'started' if server_gitea_on_atlas | bool else 'stopped' }}"
     enabled: "{{ server_gitea_on_atlas | bool }}"
   when:
-    - server_gitea_cutover_tools_enabled | bool
+    - server_gitea_proxy_enabled | bool
     - not ansible_check_mode
 
 - name: Open only the public Gitea SSH port after cutover
@@ -57,5 +57,5 @@
     permanent: true
     immediate: true
   when:
-    - server_gitea_cutover_tools_enabled | bool
+    - server_gitea_proxy_enabled | bool
     - server_firewall_backend == 'firewalld'

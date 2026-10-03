@@ -229,36 +229,12 @@ Prometheus li raggiunge attraverso Aegis come gateway WireGuard. Solo la GUI web
 NPM; il traffico di sincronizzazione resta sulle porte native esposte sulla LAN dichiarata.
 Mantenere l'autenticazione Syncthing e una policy di accesso NPM adeguata.
 
-### DuckDNS
+### Rimozione DuckDNS
 
-`server_duckdns_enabled: false` disabilita il provisioning su Prometheus, che usa IP statico
-e `fscotto.co`. Updater, log e cron ogni cinque minuti sono stati rimossi una sola volta;
-non restano task o flag di pulizia. Il nome DuckDNS esterno e il token Vault restano invariati.
-
-Sui server con `server_duckdns_enabled: true`, `profile_server` genera `~/duckdns/duck.sh` con permessi `0700`, mantenendo il percorso dello
-script e `duck.log`. Definire `server_duckdns_domain` negli host vars del server e salvare il
-**nuovo token rigenerato** in `vault_duckdns_token`, nel Vault cifrato `secrets/vault.yml`
-(`ansible-vault edit secrets/vault.yml`) oppure negli override non versionati `secrets/vault.local.yml`.
-Non committare lo script generato e non passare il token sulla riga di comando. Il rendering
-nasconde output e diff sensibili; lo script verifica TLS e passa il token a curl tramite stdin.
-Il playbook non esegue lo script e non modifica la sua schedulazione esterna.
-
-```bash
-ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff
-ansible-playbook ansible/site.yml --limit prometheus --tags duckdns
-```
-
-La cancellazione dalla cronologia non revoca il token: rigenerarlo sul pannello DuckDNS.
-Dopo la bonifica, riclonare gli altri checkout senza unire nuovamente la vecchia storia;
-salvare separatamente eventuali modifiche non committate senza copiare segreti.
-
-### Migrazione dati
-
-Dopo il provisioning Rocky, eseguire `scripts/migrate_prometheus_data.sh` **sul server Ubuntu
-sorgente**. Lo script usa rsync, e in dry-run di default; richiede `--quiesce-source --execute` per
-fermare lo stack sorgente e copiare in modo consistente soltanto i dati di Nginx Proxy Manager e
-Gitea. Non sposta Navidrome o Syncthing, non avvia container, non cancella dati e non esegue il
-cutover.
+Il supporto DuckDNS è stato rimosso dal profilo server: non restano task, template,
+variabili o flag di abilitazione. Prometheus usa IP statico e `fscotto.co`.
+Updater locale, log e cron erano già stati rimossi. Nome/account DuckDNS esterni
+ed eventuale token cifrato esistente restano invariati per un possibile uso futuro.
 
 Utente del profilo server:
 

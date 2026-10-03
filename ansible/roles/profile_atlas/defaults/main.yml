@@ -175,9 +175,6 @@ atlas_gitea_home: "{{ atlas_admin_home }}"
 atlas_gitea_container_uid: 1000
 atlas_gitea_container_gid: 1000
 atlas_gitea_legacy_username: gitea
-atlas_gitea_legacy_uid: 1101
-atlas_gitea_legacy_home: /var/lib/atlas-gitea
-atlas_gitea_owner_migration: false
 atlas_gitea_dataset: "{{ atlas_zfs_pool }}/services/data/gitea"
 atlas_gitea_mountpoint: "{{ atlas_app_data_mountpoint }}/gitea"
 atlas_gitea_quadlet_dir: "{{ atlas_gitea_home }}/.config/containers/systemd"
@@ -191,9 +188,6 @@ atlas_gitea_ssh_port: 2222
 atlas_gitea_staging_bind_address: 127.0.0.1
 atlas_gitea_staging_http_port: 3001
 atlas_gitea_staging_ssh_port: 2223
-atlas_gitea_restore_test: false
-atlas_gitea_final_restore: false
-atlas_gitea_restore_helper: /usr/local/libexec/atlas-gitea-restore-test
 
 # Declare storage and an inactive Quadlet only. The operator supplies the
 # private configuration, handles MFA, and starts the user service manually.

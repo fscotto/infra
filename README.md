@@ -169,49 +169,12 @@ The target must already provide `server_username` with local sudo access.
 Prometheus authorizes its declared SSH public keys through separate files below
 `~/.ssh/authorized_keys.d/`, while `sshd` is configured to read those files directly.
 
-### DuckDNS
+### DuckDNS retirement
 
-`server_duckdns_enabled: false` disables provisioning on Prometheus, which uses its static IP
-and `fscotto.co`. The local updater, log and five-minute cron job were removed once;
-no cleanup tasks or flags remain. The external DuckDNS name and Vault token remain untouched.
-
-For servers with `server_duckdns_enabled: true`, `profile_server` renders `~/duckdns/duck.sh` with mode `0700`, keeping the existing updater path
-and `duck.log`. Set `server_duckdns_domain` in the server's host vars and store the **rotated**
-`vault_duckdns_token` in encrypted `secrets/vault.yml` (using `ansible-vault edit secrets/vault.yml`)
-or untracked `secrets/vault.local.yml`. Never commit the rendered script or put the token on a
-command line. Rendering hides secret output/diffs; the updater verifies TLS and passes the token
-to curl through stdin. The playbook neither runs the updater nor changes its external schedule.
-
-```bash
-ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff
-ansible-playbook ansible/site.yml --limit prometheus --tags duckdns
-```
-
-An exposed token must be revoked/regenerated on DuckDNS: deleting it from Git history does not
-revoke it. After a history cleanup, re-clone other checkouts rather than merging the old history
-back in; preserve any uncommitted work separately without copying secrets.
-
-### Data migration
-
-Provision Rocky first, then run the migration script **on the retired Ubuntu source host**. It is
-dry-run by default and requires an explicit source-stack stop before it can copy application data:
-
-```bash
-sudo ./scripts/migrate_prometheus_data.sh \
-  --destination rocky@179.237.102.172 \
-  --identity /root/.ssh/id_ed25519
-
-sudo ./scripts/migrate_prometheus_data.sh \
-  --destination rocky@179.237.102.172 \
-  --identity /root/.ssh/id_ed25519 \
-  --quiesce-source --execute
-```
-
-The script copies only Nginx Proxy Manager and Gitea data. It does not delete data, move
-Navidrome/Syncthing, copy `/home/git/.ssh`, start containers, update DNS, or perform a cutover. The
-destination SSH host key must already be trusted and the destination account needs passwordless sudo
-for `rsync`. It preserves ACLs but not extended attributes, so source SELinux labels are not
-transferred; the Rocky Compose bind mounts apply their own `:Z` labels when containers start.
+DuckDNS support has been removed from the server profile: no tasks, templates,
+variables or enablement flags remain. Prometheus uses its static IP and `fscotto.co`.
+The local updater, log and cron job were already removed. The external DuckDNS
+name/account and existing encrypted token remain untouched for possible future use.
 
 ## DNS Filter
 

@@ -47,8 +47,8 @@
           - atlas_gitea_dataset_owner.stat.uid | int == atlas_admin_uid | int
           - atlas_gitea_dataset_owner.stat.gid | int == atlas_admin_gid | int
         fail_msg: >-
-          Run the explicit Gitea owner migration before enabling the admin
-          Quadlet; never chown an active legacy service in a normal run.
+          The production dataset must already belong to admin before enabling
+          the Quadlet; normal provisioning must not chown an active legacy service.
       when: atlas_gitea_production_enabled | bool
 
     - name: Remove the retired account's parent-dataset traverse ACL

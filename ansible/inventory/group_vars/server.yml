@@ -10,7 +10,6 @@ server_npm_quadlet_stage: false
 server_npm_quadlet_cutover: false
 server_legacy_stack_retired: false
 server_legacy_cleanup: false
-server_duckdns_enabled: true
 ai_agents: {}
 vim_plugins_enabled: false
 
@@ -92,9 +91,8 @@ server_backup_export_root: /var/lib/prometheus-backup-export
 server_backup_rrsync_path: /usr/share/doc/rsync/support/rrsync
 server_backup_export_calendar: "*-*-* 02:00:00 Europe/Rome"
 server_backup_export_start_timer: false
-# Explicit Gitea cutover helper: installed separately from any outage action.
-server_gitea_cutover_tools_enabled: false
-server_gitea_final_export: false
+# Ongoing public Gitea proxy configuration.
+server_gitea_proxy_enabled: false
 server_gitea_on_atlas: false
 server_gitea_atlas_address: "{{ hostvars['atlas'].ansible_host }}"
 server_gitea_npm_domains: []

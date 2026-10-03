@@ -54,15 +54,15 @@ before accepting the new hostname's identity.
 
 ## Local DuckDNS retirement
 
-Prometheus declares `server_duckdns_enabled: false`. On 2026-10-03 the explicit
+DuckDNS support has been removed entirely from the server profile. On 2026-10-03 the explicit
 Ansible cleanup removed the five-minute rocky cron entry and the private
 `~/duckdns` directory containing only `duck.sh` and `duck.log`. The temporary
 cleanup tasks and flag were subsequently removed from the playbook at the
-operator's request. Only the disabled provisioning state remains; ordinary
-provisioning cannot recreate the updater.
+operator's request. The updater provisioning tasks, template, variables and
+enablement flag were also removed; there is no retained opt-in support.
 The external DuckDNS name, Vault token, disabled NPM hosts and certificates
 remain untouched for a separate future decision.
-The repeat cleanup changed nothing; ordinary DuckDNS provisioning was skipped.
+Before removing the temporary cleanup tasks, the repeat cleanup changed nothing.
 The cron table had no remaining entries, NPM and the export timer were active,
 and NPM administration still listened only on `127.0.0.1:81`.
 

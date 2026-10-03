@@ -68,15 +68,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea_public_domain --check --diff`
   - Atlas iCloudPD storage and boot-started Quadlet:
     `ansible-playbook ansible/site.yml --limit atlas --tags icloudpd --check --diff`
-  - Atlas explicit Gitea host-owner migration (live outage; never a normal run):
-    `ansible-playbook ansible/site.yml --limit atlas --tags gitea_owner_migration -e atlas_gitea_owner_migration=true`
-  - Atlas explicit isolated Gitea restore rehearsal (not part of normal runs):
-    `ansible-playbook ansible/site.yml --limit atlas --tags gitea_restore -e atlas_gitea_restore_test=true`
-  - Atlas final Gitea replacement gate (dry-run only until a stopped-source export is pulled):
-    `ansible-playbook ansible/site.yml --limit atlas --tags gitea_final_restore --check --diff -e atlas_gitea_final_restore=true`
-  - Prometheus final Gitea export helper (dry-run installs only; outage action remains opt-in):
-    `ansible-playbook ansible/site.yml --limit prometheus --tags gitea_final_export --check --diff`
-  - Gitea cutover network configuration before activation:
+  - Ongoing Gitea proxy configuration:
     `ansible-playbook ansible/site.yml --limit prometheus --tags gitea_cutover,prometheus_backup --check --diff -e server_gitea_on_atlas=true`
     and `ansible-playbook ansible/site.yml --limit atlas --tags gitea --check --diff`
   - Atlas daily Navidrome music copy:
@@ -99,7 +91,6 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit prometheus,aegis --tags wireguard --check --diff`
   - Prometheus NPM Quadlet steady state (does not perform a cutover):
     `ansible-playbook ansible/site.yml --limit prometheus --tags npm_quadlet --check --diff`
-  - DuckDNS config only (skipped on Prometheus): `ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff`
 
 ## Conventions
 - Use FQCN Ansible modules.
@@ -143,13 +134,10 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - Windows applications are installed manually and are not managed from the WSL profile.
 
 ## Rocky Server Notes
-- Prometheus disables DuckDNS provisioning with `server_duckdns_enabled: false`. Its updater,
-  log and five-minute cron entry were explicitly retired; the external DuckDNS name and Vault
-  token remain untouched. The completed one-time cleanup has no remaining playbook tasks.
-- When enabled, DuckDNS is rendered by `profile_server` from host-local `server_duckdns_domain` and
-  `vault_duckdns_token`. Keep the rotated token in encrypted Vault or untracked local vars, never in
-  dotfiles. The private `~/duckdns/duck.sh` keeps the existing entrypoint; rendering uses `no_log`
-  and disables diffs. Provisioning does not execute the updater or change its external schedule.
+- DuckDNS support is removed from the server profile, not feature-gated. No updater tasks,
+  templates or enablement variables remain. Prometheus uses its static IP and `fscotto.co`;
+  the local updater, log and cron job were already retired. External DuckDNS account/name
+  and existing encrypted token are outside this removal and remain untouched.
 - `rocky_server` is a child of both `platform_rocky` and `server`; `prometheus` is its active target.
 - The target must already provide `server_username` with local sudo access before the profile runs.
 - The Rocky profile installs Podman and podman-compose. Prometheus explicitly retires the legacy
@@ -164,8 +152,11 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - Firewalld enables SSH, Cockpit (`9090/tcp`), HTTP and HTTPS. Nginx Proxy Manager publishes `80/tcp` and
   `443/tcp`; bind its administration interface only to `127.0.0.1:81` and use `npm-tunnel` from Ikaros or Nymph.
   Nextcloud remains disabled; do not provision `/srv/nextcloud` directories.
-- `scripts/migrate_prometheus_data.sh` is the separate, source-host-run NPM/Gitea migration path. It dry-runs by
-  default and requires explicit source-stack quiescing before copying persistent Docker data with rsync.
+- The completed Ubuntu-to-Rocky data migration script and its operational instructions
+  have been removed; current provisioning does not provide that one-time migration path.
+- Completed Gitea owner-migration, migration-restore and final-export tasks, helpers and flags
+  are removed. Current Gitea marker/ownership checks, recurring backups and proxy configuration
+  remain intact. `server_gitea_proxy_enabled` controls ongoing proxy management only.
 - Atlas-only OpenZFS, NFS, Samba, and Syncthing stay selected through Atlas host variables and must not
   leak into `rocky_server`. Cockpit plus its Navigator and Podman extensions are selected explicitly for
   Prometheus through its host variables.
@@ -389,7 +380,7 @@ successfully. The first monthly scrub remains a runtime check.
   The operator confirmed completion on 2026-10-03.
 - [x] Retire Prometheus' local DuckDNS updater on 2026-10-03 through Ansible:
   the five-minute cron entry and private updater/log directory were removed.
-  Provisioning is disabled; repeat cleanup changed nothing. HTTPS services, private NPM
+  Provisioning support was subsequently removed entirely; repeat cleanup changed nothing. HTTPS services, private NPM
   administration and the export timer stayed healthy. The external name and Vault token
   remain untouched for possible future use on a local host.
 - [ ] Keep `atlas_manage_media_stack` disabled until the future Immich deployment has validated `/dev/dri`,

@@ -8,11 +8,6 @@
     fail_msg: >-
       server_firewall_backend must be firewalld for the Rocky server profile.
 
-- name: Configure DuckDNS updater
-  tags: [dotfiles, dotfiles:server, duckdns]
-  ansible.builtin.import_tasks: duckdns.yml
-  when: server_duckdns_enabled | bool
-
 - name: Ensure server directories exist
   tags: [dotfiles, services]
   ansible.builtin.file:
@@ -78,9 +73,6 @@
   ansible.builtin.import_tasks: legacy_cleanup.yml
   tags: [never, server_legacy_cleanup]
   when: server_legacy_cleanup | bool
-
-- name: Import explicit Prometheus Gitea final-export tasks
-  ansible.builtin.import_tasks: gitea_final_export.yml
 
 - name: Import Prometheus Gitea SSH proxy tasks
   ansible.builtin.import_tasks: gitea_ssh_proxy.yml

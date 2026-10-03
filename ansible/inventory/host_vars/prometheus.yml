@@ -22,12 +22,10 @@ server_npm_quadlet_cutover: true
 server_backup_export_enabled: true
 server_backup_export_start_timer: true
 # Install the final-copy helper only; it is never run by a normal playbook invocation.
-server_gitea_cutover_tools_enabled: true
+server_gitea_proxy_enabled: true
 server_gitea_on_atlas: true
 server_gitea_npm_domains:
   - git.fscotto.duckdns.org
-server_duckdns_domain: fscotto
-server_duckdns_enabled: false
 server_ssh_authorized_keys:
   - name: ikaros
     key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINrIxXjA3ffPwziKGR5gzc4gAoBehQPlnEMcXF4Wl0ZS ikaros"

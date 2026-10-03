@@ -3,7 +3,7 @@
   tags: [services, gitea_cutover]
   ansible.builtin.assert:
     that:
-      - server_gitea_cutover_tools_enabled | bool
+      - server_gitea_proxy_enabled | bool
       - server_gitea_npm_domains | length > 0
       - server_gitea_npm_domains | select('match', '^[a-zA-Z0-9.-]+$') | list | length == server_gitea_npm_domains | length
     fail_msg: Declare the exact NPM Gitea hostnames before enabling the Atlas upstream.
@@ -17,7 +17,7 @@
     owner: root
     group: root
     mode: "0755"
-  when: server_gitea_cutover_tools_enabled | bool
+  when: server_gitea_proxy_enabled | bool
 
 - name: Render the Gitea-only NPM runtime upstream override
   tags: [services, gitea_cutover]
@@ -36,7 +36,7 @@
     path: /opt/npm/data/nginx/custom/server_proxy.conf
     state: absent
   when:
-    - server_gitea_cutover_tools_enabled | bool
+    - server_gitea_proxy_enabled | bool
     - not server_gitea_on_atlas | bool
 
 - name: Validate NPM configuration after a Gitea upstream change

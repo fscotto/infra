@@ -1,5 +1,10 @@
 # Gitea migration from Prometheus to Atlas
 
+Historical record: the completed owner-migration, migration-restore and final-export
+tasks, helpers and flags have been removed from the repository. Commands below
+record past execution, not currently supported migration entry points. Current
+service safety checks, recurring backups and proxy configuration remain managed.
+
 The later 2026-10-03 canonical-domain change to `git.fscotto.co` is recorded
 in `docs/domain-fscotto-co.md`. Public SSH remains on TCP/2222; the old
 DuckDNS Proxy Host was observed disabled. Earlier domain references below

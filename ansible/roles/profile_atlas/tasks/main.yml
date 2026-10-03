@@ -14,9 +14,6 @@
 - name: Import Atlas storage tasks
   ansible.builtin.import_tasks: storage.yml
 
-- name: Import explicit Atlas Gitea owner migration
-  ansible.builtin.import_tasks: gitea_owner_migration.yml
-
 - name: Import staged Atlas rootless Gitea tasks
   ansible.builtin.import_tasks: gitea.yml
 
@@ -25,9 +22,6 @@
 
 - name: Import Atlas iCloudPD storage and boot-started Quadlet tasks
   ansible.builtin.import_tasks: icloudpd.yml
-
-- name: Import explicit Atlas Gitea restore rehearsal tasks
-  ansible.builtin.import_tasks: gitea_restore.yml
 
 - name: Import Atlas ZFS maintenance tasks
   ansible.builtin.import_tasks: zfs_maintenance.yml

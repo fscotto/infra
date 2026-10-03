@@ -527,12 +527,15 @@ della protezione dei dati: richiede storage applicativo, database e cache separa
 pubblicazione solo tramite NPM e Aegis, procedure di backup, aggiornamento e migrazione. Non
 distribuirlo prima di completare la checklist di protezione dei dati.
 
-La destinazione futura per l'importazione foto iCloud è Atlas, non Aegis. Dopo la validazione dei
-backup, pianificare una migrazione esplicita di iCloudPD con foto sotto `/zpool/archive/Pictures` e
-stato applicativo/MFA fuori da `Archive`; testare permessi, SELinux, backup e restore prima del
-cutover. L'attuale iCloudPD su Aegis e l'export NFS Photobook restano configurati fino
-all'approvazione e alla verifica di questa migrazione separata. Anche il servizio Atlas sarà
-temporaneo in attesa di Uranus.
+Atlas è la destinazione dichiarata per iCloudPD. Ansible gestisce dataset, Quadlet rootless e
+`icloudpd.conf` privato con Apple ID dal Vault: foto in `/zpool/archive/Pictures/iCloudPD`,
+stato in `zpool/services/data/icloudpd`. Il primo avvio è stato manuale; password e MFA restano
+gestiti interattivamente, senza avvio automatico al boot. L'inizializzazione è stata completata e
+il download iniziale di foto e video è terminato il 2026-10-03. Su Aegis
+il servizio, il Quadlet e `/var/lib/icloudpd` sono stati rimossi e verificati; il playbook Aegis
+non contiene più task iCloudPD. L'accesso SMB e il ripristino dai backup dei nuovi dati restano
+da verificare. L'export NFS Photobook resta
+invariato. Dettagli in [`docs/atlas-icloudpd-migration.md`](docs/atlas-icloudpd-migration.md).
 
 Il primo ciclo pianificato del backup di Prometheus e una prova di disaster recovery a dimensione reale
 restano da verificare. Il 2026-09-30 una VM Rocky isolata ha superato ricostruzione OS con Ansible,

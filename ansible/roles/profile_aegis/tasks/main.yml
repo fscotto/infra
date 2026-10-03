@@ -13,14 +13,6 @@
     msg: Reboot Aegis to activate the newly layered packages, then rerun the playbook.
   when: aegis_layered_packages_result.needs_reboot | default(false)
 
-- name: Require Aegis iCloudPD Apple ID
-  tags: [aegis, icloudpd]
-  ansible.builtin.assert:
-    that:
-      - aegis_icloudpd_apple_id | length > 0
-    fail_msg: Define vault_aegis_icloudpd_apple_id before applying the Aegis profile.
-  no_log: true
-
 - name: Require completed Aegis network placeholders
   tags: [aegis, dns, firewall, network, services]
   ansible.builtin.assert:
@@ -119,8 +111,6 @@
   loop:
     - /var/lib/adguard/work
     - /var/lib/adguard/conf
-    - /var/lib/icloudpd/data
-    - /var/lib/icloudpd/config
 
 - name: Create Quadlet configuration directory
   tags: [aegis, containers]
@@ -142,12 +132,9 @@
   loop:
     - src: adguardhome.container.j2
       dest: adguardhome.container
-    - src: icloudpd.container.j2
-      dest: icloudpd.container
   loop_control:
     label: "{{ item.dest }}"
-  no_log: "{{ item.dest == 'icloudpd.container' }}"
-  notify: Restart Aegis Quadlet services
+  notify: Restart Aegis AdGuard Quadlet
 
 - name: Create Aegis systemd-resolved configuration directory
   tags: [aegis, adguard, dns, services]
@@ -168,7 +155,7 @@
     mode: "0644"
   notify:
     - Restart Aegis systemd-resolved
-    - Restart Aegis Quadlet services
+    - Restart Aegis AdGuard Quadlet
 
 - name: Point Aegis resolver at the full systemd-resolved configuration
   tags: [aegis, adguard, dns, services]
@@ -361,7 +348,7 @@
     group: root
     mode: "0755"
 
-- name: Enable Aegis Quadlet services and automatic updates
+- name: Enable Aegis AdGuard Quadlet and automatic updates
   tags: [aegis, containers, services]
   ansible.builtin.systemd:
     name: "{{ item }}"
@@ -370,7 +357,6 @@
     daemon_reload: true
   loop:
     - adguardhome.service
-    - icloudpd.service
     - podman-auto-update.timer
   loop_control:
     label: "{{ item }}"

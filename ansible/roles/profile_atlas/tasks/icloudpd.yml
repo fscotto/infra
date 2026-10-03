@@ -1,0 +1,165 @@
+---
+- name: Require exact Atlas iCloudPD paths and rootless identity
+  tags: [atlas, icloudpd]
+  ansible.builtin.assert:
+    that:
+      - atlas_manage_storage | bool
+      - atlas_icloudpd_dataset == atlas_zfs_pool ~ '/services/data/icloudpd'
+      - atlas_icloudpd_state_dir == atlas_app_data_mountpoint ~ '/icloudpd'
+      - atlas_icloudpd_config_dir == atlas_icloudpd_state_dir ~ '/config'
+      - atlas_icloudpd_photos_dir == atlas_archive_mountpoint ~ '/Pictures/iCloudPD'
+      - atlas_admin_uid | int == 1000
+      - atlas_admin_gid | int == 1000
+      - atlas_icloudpd_image is search('@sha256:[0-9a-f]{64}$')
+    fail_msg: Verify the fixed, separate Atlas iCloudPD photo and state paths.
+
+- name: Declare inactive rootless Atlas iCloudPD storage and Quadlet
+  tags: [atlas, icloudpd]
+  block:
+    - name: Inspect the existing Archive and application-data datasets
+      community.general.zfs_facts:
+        name: "{{ item.dataset }}"
+        properties: name,mounted,mountpoint
+      loop:
+        - dataset: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_archive }}"
+          mountpoint: "{{ atlas_archive_mountpoint }}"
+        - dataset: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_app_data }}"
+          mountpoint: "{{ atlas_app_data_mountpoint }}"
+      loop_control:
+        label: "{{ item.dataset }}"
+      register: atlas_icloudpd_parent_datasets
+
+    - name: Refuse missing or unmounted iCloudPD parent datasets
+      ansible.builtin.assert:
+        that:
+          - item.ansible_facts.ansible_zfs_datasets | length == 1
+          - item.ansible_facts.ansible_zfs_datasets[0].mounted == 'yes'
+          - item.ansible_facts.ansible_zfs_datasets[0].mountpoint == item.item.mountpoint
+      loop: "{{ atlas_icloudpd_parent_datasets.results }}"
+      loop_control:
+        label: "{{ item.item.dataset }}"
+
+    - name: Inspect the existing Pictures namespace and proposed target
+      ansible.builtin.stat:
+        path: "{{ item }}"
+        follow: false
+      loop:
+        - "{{ atlas_archive_mountpoint }}/Pictures"
+        - "{{ atlas_icloudpd_photos_dir }}"
+        - "{{ atlas_icloudpd_photos_dir }}/.atlas-icloudpd-managed"
+      register: atlas_icloudpd_photo_paths
+
+    - name: Refuse to adopt unrelated Pictures data or a symlink
+      ansible.builtin.assert:
+        that:
+          - atlas_icloudpd_photo_paths.results[0].stat.isdir | default(false)
+          - atlas_icloudpd_photo_paths.results[0].stat.uid | int == atlas_admin_uid | int
+          - >-
+            not atlas_icloudpd_photo_paths.results[1].stat.exists or
+            (atlas_icloudpd_photo_paths.results[1].stat.isdir | default(false) and
+             atlas_icloudpd_photo_paths.results[2].stat.isreg | default(false))
+        fail_msg: >-
+          Pictures must exist and be admin-owned; an existing iCloudPD target
+          must carry its managed marker. Never adopt or replace unrelated data.
+
+    - name: Create a dedicated ZFS dataset for iCloudPD configuration and MFA
+      community.general.zfs:
+        name: "{{ atlas_icloudpd_dataset }}"
+        state: present
+        extra_zfs_properties:
+          compression: zstd
+          mountpoint: "{{ atlas_icloudpd_state_dir }}"
+
+    - name: Restrict iCloudPD state and the new photo subtree
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - path: "{{ atlas_icloudpd_state_dir }}"
+          mode: "0700"
+        - path: "{{ atlas_icloudpd_config_dir }}"
+          mode: "0700"
+        - path: "{{ atlas_icloudpd_photos_dir }}"
+          mode: "0750"
+        - path: "{{ atlas_icloudpd_quadlet_dir }}"
+          mode: "0700"
+      loop_control:
+        label: "{{ item.path }}"
+
+    - name: Mark only the newly managed iCloudPD photo subtree
+      ansible.builtin.copy:
+        content: "Atlas iCloudPD photo subtree; do not remove source photos.\n"
+        dest: "{{ atlas_icloudpd_photos_dir }}/.atlas-icloudpd-managed"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0600"
+        force: false
+
+    - name: Install the image's required mounted-filesystem failsafe
+      ansible.builtin.copy:
+        content: ""
+        dest: "{{ atlas_icloudpd_photos_dir }}/.mounted"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0644"
+        force: false
+
+    - name: Require the Vault-backed iCloudPD Apple ID
+      ansible.builtin.assert:
+        that:
+          - vault_atlas_icloudpd_apple_id is defined
+          - vault_atlas_icloudpd_apple_id | length > 0
+          - vault_atlas_icloudpd_apple_id != 'REPLACE_ME'
+          - vault_atlas_icloudpd_apple_id.splitlines() | length == 1
+        fail_msg: Configure the existing iCloudPD Apple ID in Vault.
+      no_log: true
+
+    - name: Seed private Atlas iCloudPD configuration when absent
+      ansible.builtin.template:
+        src: atlas-icloudpd.conf.j2
+        dest: "{{ atlas_icloudpd_config_dir }}/icloudpd.conf"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0600"
+        force: false
+      no_log: true
+      diff: false
+
+    - name: Keep declared iCloudPD options in the image-managed configuration
+      ansible.builtin.lineinfile:
+        path: "{{ atlas_icloudpd_config_dir }}/icloudpd.conf"
+        regexp: "^{{ item.key }}="
+        line: "{{ item.key }}={{ item.value }}"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0600"
+      loop:
+        - {key: apple_id, value: "{{ vault_atlas_icloudpd_apple_id }}"}
+        - {key: authentication_type, value: MFA}
+        - {key: user, value: user}
+        - {key: user_id, value: "1000"}
+        - {key: group, value: group}
+        - {key: group_id, value: "1000"}
+        - {key: download_path, value: /home/user/iCloud}
+        - {key: folder_structure, value: "{:%Y/%m/%d}"}
+        - {key: directory_permissions, value: "750"}
+        - {key: file_permissions, value: "640"}
+        - {key: download_interval, value: "86400"}
+        - {key: auto_delete, value: "false"}
+        - {key: delete_after_download, value: "false"}
+      loop_control:
+        label: "{{ item.key }}"
+      no_log: true
+      diff: false
+
+    - name: Render the rootless Atlas iCloudPD Quadlet
+      ansible.builtin.template:
+        src: atlas-icloudpd.container.j2
+        dest: "{{ atlas_icloudpd_quadlet_dir }}/atlas-icloudpd.container"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0644"
+      notify: Reload Atlas admin user manager

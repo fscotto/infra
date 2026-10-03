@@ -9,13 +9,12 @@
     name: sshd.service
     state: reloaded
 
-- name: Restart Aegis Quadlet services
+- name: Restart Aegis AdGuard Quadlet
   ansible.builtin.systemd:
     name: "{{ item }}"
     state: restarted
     daemon_reload: true
   loop:
     - adguardhome.service
-    - icloudpd.service
   loop_control:
     label: "{{ item }}"

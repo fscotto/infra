@@ -59,6 +59,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff`
   - Atlas rootless Gitea staging (does not start Gitea):
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea --check --diff`
+  - Atlas iCloudPD storage and inactive Quadlet (does not start it):
+    `ansible-playbook ansible/site.yml --limit atlas --tags icloudpd --check --diff`
   - Atlas explicit Gitea host-owner migration (live outage; never a normal run):
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea_owner_migration -e atlas_gitea_owner_migration=true`
   - Atlas explicit isolated Gitea restore rehearsal (not part of normal runs):
@@ -362,11 +364,36 @@ successfully. The first monthly scrub remains a runtime check.
   container paths, and the required Vault database secret.
 
 ### Priority 4 - Optional workflows
-- [ ] After data protection is validated, move iCloudPD photo ingestion from Aegis to Atlas as a
-  temporary service until Uranus is ready. Plan to store photos in `/zpool/archive/Pictures` and
-  persistent application/MFA state outside `Archive`; validate permissions, SELinux, backups and
-  recovery before cutover. Keep the current Aegis service and Photobook NFS export unchanged until
-  the Atlas workflow is tested, then retire them explicitly if no longer needed.
+- [x] Deploy the declared Atlas iCloudPD state dataset and inactive rootless `admin` Quadlet.
+  Photos belong under `/zpool/archive/Pictures/iCloudPD`; private config/MFA state belongs in
+  `zpool/services/data/icloudpd`. Photobook remains reserved for Immich. Ansible now renders
+  `icloudpd.conf` with the Apple ID from the existing Vault key, but does not store the password,
+  manage MFA, or enable automatic startup. The isolated no-network layout test is documented in
+  `docs/atlas-icloudpd-migration.md`. On 2026-10-02 Atlas deployment and a second idempotent run
+  passed; no app config existed at deployment. A manual first start on 2026-10-02 generated
+  `icloudpd.conf`; an Ansible run then replaced it with a private mode-0600 Vault-backed template
+  and an idempotent second run. The image later expanded the config, so Ansible now seeds it
+  only when absent and maintains the declared fields. Its launcher requires `traceroute`; the
+  rootless Quadlet grants only `NET_RAW`, tested in isolation and after restart. The service
+  was subsequently initialized interactively; initial ingestion is tracked below.
+- [x] Retire Aegis iCloudPD completely. The operator authorized deleting its Quadlet,
+  `/var/lib/icloudpd` data, and MFA state despite an unaudited container overlay. After two
+  interactive-sudo runs on 2026-10-02, the unit is `not-found`/`inactive`, the Quadlet and state
+  directory are absent, and AdGuard remains active. The temporary retirement tasks have since
+  been removed from the Aegis role; it no longer manages iCloudPD.
+- [x] Validate Atlas iCloudPD authentication and initial ingestion. On 2026-10-03 the active
+  rootless service logged `All photos and videos have been downloaded` at 02:16 and reported
+  completion for the user. The destination held 11,658 files (86,020,430,015 bytes); the preceding 24h
+  logs showed download activity without authentication failures or errors. A later read-only check
+  found the service still active. This confirms the initial download, not the next daily cycle.
+- [x] Declare HEIC decoding for Fedora graphical desktops without converting the originals on Atlas.
+  The Fedora role installs RPM Fusion Free with a pinned signing-key fingerprint and
+  `libheif-freeworld` on Ikaros and Nymph. The package was confirmed installed on Ikaros on
+  2026-10-03; Nymph deployment and an actual image-opening test were not observed.
+- [ ] Validate Atlas iCloudPD filesystem/SELinux/SMB access, the next daily sync, ZFS/Borg/USB
+  backup inclusion, and isolated restore of photos and private state. A recursive hourly snapshot
+  of `zpool/archive` exists after ingestion, but no iCloudPD-specific backup version or restore
+  has been verified. The first monthly scrub remains a separate open data-protection check.
 
 ## Cerberus Management Node (Deferred)
 `cerberus` is postponed until the office in the new house is physically set up. It is not an inventory
@@ -442,5 +469,5 @@ validated exports of older historical data will use a dedicated Atlas NFS datase
   `/etc/resolv.conf` linked to `/run/systemd/resolve/resolv.conf`. LAN clients may use AdGuard, but
   Aegis must use the independent upstream DNS declared by `aegis_host_dns_servers` so Greenboot does
   not depend on the AdGuard container during startup.
-- iCloudPD requires post-deployment interactive MFA initialization; its cookie/configuration state is
-  persisted in `/var/lib/icloudpd/config`.
+- Aegis iCloudPD has been retired and is no longer managed by this role. Its service, Quadlet,
+  data, and MFA state were removed with the operator's explicit authorization.

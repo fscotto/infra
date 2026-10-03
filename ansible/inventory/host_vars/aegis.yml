@@ -42,5 +42,3 @@ aegis_ssh_authorized_keys:
     key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEH/7GJfGt0ZVmKeEzceoFkFkeCXFryKK9vAbaip+HCx nymph"
   - name: siren
     key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA95wYlzpfN3rjUhpMeP4KHn8I6ZrjQXoDTgwgRIa++b siren"
-
-aegis_icloudpd_apple_id: "{{ vault_aegis_icloudpd_apple_id | default('') }}"

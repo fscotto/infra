@@ -1,4 +1,14 @@
 ---
+- name: Reload Atlas admin user manager
+  become_user: "{{ atlas_admin_username }}"
+  ansible.builtin.systemd:
+    scope: user
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"
+    DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ atlas_admin_uid }}/bus"
+  when: not ansible_check_mode
+
 - name: Reload SSH service
   ansible.builtin.systemd:
     name: sshd

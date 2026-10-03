@@ -194,6 +194,17 @@ atlas_gitea_restore_test: false
 atlas_gitea_final_restore: false
 atlas_gitea_restore_helper: /usr/local/libexec/atlas-gitea-restore-test
 
+# Declare storage and an inactive Quadlet only. The operator supplies the
+# private configuration, handles MFA, and starts the user service manually.
+atlas_icloudpd_dataset: "{{ atlas_zfs_pool }}/services/data/icloudpd"
+atlas_icloudpd_state_dir: "{{ atlas_app_data_mountpoint }}/icloudpd"
+atlas_icloudpd_config_dir: "{{ atlas_icloudpd_state_dir }}/config"
+atlas_icloudpd_photos_dir: "{{ atlas_archive_mountpoint }}/Pictures/iCloudPD"
+atlas_icloudpd_image: >-
+  docker.io/boredazfcuk/icloudpd@sha256:9966c31ddf0b5b306ac2410b4edd5d626806d96e80c92b83cbb689972dc9389f
+atlas_icloudpd_quadlet_dir: "{{ atlas_admin_home }}/.config/containers/systemd"
+atlas_icloudpd_timezone: Europe/Rome
+
 atlas_45drives_repo_url: https://repo.45drives.com/repofiles/rocky/45drives-enterprise.repo
 atlas_45drives_repo_file: /etc/yum.repos.d/45drives-enterprise.repo
 atlas_45drives_packages:

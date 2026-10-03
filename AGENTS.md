@@ -352,10 +352,9 @@ successfully. The first monthly scrub remains a runtime check.
 - [x] Validate authenticated SSH pull and push. On 2026-10-02 the operator reported both
   operations working through the public SSH endpoint; the earlier agent-run `git ls-remote`
   remains the independent read-only check. The agent did not perform a test push.
-- [ ] Validate HTTPS write/login before declaring the full cutover complete. The
-  secondary NPM hostname `git.ov-ad3410.infomaniak.ch` did not resolve from Ikaros and had
-  no generated NPM config file at the previous inspection. Do not restart the stale source
-  Gitea after Atlas has accepted writes.
+- [x] Validate Gitea login and write via HTTPS. On 2026-10-03 the operator confirmed
+  authenticated web login and Git clone/pull/push through the public HTTPS endpoint. Do not
+  restart the stale source Gitea after Atlas has accepted writes.
 - [ ] Design and deploy Nextcloud as another explicitly temporary Atlas service before Uranus. Give it
   separate persistent application, database, and cache storage; keep credentials in Vault; publish it only
   through NPM over the Prometheus--Aegis gateway; and define backup, upgrade, and eventual Uranus-migration

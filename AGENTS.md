@@ -54,8 +54,9 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
   - Emacs is disabled by default; temporary Emacs check: `ansible-playbook ansible/site.yml --limit <host> --tags emacs --check --diff -e emacs_enabled=true`
   - AI coding agents: `ansible-playbook ansible/site.yml --limit <host> --tags ai_agents --check --diff`
   - Mail bootstrap: `sh -n scripts/bootstrap_mail.sh` and `shellcheck scripts/bootstrap_mail.sh`
-  - Server NPM Quadlet: `systemctl status prometheus-npm.service`; disabled Compose fallback render:
-    `podman-compose -f /opt/docker/server/docker-compose.yml config`
+  - Server NPM Quadlet: `systemctl status prometheus-npm.service`; the Compose fallback is retired.
+  - Explicit Prometheus legacy cleanup (destructive only without check mode):
+    `ansible-playbook ansible/site.yml --limit prometheus --tags server_legacy_cleanup --check --diff -e server_legacy_cleanup=true`
   - Atlas media stack:
     `ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff`
   - Atlas rootless Gitea staging (does not start Gitea):
@@ -143,12 +144,15 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   and disables diffs. Provisioning does not execute the updater or change its external schedule.
 - `rocky_server` is a child of both `platform_rocky` and `server`; `prometheus` is its active target.
 - The target must already provide `server_username` with local sudo access before the profile runs.
-- The Rocky profile installs Podman and podman-compose and renders the disabled legacy
-  `podman-compose-server` unit for rollback. On Prometheus, Nginx Proxy Manager is now the rootful
+- The Rocky profile installs Podman and podman-compose. Prometheus explicitly retires the legacy
+  Compose unit, files and final-export helper with `server_legacy_stack_retired: true`.
+  Its approved opt-in cleanup removed old application data on 2026-10-03; normal runs do not
+  delete data or recreate the retired files. On Prometheus, Nginx Proxy Manager is now the rootful
   `prometheus-npm.service` Quadlet with a pinned image digest and the existing `/opt/npm/data` and
   `/opt/npm/letsencrypt` bind mounts. The rootful `server_web` bridge remains `10.89.0.0/24`.
   Gitea runs on Atlas; PostgreSQL and Navidrome are absent from the desired Prometheus stack.
-  The profile does not delete legacy data, update DNS, or perform an implicit cutover.
+  Normal runs do not delete legacy data, update DNS, or perform an implicit cutover;
+  destructive cleanup requires its explicit tag and opt-in extra-var.
 - Firewalld enables SSH, Cockpit (`9090/tcp`), HTTP and HTTPS. Nginx Proxy Manager publishes `80/tcp` and
   `443/tcp`; bind its administration interface only to `127.0.0.1:81` and use `npm-tunnel` from Ikaros or Nymph.
   Nextcloud remains disabled; do not provision `/srv/nextcloud` directories.
@@ -413,6 +417,22 @@ successfully. The first monthly scrub remains a runtime check.
   both Quadlet files were present, and the complete Let's Encrypt tree (70 regular files plus
   12 symlinks) matched the live data. A targeted normal Ansible run changed nothing. Details and rollback
   boundaries are in `docs/prometheus-npm-quadlet.md`.
+- [x] Remove only unused Gitea, Navidrome and PostgreSQL images with opt-in
+  Ansible tasks on 2026-10-03. Second run changed nothing; NPM stayed active
+  with zero restarts, HTTP/HTTPS passed, backup timer and SSH proxy stayed active.
+  This image-only step preserved data and fallback; the later approved deletion is tracked below. Validation:
+  `ansible-playbook ansible/site.yml --limit prometheus --tags server_image_cleanup --check --diff -e server_legacy_image_cleanup=true`
+- [x] Complete explicitly approved old-data and Compose fallback removal on 2026-10-03.
+  Backup paths and mount dependencies were reconciled before deletion; repeat cleanup changed
+  nothing. The normal Compose/template/helper check did not recreate retired files.
+  A separately approved manual export/pull published `20261003T112906Z`; checksum and isolated
+  SQLite restore passed with ten proxy hosts and both Quadlet definitions. NPM, primary HTTPS,
+  WireGuard, SSH proxy and backup timer remained healthy; existing backup archives were preserved.
+- [x] Retire the unused secondary Gitea hostname `git.ov-ad3410.infomaniak.ch`
+  on 2026-10-03. Its NPM Proxy Host was already soft-deleted and had no
+  associated certificate. Its Ansible domain and runtime override were removed;
+  nginx -t and reload passed without restarting NPM. Primary HTTPS returned 200
+  with valid TLS; only `git.fscotto.duckdns.org` remains declared for Gitea.
 - [ ] Observe the first scheduled export and Atlas pull after the cutover; the manual end-to-end
   cycle passed, but the next unattended cycle has not yet occurred.
 

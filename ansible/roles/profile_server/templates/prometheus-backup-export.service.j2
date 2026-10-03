@@ -1,6 +1,6 @@
 [Unit]
 Description=Prepare a read-only Prometheus application backup for Atlas
-RequiresMountsFor=/opt/npm /opt/gitea {{ server_backup_export_root }}
+RequiresMountsFor=/opt/npm {% if not server_gitea_on_atlas | bool %}/opt/gitea {% endif %}{{ server_backup_export_root }}
 ConditionFileIsExecutable=/usr/local/sbin/prometheus-backup-export
 
 [Service]

@@ -202,14 +202,17 @@ Lo stato attuale del profilo server include:
 - installazione di Podman e podman-compose
 - abilitazione dei servizi systemd dichiarati in inventory/group vars
 - copia dei dotfiles server e rendering del Quadlet rootful `prometheus-npm.service` per Nginx Proxy
-  Manager; il vecchio `podman-compose-server` resta disabilitato soltanto per un rollback controllato
+  Manager; il vecchio fallback Compose è stato rimosso con autorizzazione esplicita
 - attivazione di firewalld con SSH, Cockpit (`9090/tcp`), HTTP e HTTPS abilitati
 - Syncthing escluso dal profilo server Rocky
 
-Il Compose desiderato su Prometheus non include piu Gitea, Navidrome ne il database PostgreSQL obsoleto.
-Navidrome e Syncthing appartengono ad Atlas; Navidrome ufficiale usa invece SQLite. Il profilo non
-arresta o rimuove automaticamente eventuali container legacy e non elimina `/opt/postgres/data`.
-Il cutover NPM, le verifiche dei dati e del backup e i limiti del rollback sono documentati in
+Il 2026-10-03 la pulizia opt-in autorizzata ha rimosso dati e immagini precedenti di Gitea,
+Navidrome e PostgreSQL, directory obsolete vuote, helper finale Gitea e fallback Compose NPM.
+I servizi migrati restano su Atlas. `server_legacy_stack_retired: true` evita che i normali task
+ricreino i residui; la cancellazione richiede `--tags server_legacy_cleanup` e
+`-e server_legacy_cleanup=true`. NPM attivo e archivi di backup restano intatti.
+Export, pull Atlas e restore SQLite isolato post-pulizia sono riusciti; il primo ciclo automatico
+resta da osservare. Evidenze e confini del recovery:
 [`docs/prometheus-npm-quadlet.md`](docs/prometheus-npm-quadlet.md).
 
 Nginx Proxy Manager pubblica solo `80/tcp` e `443/tcp`; la sua interfaccia di amministrazione e
@@ -642,7 +645,7 @@ Questo significa che, allo stato attuale:
 - il server Rocky (`prometheus`) e gestito con pacchetti, servizi, dotfiles server e firewalld
 - il NAS Rocky (`atlas`) usa un pool ZFS gia esistente, condivisioni NFSv4/SMB limitate alla LAN e Cockpit/45Drives
 - NPM è un Quadlet rootful su Prometheus, mentre Gitea, Navidrome e Syncthing sono Quadlet
-  rootless su Atlas; il Compose server resta disabilitato per rollback
+  rootless su Atlas; il fallback Compose server è stato rimosso
 
 # Dotfiles
 
@@ -748,7 +751,7 @@ ansible-playbook ansible/site.yml --limit <host> --tags <tag1>,<tag2> --check --
 ansible-playbook ansible/site.yml --limit <host> --start-at-task "<task name>" --check --diff
 ansible-lint ansible/roles/<role>
 yamllint ansible/path/to/file.yml
-podman-compose -f /opt/docker/server/docker-compose.yml config
+ansible-playbook ansible/site.yml --limit prometheus --tags server_legacy_cleanup --check --diff -e server_legacy_cleanup=true
 ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff
 ansible-playbook ansible/site.yml --limit atlas --tags backend_phase1 --check --diff
 ansible-playbook ansible/site.yml --limit atlas --tags music_sync --check --diff

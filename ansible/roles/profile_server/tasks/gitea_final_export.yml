@@ -7,7 +7,9 @@
     owner: root
     group: root
     mode: "0750"
-  when: server_gitea_cutover_tools_enabled | bool
+  when:
+    - server_gitea_cutover_tools_enabled | bool
+    - not server_legacy_stack_retired | bool
 
 - name: Require the prepared source and explicit final-export approval
   tags: [services, gitea_final_export]
@@ -15,6 +17,7 @@
     that:
       - server_gitea_cutover_tools_enabled | bool
       - server_backup_export_enabled | bool
+      - not server_legacy_stack_retired | bool
       - not ansible_check_mode
     fail_msg: >-
       Install the cutover helper and perform an explicit non-check-mode run
@@ -31,4 +34,5 @@
   no_log: true
   when:
     - server_gitea_final_export | bool
+    - not server_legacy_stack_retired | bool
     - not ansible_check_mode

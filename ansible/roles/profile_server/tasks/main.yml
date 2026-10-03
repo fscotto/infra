@@ -23,6 +23,9 @@
   loop: "{{ server_directories | default([]) }}"
   loop_control:
     label: "{{ item.path }}"
+  when:
+    - item.path != '/opt/gitea/data' or not server_gitea_on_atlas | bool
+    - item.path != server_container_stack_dir or not server_legacy_stack_retired | bool
 
 - name: Copy server dotfiles
   tags: [dotfiles, dotfiles:server]
@@ -48,19 +51,32 @@
   loop_control:
     label: "{{ item.dest }}"
   no_log: "{{ item.no_log | default(false) }}"
+  when: item.src != 'server/docker-compose.yml.j2' or not server_legacy_stack_retired | bool
 
 - name: Manage Podman Compose stack
   tags: [services, podman]
   ansible.builtin.include_tasks: podman-compose.yml
+  when: not server_legacy_stack_retired | bool
 
 - name: Import staged NPM Quadlet tasks
   ansible.builtin.import_tasks: npm_quadlet.yml
+
+- name: Import explicit legacy server image cleanup
+  ansible.builtin.import_tasks: legacy_image_cleanup.yml
+  tags: [never, server_image_cleanup]
+  when: server_legacy_image_cleanup | default(false) | bool
 
 - name: Import Prometheus backup export identity tasks
   ansible.builtin.import_tasks: backup_export_identity.yml
 
 - name: Import Prometheus backup export job tasks
   ansible.builtin.import_tasks: backup_export_job.yml
+  tags: [server_legacy_cleanup]
+
+- name: Import explicitly approved legacy server data cleanup
+  ansible.builtin.import_tasks: legacy_cleanup.yml
+  tags: [never, server_legacy_cleanup]
+  when: server_legacy_cleanup | bool
 
 - name: Import explicit Prometheus Gitea final-export tasks
   ansible.builtin.import_tasks: gitea_final_export.yml

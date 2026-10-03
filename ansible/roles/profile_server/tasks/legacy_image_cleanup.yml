@@ -1,0 +1,33 @@
+---
+- name: Require the migrated Prometheus topology for image cleanup
+  ansible.builtin.assert:
+    that:
+      - inventory_hostname == 'prometheus'
+      - server_gitea_on_atlas | bool
+      - server_npm_quadlet_cutover | bool
+      - server_legacy_images | default([]) | length > 0
+      - >-
+        server_legacy_images | difference([
+          'docker.gitea.com/gitea:1.25.2',
+          'docker.io/deluan/navidrome:latest',
+          'docker.io/library/postgres:13']) | length == 0
+
+- name: Check whether the explicitly selected legacy images exist
+  ansible.builtin.command:
+    argv: [podman, image, exists, "{{ item }}"]
+  loop: "{{ server_legacy_images }}"
+  register: server_legacy_image_presence
+  changed_when: false
+  failed_when: server_legacy_image_presence.rc not in [0, 1]
+  check_mode: false
+
+# No --force: Podman must refuse images referenced by any existing container.
+- name: Remove only unused explicitly selected legacy images
+  ansible.builtin.command:
+    argv: [podman, image, rm, "{{ item.item }}"]
+  loop: "{{ server_legacy_image_presence.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: item.rc == 0
+  register: server_legacy_image_removal
+  changed_when: server_legacy_image_removal.rc == 0

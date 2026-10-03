@@ -4,6 +4,9 @@ umask 077
 
 export_root={{ server_backup_export_root | quote }}
 versions="$export_root/versions"
+{% if server_legacy_stack_retired | bool %}
+stack_unit=prometheus-npm.service
+{% else %}
 stack_unit=''
 compose_active=false
 quadlet_active=false
@@ -18,6 +21,7 @@ if "$quadlet_active"; then
 else
   stack_unit=podman-compose-server.service
 fi
+{% endif %}
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
 stage=''
 stack_stopped=false

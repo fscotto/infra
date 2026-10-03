@@ -1,8 +1,13 @@
 # Gitea migration from Prometheus to Atlas
 
 This records the staged migration and its observed partial cutover. Gitea is
-temporary on Atlas until Uranus; NPM remains on Prometheus. Preserve the old
-Prometheus data, but do not restart its stale Gitea after Atlas accepts writes.
+temporary on Atlas until Uranus; NPM remains on Prometheus. On 2026-10-03
+the operator explicitly approved removal of the old Prometheus Gitea data,
+SSH fragment and final-export helper. NPM now uses a rootful Quadlet with no
+installed Compose fallback. The source-retention and rollback steps below
+are historical migration gates, not current recovery instructions.
+Existing backup archives were preserved; use current Atlas data and verified
+backups for recovery. Do not recreate or restart stale source Gitea.
 
 ## Observed source before cutover and chosen topology (2026-10-01)
 
@@ -138,6 +143,10 @@ Navidrome and Syncthing Proxy Hosts still responded. No NPM SQLite records
 or credentials were changed. The
 secondary hostname `git.ov-ad3410.infomaniak.ch` did not resolve from Ikaros
 and had no generated NPM config file at the time of inspection.
+
+On 2026-10-03 the operator retired this unused secondary hostname. Its NPM
+Proxy Host was already soft-deleted; Ansible now declares only
+`git.fscotto.duckdns.org` and removes the secondary runtime override.
 
 Prometheus' public TCP/2222 socket proxies to Atlas without changing admin
 SSH/22. The local socket presents the preserved Gitea ED25519 host key, but

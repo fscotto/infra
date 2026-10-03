@@ -8,19 +8,20 @@ Nginx Proxy Manager runs as the **rootful** generated
 `/etc/containers/systemd/server-web.network`; the image is pinned by digest
 in `ansible/inventory/host_vars/prometheus.yml`. The generated service is
 wanted by `multi-user.target` and requires the generated network service.
-The old `podman-compose-server.service` is inactive and disabled. Its unit
-and Compose file remain as a rollback option, not as another active owner.
-Do not start both units or run `podman-compose down` while the Quadlet owns
-the shared `server_web` network.
+The old Compose unit, Compose file and Gitea final-export helper were
+removed by the operator-approved cleanup on 2026-10-03. The retired
+application data and empty legacy directories were also removed.
+Prometheus host vars set `server_legacy_stack_retired: true` so normal runs
+do not recreate those files. Destructive deletion still requires a separate
+cleanup tag and explicit extra-var.
 
 There was **no data copy** in this cutover. The Quadlet reuses the existing
 `/opt/npm/data:/data` and `/opt/npm/letsencrypt:/etc/letsencrypt` bind mounts
 with the same container name and `server_web` bridge (`10.89.0.0/24`). Ports
 80 and 443 remain public; administration port 81 remains bound to
 `127.0.0.1`. Gitea stays on Atlas, and NPM remains on Prometheus. The
-Prometheus Compose file is retained with the same pinned NPM image for a
-controlled fallback. The Quadlet uses `Pull=missing`, not an automatic
-floating-tag update.
+Compose fallback is no longer installed. The Quadlet uses `Pull=missing`,
+not an automatic floating-tag update.
 
 ## Cutover and recovery boundaries
 
@@ -36,16 +37,12 @@ then restarted the timer. Its failure trap would have restarted Compose.
 **Do not rerun that forward-cutover script after success**: its preconditions
 intentionally reject an active Quadlet.
 
-A future rollback is a separate outage decision, not an ordinary Ansible run.
-First verify a usable recent Atlas backup and stop the export timer. Stop
-the Quadlet and verify that its container is gone before allowing Compose
-to own the same name, mounts, network, and ports; use the pinned Compose
-configuration, then validate NPM/HTTPS and restart the timer. Set
-`server_npm_quadlet_cutover: false` only as part of that controlled rollback.
-Do not run the two owners concurrently, restore an old NPM database over a
-live instance, or delete either bind mount. This reverse procedure has not
-been exercised on production; the forward script's in-window rollback path
-is not evidence of a later reverse cutover.
+Recovery is now a Quadlet rebuild and restoration from a verified Atlas
+backup, with an explicit outage decision before replacing live NPM state.
+The old Compose owner is no longer installed; reintroducing it would require
+a separately reviewed configuration and outage plan. The historical
+in-window rollback trap is not a supported post-cleanup rollback procedure.
+Do not restore an old database over a live instance or remove NPM bind mounts.
 
 ## Verified evidence
 
@@ -81,10 +78,68 @@ the new path works but not its next scheduled execution.
 ANSIBLE_LOCAL_TEMP=/tmp/ansible-local \
 ansible-playbook ansible/site.yml --limit prometheus --tags npm_quadlet --check --diff
 sudo systemctl status prometheus-npm.service prometheus-backup-export.timer
-sudo systemctl is-active podman-compose-server.service
-sudo systemctl is-enabled podman-compose-server.service
+sudo systemctl show podman-compose-server.service -p LoadState # expected: not-found
 ```
 
 The backup archive includes credentials, certificates, and WireGuard
 configuration. Do not publish it or print its contents in diagnostics; see
 `docs/prometheus-backup.md` for the restricted pull and restore procedure.
+
+## Selective legacy image cleanup
+
+On 2026-10-03 opt-in Ansible tasks removed only the unused Gitea 1.25.2,
+Navidrome latest and PostgreSQL 13 rootful images, without force or global
+prune. Podman refuses images referenced by existing containers. The second
+run changed nothing. NPM remained active with zero restarts; local admin
+and public Gitea HTTPS returned 200. Backup timer and SSH proxy stayed active.
+
+Validation:
+```bash
+ansible-playbook ansible/site.yml --limit prometheus --tags server_image_cleanup --check --diff -e server_legacy_image_cleanup=true
+```
+
+The image cleanup defaults to disabled and carries the `never` tag.
+Check mode probes image presence but skips removal; it does not prove
+Podman would accept deletion. It never removes NPM resources.
+
+## Approved legacy data and fallback cleanup
+
+The operator explicitly approved deletion on 2026-10-03. The separate
+`server_legacy_cleanup` tasks removed `/opt/gitea`, `/home/git/.ssh`,
+`/opt/navidrome`, `/opt/postgres`, `/opt/music`, `/opt/containerd`,
+`/opt/docker`, the old Compose unit and the final Gitea export helper.
+The empty `/home/git` parent is removed only with `rmdir`, after confirming
+the Git account is absent. Guards reject symlinked paths, nested mounts,
+unexpected containers, container users of these paths, unexpected content
+in the empty legacy trees, and an active Compose or export service.
+The second cleanup run changed nothing.
+
+Before deletion, Ansible removed obsolete backup input paths and the
+Gitea mount dependency. Normal Compose/template/final-export task checks
+changed nothing and did not recreate the retired files. Deletion is opt-in:
+
+```bash
+ansible-playbook ansible/site.yml --limit prometheus --tags server_legacy_cleanup --check --diff -e server_legacy_cleanup=true
+```
+
+Remove check mode only for approved deletion. No active NPM data, certificate,
+image, network, volume, SSH proxy, WireGuard configuration or backup archive
+is removed. No services were restarted by the cleanup.
+
+After separate approval for the brief managed NPM pause, the new export
+`20261003T112906Z` completed successfully and was pulled to Atlas. SHA-256
+passed on both hosts; an isolated SQLite restore passed `quick_check` and
+contained ten proxy hosts. Both Quadlet definitions were present, and
+retired paths were absent. Temporary restore files were removed.
+NPM was active with zero automatic restarts; primary public Gitea HTTPS
+returned 200 with valid TLS. Backup timer, SSH proxy and WireGuard stayed active.
+The first scheduled post-cleanup cycle remains unverified.
+
+After separate operator approval on 2026-10-03, the unused secondary hostname
+`git.ov-ad3410.infomaniak.ch` was removed from the declared domains and
+the managed NPM runtime override. Its Proxy Host (id 10) was already
+soft-deleted, with no generated config or associated certificate. Historical
+deleted records and backup archives are preserved; no DNS changes were made.
+Only `git.fscotto.duckdns.org` remains declared for the Gitea override.
+Nginx validation and reload passed without restarting NPM; the primary
+public HTTPS endpoint returned 200 with valid TLS.

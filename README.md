@@ -130,13 +130,17 @@ dotfiles and templates. The profile does not transfer application data, update D
 implicit service cutover.
 
 The server profile installs platform-specific packages, Podman and podman-compose, declared systemd
-services, and firewalld. Nginx Proxy Manager now runs as the rootful `prometheus-npm.service` Quadlet;
-the old `podman-compose-server` unit is disabled and retained only for controlled rollback. The
-Compose file no longer includes Gitea, Navidrome, Syncthing, or the obsolete Navidrome PostgreSQL
-database. The temporary Navidrome and Syncthing deployment on Atlas is managed by
-`profile_backend_phase1`. Applying the profile does not delete legacy data or `/opt/postgres/data`.
-The NPM cutover, data checks, backup evidence, and rollback boundaries are documented in
+services, and firewalld. Nginx Proxy Manager runs as the rootful `prometheus-npm.service` Quadlet.
+On 2026-10-03 the operator-approved opt-in cleanup removed old Gitea, Navidrome and PostgreSQL
+data/images, empty legacy directories, the Gitea final-export helper and the Compose rollback files.
+The migrated services stay on Atlas. `server_legacy_stack_retired: true` prevents normal runs from
+recreating retired files. Data deletion requires `--tags server_legacy_cleanup` and
+`-e server_legacy_cleanup=true`; image-only cleanup has its own `server_image_cleanup` tag and flag.
+Active NPM resources and existing backup archives remain preserved.
+The post-cleanup export/pull and isolated SQLite restore passed; the first unattended cycle remains
+pending. Evidence and recovery boundaries:
 [`docs/prometheus-npm-quadlet.md`](docs/prometheus-npm-quadlet.md).
+
 
 Firewalld enables SSH, Cockpit (`9090/tcp`), HTTP and HTTPS. Nginx Proxy Manager publishes only
 `80/tcp` and `443/tcp`; its administration interface is bound to `127.0.0.1:81` and can be reached
@@ -738,7 +742,7 @@ ansible-playbook ansible/site.yml --limit <host> --tags <tag1>,<tag2> --check --
 ansible-playbook ansible/site.yml --limit <host> --start-at-task "<task name>" --check --diff
 ansible-lint ansible/roles/<role>
 yamllint ansible/path/to/file.yml
-podman-compose -f /opt/docker/server/docker-compose.yml config
+ansible-playbook ansible/site.yml --limit prometheus --tags server_legacy_cleanup --check --diff -e server_legacy_cleanup=true
 ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff
 ansible-playbook ansible/site.yml --limit atlas --tags music_sync --check --diff
 ```

@@ -51,6 +51,7 @@
     owner: root
     group: root
     mode: "0750"
+    validate: "bash -n %s"
   when: server_backup_export_enabled | bool
 
 - name: Install Prometheus backup export systemd units

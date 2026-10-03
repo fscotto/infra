@@ -6,6 +6,15 @@ ansible_port: 22
 ansible_ssh_private_key_file: /home/fscotto/.ssh/id_ed25519
 
 server_username: rocky
+server_legacy_stack_retired: true
+# Destructive deletion runs only with an explicit extra-var and cleanup tag.
+server_legacy_cleanup: false
+# Explicit opt-in cleanup; no data, volumes, networks or NPM images are removed.
+server_legacy_image_cleanup: false
+server_legacy_images:
+  - docker.gitea.com/gitea:1.25.2
+  - docker.io/deluan/navidrome:latest
+  - docker.io/library/postgres:13
 server_npm_quadlet_stage: true
 server_npm_quadlet_image: docker.io/jc21/nginx-proxy-manager@sha256:52b2c59994f3d36acfcf70a1626f29734df0ed8c71bacc0269f78b6f939858bb
 # The stopped-source export and live Quadlet cutover passed on 2026-10-03.
@@ -17,7 +26,6 @@ server_gitea_cutover_tools_enabled: true
 server_gitea_on_atlas: true
 server_gitea_npm_domains:
   - git.fscotto.duckdns.org
-  - git.ov-ad3410.infomaniak.ch
 server_duckdns_domain: fscotto
 server_ssh_authorized_keys:
   - name: ikaros

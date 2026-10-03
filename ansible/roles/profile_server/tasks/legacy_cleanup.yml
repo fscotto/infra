@@ -1,0 +1,112 @@
+---
+- name: Require explicit retirement of the migrated Prometheus source
+  ansible.builtin.assert:
+    that:
+      - inventory_hostname == 'prometheus'
+      - server_legacy_stack_retired | bool
+      - server_gitea_on_atlas | bool
+      - server_npm_quadlet_cutover | bool
+      - server_backup_export_enabled | bool
+
+- name: Verify legacy paths have no mounts or container users
+  ansible.builtin.command:
+    argv:
+      - python3
+      - -c
+      - |
+        import json, os, pathlib, subprocess
+        def run(*args):
+            return subprocess.check_output(args, text=True).strip()
+        paths = ['/opt/gitea', '/home/git/.ssh', '/opt/navidrome',
+                 '/opt/postgres', '/opt/music', '/opt/containerd', '/opt/docker']
+        mounts = json.loads(run('findmnt', '--json', '--list', '-o', 'TARGET'))['filesystems']
+        for path in paths:
+            assert os.path.realpath(path) == path, 'Symlink in cleanup path: ' + path
+            for mount in mounts:
+                target = mount['target']
+                assert target != path and not target.startswith(path + '/'), 'Mounted cleanup path: ' + path
+        ids = run('podman', 'ps', '-aq').split()
+        containers = json.loads(run('podman', 'inspect', *ids)) if ids else []
+        for container in containers:
+            assert container['Name'].lstrip('/') == 'nginx-proxy-manager', 'Unexpected container; review before cleanup'
+            for mount in container.get('Mounts', []):
+                source = os.path.realpath(mount['Source'])
+                for path in paths:
+                    assert source != path and not source.startswith(path + '/'), 'Container uses cleanup path: ' + path
+        for path in ['/opt/music', '/opt/containerd']:
+            if os.path.isdir(path):
+                for entry in pathlib.Path(path).rglob('*'):
+                    assert entry.is_dir() and not entry.is_symlink(), 'Unexpected file in empty legacy path: ' + str(entry)
+        if os.path.isdir('/opt/docker'):
+            allowed = {'/opt/docker/server', '/opt/docker/server/docker-compose.yml'}
+            for entry in pathlib.Path('/opt/docker').rglob('*'):
+                assert str(entry) in allowed and not entry.is_symlink(), 'Unexpected legacy Docker content: ' + str(entry)
+        assert run('systemctl', 'is-active', 'prometheus-npm.service') == 'active'
+        assert subprocess.run(['systemctl', 'is-active', '--quiet', 'podman-compose-server.service']).returncode != 0
+        assert subprocess.run(['systemctl', 'is-active', '--quiet', 'prometheus-backup-export.service']).returncode != 0
+        print('Legacy cleanup preflight passed')
+  changed_when: false
+  check_mode: false
+
+- name: Require the updated backup configuration before deleting fallback files
+  ansible.builtin.command:
+    argv:
+      - python3
+      - -c
+      - |
+        import pathlib, subprocess
+        unit = subprocess.check_output(['systemctl', 'show', 'prometheus-backup-export.service',
+                                        '-p', 'RequiresMountsFor', '--value'], text=True)
+        assert '/opt/gitea' not in unit, 'Backup unit still depends on legacy Gitea'
+        helper = pathlib.Path('/usr/local/sbin/prometheus-backup-export').read_text()
+        assert 'podman-compose-server' not in helper and 'opt/docker/server' not in helper
+        subprocess.run(['bash', '-n', '/usr/local/sbin/prometheus-backup-export'], check=True)
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Delete only the explicitly approved legacy data and fallback files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /opt/gitea
+    - /home/git/.ssh
+    - /opt/navidrome
+    - /opt/postgres
+    - /opt/music
+    - /opt/containerd
+    - /opt/docker
+    - /usr/local/sbin/prometheus-gitea-final-export
+    - /etc/systemd/system/podman-compose-server.service
+  register: server_legacy_deleted
+  diff: false
+
+- name: Reload systemd after removing the inactive legacy unit
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when:
+    - server_legacy_deleted is changed
+    - not ansible_check_mode
+
+- name: Inspect the obsolete Git home without following symlinks
+  ansible.builtin.stat:
+    path: /home/git
+    follow: false
+  register: server_legacy_git_home
+
+- name: Require the obsolete Git account to be absent before removing its empty home
+  ansible.builtin.command:
+    argv: [getent, passwd, git]
+  register: server_legacy_git_account
+  changed_when: false
+  failed_when: server_legacy_git_account.rc != 2
+  check_mode: false
+  when: server_legacy_git_home.stat.exists
+
+# rmdir refuses any nonempty directory; never recursively delete this parent.
+- name: Remove only the empty obsolete Git home
+  ansible.builtin.command:
+    argv: [rmdir, /home/git]
+  register: server_legacy_git_home_removed
+  changed_when: server_legacy_git_home_removed.rc == 0
+  when: server_legacy_git_home.stat.exists

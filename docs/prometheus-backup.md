@@ -10,15 +10,15 @@ cutover is still pending. See `docs/prometheus-npm-quadlet.md`.
 ## Declared design
 
 - Prometheus prepares a tar archive of Nginx Proxy Manager data and certificates,
-  its active Quadlet and network definitions, the disabled Compose fallback,
+  its active Quadlet and network definitions,
   and SSH/firewalld/WireGuard configuration. Gitea now runs on Atlas and is no
   longer included in new Prometheus exports. NPM access logs are excluded.
   The archive contains credentials, certificates, and the WireGuard private
   key: protect both copies accordingly.
-- The approved consistency mode stops the one active NPM service (Quadlet now,
-  Compose before cutover) for local tar creation at 02:00 Europe/Rome, then
-  restarts it even if archiving fails. The helper refuses both services active
-  or both inactive. A manual test outside that window requires separate approval.
+- The approved consistency mode stops the NPM Quadlet for local tar creation
+  at 02:00 Europe/Rome, then restarts it even if archiving fails. After the
+  approved legacy cleanup, the helper requires the Quadlet active and has
+  no Compose dependency. A manual test outside that window requires separate approval.
 - Prometheus publishes the archive with its checksum as a versioned, read-only
   source under `/var/lib/prometheus-backup-export`. A locked service account
   has no sudo or supplementary groups. Its only authorized SSH key is forced
@@ -119,3 +119,13 @@ both Quadlet definitions. A manifest of all 70 regular Let's Encrypt files
 and 12 symlinks, including content hashes and link targets, matched the live
 Prometheus tree. No private key or secret content was printed. The next
 scheduled export/pull is still pending observation.
+
+## Post-cleanup validation (2026-10-03)
+
+The operator-approved removal of legacy data and Compose fallback also
+removed those backup input paths and the obsolete Gitea mount dependency.
+A separately approved export and Atlas pull published `20261003T112906Z`.
+Both SHA-256 checks passed; an isolated SQLite restore passed `quick_check`
+and contained ten proxy hosts. Both active Quadlet definitions were present;
+retired paths were absent. Existing backup archives were not deleted by cleanup.
+The first scheduled cycle after these changes remains unverified.

@@ -182,6 +182,10 @@ Le applicazioni Windows sono installate e gestite manualmente; il profilo WSL no
 
 ## Server
 
+La migrazione dei servizi pubblici a `fscotto.co`, la gestione Ansible
+degli URL Gitea e i passaggi ancora aperti per ritirare DuckDNS sono in
+[`docs/domain-fscotto-co.md`](docs/domain-fscotto-co.md).
+
 Sistema operativo:
 
 - Rocky Linux 9
@@ -227,7 +231,11 @@ Mantenere l'autenticazione Syncthing e una policy di accesso NPM adeguata.
 
 ### DuckDNS
 
-`profile_server` genera `~/duckdns/duck.sh` con permessi `0700`, mantenendo il percorso dello
+`server_duckdns_enabled: false` disabilita il provisioning su Prometheus, che usa IP statico
+e `fscotto.co`. Updater, log e cron ogni cinque minuti sono stati rimossi una sola volta;
+non restano task o flag di pulizia. Il nome DuckDNS esterno e il token Vault restano invariati.
+
+Sui server con `server_duckdns_enabled: true`, `profile_server` genera `~/duckdns/duck.sh` con permessi `0700`, mantenendo il percorso dello
 script e `duck.log`. Definire `server_duckdns_domain` negli host vars del server e salvare il
 **nuovo token rigenerato** in `vault_duckdns_token`, nel Vault cifrato `secrets/vault.yml`
 (`ansible-vault edit secrets/vault.yml`) oppure negli override non versionati `secrets/vault.local.yml`.

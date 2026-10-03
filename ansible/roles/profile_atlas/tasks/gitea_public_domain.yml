@@ -1,0 +1,58 @@
+---
+- name: Manage the public domain of the restored production Gitea
+  tags: [atlas, gitea, gitea_public_domain]
+  when:
+    - atlas_manage_gitea | bool
+    - atlas_gitea_production_enabled | bool
+    - atlas_gitea_public_domain | length > 0
+  block:
+    - name: Require an explicit public Gitea hostname
+      ansible.builtin.assert:
+        that:
+          - atlas_gitea_public_domain is match('^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$')
+
+    - name: Inspect the restored private Gitea configuration
+      ansible.builtin.stat:
+        path: "{{ atlas_gitea_mountpoint }}/config/app.ini"
+        follow: false
+      register: atlas_gitea_public_config
+
+    - name: Refuse to create or replace an unprepared Gitea configuration
+      ansible.builtin.assert:
+        that:
+          - atlas_gitea_public_config.stat.isreg | default(false)
+          - atlas_gitea_public_config.stat.uid | int == atlas_gitea_uid | int
+          - atlas_gitea_public_config.stat.mode == '0600'
+
+    # app.ini contains secrets: preserve all unrelated settings and suppress diffs.
+    - name: Set only the declared public Gitea server fields
+      community.general.ini_file:
+        path: "{{ atlas_gitea_mountpoint }}/config/app.ini"
+        section: server
+        option: "{{ item.option }}"
+        value: "{{ item.value }}"
+        create: false
+        backup: true
+        owner: "{{ atlas_gitea_username }}"
+        group: "{{ atlas_gitea_group }}"
+        mode: "0600"
+      loop:
+        - { option: DOMAIN, value: "{{ atlas_gitea_public_domain }}" }
+        - { option: ROOT_URL, value: "https://{{ atlas_gitea_public_domain }}/" }
+        - { option: SSH_DOMAIN, value: "{{ atlas_gitea_public_domain }}" }
+      register: atlas_gitea_public_domain_update
+      no_log: true
+      diff: false
+
+    - name: Restart only Gitea when its public configuration changes
+      become_user: "{{ atlas_gitea_username }}"
+      ansible.builtin.systemd:
+        name: atlas-gitea.service
+        scope: user
+        state: restarted
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ atlas_gitea_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ atlas_gitea_uid }}/bus"
+      when:
+        - atlas_gitea_public_domain_update is changed
+        - not ansible_check_mode

@@ -1,5 +1,10 @@
 # Gitea migration from Prometheus to Atlas
 
+The later 2026-10-03 canonical-domain change to `git.fscotto.co` is recorded
+in `docs/domain-fscotto-co.md`. Public SSH remains on TCP/2222; the old
+DuckDNS Proxy Host was observed disabled. Earlier domain references below
+describe migration evidence, not the current canonical URL.
+
 This records the staged migration and its observed partial cutover. Gitea is
 temporary on Atlas until Uranus; NPM remains on Prometheus. On 2026-10-03
 the operator explicitly approved removal of the old Prometheus Gitea data,

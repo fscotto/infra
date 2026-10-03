@@ -125,6 +125,10 @@ That gives it Fedora packages through DNF, Docker from the official repository, 
 
 ## Server
 
+The public service domain transition to `fscotto.co`, Gitea canonical URL
+management, and remaining DuckDNS retirement steps are documented in
+[`docs/domain-fscotto-co.md`](docs/domain-fscotto-co.md).
+
 `prometheus` is the Rocky Linux 9 server. It has no graphical environment and gets server-specific
 dotfiles and templates. The profile does not transfer application data, update DNS, or perform an
 implicit service cutover.
@@ -167,7 +171,11 @@ Prometheus authorizes its declared SSH public keys through separate files below
 
 ### DuckDNS
 
-`profile_server` renders `~/duckdns/duck.sh` with mode `0700`, keeping the existing updater path
+`server_duckdns_enabled: false` disables provisioning on Prometheus, which uses its static IP
+and `fscotto.co`. The local updater, log and five-minute cron job were removed once;
+no cleanup tasks or flags remain. The external DuckDNS name and Vault token remain untouched.
+
+For servers with `server_duckdns_enabled: true`, `profile_server` renders `~/duckdns/duck.sh` with mode `0700`, keeping the existing updater path
 and `duck.log`. Set `server_duckdns_domain` in the server's host vars and store the **rotated**
 `vault_duckdns_token` in encrypted `secrets/vault.yml` (using `ansible-vault edit secrets/vault.yml`)
 or untracked `secrets/vault.local.yml`. Never commit the rendered script or put the token on a

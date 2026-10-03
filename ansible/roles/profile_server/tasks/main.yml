@@ -11,6 +11,7 @@
 - name: Configure DuckDNS updater
   tags: [dotfiles, dotfiles:server, duckdns]
   ansible.builtin.import_tasks: duckdns.yml
+  when: server_duckdns_enabled | bool
 
 - name: Ensure server directories exist
   tags: [dotfiles, services]

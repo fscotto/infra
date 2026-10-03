@@ -10,6 +10,7 @@ server_npm_quadlet_stage: false
 server_npm_quadlet_cutover: false
 server_legacy_stack_retired: false
 server_legacy_cleanup: false
+server_duckdns_enabled: true
 ai_agents: {}
 vim_plugins_enabled: false
 

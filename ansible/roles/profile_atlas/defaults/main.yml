@@ -184,6 +184,7 @@ atlas_gitea_quadlet_dir: "{{ atlas_gitea_home }}/.config/containers/systemd"
 atlas_gitea_image: localhost/atlas-gitea:1.25.2-user-gitea-v1
 atlas_gitea_image_build_dir: "{{ atlas_gitea_home }}/.local/share/atlas-gitea-image"
 atlas_gitea_production_enabled: false
+atlas_gitea_public_domain: ""
 atlas_gitea_bind_address: "{{ ansible_host }}"
 atlas_gitea_http_port: 3000
 atlas_gitea_ssh_port: 2222

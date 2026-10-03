@@ -25,6 +25,9 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
 - Preserve layering `all -> platform -> role -> desktop -> host`.
 - Keep `ansible/site.yml` small; orchestration belongs there, implementation belongs in roles.
 - Prefer minimal, targeted edits. Preserve idempotency and existing ordering.
+- Keep completed one-time cleanup operations out of the playbook. Execute them directly
+  with explicit authorization; retain only the ongoing desired-state configuration and
+  historical documentation, not permanent cleanup flags or tasks.
 - Use Git Flow branch prefixes: `feature/` for new functionality, `bugfix/` for non-urgent fixes,
   `hotfix/` for urgent production fixes, `release/` for release preparation, and `support/` for
   maintained release lines. Do not use abbreviated prefixes such as `feat/`.
@@ -61,6 +64,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff`
   - Atlas rootless Gitea staging (does not start Gitea):
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea --check --diff`
+  - Atlas canonical Gitea domain (restarts only Gitea on a real configuration change):
+    `ansible-playbook ansible/site.yml --limit atlas --tags gitea_public_domain --check --diff`
   - Atlas iCloudPD storage and boot-started Quadlet:
     `ansible-playbook ansible/site.yml --limit atlas --tags icloudpd --check --diff`
   - Atlas explicit Gitea host-owner migration (live outage; never a normal run):
@@ -94,7 +99,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit prometheus,aegis --tags wireguard --check --diff`
   - Prometheus NPM Quadlet steady state (does not perform a cutover):
     `ansible-playbook ansible/site.yml --limit prometheus --tags npm_quadlet --check --diff`
-  - DuckDNS config only: `ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff`
+  - DuckDNS config only (skipped on Prometheus): `ansible-playbook ansible/site.yml --limit prometheus --tags duckdns --check --diff`
 
 ## Conventions
 - Use FQCN Ansible modules.
@@ -138,7 +143,10 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - Windows applications are installed manually and are not managed from the WSL profile.
 
 ## Rocky Server Notes
-- DuckDNS is rendered by `profile_server` from host-local `server_duckdns_domain` and
+- Prometheus disables DuckDNS provisioning with `server_duckdns_enabled: false`. Its updater,
+  log and five-minute cron entry were explicitly retired; the external DuckDNS name and Vault
+  token remain untouched. The completed one-time cleanup has no remaining playbook tasks.
+- When enabled, DuckDNS is rendered by `profile_server` from host-local `server_duckdns_domain` and
   `vault_duckdns_token`. Keep the rotated token in encrypted Vault or untracked local vars, never in
   dotfiles. The private `~/duckdns/duck.sh` keeps the existing entrypoint; rendering uses `no_log`
   and disables diffs. Provisioning does not execute the updater or change its external schedule.
@@ -368,6 +376,18 @@ successfully. The first monthly scrub remains a runtime check.
   separate persistent application, database, and cache storage; keep credentials in Vault; publish it only
   through NPM over the Prometheus--Aegis gateway; and define backup, upgrade, and eventual Uranus-migration
   procedures before exposing user data. Do not deploy Nextcloud before the data-protection checklist is complete.
+- [x] Move Gitea canonical HTTPS and SSH hostname to `git.fscotto.co` on
+  2026-10-03 through Ansible. Only Gitea restarted; second run changed nothing.
+  HTTPS and authenticated SSH reads returned the same repository HEAD.
+  The new NPM hostnames passed TLS/HTTP checks; old DuckDNS Proxy Hosts were
+  observed disabled. Details are in `docs/domain-fscotto-co.md`.
+- [ ] Confirm login on the new Gitea hostname and update remaining client remotes/integrations.
+  The operator confirmed SSH pull; transport/authentication work, but the agent did not test push.
+- [x] Retire Prometheus' local DuckDNS updater on 2026-10-03 through Ansible:
+  the five-minute cron entry and private updater/log directory were removed.
+  Provisioning is disabled; repeat cleanup changed nothing. HTTPS services, private NPM
+  administration and the export timer stayed healthy. The external name and Vault token
+  remain untouched for possible future use on a local host.
 - [ ] Keep `atlas_manage_media_stack` disabled until the future Immich deployment has validated `/dev/dri`,
   container paths, and the required Vault database secret.
 

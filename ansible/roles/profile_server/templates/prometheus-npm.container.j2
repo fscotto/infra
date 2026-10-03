@@ -1,0 +1,26 @@
+[Unit]
+Description=Nginx Proxy Manager on Prometheus
+RequiresMountsFor=/opt/npm/data /opt/npm/letsencrypt
+
+[Container]
+Image={{ server_npm_quadlet_image }}
+ContainerName=nginx-proxy-manager
+Network=server-web.network
+NetworkAlias=nginx-proxy-manager
+AddHost=host.containers.internal:host-gateway
+PublishPort=80:80
+PublishPort=443:443
+PublishPort=127.0.0.1:81:81
+Volume=/opt/npm/data:/data
+Volume=/opt/npm/letsencrypt:/etc/letsencrypt
+Pull=missing
+
+[Service]
+Restart=always
+TimeoutStartSec=180
+TimeoutStopSec=120
+
+{% if server_npm_quadlet_cutover | bool %}
+[Install]
+WantedBy=multi-user.target
+{% endif %}

@@ -6,6 +6,8 @@ effective_username: "{{ server_username }}"
 effective_user_group: "{{ server_user_group }}"
 effective_user_home: "{{ server_user_home }}"
 server_container_stack_dir: /opt/docker/server
+server_npm_quadlet_stage: false
+server_npm_quadlet_cutover: false
 ai_agents: {}
 vim_plugins_enabled: false
 
@@ -100,8 +102,11 @@ server_backup_export_paths: >-
   {{ ['opt/npm/data', 'opt/npm/letsencrypt']
      + ([] if server_gitea_on_atlas | bool else ['opt/gitea/data', 'home/git/.ssh'])
      + ['opt/docker/server/docker-compose.yml',
-        'etc/systemd/system/podman-compose-server.service',
-        'etc/ssh/sshd_config', 'etc/ssh/sshd_config.d',
+        'etc/systemd/system/podman-compose-server.service']
+     + (['etc/containers/systemd/prometheus-npm.container',
+         'etc/containers/systemd/server-web.network']
+        if server_npm_quadlet_stage | bool else [])
+     + ['etc/ssh/sshd_config', 'etc/ssh/sshd_config.d',
         'etc/firewalld', 'etc/wireguard/wg0.conf'] }}
 server_backup_export_excludes: >-
   {{ ['opt/npm/data/logs']

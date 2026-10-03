@@ -53,6 +53,9 @@
   tags: [services, podman]
   ansible.builtin.include_tasks: podman-compose.yml
 
+- name: Import staged NPM Quadlet tasks
+  ansible.builtin.import_tasks: npm_quadlet.yml
+
 - name: Import Prometheus backup export identity tasks
   ansible.builtin.import_tasks: backup_export_identity.yml
 

@@ -39,10 +39,40 @@
     state: enabled
   when: "'workstation_dev_wsl' in group_names"
 
+- name: Install distribution signing keys for Fedora desktop codecs
+  tags: [packages, heic]
+  ansible.builtin.dnf:
+    name: distribution-gpg-keys
+    state: present
+  when: "'graphical_desktop' in group_names"
+
+- name: Import RPM Fusion Free signing key for Fedora desktop codecs
+  tags: [packages, heic]
+  ansible.builtin.rpm_key:
+    key: /usr/share/distribution-gpg-keys/rpmfusion/RPM-GPG-KEY-rpmfusion-free-fedora-2020
+    fingerprint: E9A491A3DE247814E7E067EAE06F8ECDD651FF2E
+    state: present
+  when: "'graphical_desktop' in group_names"
+
+- name: Enable RPM Fusion Free for Fedora desktop codecs
+  tags: [packages, heic]
+  ansible.builtin.dnf:
+    name: "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_facts['distribution_major_version'] }}.noarch.rpm"
+    state: present
+  when: "'graphical_desktop' in group_names"
+
 - name: Refresh dnf package metadata
   tags: [packages]
   ansible.builtin.dnf:
     update_cache: true
+
+- name: Install HEIC decoder on Fedora desktops
+  tags: [packages, heic]
+  ansible.builtin.dnf:
+    name: libheif-freeworld
+    state: present
+    update_cache: true
+  when: "'graphical_desktop' in group_names"
 
 - name: Install packages on Fedora
   tags: [packages]

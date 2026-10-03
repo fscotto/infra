@@ -55,11 +55,12 @@ path, user/UID, and folder format as the bind mounts. References:
 
 The photo subtree receives a managed marker and the image's `.mounted` file.
 An existing unmarked path is refused rather than taken over. The existing
-Pictures tree is not chowned or emptied. The Quadlet has no `[Install]`
-section, so Ansible does not start or enable it. Ansible renders a mode-0600
+Pictures tree is not chowned or emptied. The Quadlet now has `[Install]` with
+`WantedBy=default.target`, so the lingering admin user manager starts it at boot.
+Ansible keeps the service running. Ansible renders a mode-0600
 `icloudpd.conf` with `no_log` and no diff, but does not pull the image,
-initialize MFA, or run a cutover task. The service was started manually and
-will not start automatically after reboot under this design.
+initialize MFA, or run a cutover task. Boot startup was approved on 2026-10-03
+after a reboot left the previously manual-started service inactive.
 
 The previous gated check-mode tests and isolated Quadlet-generator test proved
 only the proposed layout; they predate the simplified declarative role. They
@@ -110,8 +111,8 @@ completed backup or restore of iCloudPD data**, which did not exist at the time.
   on first start. Ansible replaced that default file with a private template
   using the Apple ID already in Vault. The operator initialized password
   and MFA interactively; never put credentials or codes in the repository,
-  chat, or Ansible extra-vars. The Quadlet has no automatic boot start;
-  enablement requires a separate deliberate design change.
+  chat, or Ansible extra-vars. Automatic boot startup was separately approved
+  on 2026-10-03; this does not change the interactive MFA procedure.
 - Initial ingestion completed on 2026-10-03. Still check folder structure,
   ownership, SELinux and SMB access, no unintended deletions, the next daily
   cycle, completed Borg and USB versions, and isolated restore of photos and
@@ -161,3 +162,12 @@ is a filesystem file count, not a count of distinct iCloud assets. A later
 read-only check found the service still active. This closes initial
 authentication and ingestion only: a subsequent daily cycle and end-to-end
 recovery of the new photos and private state remain untested.
+
+On 2026-10-03 Atlas rebooted at 10:17 CEST; iCloudPD stayed inactive because
+its Quadlet had no install target. A manual start restored the running service
+and the application began listing iCloud files. The operator then approved
+persistent boot startup. The managed Quadlet now declares
+`WantedBy=default.target`; the live generator created
+`default.target.wants/atlas-icloudpd.service`, admin has `Linger=yes`, and the
+service remained active with zero restarts. No NAS reboot was performed to
+test this change; actual post-reboot startup remains untested.

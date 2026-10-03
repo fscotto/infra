@@ -61,7 +61,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags storage,sharing,containers --check --diff`
   - Atlas rootless Gitea staging (does not start Gitea):
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea --check --diff`
-  - Atlas iCloudPD storage and inactive Quadlet (does not start it):
+  - Atlas iCloudPD storage and boot-started Quadlet:
     `ansible-playbook ansible/site.yml --limit atlas --tags icloudpd --check --diff`
   - Atlas explicit Gitea host-owner migration (live outage; never a normal run):
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea_owner_migration -e atlas_gitea_owner_migration=true`
@@ -375,8 +375,10 @@ successfully. The first monthly scrub remains a runtime check.
 - [x] Deploy the declared Atlas iCloudPD state dataset and inactive rootless `admin` Quadlet.
   Photos belong under `/zpool/archive/Pictures/iCloudPD`; private config/MFA state belongs in
   `zpool/services/data/icloudpd`. Photobook remains reserved for Immich. Ansible now renders
-  `icloudpd.conf` with the Apple ID from the existing Vault key, but does not store the password,
-  manage MFA, or enable automatic startup. The isolated no-network layout test is documented in
+  `icloudpd.conf` with the Apple ID from the existing Vault key, but does not store the password
+  or manage MFA. Automatic startup was approved on 2026-10-03; the Quadlet now
+  uses `WantedBy=default.target` and Ansible keeps the service running.
+  The isolated no-network layout test is documented in
   `docs/atlas-icloudpd-migration.md`. On 2026-10-02 Atlas deployment and a second idempotent run
   passed; no app config existed at deployment. A manual first start on 2026-10-02 generated
   `icloudpd.conf`; an Ansible run then replaced it with a private mode-0600 Vault-backed template

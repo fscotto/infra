@@ -1,4 +1,4 @@
-# Managed by Ansible. No install target or automatic start.
+# Managed by Ansible. Start automatically with the lingering admin user manager.
 [Unit]
 Description=Atlas rootless iCloud Photos Downloader
 RequiresMountsFor={{ atlas_icloudpd_state_dir }} {{ atlas_icloudpd_photos_dir }}
@@ -20,3 +20,6 @@ NoNewPrivileges=true
 Restart=on-failure
 RestartSec=300
 TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

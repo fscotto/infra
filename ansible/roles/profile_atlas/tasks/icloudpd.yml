@@ -13,7 +13,7 @@
       - atlas_icloudpd_image is search('@sha256:[0-9a-f]{64}$')
     fail_msg: Verify the fixed, separate Atlas iCloudPD photo and state paths.
 
-- name: Declare inactive rootless Atlas iCloudPD storage and Quadlet
+- name: Declare rootless Atlas iCloudPD storage and boot-started Quadlet
   tags: [atlas, icloudpd]
   block:
     - name: Inspect the existing Archive and application-data datasets
@@ -162,4 +162,27 @@
         owner: "{{ atlas_admin_username }}"
         group: "{{ atlas_admin_group }}"
         mode: "0644"
-      notify: Reload Atlas admin user manager
+      register: atlas_icloudpd_quadlet
+
+    - name: Reload the Atlas admin user manager after iCloudPD Quadlet changes
+      become_user: "{{ atlas_admin_username }}"
+      ansible.builtin.systemd:
+        scope: user
+        daemon_reload: true
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ atlas_admin_uid }}/bus"
+      when:
+        - atlas_icloudpd_quadlet.changed
+        - not ansible_check_mode
+
+    - name: Keep the rootless Atlas iCloudPD service running
+      become_user: "{{ atlas_admin_username }}"
+      ansible.builtin.systemd:
+        name: atlas-icloudpd.service
+        scope: user
+        state: started
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ atlas_admin_uid }}/bus"
+      when: not ansible_check_mode

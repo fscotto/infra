@@ -381,8 +381,12 @@ successfully. The first monthly scrub remains a runtime check.
   HTTPS and authenticated SSH reads returned the same repository HEAD.
   The new NPM hostnames passed TLS/HTTP checks; old DuckDNS Proxy Hosts were
   observed disabled. Details are in `docs/domain-fscotto-co.md`.
-- [ ] Confirm login on the new Gitea hostname and update remaining client remotes/integrations.
-  The operator confirmed SSH pull; transport/authentication work, but the agent did not test push.
+- [x] Confirm login on the new Gitea hostname and update remaining client remotes/integrations.
+  The operator confirmed completion on 2026-10-03; the agent did not perform a test push.
+- [x] Remove obsolete DuckDNS NPM Proxy Hosts, unused certificates and the old upstream override.
+  The operator confirmed completion on 2026-10-03; no new agent runtime check was performed.
+- [x] Review and remove completed one-time procedures from the playbook.
+  The operator confirmed completion on 2026-10-03.
 - [x] Retire Prometheus' local DuckDNS updater on 2026-10-03 through Ansible:
   the five-minute cron entry and private updater/log directory were removed.
   Provisioning is disabled; repeat cleanup changed nothing. HTTPS services, private NPM
@@ -454,7 +458,8 @@ successfully. The first monthly scrub remains a runtime check.
   on 2026-10-03. Its NPM Proxy Host was already soft-deleted and had no
   associated certificate. Its Ansible domain and runtime override were removed;
   nginx -t and reload passed without restarting NPM. Primary HTTPS returned 200
-  with valid TLS; only `git.fscotto.duckdns.org` remains declared for Gitea.
+  with valid TLS. At that step only `git.fscotto.duckdns.org` remained declared;
+  the subsequent domain transition and operator-confirmed cleanup are tracked above.
 - [ ] Observe the first scheduled export and Atlas pull after the cutover; the manual end-to-end
   cycle passed, but the next unattended cycle has not yet occurred.
 

@@ -66,14 +66,17 @@ The repeat cleanup changed nothing; ordinary DuckDNS provisioning was skipped.
 The cron table had no remaining entries, NPM and the export timer were active,
 and NPM administration still listened only on `127.0.0.1:81`.
 
-## Remaining transition work
+## Operator-confirmed transition completion
 
-- Confirm user-authenticated login and push on the new Gitea hostname.
-- Update existing remotes and callback/webhook URLs explicitly.
-- Retire obsolete NPM hosts/certificates and the old upstream override
-  after confirming they are no longer needed.
+On 2026-10-03 the operator confirmed completion of:
 
-At inspection the three old DuckDNS Proxy Hosts were already disabled,
-not deleted. They are not working HTTPS rollback endpoints. Existing backup
+- Web login on the new Gitea hostname.
+- Updates to remaining Git remotes, webhooks and integrations.
+- Removal of obsolete DuckDNS NPM Proxy Hosts, unused certificates and the old upstream override.
+- Review and removal of completed one-time procedures from the playbook.
+
+These are operator confirmations, not new agent runtime checks or a test push.
+At the earlier inspection the three old DuckDNS Proxy Hosts were disabled,
+not deleted; that observation predates the confirmed cleanup. Existing backup
 archives remain preserved. DNS/Pages/NPM changes were operator actions;
 the Gitea application configuration change was deployed through Ansible.

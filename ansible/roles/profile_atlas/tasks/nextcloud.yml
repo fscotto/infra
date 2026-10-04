@@ -150,6 +150,15 @@
       diff: false
       register: atlas_nextcloud_private_configuration
 
+    - name: Hide ONLYOFFICE welcome and example endpoints without changing editor routes
+      ansible.builtin.template:
+        src: atlas-onlyoffice-access.conf.j2
+        dest: "{{ atlas_nextcloud_private_dir }}/onlyoffice-access.conf"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0644"
+      register: atlas_onlyoffice_access_configuration
+
     - name: Download checksum-pinned compatible application releases
       ansible.builtin.get_url:
         url: "{{ item.url }}"
@@ -239,6 +248,7 @@
                  atlas_nextcloud_quadlets.results |
                  selectattr('item', 'equalto', 'atlas-nextcloud.network') |
                  selectattr('changed') | list | length > 0 or
+                 (item == 'atlas-onlyoffice.service' and atlas_onlyoffice_access_configuration is changed) or
                  atlas_nextcloud_private_configuration is changed or
                  atlas_nextcloud_secret_files is changed) else 'started' }}
           loop: "{{ atlas_nextcloud_services }}"

@@ -227,3 +227,17 @@ bind is read-only. Public Nextcloud HTTPS returned 200 and the pool was healthy.
 The targeted second Ansible run for mount applicability, options and discovery
 unit returned `changed=0`, with no failures. This is focused idempotency evidence,
 not a claim about a full Atlas playbook run.
+
+
+### ONLYOFFICE landing-page restriction
+
+An Ansible-managed, read-only Nginx include inside the ONLYOFFICE container returns
+404 for `/`, `/welcome` and `/example` (including their descendants and
+version-prefixed variants). The vendor editor, API, conversion, callbacks and
+WebSocket routes remain unchanged. `EXAMPLE_ENABLED=false` keeps the demo service
+inactive. No NPM Proxy Host edits or global CSP changes are required.
+
+On 2026-10-04 the targeted deployment restarted only ONLYOFFICE. Nginx syntax and
+Nextcloud's document-server check passed. Public root, welcome and example
+requests returned 404; `/healthcheck` remained 200. This check does not replace
+an authenticated browser edit/save test.

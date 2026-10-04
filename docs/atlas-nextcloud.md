@@ -17,7 +17,8 @@ were added. An actual repeat run returned `changed=0`, with no failures.
   10.2.1 and Team Folders 21.0.9 archives are pinned by version and SHA-256.
 - Dedicated ZFS namespace: `zpool/services/data/nextcloud`, with separate `app`,
   `files`, `database`, `cache` and `office` datasets. No writable SMB/Syncthing
-  access to the Nextcloud-managed file namespace is provided.
+  access to the Nextcloud-managed file namespace is provided. Existing Archive
+  directories are exposed separately through local external storage (see below).
 - The `admin` Nextcloud account is an application administrator, distinct from
   the host account. `fabio` and `chiara` are standard users in `famiglia`, each
   with no initial quota. Team folder `Famiglia` has unlimited quota and group
@@ -101,20 +102,32 @@ Dry-run skips initial downloads, image pulls and runtime account/app commands;
 it is not proof of an installed or healthy stack. The deployed repeat run is
 the current idempotence evidence.
 
+## Manual recovery evidence, 2026-10-04
+
+The first monthly scrub completed successfully and was verified from both the
+service result and pool scan (zero errors, 0 B repaired). A manual consistent
+application/files copy and PostgreSQL dump were restored into a network-isolated
+Nextcloud/PostgreSQL/Redis test pod. Account recovery, Famiglia permissions and
+authenticated DAV retrieval of a checksum-matched canary passed. Live services
+resumed normally; the test pod and restore workspace were removed.
+See `atlas-nextcloud-recovery-test.md` for scope, retained artifact and limitations.
+
 ## Gates before family data and full client acceptance
 
-- Verify the first actual scrub and the outstanding protection checks.
+- The first actual scrub passed on 2026-10-04; preserve the existing protection checks.
 - Public TLS, redirects, web login and WebDAV passed. Complete calendar/contact
   synchronization and Office editing/saving from a desktop.
 - Test opening, editing and saving from the iPhone/iPad ONLYOFFICE app; mobile
   browser editing is not a requirement. No such client test is claimed yet.
 - Private-space isolation and cross-user shared writes/deletes passed the public
   smoke test above; complete normal client acceptance as well.
-- Integrate and test application-consistent database/files backups before import.
+- The manual rehearsal and recurring integration passed, including recovery from
+  a new encrypted Borg archive. Complete recovery from a new USB version before import.
   The new datasets fall beneath existing recursive snapshot/backup scope, but
-  that alone does not verify a new Borg/USB version or a consistent Nextcloud restore.
+  that alone does not verify a new Borg/USB version or recovery through those versions.
 - For a consistent backup, coordinate pending Office saves, pause cron and writes,
-  take a verified PostgreSQL dump and matching application/files snapshot, and
+  take verified PostgreSQL database and role dumps plus a matching application/files
+  snapshot or quiesced copy, and
   resume services promptly even on failure. Extend recurring backup procedures,
   not the steady-state playbook with one-time migration tasks. Restore into an
   isolated environment using matching image/app versions, config, files and DB.
@@ -125,3 +138,92 @@ the current idempotence evidence.
   against an upgraded database; use matching tested backups for recovery.
 - Future Uranus migration and iCloud import are separate, explicitly authorized
   operations. No source data deletion or automatic cross-system cutover is provided.
+
+## Recurring consistent bundles
+
+`atlas-nextcloud-backup.service` is now an ordered requirement of both
+`atlas-borg-backup.service` and the operator-started `atlas-usb-backup.service`.
+No additional backup timer is needed: the existing Borg schedule prepares a fresh
+bundle before its pool snapshot, and a manual USB run does the same. Preparation
+failure blocks the dependent job rather than silently using an old dump.
+
+The helper checks the mounted datasets and healthy active application state,
+serializes preparations and briefly pauses cron, Nextcloud and ONLYOFFICE. It
+captures database plus global roles and a recursive Nextcloud-only ZFS snapshot.
+Services resume before the longer immutable-file copy and checksum verification.
+Active editing sessions are interrupted; only committed Nextcloud state is covered.
+This does not claim preservation of unsaved ONLYOFFICE editing sessions.
+
+Private bundles are published atomically under `/zpool/backup/nextcloud/versions`,
+with a relative `latest` link. `atlas_nextcloud_backup_keep: 2` retains two local
+verified versions, with hard links for unchanged files. Long-term Borg, USB and
+ZFS policies are unchanged. A trap and `ExecStopPost` restore availability and
+clean only this helper's named source snapshot/partial directory; root-private
+persistent state permits boot recovery through the enabled recovery unit. Both
+units have failure alerts and are included in the Atlas monitored failure units.
+No automatic rollback, import, or repair of user application data is performed.
+
+Validation:
+
+```bash
+ansible-playbook ansible/site.yml --limit atlas --tags nextcloud_backup,monitoring --check --diff
+sudo systemctl start atlas-nextcloud-backup.service
+sudo systemctl show atlas-nextcloud-backup.service -p Result -p ExecMainExitTimestamp
+```
+
+The second command briefly interrupts the applications and is an explicit manual
+run of the recurring job, not a normal deployment side effect. The preparation
+unit is not enabled as a boot backup; only interrupted-job recovery is enabled.
+Do not stop a Borg/USB job, break its lock or unmount its source snapshot to run a test.
+
+
+## Existing Archive storage (no import or duplicate originals)
+
+The Atlas declaration exposes only these existing directories to the rootless
+Nextcloud container, using shared SELinux `:z` labels:
+
+| Nextcloud folder | Host directory | Access |
+| --- | --- | --- |
+| `Documenti` | `/zpool/archive/Documents` | Read/write |
+| `Foto iCloud` | `/zpool/archive/Pictures/iCloudPD` | Read-only |
+
+Both system mounts are restricted to the Nextcloud user `fabio` only; `chiara`
+and the `famiglia` group have no access through these mounts.
+External re-sharing is disabled. The photos bind is also read-only at container
+level, independently of Nextcloud's mount option. iCloudPD remains the photo
+writer. Neither directory is copied into the internal data dataset, and the
+existing `Famiglia` team folder remains separate and untouched.
+
+The Archive dataset enables persistent `acltype=posix` support; this does not
+change pool features or vdev layout. Scoped ACLs grant the actual rootless-mapped web UID access to existing files and
+inheritance on new directories/files. Document defaults retain host administrator
+access to files created through Nextcloud; ownership is not changed recursively.
+Symlinks are not followed when applying ACLs. Do not change Archive ownership or
+apply private `:Z` relabeling to these shared paths.
+
+The user `atlas-nextcloud-external-scan.timer` discovers external changes for only
+these mounts and their explicitly allowed user: first after boot at 15 minutes, then one hour
+after the previous scan finishes. Nextcloud also checks for external changes on
+access. Indexing and previews are not duplicate originals; document versions,
+trash, ZFS snapshots and backups may retain additional data intentionally.
+Avoid simultaneously editing the same document through SMB and Nextcloud.
+
+Archive originals retain their existing recursive ZFS/Borg/offline USB coverage.
+The Nextcloud-only recovery bundle does **not** include these external originals:
+a recovery must restore the corresponding Archive data as well as the application
+and database. This change does not migrate iCloud Drive or remove anything there.
+
+
+### Runtime validation, 2026-10-04
+
+The mounts were applied on Atlas without importing originals. A disposable
+application-level document create/read test reached the original bind directory;
+the probe was deleted, including its trash entry. After the operator narrowed
+access to Fabio only, fresh Nextcloud application checks confirmed Fabio can read
+both mounts and create documents, while photo create/update/delete are denied.
+Chiara cannot access either mount; the separate `Famiglia` team folder remains
+available to both users. Container inspection independently confirmed the photo
+bind is read-only. Public Nextcloud HTTPS returned 200 and the pool was healthy.
+The targeted second Ansible run for mount applicability, options and discovery
+unit returned `changed=0`, with no failures. This is focused idempotency evidence,
+not a claim about a full Atlas playbook run.

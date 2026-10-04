@@ -1,0 +1,12 @@
+[Unit]
+Description=Discover existing Archive documents and iCloud photos in Nextcloud
+Requires=atlas-nextcloud.service
+After=atlas-nextcloud.service
+
+[Service]
+Type=oneshot
+{% for mount in atlas_nextcloud_external_mounts %}
+ExecStart=/usr/bin/podman exec --user 33 atlas-nextcloud php occ files:scan "--path={{ mount.user }}/files/{{ mount.name }}" --quiet
+{% endfor %}
+TimeoutStartSec=90min
+NoNewPrivileges=true

@@ -1,0 +1,55 @@
+---
+- name: Manage recurring consistent Nextcloud backup preparation
+  tags: [atlas, nextcloud_backup]
+  when: atlas_manage_nextcloud | bool
+  block:
+    - name: Validate private backup scope and local bundle retention
+      ansible.builtin.assert:
+        that:
+          - atlas_nextcloud_backup_root == atlas_mount_root ~ '/backup/nextcloud'
+          - atlas_nextcloud_backup_keep | int >= 2
+          - atlas_manage_borg_backup | bool
+          - atlas_manage_usb_backup | bool
+
+    - name: Install recurring backup helper with shell syntax validation
+      ansible.builtin.template:
+        src: atlas-nextcloud-backup.sh.j2
+        dest: /usr/local/sbin/atlas-nextcloud-backup
+        owner: root
+        group: root
+        mode: "0750"
+        validate: /bin/bash -n %s
+
+    - name: Install Nextcloud backup preparation and boot recovery units
+      ansible.builtin.template:
+        src: "{{ item }}.j2"
+        dest: "/etc/systemd/system/{{ item }}"
+        owner: root
+        group: root
+        mode: "0644"
+      loop: [atlas-nextcloud-backup.service, atlas-nextcloud-backup-recovery.service]
+
+    - name: Create backup dependency drop-in directories
+      ansible.builtin.file:
+        path: "/etc/systemd/system/{{ item }}.d"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop: [atlas-borg-backup.service, atlas-usb-backup.service]
+
+    - name: Require a fresh consistent bundle before offsite and manual USB backups
+      ansible.builtin.template:
+        src: atlas-nextcloud-backup-dependency.conf.j2
+        dest: "/etc/systemd/system/{{ item }}.d/nextcloud.conf"
+        owner: root
+        group: root
+        mode: "0644"
+      loop: [atlas-borg-backup.service, atlas-usb-backup.service]
+
+    - name: Reload systemd and enable interruption recovery without running a backup
+      ansible.builtin.systemd:
+        daemon_reload: true
+        name: atlas-nextcloud-backup-recovery.service
+        enabled: true
+      when: not ansible_check_mode

@@ -16,9 +16,13 @@ atlas_nextcloud_image: ""
 atlas_nextcloud_postgres_image: ""
 atlas_nextcloud_redis_image: ""
 atlas_onlyoffice_image: ""
+atlas_nextcloud_backup_root: "{{ atlas_mount_root }}/backup/nextcloud"
+atlas_nextcloud_backup_keep: 2
 atlas_nextcloud_admin: admin
 atlas_nextcloud_users: []
 atlas_nextcloud_apps: []
+# Existing Archive directories; never import into the internal data namespace.
+atlas_nextcloud_external_mounts: []
 atlas_nextcloud_services:
   - atlas-nextcloud-db.service
   - atlas-nextcloud-redis.service
@@ -147,7 +151,9 @@ atlas_monitor_effective_timers: >-
 atlas_monitor_effective_failure_units: >-
   {{ atlas_monitor_failure_units
      + (['atlas-prometheus-pull.service']
-        if atlas_manage_prometheus_backup_pull | bool else []) }}
+        if atlas_manage_prometheus_backup_pull | bool else [])
+     + (['atlas-nextcloud-backup.service', 'atlas-nextcloud-backup-recovery.service']
+        if atlas_manage_nextcloud | bool else []) }}
 atlas_monitor_remote_capacity: {}
 atlas_monitor_pool_warning_percent: 80
 atlas_monitor_pool_critical_percent: 90

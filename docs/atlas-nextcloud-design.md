@@ -2,8 +2,10 @@
 
 Status: the empty stack was deployed on 2026-10-03, explicitly before the first
 scrub. The operator configured DNS/NPM and authorized public cutover; public TLS,
-DAV and cross-user file checks passed. Client editing/sync acceptance and consistent
-backup/restore validation remain open before family data. iCloud import remains a
+DAV and cross-user file checks passed. The first scrub and a manual consistent
+backup/isolated restore passed on 2026-10-04. Client editing/sync acceptance and
+USB recovery validation remain open before family data. Recurring backup integration
+and recovery from a new Borg archive passed. iCloud import remains a
 separate operation. See `docs/atlas-nextcloud.md` for observed runtime state.
 
 ## Confirmed requirements
@@ -95,7 +97,8 @@ acceptance tests; the app is not treated as proof of server-side compatibility.
 
 1. Validate desktop Office editing/saving, calendar/contact synchronization and
    mobile ONLYOFFICE app integration; public empty-stack cutover is verified.
-2. Complete protection gates and application-consistent backup/recovery tests.
+2. Complete recovery from a new offline USB version; recurring preparation and
+   encrypted Borg recovery have passed.
 3. Plan the deferred iCloud migration when explicitly requested.
 
 ## Primary references

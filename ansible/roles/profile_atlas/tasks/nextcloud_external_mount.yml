@@ -1,0 +1,94 @@
+---
+- name: Inspect current system mounts without exposing credentials
+  ansible.builtin.command:
+    argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, files_external:list, --output=json]
+  register: atlas_nextcloud_mount_list
+  changed_when: false
+  no_log: true
+
+- name: Select only the matching mount name
+  ansible.builtin.set_fact:
+    atlas_nextcloud_matching_mounts: >-
+      {{ atlas_nextcloud_mount_list.stdout | from_json |
+         selectattr('mount_point', 'equalto', '/' ~ atlas_nextcloud_mount.name) | list }}
+  no_log: true
+
+- name: Refuse duplicates or repurposing of existing unrelated storage
+  ansible.builtin.assert:
+    that:
+      - atlas_nextcloud_matching_mounts | length <= 1
+      - >-
+        atlas_nextcloud_matching_mounts | length == 0 or
+        (atlas_nextcloud_matching_mounts[0].configuration.datadir | default('') == atlas_nextcloud_mount.target
+        and atlas_nextcloud_matching_mounts[0].storage == '\\OC\\Files\\Storage\\Local')
+    fail_msg: Existing storage conflicts with the declared Archive mount; refusing an implicit replacement.
+
+- name: Create an absent local mount restricted to its declared user
+  ansible.builtin.command:
+    argv:
+      - podman
+      - exec
+      - --user
+      - '33'
+      - atlas-nextcloud
+      - php
+      - occ
+      - files_external:create
+      - "{{ atlas_nextcloud_mount.name }}"
+      - local
+      - null::null
+      - --config
+      - "datadir={{ atlas_nextcloud_mount.target }}"
+      - --applicable-user
+      - "{{ atlas_nextcloud_mount.user }}"
+      - --output=json
+  when: atlas_nextcloud_matching_mounts | length == 0
+  register: atlas_nextcloud_mount_created
+  changed_when: true
+
+- name: Record the managed mount ID and options
+  ansible.builtin.set_fact:
+    atlas_nextcloud_mount_id: >-
+      {{ atlas_nextcloud_mount_created.stdout | trim if atlas_nextcloud_matching_mounts | length == 0
+         else atlas_nextcloud_matching_mounts[0].mount_id }}
+    atlas_nextcloud_mount_options: >-
+      {{ {} if atlas_nextcloud_matching_mounts | length == 0 else atlas_nextcloud_matching_mounts[0].options }}
+
+- name: Restrict the managed mount to exactly its declared user
+  ansible.builtin.command:
+    argv: >-
+      {{ ['podman', 'exec', '--user', '33', 'atlas-nextcloud', 'php', 'occ',
+          'files_external:applicable', atlas_nextcloud_mount_id | string,
+          '--add-user=' ~ atlas_nextcloud_mount.user] +
+         (atlas_nextcloud_matching_mounts[0].applicable_groups |
+          map('regex_replace', '^', '--remove-group=') | list) +
+         (atlas_nextcloud_matching_mounts[0].applicable_users |
+          reject('equalto', atlas_nextcloud_mount.user) |
+          map('regex_replace', '^', '--remove-user=') | list) }}
+  when:
+    - atlas_nextcloud_matching_mounts | length > 0
+    - >-
+      atlas_nextcloud_matching_mounts[0].applicable_groups | length > 0 or
+      atlas_nextcloud_matching_mounts[0].applicable_users != [atlas_nextcloud_mount.user]
+  changed_when: true
+
+- name: Maintain read-only photos and external change detection
+  ansible.builtin.command:
+    argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, files_external:option,
+           "{{ atlas_nextcloud_mount_id }}", "{{ item.key }}", "{{ item.value | to_json }}"]
+  loop:
+    - {key: readonly, value: "{{ atlas_nextcloud_mount.readonly }}"}
+    - {key: filesystem_check_changes, value: 1}
+    - {key: enable_sharing, value: false}
+  # Nextcloud persists option values as strings ("1" / "" for booleans).
+  when: >-
+    item.key not in atlas_nextcloud_mount_options or
+    atlas_nextcloud_mount_options[item.key] | string !=
+    (('1' if item.value else '') if item.value is boolean else item.value | string)
+  changed_when: true
+
+- name: Verify the managed local storage is accessible
+  ansible.builtin.command:
+    argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, files_external:verify,
+           "{{ atlas_nextcloud_mount_id }}"]
+  changed_when: false

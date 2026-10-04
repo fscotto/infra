@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+umask 077
+readonly dataset={{ atlas_nextcloud_dataset | quote }}
+readonly source_root={{ atlas_nextcloud_root | quote }}
+readonly backup_root={{ atlas_nextcloud_backup_root | quote }}
+readonly state=/var/lib/atlas-nextcloud-backup
+readonly keep={{ atlas_nextcloud_backup_keep | int }}
+readonly owner={{ atlas_admin_username | quote }}
+readonly uid={{ atlas_admin_uid | int }}
+
+user_run() {
+  runuser -u "$owner" -- env XDG_RUNTIME_DIR="/run/user/$uid" \
+    DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" "$@"
+}
+occ() { user_run podman exec --user 33 atlas-nextcloud php occ "$@"; }
+exec 8>/run/lock/atlas-nextcloud-backup.lock
+flock 8
+exec 9>/run/lock/atlas-zfs-snapshot.lock
+mkdir -p "$state"
+chmod 0700 "$state"
+
+resume() {
+  [[ -e "$state/paused" ]] || return 0
+  user_run systemctl --user start atlas-nextcloud.service atlas-onlyoffice.service
+  local ready=false
+  for _ in {1..60}; do
+    if occ maintenance:mode --off >/dev/null 2>&1; then ready=true; break; fi
+    sleep 2
+  done
+  [[ "$ready" == true ]] || { echo 'Nextcloud resume failed; recovery marker retained' >&2; return 1; }
+  user_run systemctl --user start atlas-nextcloud-cron.timer
+  # Persist maintenance-off before clearing durable interruption ownership.
+  sync -f "$source_root/app"
+  rm "$state/paused"
+  sync -f "$state"
+  echo 'Nextcloud/Office resumed and cron timer restored'
+}
+
+recover() {
+  resume || return 1
+  [[ -e "$state/stamp" ]] || return 0
+  local stamp snapshot mount source
+  stamp=$(cat "$state/stamp")
+  [[ "$stamp" =~ ^[0-9]{8}T[0-9]{6}Z-[0-9]+$ ]] || return 65
+  snapshot="nc-backup-$stamp"
+  flock 9
+  for component in files app; do
+    mount="$source_root/$component/.zfs/snapshot/$snapshot"
+    source=$(findmnt -rn -M "$mount" -o SOURCE || true)
+    if [[ -n "$source" ]]; then
+      [[ "$source" == "$dataset/$component@$snapshot" ]] || return 65
+      umount "$mount" || return 1
+    fi
+  done
+  if zfs list -H -t snapshot "$dataset@$snapshot" >/dev/null 2>&1; then
+    zfs destroy -r "$dataset@$snapshot" || return 1
+  fi
+  flock -u 9
+  # Only this job's private, unpublished staging directory can be removed.
+  rm -rf -- "$backup_root/.partial-$stamp"
+  rm "$state/stamp"
+}
+if [[ "${1:-}" == --recover ]]; then recover; exit; fi
+recover
+[[ "$(zfs get -H -o value mounted "$dataset")" == yes ]]
+[[ "$(zfs get -H -o value mountpoint "$dataset")" == "$source_root" ]]
+[[ "$(zfs get -H -o value mounted {{ (atlas_zfs_pool ~ '/backup') | quote }})" == yes ]]
+[[ "$(zfs get -H -o value mountpoint {{ (atlas_zfs_pool ~ '/backup') | quote }})" == {{ (atlas_mount_root ~ '/backup') | quote }} ]]
+for component in app files; do
+  [[ "$(zfs get -H -o value mounted "$dataset/$component")" == yes ]]
+  [[ "$(zfs get -H -o value mountpoint "$dataset/$component")" == "$source_root/$component" ]]
+done
+for unit in atlas-nextcloud.service atlas-onlyoffice.service atlas-nextcloud-cron.timer; do
+  user_run systemctl --user is-active --quiet "$unit"
+done
+occ status --output=json | python3 -c 'import json,sys; s=json.load(sys.stdin); assert s["installed"] and not s["maintenance"] and not s["needsDbUpgrade"]'
+mkdir -p "$backup_root/versions"
+chmod 0700 "$backup_root" "$backup_root/versions"
+stamp="$(date -u +%Y%m%dT%H%M%SZ)-$$"
+snapshot="nc-backup-$stamp"
+stage="$backup_root/.partial-$stamp"
+mkdir "$stage"
+printf '%s\n' "$stamp" > "$state/stamp"
+sync -f "$state"
+cleanup() {
+  local rc=$?
+  trap - EXIT
+  if ! recover; then rc=1; fi
+  exit "$rc"
+}
+trap cleanup EXIT
+trap 'exit 143' HUP INT TERM
+# Wait for snapshot serialization before interrupting application availability.
+flock 9
+touch "$state/paused"
+sync -f "$state"
+user_run systemctl --user stop atlas-nextcloud-cron.timer atlas-nextcloud-cron.service
+occ maintenance:mode --on
+user_run systemctl --user stop atlas-onlyoffice.service atlas-nextcloud.service
+user_run podman exec atlas-nextcloud-db pg_dumpall -U nextcloud --globals-only > "$stage/postgres-globals.sql"
+user_run podman exec atlas-nextcloud-db pg_dump -U nextcloud -d nextcloud --format=custom > "$stage/database.dump"
+zfs snapshot -r "$dataset@$snapshot"
+flock -u 9
+resume
+# Copy immutable snapshot views; hashing and transfer never extend the outage.
+previous=$(readlink -f "$backup_root/latest" 2>/dev/null || true)
+for component in app files; do
+  args=(-aHAX)
+  if [[ "$previous" == "$backup_root/versions/"* && -d "$previous/$component" ]]; then
+    args+=("--link-dest=$previous/$component")
+  fi
+  if [[ "$component" == app ]]; then args+=(--exclude=/data); fi
+  rsync "${args[@]}" "$source_root/$component/.zfs/snapshot/$snapshot/" "$stage/$component/"
+done
+user_run podman exec -i atlas-nextcloud-db pg_restore --list < "$stage/database.dump" > "$stage/database-toc.txt"
+user_run podman inspect --format '{% raw %}{{.ImageName}}{% endraw %}' atlas-nextcloud atlas-nextcloud-db atlas-nextcloud-redis atlas-onlyoffice > "$stage/images.txt"
+(cd "$stage"; find app files -type f -exec sha256sum '{}' +; sha256sum database.dump postgres-globals.sql images.txt) > "$stage/SHA256SUMS"
+(cd "$stage"; sha256sum --quiet --check SHA256SUMS)
+printf 'snapshot=%s@%s\ncreated_utc=%s\n' "$dataset" "$snapshot" "$stamp" > "$stage/manifest.txt"
+mv "$stage" "$backup_root/versions/$stamp"
+ln -s "versions/$stamp" "$backup_root/.latest-$stamp"
+mv -Tf "$backup_root/.latest-$stamp" "$backup_root/latest"
+sync -f "$backup_root"
+# Prune only timestamped job-owned versions after verified atomic publication.
+mapfile -t versions < <(find "$backup_root/versions" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | grep -E '^[0-9]{8}T[0-9]{6}Z-[0-9]+$' | sort -r)
+{% raw %}
+for ((index=keep; index<${#versions[@]}; index++)); do
+{% endraw %}
+  rm -rf -- "$backup_root/versions/${versions[$index]}"
+done
+echo "Published verified consistent Nextcloud bundle $stamp; local retention=$keep"

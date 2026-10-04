@@ -35,6 +35,9 @@
 - name: Import Atlas offline USB backup tasks
   ansible.builtin.import_tasks: usb_backup.yml
 
+- name: Import recurring Nextcloud backup preparation
+  ansible.builtin.import_tasks: nextcloud_backup.yml
+
 - name: Import Atlas Prometheus backup pull identity tasks
   ansible.builtin.import_tasks: prometheus_pull_identity.yml
 

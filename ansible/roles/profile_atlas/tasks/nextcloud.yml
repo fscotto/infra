@@ -39,6 +39,10 @@
            (atlas_nextcloud_users | map(attribute='password') | list) }}
       no_log: true
 
+    - name: Prepare access to declared existing Archive directories
+      ansible.builtin.include_tasks: nextcloud_external_access.yml
+      when: atlas_nextcloud_external_mounts | length > 0
+
     - name: Verify the existing application-data parent is mounted
       community.general.zfs_facts:
         name: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_app_data }}"
@@ -197,7 +201,8 @@
         owner: "{{ atlas_admin_username }}"
         group: "{{ atlas_admin_group }}"
         mode: "0644"
-      loop: [atlas-nextcloud-cron.service, atlas-nextcloud-cron.timer]
+      loop: [atlas-nextcloud-cron.service, atlas-nextcloud-cron.timer,
+             atlas-nextcloud-external-scan.service, atlas-nextcloud-external-scan.timer]
       register: atlas_nextcloud_cron_units
 
     - name: Manage and verify rootless Nextcloud services
@@ -227,7 +232,13 @@
             scope: user
             name: "{{ item }}"
             state: >-
-              {{ 'restarted' if (atlas_nextcloud_quadlets is changed or
+              {{ 'restarted' if (
+                 atlas_nextcloud_quadlets.results |
+                 selectattr('item', 'equalto', item | replace('.service', '.container')) |
+                 selectattr('changed') | list | length > 0 or
+                 atlas_nextcloud_quadlets.results |
+                 selectattr('item', 'equalto', 'atlas-nextcloud.network') |
+                 selectattr('changed') | list | length > 0 or
                  atlas_nextcloud_private_configuration is changed or
                  atlas_nextcloud_secret_files is changed) else 'started' }}
           loop: "{{ atlas_nextcloud_services }}"
@@ -298,6 +309,14 @@
             name: atlas-nextcloud-cron.timer
             state: "{{ 'restarted' if atlas_nextcloud_cron_units is changed else 'started' }}"
             enabled: true
+
+        - name: Enable periodic targeted Archive discovery
+          ansible.builtin.systemd:
+            scope: user
+            name: atlas-nextcloud-external-scan.timer
+            state: "{{ 'restarted' if atlas_nextcloud_cron_units is changed else 'started' }}"
+            enabled: true
+          when: atlas_nextcloud_external_mounts | length > 0
 
         - name: Verify ONLYOFFICE local health without publishing the domain
           ansible.builtin.uri:

@@ -2,7 +2,7 @@
 Description=Atlas Nextcloud
 Requires=atlas-nextcloud-db.service atlas-nextcloud-redis.service
 After=atlas-nextcloud-db.service atlas-nextcloud-redis.service
-RequiresMountsFor={{ atlas_nextcloud_root }}/app {{ atlas_nextcloud_root }}/files
+RequiresMountsFor={{ atlas_nextcloud_root }}/app {{ atlas_nextcloud_root }}/files{% for mount in atlas_nextcloud_external_mounts %} {{ mount.source }}{% endfor %}
 
 [Container]
 ContainerName=atlas-nextcloud
@@ -26,6 +26,10 @@ Environment=PHP_UPLOAD_LIMIT=2G
 Volume={{ atlas_nextcloud_root }}/app:/var/www/html:Z
 Volume={{ atlas_nextcloud_root }}/files:/var/www/html/data:Z
 Volume={{ atlas_nextcloud_app_cache }}:/mnt/atlas-apps:ro,z
+{% for mount in atlas_nextcloud_external_mounts %}
+# Shared Archive label, not the private :Z label used for internal state.
+Volume={{ mount.source }}:{{ mount.target }}:{{ 'ro' if mount.readonly else 'rw' }},z
+{% endfor %}
 Volume={{ atlas_nextcloud_private_dir }}/postgres-password:/run/secrets/postgres-password:ro,z
 Volume={{ atlas_nextcloud_private_dir }}/admin-password:/run/secrets/admin-password:ro,z
 Volume={{ atlas_nextcloud_private_dir }}/redis-password:/run/secrets/redis-password:ro,z

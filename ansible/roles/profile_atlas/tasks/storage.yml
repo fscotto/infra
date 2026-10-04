@@ -10,6 +10,7 @@
         properties:
           compression: zstd
           mountpoint: "{{ atlas_archive_mountpoint }}"
+          acltype: posix
       - name: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_services }}"
         mountpoint: "{{ atlas_services_mountpoint }}"
         owner: "{{ atlas_admin_username }}"

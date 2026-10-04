@@ -169,3 +169,18 @@
     argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, background:cron]
   when: atlas_nextcloud_background_mode.stdout | trim != 'cron'
   changed_when: true
+
+- name: Enable shipped external storage support when required
+  ansible.builtin.command:
+    argv: [podman, exec, --user, '33', atlas-nextcloud, php, occ, app:enable, files_external]
+  when:
+    - atlas_nextcloud_external_mounts | length > 0
+    - "'files_external' not in (atlas_nextcloud_current_apps.stdout | from_json).enabled"
+  changed_when: true
+
+- name: Maintain only the declared Archive mounts
+  ansible.builtin.include_tasks: nextcloud_external_mount.yml
+  loop: "{{ atlas_nextcloud_external_mounts }}"
+  loop_control:
+    loop_var: atlas_nextcloud_mount
+    label: "{{ atlas_nextcloud_mount.name }}"

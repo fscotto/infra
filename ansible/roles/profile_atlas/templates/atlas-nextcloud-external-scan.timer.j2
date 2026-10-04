@@ -1,0 +1,10 @@
+[Unit]
+Description=Periodic discovery of Archive changes made outside Nextcloud
+
+[Timer]
+OnBootSec=15min
+OnUnitInactiveSec=1h
+Unit=atlas-nextcloud-external-scan.service
+
+[Install]
+WantedBy=timers.target

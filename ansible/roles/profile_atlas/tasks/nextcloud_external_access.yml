@@ -1,0 +1,100 @@
+---
+- name: Restrict external storage to explicit Archive directories
+  ansible.builtin.assert:
+    that:
+      - item.source in [atlas_archive_mountpoint ~ '/Documents', atlas_icloudpd_photos_dir]
+      - item.target is match('^/mnt/archive-[a-z]+$')
+      - item.name is match('^[A-Za-z][A-Za-z ]+$')
+      - item.readonly is boolean
+      - item.user in (atlas_nextcloud_users | map(attribute='username') | list)
+      - item.source != atlas_icloudpd_photos_dir or item.readonly
+  loop: "{{ atlas_nextcloud_external_mounts }}"
+
+- name: Inspect existing sources without creating or moving data
+  ansible.builtin.stat:
+    path: "{{ item.source }}"
+    follow: false
+  loop: "{{ atlas_nextcloud_external_mounts }}"
+  register: atlas_nextcloud_external_sources
+
+- name: Refuse missing sources and symlinks
+  ansible.builtin.assert:
+    that:
+      - item.stat.isdir | default(false)
+      - not (item.stat.islnk | default(false))
+  loop: "{{ atlas_nextcloud_external_sources.results }}"
+  loop_control:
+    label: "{{ item.item.source }}"
+
+- name: Verify the Archive dataset before modifying its ACL capability
+  community.general.zfs_facts:
+    name: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_archive }}"
+    properties: name,mounted,mountpoint
+  register: atlas_nextcloud_external_dataset
+
+- name: Refuse an absent or unmounted Archive dataset
+  ansible.builtin.assert:
+    that:
+      - atlas_nextcloud_external_dataset.ansible_facts.ansible_zfs_datasets | length == 1
+      - atlas_nextcloud_external_dataset.ansible_facts.ansible_zfs_datasets[0].mounted == 'yes'
+      - atlas_nextcloud_external_dataset.ansible_facts.ansible_zfs_datasets[0].mountpoint == atlas_archive_mountpoint
+
+- name: Enable persistent POSIX ACL support on the verified Archive dataset
+  community.general.zfs:
+    name: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_archive }}"
+    state: present
+    extra_zfs_properties:
+      acltype: posix
+
+- name: Derive actual rootless web UID for narrowly scoped Archive ACLs
+  become_user: "{{ atlas_admin_username }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"
+  ansible.builtin.command:
+    argv:
+      - podman
+      - unshare
+      - python3
+      - -c
+      - >-
+        print(next(int(b)+33-int(a) for a,b,n in
+        (l.split() for l in open('/proc/self/uid_map')) if int(a)<=33<int(a)+int(n)))
+  register: atlas_nextcloud_external_uid
+  changed_when: false
+  check_mode: false
+
+- name: Grant web user access only inside the declared sources
+  ansible.posix.acl:
+    path: "{{ item.source }}"
+    entity: "{{ atlas_nextcloud_external_uid.stdout | trim }}"
+    etype: user
+    permissions: "{{ 'rX' if item.readonly else 'rwX' }}"
+    recursive: true
+    follow: false
+    state: present
+  loop: "{{ atlas_nextcloud_external_mounts }}"
+
+- name: Inherit web access on new files and directories
+  ansible.posix.acl:
+    path: "{{ item.source }}"
+    entity: "{{ atlas_nextcloud_external_uid.stdout | trim }}"
+    etype: user
+    permissions: "{{ 'rX' if item.readonly else 'rwX' }}"
+    default: true
+    recursive: true
+    follow: false
+    state: present
+  loop: "{{ atlas_nextcloud_external_mounts }}"
+
+- name: Preserve administrator access to documents created through Nextcloud
+  ansible.posix.acl:
+    path: "{{ item.source }}"
+    entity: "{{ atlas_admin_uid }}"
+    etype: user
+    permissions: rwX
+    default: true
+    recursive: true
+    follow: false
+    state: present
+  loop: "{{ atlas_nextcloud_external_mounts }}"
+  when: not item.readonly

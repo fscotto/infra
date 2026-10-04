@@ -50,6 +50,8 @@ atlas_zfs_dataset_photobook: media/photobook
 atlas_mount_root: /zpool
 atlas_manage_storage: true
 atlas_manage_nextcloud: true
+# Two local consistent bundles; long-term history stays in Borg/USB and ZFS.
+atlas_nextcloud_backup_keep: 2
 atlas_nextcloud_domain: cloud.fscotto.co
 atlas_onlyoffice_domain: office.fscotto.co
 # Resolved official amd64 images on 2026-10-03; updates are deliberate.
@@ -64,6 +66,17 @@ atlas_nextcloud_users:
   - username: chiara
     display_name: Chiara
     password: "{{ vault_nextcloud_chiara_password }}"
+atlas_nextcloud_external_mounts:
+  - name: Documenti
+    user: fabio
+    source: /zpool/archive/Documents
+    target: /mnt/archive-documents
+    readonly: false
+  - name: Foto iCloud
+    user: fabio
+    source: /zpool/archive/Pictures/iCloudPD
+    target: /mnt/archive-icloud
+    readonly: true
 atlas_nextcloud_apps:
   - id: groupfolders
     version: 21.0.9

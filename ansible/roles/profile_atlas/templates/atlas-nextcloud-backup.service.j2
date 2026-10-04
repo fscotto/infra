@@ -1,0 +1,21 @@
+[Unit]
+Description=Prepare a consistent Nextcloud bundle before Atlas backups
+Requires=zfs.target user@{{ atlas_admin_uid }}.service
+After=zfs.target user@{{ atlas_admin_uid }}.service atlas-nextcloud-backup-recovery.service
+{% if atlas_manage_monitoring | bool %}
+OnFailure=atlas-monitor-failure@%n.service
+{% endif %}
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+StateDirectory=atlas-nextcloud-backup
+StateDirectoryMode=0700
+ExecStart=/usr/local/sbin/atlas-nextcloud-backup
+ExecStopPost=/usr/local/sbin/atlas-nextcloud-backup --recover
+TimeoutStartSec=3h
+TimeoutStopSec=5min
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

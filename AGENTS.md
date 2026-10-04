@@ -68,6 +68,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
     `ansible-playbook ansible/site.yml --limit atlas --tags gitea_public_domain --check --diff`
   - Atlas Nextcloud/ONLYOFFICE steady state:
     `ansible-playbook ansible/site.yml --limit atlas --tags nextcloud --check --diff`
+  - Atlas recurring consistent Nextcloud backup preparation:
+    `ansible-playbook ansible/site.yml --limit atlas --tags nextcloud_backup,monitoring --check --diff`
   - Atlas iCloudPD storage and boot-started Quadlet:
     `ansible-playbook ansible/site.yml --limit atlas --tags icloudpd --check --diff`
   - Ongoing Gitea proxy configuration:
@@ -210,15 +212,17 @@ and TCP reachability to Atlas were verified. Temporary Navidrome and Syncthing a
 manual NPM Proxy Hosts; Syncthing uses `/data/Org` backed by the SMB-shared Archive dataset. Aegis has also
 validated NFSv4.2 read, write, delete, and `all_squash` mapping to UID/GID `1100` end-to-end. The ZFS
 snapshot timers are active; a recursive hourly snapshot and scheduled retention prune completed
-successfully. The first monthly scrub remains a runtime check.
+successfully. The first monthly scrub completed successfully on 2026-10-04;
+the actual service result and pool scan were independently verified.
 
 ### Priority 1 - Data protection
 - [x] Deploy Ansible-managed recursive ZFS snapshots with 24 hourly, 30 daily, 8 weekly, and 12 monthly
   generations, plus a monthly scrub on the first Sunday at 03:00. The timers and first hourly snapshot were
   verified on Atlas. Cockpit Scheduler is for visibility or manual operations only, and snapshot
   rollback is never automated.
-- [ ] Verify the first monthly ZFS scrub from its actual service result. Scheduled retention pruning
-  was observed on 2026-09-30; timer activation alone does not establish a successful scrub.
+- [x] Verify the first monthly ZFS scrub from its actual service result. On 2026-10-04
+  it completed at 05:02 CEST after 2:02:04, repairing 0 B with zero errors;
+  the service exited successfully and the pool reported no known data errors.
 - [x] Activate and validate the encrypted offsite Borg backup to the Hetzner Storage Box. Atlas uses the
   dedicated SSH identity, pinned ED25519 host key, Vault-backed `repokey` encryption, and a locked
   non-login `borg` account with no sudo or supplementary groups. The initial snapshot-consistent backup,
@@ -376,9 +380,20 @@ successfully. The first monthly scrub remains a runtime check.
   web login, WebDAV, private-file isolation, Famiglia cross-user create/read/update/delete and
   CalDAV/CardDAV discovery passed. The Office connector and public health/API asset passed.
   Temporary test files were removed; no iCloud data was imported.
-- [ ] Complete Nextcloud desktop/mobile editing and synchronization acceptance, and
-  application-consistent backup/restore validation. Close the first actual scrub and
-  protection checks before importing family data.
+- [x] Test a manual consistent Nextcloud backup and isolated restore on 2026-10-04.
+  Paused application writers and cron, copied app/config/custom apps/themes and files,
+  dumped PostgreSQL, restored database roles and verified authenticated DAV contents,
+  account recovery and Famiglia permissions. Test containers had no external network,
+  published ports or live data mounts; they and the temporary restore copy were removed.
+  See `docs/atlas-nextcloud-recovery-test.md`; this is not recurring Borg/USB recovery evidence.
+- [x] Integrate consistent Nextcloud bundles with recurring Borg and operator-started USB
+  backups, two-version local retention, interruption recovery and failure monitoring.
+  On 2026-10-04 Borg archive `atlas-20261004T095255Z` succeeded; its new bundle was
+  extracted from Hetzner and restored in isolation with checksums, accounts, Famiglia
+  permissions and authenticated DAV verified. No production database was replaced.
+- [ ] Validate a new USB version and restore its consistent Nextcloud bundle after
+  operator connection/unlock. Dependency installation alone is not restore evidence.
+- [ ] Complete Nextcloud desktop/mobile editing and synchronization acceptance before family import.
   iCloud migration and future Uranus transfer remain separate operations, not playbook flags.
 - [x] Move Gitea canonical HTTPS and SSH hostname to `git.fscotto.co` on
   2026-10-03 through Ansible. Only Gitea restarted; second run changed nothing.

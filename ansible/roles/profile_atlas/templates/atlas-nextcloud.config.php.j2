@@ -11,6 +11,20 @@ $CONFIG = [
     'skeletondirectory' => '',
     'maintenance_window_start' => 1,
     'default_phone_region' => 'IT',
+    // Preserve the standard providers and add Apple HEIC/HEIF previews.
+    'enabledPreviewProviders' => [
+        'OC\\Preview\\PNG',
+        'OC\\Preview\\JPEG',
+        'OC\\Preview\\GIF',
+        'OC\\Preview\\BMP',
+        'OC\\Preview\\XBitmap',
+        'OC\\Preview\\Krita',
+        'OC\\Preview\\WebP',
+        'OC\\Preview\\MarkDown',
+        'OC\\Preview\\TXT',
+        'OC\\Preview\\OpenDocument',
+        'OC\\Preview\\HEIC',
+    ],
     'twofactor_enforced' => false,
     'onlyoffice' => [
         'DocumentServerUrl' => 'https://{{ atlas_onlyoffice_domain }}/',

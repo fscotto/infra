@@ -176,6 +176,14 @@ run of the recurring job, not a normal deployment side effect. The preparation
 unit is not enabled as a boot backup; only interrupted-job recovery is enabled.
 Do not stop a Borg/USB job, break its lock or unmount its source snapshot to run a test.
 
+On 2026-10-04, both a new encrypted Borg archive and USB version
+`20261004T101101Z-3420114` were independently extracted and their consistent
+Nextcloud bundles restored in isolated containers. Checksums, account recovery,
+Famiglia permissions and authenticated DAV passed. Temporary restore resources
+were removed; USB was safely unmounted and LUKS closed. See
+`docs/atlas-nextcloud-recovery-test.md` for exact evidence and limitations.
+Desktop/mobile editing and synchronization acceptance remains open before import.
+
 
 ## Existing Archive storage (no import or duplicate originals)
 
@@ -241,3 +249,32 @@ On 2026-10-04 the targeted deployment restarted only ONLYOFFICE. Nginx syntax an
 Nextcloud's document-server check passed. Public root, welcome and example
 requests returned 404; `/healthcheck` remained 200. This check does not replace
 an authenticated browser edit/save test.
+
+
+### Photos source-filter diagnosis — 2026-10-06
+
+A recursive scan of `fabio/files/Foto iCloud` completed without errors:
+1,615 folders and 11,699 files, already indexed. Authenticated DAV SEARCH returned
+200 nested media results (the requested limit) for the sole `/Foto iCloud`
+scope, both with and without date ordering, but zero results when the empty
+`/Photos` scope was combined with it. The observed issue is the combined-source
+search, not lack of recursive indexing.
+
+The user preference `photosSourceFolders` was changed directly from
+`["/Photos","/Foto iCloud"]` to `["/Foto iCloud"]`, after verifying no indexed
+media under the personal Photos directory. No original files were moved or
+modified, and no permanent one-time repair task was added to Ansible.
+The diagnostic app password was revoked. Browser display confirmation remains
+with the operator; this check does not establish mobile-gallery behavior.
+
+
+### HEIC previews — 2026-10-06
+
+The managed configuration include preserves the standard preview providers and
+adds `OC\Preview\HEIC` for Apple HEIC/HEIF images. The pinned app image
+already provides Imagick with HEIC/HEIF decoding. Ansible deployment succeeded;
+a real indexed HEIC generated a 512×512 preview successfully, and the original
+file SHA-256 was unchanged. Nextcloud, ONLYOFFICE and cron remained active.
+No bulk conversion or full-library preview generation was performed.
+New previews are generated on demand; browser/mobile display remains an
+operator acceptance check.

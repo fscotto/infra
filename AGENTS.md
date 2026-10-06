@@ -391,8 +391,11 @@ the actual service result and pool scan were independently verified.
   On 2026-10-04 Borg archive `atlas-20261004T095255Z` succeeded; its new bundle was
   extracted from Hetzner and restored in isolation with checksums, accounts, Famiglia
   permissions and authenticated DAV verified. No production database was replaced.
-- [ ] Validate a new USB version and restore its consistent Nextcloud bundle after
-  operator connection/unlock. Dependency installation alone is not restore evidence.
+- [x] Validate a new USB version and restore its consistent Nextcloud bundle. On
+  2026-10-04 USB version `20261004T101101Z-3420114` completed successfully; bundle
+  `20261004T100959Z-3415600` was read-only extracted, checksum-verified and restored
+  in isolation. Accounts, Famiglia permissions and authenticated DAV passed. The
+  test copy/containers were removed, LUKS closed and the pool remained healthy.
 - [ ] Complete Nextcloud desktop/mobile editing and synchronization acceptance before family import.
   iCloud migration and future Uranus transfer remain separate operations, not playbook flags.
 - [x] Move Gitea canonical HTTPS and SSH hostname to `git.fscotto.co` on

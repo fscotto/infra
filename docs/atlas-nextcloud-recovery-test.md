@@ -121,6 +121,28 @@ A third preparation published `20261004T100212Z-3366172`; exactly two managed
 versions remained, with the oldest version pruned only after publication. Source
 snapshots and persistent interruption markers were absent after success.
 
-A new UUID-bound USB version and recovery of its consistent Nextcloud bundle
-remain to be verified after the operator connects/unlocks the configured disk.
-Do not mark USB recovery complete merely because the dependency was installed.
+## Offline USB recovery, 2026-10-04
+
+The operator unlocked the UUID-bound disk. Starting the USB job required fresh
+bundle `20261004T100959Z-3415600` before the pool snapshot. USB version
+`20261004T101101Z-3420114` passed its full checksum comparison and publication;
+the service finished successfully at 18:41:29 Europe/Rome. Its recursive temporary
+source snapshot was removed and LUKS closed.
+
+After a second operator unlock, the published USB version was mounted read-only
+with ext4 journal replay disabled. The consistent bundle was SHA-256 verified on
+USB and again after extraction into a private temporary directory. A fresh
+network-none pod restored PostgreSQL globals/database, application and files with
+the recorded image digests, using a separate database and cache. Nextcloud 33.0.9
+reported installed, maintenance off and no database upgrade required. All three
+accounts, Famiglia permissions and authenticated DAV PROPFIND (HTTP 207) for
+admin, fabio and chiara passed. No external network, published ports or live bind
+mounts were present.
+
+The USB was unmounted and LUKS closed. The test pod, extracted copy and path marker
+were removed. No USB source snapshot remained; the pool was healthy and all live
+Nextcloud, PostgreSQL, Redis, ONLYOFFICE and cron units were active. Production
+data was not replaced. This is application recovery evidence for the current
+small stack, not production-size RPO/RTO, client resynchronization or recovery of
+unsaved ONLYOFFICE editing sessions. Client acceptance remains required before
+family import.

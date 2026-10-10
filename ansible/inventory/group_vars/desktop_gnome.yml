@@ -42,6 +42,7 @@ fedora_desktop_packages:
   - libXft-devel
   - meld
   - mpv
+  - nextcloud-client
   - pdfarranger
   - pinentry-gnome3
   - plocate

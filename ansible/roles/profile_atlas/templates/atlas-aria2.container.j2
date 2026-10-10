@@ -1,0 +1,30 @@
+# Managed by Ansible. Bypass upstream init, tracker updates and deletion hooks.
+[Unit]
+Description=Atlas rootless HTTP downloader
+RequiresMountsFor={{ atlas_aria2_state_dir }} {{ atlas_aria2_downloads_dir }}
+
+[Container]
+ContainerName=atlas-aria2
+Image={{ atlas_aria2_image }}
+UserNS=keep-id
+User={{ atlas_admin_uid }}
+Group={{ atlas_admin_gid }}
+Entrypoint=/usr/local/bin/aria2c
+Exec=--conf-path=/config/aria2.conf
+PublishPort={{ ansible_host }}:{{ atlas_aria2_rpc_port }}:6800
+Volume={{ atlas_aria2_state_dir }}:/config:Z
+Volume={{ atlas_aria2_downloads_dir }}:/downloads:z
+ReadOnly=true
+Tmpfs=/tmp:rw,nosuid,nodev
+NoNewPrivileges=true
+DropCapability=all
+StopTimeout=60
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=900
+TimeoutStopSec=90
+
+[Install]
+WantedBy=default.target

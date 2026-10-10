@@ -7,7 +7,7 @@ WireGuard configuration is unchanged.
 
 - LAN Web UI: `http://192.168.178.55:8090` (LAN-only firewalld rule,
   already including Aegis at `192.168.178.54`).
-- Prepared public domain: `downloads.fscotto.co`, through NPM on Prometheus.
+- Prepared public domain: `torrent.fscotto.co`, through NPM on Prometheus.
   DNS and the NPM Proxy Host remain manual operations.
 - Downloads: `/zpool/archive/Downloads`, available through SMB `Archive`.
 - Private configuration dataset: `zpool/services/data/qbittorrent`.
@@ -72,7 +72,7 @@ for its persistent UPnP/NAT-PMP option.
 
 ## Manual public endpoint setup
 
-Atlas is prepared for `downloads.fscotto.co`, with reverse-proxy support enabled
+Atlas is prepared for `torrent.fscotto.co`, with reverse-proxy support enabled
 and only `192.168.178.54` (the Aegis source-NAT gateway) trusted for forwarded
 client addresses. Existing LAN access remains available. No new firewall opening
 is required because the existing `192.168.178.0/24` rule includes Aegis.
@@ -83,12 +83,12 @@ the reverse proxy or disable CSRF/Host validation.
 
 Namecheap:
 
-- Type: A Record; Host: `downloads`; Value: `179.237.102.172` (Prometheus).
+- Type: A Record; Host: `torrent`; Value: `179.237.102.172` (Prometheus).
 - Do not point this record to Atlas' private LAN address.
 
 NPM on Prometheus:
 
-- Domain Names: `downloads.fscotto.co`
+- Domain Names: `torrent.fscotto.co`
 - Scheme: `http`
 - Forward Hostname/IP: `192.168.178.55`
 - Forward Port: `8090`
@@ -105,9 +105,16 @@ complete. Preparing the Web proxy does not change torrent peer connectivity.
 
 ### Reverse-proxy preparation verified on 2026-10-10
 
-Atlas accepts `downloads.fscotto.co` with HTTPS forwarded headers from the NPM
+The previous live domain `downloads.fscotto.co` was verified with HTTPS forwarded headers from the NPM
 container on Prometheus through Aegis (HTTP 200). Unauthenticated API access is
 still denied (403), and an unrelated Host is rejected (401). No DNS record,
 NPM Proxy Host, certificate, router forwarding or WireGuard configuration was
 changed. The existing LAN firewall rule already permits Aegis. A permanent
 Web UI password still needs to be configured before public exposure.
+
+The domain change to `torrent.fscotto.co` was subsequently applied to Atlas with
+the targeted `qbittorrent` playbook tag. The old live Host allowlist caused HTTP
+401 (Unauthorized) on the new public domain. After deployment, public HTTPS
+returned 200 and unauthenticated API access remained denied (403). Credentials,
+Host validation and CSRF protection were preserved; all existing Atlas services
+remained active. DNS and NPM were not modified by this deployment.

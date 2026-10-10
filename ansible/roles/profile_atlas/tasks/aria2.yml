@@ -1,0 +1,205 @@
+---
+- name: Manage Atlas LAN HTTP downloader
+  tags: [atlas, aria2]
+  when: atlas_manage_aria2 | bool
+  block:
+    - name: Require isolated state, shared Downloads and pinned images
+      ansible.builtin.assert:
+        that:
+          - atlas_manage_storage | bool
+          - atlas_aria2_state_dir == atlas_app_data_mountpoint ~ '/aria2'
+          - atlas_aria2_downloads_dir == atlas_archive_mountpoint ~ '/Downloads'
+          - atlas_aria2_image is search('@sha256:[0-9a-f]{64}$')
+          - atlas_ariang_image is search('@sha256:[0-9a-f]{64}$')
+          - atlas_aria2_rpc_port != atlas_ariang_web_port
+
+    - name: Inspect the existing downloader parent datasets
+      community.general.zfs_facts:
+        name: "{{ item.dataset }}"
+        properties: name,mounted,mountpoint
+      loop:
+        - dataset: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_archive }}"
+          mountpoint: "{{ atlas_archive_mountpoint }}"
+        - dataset: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_app_data }}"
+          mountpoint: "{{ atlas_app_data_mountpoint }}"
+      register: atlas_aria2_parents
+
+    - name: Require mounted downloader parent datasets
+      ansible.builtin.assert:
+        that:
+          - item.ansible_facts.ansible_zfs_datasets | length == 1
+          - item.ansible_facts.ansible_zfs_datasets[0].mounted == 'yes'
+          - item.ansible_facts.ansible_zfs_datasets[0].mountpoint == item.item.mountpoint
+      loop: "{{ atlas_aria2_parents.results }}"
+      loop_control:
+        label: "{{ item.item.dataset }}"
+
+    - name: Inspect shared Downloads without following links
+      ansible.builtin.stat:
+        path: "{{ atlas_aria2_downloads_dir }}"
+        follow: false
+      register: atlas_aria2_downloads
+
+    - name: Refuse unrelated or symlinked Downloads
+      ansible.builtin.assert:
+        that:
+          - >-
+            not atlas_aria2_downloads.stat.exists or
+            (atlas_aria2_downloads.stat.isdir | default(false) and
+             atlas_aria2_downloads.stat.uid | int == atlas_admin_uid | int)
+
+    - name: Create the private aria2 dataset
+      community.general.zfs:
+        name: "{{ atlas_zfs_pool }}/services/data/aria2"
+        state: present
+        extra_zfs_properties:
+          compression: zstd
+          mountpoint: "{{ atlas_aria2_state_dir }}"
+
+    - name: Prepare state, downloads and Quadlet directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - {path: "{{ atlas_aria2_state_dir }}", mode: "0700"}
+        - {path: "{{ atlas_aria2_downloads_dir }}", mode: "0770"}
+        - {path: "{{ atlas_admin_home }}/.config/containers/systemd", mode: "0700"}
+
+    - name: Generate a private persistent RPC secret on Atlas only
+      become_user: "{{ atlas_admin_username }}"
+      ansible.builtin.command:
+        argv:
+          - python3
+          - -c
+          - >-
+            import os, secrets;
+            fd = os.open('{{ atlas_aria2_state_dir }}/rpc-secret',
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600);
+            os.write(fd, (secrets.token_hex(32) + '\n').encode()); os.close(fd)
+        creates: "{{ atlas_aria2_state_dir }}/rpc-secret"
+      no_log: true
+
+    - name: Read the existing private RPC secret without displaying it
+      ansible.builtin.slurp:
+        src: "{{ atlas_aria2_state_dir }}/rpc-secret"
+      register: atlas_aria2_rpc_secret
+      no_log: true
+      when: not ansible_check_mode
+
+    - name: Require a strong RPC secret
+      ansible.builtin.assert:
+        that:
+          - atlas_aria2_rpc_secret.content | b64decode | trim is match('^[a-f0-9]{64}$')
+      no_log: true
+      when: not ansible_check_mode
+
+    - name: Initialize the session file without replacing saved downloads
+      ansible.builtin.copy:
+        content: ""
+        dest: "{{ atlas_aria2_state_dir }}/session"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0600"
+        force: false
+      diff: false
+      no_log: true
+
+    - name: Render private aria2 configuration
+      ansible.builtin.template:
+        src: atlas-aria2.conf.j2
+        dest: "{{ atlas_aria2_state_dir }}/aria2.conf"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0600"
+      register: atlas_aria2_config
+      no_log: true
+      diff: false
+      when: not ansible_check_mode
+
+    - name: Allow only the LAN to reach AriaNg and the token-protected API
+      ansible.posix.firewalld:
+        zone: "{{ atlas_firewalld_zone }}"
+        rich_rule: >-
+          rule family="ipv4" source address="{{ atlas_lan_subnet }}"
+          port port="{{ item }}" protocol="tcp" accept
+        permanent: true
+        immediate: true
+        state: enabled
+      loop:
+        - "{{ atlas_aria2_rpc_port }}"
+        - "{{ atlas_ariang_web_port }}"
+
+    - name: Keep the downloader user manager available at boot
+      ansible.builtin.command: "loginctl enable-linger {{ atlas_admin_username }}"
+      args:
+        creates: "/var/lib/systemd/linger/{{ atlas_admin_username }}"
+
+    - name: Render the downloader and static Web UI Quadlets
+      ansible.builtin.template:
+        src: "atlas-{{ item }}.container.j2"
+        dest: "{{ atlas_admin_home }}/.config/containers/systemd/atlas-{{ item }}.container"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0644"
+      loop: [aria2, ariang]
+      register: atlas_aria2_quadlets
+
+    - name: Reload the user manager after downloader Quadlet changes
+      become_user: "{{ atlas_admin_username }}"
+      ansible.builtin.systemd:
+        scope: user
+        daemon_reload: true
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ atlas_admin_uid }}/bus"
+      when:
+        - atlas_aria2_quadlets.changed
+        - not ansible_check_mode
+
+    - name: Start or update only the changed downloader service
+      become_user: "{{ atlas_admin_username }}"
+      ansible.builtin.systemd:
+        scope: user
+        name: "atlas-{{ item.item }}.service"
+        state: >-
+          {{ 'restarted' if item.changed or
+             (item.item == 'aria2' and atlas_aria2_config.changed | default(false))
+             else 'started' }}
+      loop: "{{ atlas_aria2_quadlets.results }}"
+      loop_control:
+        label: "atlas-{{ item.item }}.service"
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ atlas_admin_uid }}/bus"
+      when: not ansible_check_mode
+
+    - name: Verify the LAN Web UI responds
+      ansible.builtin.uri:
+        url: "http://{{ ansible_host }}:{{ atlas_ariang_web_port }}/"
+        status_code: 200
+      register: atlas_ariang_http
+      retries: 15
+      delay: 2
+      until: atlas_ariang_http is succeeded
+      when: not ansible_check_mode
+
+    - name: Verify the authenticated RPC API
+      ansible.builtin.uri:
+        url: "http://{{ ansible_host }}:{{ atlas_aria2_rpc_port }}/jsonrpc"
+        method: POST
+        body_format: json
+        body:
+          jsonrpc: "2.0"
+          id: ansible
+          method: aria2.getVersion
+          params: ["token:{{ atlas_aria2_rpc_secret.content | b64decode | trim }}"]
+        return_content: true
+      register: atlas_aria2_rpc_probe
+      retries: 15
+      delay: 2
+      until: (atlas_aria2_rpc_probe.content | default('{}') | from_json).result.version is defined
+      no_log: true
+      when: not ansible_check_mode

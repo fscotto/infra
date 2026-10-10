@@ -314,3 +314,11 @@ atlas_qbittorrent_web_settings:
   - {key: 'WebUI\CSRFProtection', value: "true"}
   - {key: 'WebUI\LocalHostAuth', value: "true"}
   - {key: 'WebUI\AuthSubnetWhitelistEnabled', value: "false"}
+
+atlas_manage_aria2: false
+atlas_aria2_state_dir: "{{ atlas_app_data_mountpoint }}/aria2"
+atlas_aria2_downloads_dir: "{{ atlas_archive_mountpoint }}/Downloads"
+atlas_aria2_rpc_port: 6800
+atlas_ariang_web_port: 8091
+atlas_aria2_image: CHANGEME_PINNED_ARIA2_IMAGE
+atlas_ariang_image: CHANGEME_PINNED_ARIANG_IMAGE

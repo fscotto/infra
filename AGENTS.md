@@ -207,11 +207,18 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 - Atlas qBittorrent is selected by `atlas_manage_qbittorrent` and managed with the
   `qbittorrent` tag as the admin-owned rootless `atlas-qbittorrent.service` Quadlet.
   Its Web UI is `http://192.168.178.55:8090` on the LAN and prepared for the manual
-  NPM HTTPS domain `downloads.fscotto.co`, trusting only Aegis for forwarded client
+  NPM HTTPS domain `torrent.fscotto.co`, trusting only Aegis for forwarded client
   addresses. DNS and NPM configuration stay manual. Configuration lives in
   `services/data/qbittorrent`, and only `Archive/Downloads` is writable as payload
   storage. It uses the home Internet connection, not WireGuard or a VPN; no router
   forwarding or published torrent peer port is configured. See `docs/atlas-qbittorrent.md`.
+
+- Atlas HTTP downloads use the admin-owned rootless `atlas-aria2.service` and
+  `atlas-ariang.service` Quadlets, gated by `atlas_manage_aria2` and the `aria2` tag.
+  AriaNg is LAN-only at `http://192.168.178.55:8091`; RPC is LAN-only on TCP/6800
+  and requires a private target-generated token. State lives in `services/data/aria2`,
+  with payloads in `Archive/Downloads`; do not expose RPC through the existing
+  qBittorrent `torrent.fscotto.co` endpoint. See `docs/atlas-aria2.md`.
 
 ## Atlas NAS TODO
 Completed validation: the existing RAIDZ2 pool and datasets, SELinux, LAN firewall, SSH, Cockpit with

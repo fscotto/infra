@@ -1,0 +1,22 @@
+# Managed by Ansible. Static frontend only; no host data or RPC secret mounted.
+[Unit]
+Description=Atlas AriaNg LAN Web UI
+
+[Container]
+ContainerName=atlas-ariang
+Image={{ atlas_ariang_image }}
+UserNS=keep-id
+User={{ atlas_admin_uid }}
+Group={{ atlas_admin_gid }}
+PublishPort={{ ansible_host }}:{{ atlas_ariang_web_port }}:6880
+ReadOnly=true
+NoNewPrivileges=true
+DropCapability=all
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

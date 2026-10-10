@@ -32,6 +32,9 @@
 - name: Import Atlas LAN HTTP downloader
   ansible.builtin.import_tasks: aria2.yml
 
+- name: Import Atlas private aria2 RPC gateway
+  ansible.builtin.import_tasks: aria2_gateway.yml
+
 - name: Import Atlas ZFS maintenance tasks
   ansible.builtin.import_tasks: zfs_maintenance.yml
 

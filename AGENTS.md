@@ -215,10 +215,14 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 
 - Atlas HTTP downloads use the admin-owned rootless `atlas-aria2.service` and
   `atlas-ariang.service` Quadlets, gated by `atlas_manage_aria2` and the `aria2` tag.
-  AriaNg is LAN-only at `http://192.168.178.55:8091`; RPC is LAN-only on TCP/6800
+  AriaNg binds the LAN at `http://192.168.178.55:8091`; direct RPC is LAN-only on TCP/6800
   and requires a private target-generated token. State lives in `services/data/aria2`,
   with payloads in `Archive/Downloads`; do not expose RPC through the existing
-  qBittorrent `torrent.fscotto.co` endpoint. See `docs/atlas-aria2.md`.
+  qBittorrent `torrent.fscotto.co` endpoint. Public `downloads.fscotto.co` uses
+  a manual NPM Access List for both UI and `/jsonrpc`. The `aria2_gateway` tag
+  manages an admin user service on TCP/8092, accessible only through Aegis,
+  injecting the private token for JSON-RPC POST clients; keep this route
+  authenticated and never expose the gateway directly. See `docs/atlas-aria2.md`.
 
 ## Atlas NAS TODO
 Completed validation: the existing RAIDZ2 pool and datasets, SELinux, LAN firewall, SSH, Cockpit with

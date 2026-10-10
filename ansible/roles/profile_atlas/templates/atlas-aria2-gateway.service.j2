@@ -1,0 +1,17 @@
+# Managed by Ansible. NPM authenticates callers; this private adapter adds RPC credentials.
+[Unit]
+Description=Atlas private aria2 RPC gateway
+After=atlas-aria2.service
+Requires=atlas-aria2.service
+PartOf=atlas-aria2.service
+
+[Service]
+ExecStart=/usr/bin/python3 {{ atlas_aria2_state_dir }}/rpc-gateway.py --listen {{ ansible_host }} --port {{ atlas_aria2_gateway_port }} --upstream-port {{ atlas_aria2_rpc_port }} --peer {{ atlas_aegis_ip }} --domain {{ atlas_aria2_public_domain }} --secret-file {{ atlas_aria2_state_dir }}/rpc-secret
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+UMask=0077
+RestrictAddressFamilies=AF_INET AF_UNIX
+
+[Install]
+WantedBy=default.target

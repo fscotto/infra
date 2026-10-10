@@ -266,5 +266,7 @@ atlas_qbittorrent_public_domain: torrent.fscotto.co
 
 # LAN-only HTTP downloader; RPC secret is generated and retained privately on Atlas.
 atlas_manage_aria2: true
+atlas_aria2_gateway_enabled: true
+atlas_aria2_public_domain: downloads.fscotto.co
 atlas_aria2_image: docker.io/p3terx/aria2-pro@sha256:086d1a37c586edb07ec0fb956bf9edd89d1d38d138ad5309ff96d510c8c9a011
 atlas_ariang_image: docker.io/p3terx/ariang@sha256:73849cf75fe9f959229222622e887310df505cbf868eb9c735e2af376523c010

@@ -1,0 +1,81 @@
+---
+- name: Manage the private NPM aria2 adapter
+  tags: [atlas, aria2_gateway]
+  when:
+    - atlas_manage_aria2 | bool
+    - atlas_aria2_gateway_enabled | bool
+  block:
+    - name: Require a dedicated gateway and explicit public domain
+      ansible.builtin.assert:
+        that:
+          - atlas_aria2_gateway_port not in [atlas_aria2_rpc_port, atlas_ariang_web_port]
+          - atlas_aria2_public_domain is match('^[a-z0-9][a-z0-9.-]+[.][a-z]{2,}$')
+          - not atlas_aria2_public_domain.startswith('CHANGEME')
+
+    - name: Install the private JSON-RPC adapter
+      ansible.builtin.copy:
+        src: atlas-aria2-rpc-gateway.py
+        dest: "{{ atlas_aria2_state_dir }}/rpc-gateway.py"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0600"
+      register: atlas_aria2_gateway_script
+
+    - name: Prepare the user unit directory
+      ansible.builtin.file:
+        path: "{{ atlas_admin_home }}/.config/systemd/user"
+        state: directory
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0700"
+
+    - name: Install the user gateway unit
+      ansible.builtin.template:
+        src: atlas-aria2-gateway.service.j2
+        dest: "{{ atlas_admin_home }}/.config/systemd/user/atlas-aria2-gateway.service"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0644"
+      register: atlas_aria2_gateway_unit
+
+    - name: Allow only Aegis to reach the credential-injecting adapter
+      ansible.posix.firewalld:
+        zone: "{{ atlas_firewalld_zone }}"
+        rich_rule: >-
+          rule family="ipv4" source address="{{ atlas_aegis_ip }}"
+          port port="{{ atlas_aria2_gateway_port }}" protocol="tcp" accept
+        permanent: true
+        immediate: true
+        state: enabled
+
+    - name: Enable and start the private gateway
+      become_user: "{{ atlas_admin_username }}"
+      ansible.builtin.systemd_service:
+        scope: user
+        name: atlas-aria2-gateway.service
+        daemon_reload: "{{ atlas_aria2_gateway_unit.changed }}"
+        enabled: true
+        state: "{{ 'restarted' if atlas_aria2_gateway_script.changed or atlas_aria2_gateway_unit.changed else 'started' }}"
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ atlas_admin_uid }}/bus"
+      when: not ansible_check_mode
+
+    - name: Verify token-free requests through the private adapter
+      ansible.builtin.uri:
+        url: "http://{{ ansible_host }}:{{ atlas_aria2_gateway_port }}/jsonrpc"
+        headers:
+          Host: "{{ atlas_aria2_public_domain }}"
+        method: POST
+        body_format: json
+        body:
+          jsonrpc: "2.0"
+          id: ansible-gateway
+          method: aria2.getVersion
+          params: []
+        return_content: true
+      register: atlas_aria2_gateway_probe
+      retries: 10
+      delay: 2
+      until: atlas_aria2_gateway_probe.json.result.version is defined
+      when: not ansible_check_mode

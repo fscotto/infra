@@ -316,6 +316,9 @@ atlas_qbittorrent_web_settings:
   - {key: 'WebUI\AuthSubnetWhitelistEnabled', value: "false"}
 
 atlas_manage_aria2: false
+atlas_aria2_gateway_enabled: false
+atlas_aria2_gateway_port: 8092
+atlas_aria2_public_domain: CHANGEME_ARIA2_DOMAIN
 atlas_aria2_state_dir: "{{ atlas_app_data_mountpoint }}/aria2"
 atlas_aria2_downloads_dir: "{{ atlas_archive_mountpoint }}/Downloads"
 atlas_aria2_rpc_port: 6800

@@ -204,6 +204,13 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   when it is assigned. After a firewalld reload, restore Prometheus' rootful Podman networking with
   `podman network reload --all` so the existing proxy stack retains container DNS.
 
+- Atlas qBittorrent is selected by `atlas_manage_qbittorrent` and managed with the
+  `qbittorrent` tag as the admin-owned rootless `atlas-qbittorrent.service` Quadlet.
+  Its LAN-only Web UI is `http://192.168.178.55:8090`; configuration lives in
+  `services/data/qbittorrent`, and only `Archive/Downloads` is writable as payload
+  storage. It uses the home Internet connection, not WireGuard or a VPN; no router
+  forwarding or published torrent peer port is configured. See `docs/atlas-qbittorrent.md`.
+
 ## Atlas NAS TODO
 Completed validation: the existing RAIDZ2 pool and datasets, SELinux, LAN firewall, SSH, Cockpit with
 the selected 45Drives plugins, encrypted SMB3 `Archive`, the Aegis-only NFSv4 `photobook` export, and the

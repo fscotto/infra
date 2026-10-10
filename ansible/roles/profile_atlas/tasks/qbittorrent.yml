@@ -1,0 +1,124 @@
+---
+- name: Manage Atlas rootless qBittorrent
+  tags: [atlas, qbittorrent]
+  when: atlas_manage_qbittorrent | bool
+  block:
+    - name: Require isolated paths and a pinned image
+      ansible.builtin.assert:
+        that:
+          - atlas_manage_storage | bool
+          - atlas_qbittorrent_state_dir == atlas_app_data_mountpoint ~ '/qbittorrent'
+          - atlas_qbittorrent_downloads_dir == atlas_archive_mountpoint ~ '/Downloads'
+          - atlas_qbittorrent_image is search('@sha256:[0-9a-f]{64}$')
+
+    - name: Inspect the existing parent datasets
+      community.general.zfs_facts:
+        name: "{{ item.dataset }}"
+        properties: name,mounted,mountpoint
+      loop:
+        - dataset: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_archive }}"
+          mountpoint: "{{ atlas_archive_mountpoint }}"
+        - dataset: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_app_data }}"
+          mountpoint: "{{ atlas_app_data_mountpoint }}"
+      register: atlas_qbittorrent_parents
+
+    - name: Refuse missing or unmounted parent datasets
+      ansible.builtin.assert:
+        that:
+          - item.ansible_facts.ansible_zfs_datasets | length == 1
+          - item.ansible_facts.ansible_zfs_datasets[0].mounted == 'yes'
+          - item.ansible_facts.ansible_zfs_datasets[0].mountpoint == item.item.mountpoint
+      loop: "{{ atlas_qbittorrent_parents.results }}"
+      loop_control:
+        label: "{{ item.item.dataset }}"
+
+    - name: Inspect the proposed download directory without following links
+      ansible.builtin.stat:
+        path: "{{ atlas_qbittorrent_downloads_dir }}"
+        follow: false
+      register: atlas_qbittorrent_downloads
+
+    - name: Refuse unrelated or symlinked download paths
+      ansible.builtin.assert:
+        that:
+          - >-
+            not atlas_qbittorrent_downloads.stat.exists or
+            (atlas_qbittorrent_downloads.stat.isdir | default(false) and
+             atlas_qbittorrent_downloads.stat.uid | int == atlas_admin_uid | int)
+
+    - name: Create the dedicated configuration dataset
+      community.general.zfs:
+        name: "{{ atlas_zfs_pool }}/services/data/qbittorrent"
+        state: present
+        extra_zfs_properties:
+          compression: zstd
+          mountpoint: "{{ atlas_qbittorrent_state_dir }}"
+
+    - name: Prepare private state and the SMB download directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - {path: "{{ atlas_qbittorrent_state_dir }}", mode: "0700"}
+        - {path: "{{ atlas_qbittorrent_state_dir }}/qBittorrent/config", mode: "0700"}
+        - {path: "{{ atlas_qbittorrent_downloads_dir }}", mode: "0770"}
+        - {path: "{{ atlas_admin_home }}/.config/containers/systemd", mode: "0700"}
+
+    - name: Seed qBittorrent settings without overwriting application-managed state
+      ansible.builtin.template:
+        src: atlas-qbittorrent.conf.j2
+        dest: "{{ atlas_qbittorrent_state_dir }}/qBittorrent/config/qBittorrent.conf"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0600"
+        force: false
+      diff: false
+
+    - name: Allow only the declared LAN to reach the Web UI
+      ansible.posix.firewalld:
+        zone: "{{ atlas_firewalld_zone }}"
+        rich_rule: >-
+          rule family="ipv4" source address="{{ atlas_lan_subnet }}"
+          port port="{{ atlas_qbittorrent_web_port }}" protocol="tcp" accept
+        permanent: true
+        immediate: true
+        state: enabled
+
+    - name: Keep the rootless user manager available at boot
+      ansible.builtin.command: "loginctl enable-linger {{ atlas_admin_username }}"
+      args:
+        creates: "/var/lib/systemd/linger/{{ atlas_admin_username }}"
+
+    - name: Render the rootless torrent Quadlet
+      ansible.builtin.template:
+        src: atlas-qbittorrent.container.j2
+        dest: "{{ atlas_admin_home }}/.config/containers/systemd/atlas-qbittorrent.container"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0644"
+      register: atlas_qbittorrent_quadlet
+
+    - name: Start qBittorrent and restart only after a Quadlet change
+      become_user: "{{ atlas_admin_username }}"
+      ansible.builtin.systemd:
+        name: atlas-qbittorrent.service
+        scope: user
+        daemon_reload: "{{ atlas_qbittorrent_quadlet.changed }}"
+        state: "{{ 'restarted' if atlas_qbittorrent_quadlet.changed else 'started' }}"
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ atlas_admin_uid }}/bus"
+      when: not ansible_check_mode
+
+    - name: Verify the Web UI responds on the LAN address
+      ansible.builtin.uri:
+        url: "http://{{ ansible_host }}:{{ atlas_qbittorrent_web_port }}/"
+        status_code: 200
+      register: atlas_qbittorrent_http
+      retries: 15
+      delay: 2
+      until: atlas_qbittorrent_http is succeeded
+      when: not ansible_check_mode

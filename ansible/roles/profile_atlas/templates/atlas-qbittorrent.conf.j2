@@ -1,0 +1,17 @@
+; Seeded once by Ansible. Subsequent settings are managed through the Web UI.
+[BitTorrent]
+Session\DefaultSavePath=/downloads
+Session\TempPath=/downloads/.incomplete
+Session\TempPathEnabled=true
+Session\Port=6881
+[Meta]
+MigrationVersion=9999
+[Network]
+PortForwardingEnabled=false
+[Preferences]
+WebUI\Port={{ atlas_qbittorrent_web_port }}
+WebUI\LocalHostAuth=true
+WebUI\AuthSubnetWhitelistEnabled=false
+WebUI\CSRFProtection=true
+WebUI\ClickjackingProtection=true
+WebUI\HostHeaderValidation=true

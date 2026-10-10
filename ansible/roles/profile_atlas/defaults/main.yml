@@ -297,3 +297,9 @@ atlas_media_quadlet_services:
   - atlas-immich-machine-learning.service
   - atlas-immich-server.service
   - atlas-npm.service
+
+atlas_manage_qbittorrent: false
+atlas_qbittorrent_image: CHANGEME_PINNED_QBITTORRENT_IMAGE
+atlas_qbittorrent_state_dir: "{{ atlas_app_data_mountpoint }}/qbittorrent"
+atlas_qbittorrent_downloads_dir: "{{ atlas_archive_mountpoint }}/Downloads"
+atlas_qbittorrent_web_port: 8090

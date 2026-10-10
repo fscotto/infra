@@ -1,0 +1,33 @@
+# Managed by Ansible. No VPN, host networking or router port forwarding.
+[Unit]
+Description=Atlas rootless qBittorrent
+RequiresMountsFor={{ atlas_qbittorrent_state_dir }} {{ atlas_qbittorrent_downloads_dir }}
+
+[Container]
+ContainerName=atlas-qbittorrent
+Image={{ atlas_qbittorrent_image }}
+UserNS=keep-id
+User={{ atlas_admin_uid }}
+Group={{ atlas_admin_gid }}
+PublishPort={{ ansible_host }}:{{ atlas_qbittorrent_web_port }}:{{ atlas_qbittorrent_web_port }}
+Environment=QBT_LEGAL_NOTICE=confirm
+Environment=QBT_WEBUI_PORT={{ atlas_qbittorrent_web_port }}
+Environment=XDG_CACHE_HOME=/tmp/cache
+Environment=TZ={{ atlas_timezone }}
+Environment=UMASK=007
+Volume={{ atlas_qbittorrent_state_dir }}:/config:Z
+Volume={{ atlas_qbittorrent_downloads_dir }}:/downloads:z
+ReadOnly=true
+Tmpfs=/tmp:rw,nosuid,nodev
+NoNewPrivileges=true
+DropCapability=all
+StopTimeout=1800
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=900
+TimeoutStopSec=1900
+
+[Install]
+WantedBy=default.target

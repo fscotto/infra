@@ -101,12 +101,74 @@
         mode: "0644"
       register: atlas_qbittorrent_quadlet
 
+    - name: Reload the user manager after a new or changed Quadlet
+      become_user: "{{ atlas_admin_username }}"
+      ansible.builtin.systemd:
+        scope: user
+        daemon_reload: true
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ atlas_admin_uid }}/bus"
+      when:
+        - atlas_qbittorrent_quadlet.changed
+        - not ansible_check_mode
+
+    - name: Manage the declared qBittorrent reverse-proxy settings
+      when: atlas_qbittorrent_reverse_proxy_enabled | bool
+      block:
+        - name: Require a specific public domain and existing Aegis gateway
+          ansible.builtin.assert:
+            that:
+              - atlas_qbittorrent_public_domain is match('^[a-z0-9]+([.-][a-z0-9]+)+$')
+              - "'CHANGEME' not in atlas_aegis_ip"
+
+        - name: Check whether managed Web settings need an update
+          community.general.ini_file:
+            path: "{{ atlas_qbittorrent_state_dir }}/qBittorrent/config/qBittorrent.conf"
+            section: Preferences
+            option: "{{ item.key }}"
+            value: "{{ item.value }}"
+            no_extra_spaces: true
+            mode: "0600"
+          loop: "{{ atlas_qbittorrent_web_settings }}"
+          check_mode: true
+          register: atlas_qbittorrent_web_probe
+          no_log: true
+          diff: false
+
+        - name: Stop only qBittorrent before editing its application-managed settings
+          become_user: "{{ atlas_admin_username }}"
+          ansible.builtin.systemd:
+            name: atlas-qbittorrent.service
+            scope: user
+            state: stopped
+          environment:
+            XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"
+            DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ atlas_admin_uid }}/bus"
+          when:
+            - atlas_qbittorrent_web_probe.changed
+            - not ansible_check_mode
+
+        - name: Preserve credentials and change only the declared Web settings
+          community.general.ini_file:
+            path: "{{ atlas_qbittorrent_state_dir }}/qBittorrent/config/qBittorrent.conf"
+            section: Preferences
+            option: "{{ item.key }}"
+            value: "{{ item.value }}"
+            no_extra_spaces: true
+            owner: "{{ atlas_admin_username }}"
+            group: "{{ atlas_admin_group }}"
+            mode: "0600"
+          loop: "{{ atlas_qbittorrent_web_settings }}"
+          when: atlas_qbittorrent_web_probe.changed
+          no_log: true
+          diff: false
+
     - name: Start qBittorrent and restart only after a Quadlet change
       become_user: "{{ atlas_admin_username }}"
       ansible.builtin.systemd:
         name: atlas-qbittorrent.service
         scope: user
-        daemon_reload: "{{ atlas_qbittorrent_quadlet.changed }}"
         state: "{{ 'restarted' if atlas_qbittorrent_quadlet.changed else 'started' }}"
       environment:
         XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"

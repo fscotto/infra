@@ -206,7 +206,9 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
 
 - Atlas qBittorrent is selected by `atlas_manage_qbittorrent` and managed with the
   `qbittorrent` tag as the admin-owned rootless `atlas-qbittorrent.service` Quadlet.
-  Its LAN-only Web UI is `http://192.168.178.55:8090`; configuration lives in
+  Its Web UI is `http://192.168.178.55:8090` on the LAN and prepared for the manual
+  NPM HTTPS domain `downloads.fscotto.co`, trusting only Aegis for forwarded client
+  addresses. DNS and NPM configuration stay manual. Configuration lives in
   `services/data/qbittorrent`, and only `Archive/Downloads` is writable as payload
   storage. It uses the home Internet connection, not WireGuard or a VPN; no router
   forwarding or published torrent peer port is configured. See `docs/atlas-qbittorrent.md`.

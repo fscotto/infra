@@ -258,6 +258,8 @@ host_enabled_services:
   - pmlogger.service
   - zfs.target
 
-# LAN-only torrent Web UI; downloads use the home Internet connection.
+# Torrent Web UI: LAN and the existing Aegis gateway for the manual NPM proxy.
 atlas_manage_qbittorrent: true
 atlas_qbittorrent_image: docker.io/qbittorrentofficial/qbittorrent-nox@sha256:92bfd78d731e254ba64f62b77b0696add6447a33642ee5feda106a26b285aa7f
+atlas_qbittorrent_reverse_proxy_enabled: true
+atlas_qbittorrent_public_domain: downloads.fscotto.co

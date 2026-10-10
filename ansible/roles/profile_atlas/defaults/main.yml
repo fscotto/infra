@@ -303,3 +303,14 @@ atlas_qbittorrent_image: CHANGEME_PINNED_QBITTORRENT_IMAGE
 atlas_qbittorrent_state_dir: "{{ atlas_app_data_mountpoint }}/qbittorrent"
 atlas_qbittorrent_downloads_dir: "{{ atlas_archive_mountpoint }}/Downloads"
 atlas_qbittorrent_web_port: 8090
+
+atlas_qbittorrent_reverse_proxy_enabled: false
+atlas_qbittorrent_public_domain: CHANGEME_QBITTORRENT_DOMAIN
+atlas_qbittorrent_web_settings:
+  - {key: 'WebUI\ServerDomains', value: "{{ atlas_qbittorrent_public_domain }}"}
+  - {key: 'WebUI\ReverseProxySupportEnabled', value: "true"}
+  - {key: 'WebUI\TrustedReverseProxiesList', value: "{{ atlas_aegis_ip }}"}
+  - {key: 'WebUI\HostHeaderValidation', value: "true"}
+  - {key: 'WebUI\CSRFProtection', value: "true"}
+  - {key: 'WebUI\LocalHostAuth', value: "true"}
+  - {key: 'WebUI\AuthSubnetWhitelistEnabled', value: "false"}

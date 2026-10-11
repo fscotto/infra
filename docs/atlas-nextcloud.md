@@ -193,7 +193,7 @@ Nextcloud container, using shared SELinux `:z` labels:
 | Nextcloud folder | Host directory | Access |
 | --- | --- | --- |
 | `Documenti` | `/zpool/archive/Documents` | Read/write |
-| `Foto iCloud` | `/zpool/archive/Pictures/iCloudPD` | Read-only |
+| `Photos` | `/zpool/archive/Pictures/iCloudPD` | Read-only |
 
 Both system mounts are restricted to the Nextcloud user `fabio` only; `chiara`
 and the `famiglia` group have no access through these mounts.
@@ -262,8 +262,11 @@ search, not lack of recursive indexing.
 
 The user preference `photosSourceFolders` was changed directly from
 `["/Photos","/Foto iCloud"]` to `["/Foto iCloud"]`, after verifying no indexed
-media under the personal Photos directory. No original files were moved or
-modified, and no permanent one-time repair task was added to Ansible.
+media under the personal Photos directory. On 2026-10-10, the managed external
+mount was renamed to `Photos`; after the old mount configuration is removed on
+the live instance, the source preference must be `['/Photos']`. No original
+files are moved or modified: `Photos` remains a read-only direct view of
+`/zpool/archive/Pictures/iCloudPD`, with iCloudPD as the sole writer.
 The diagnostic app password was revoked. Browser display confirmation remains
 with the operator; this check does not establish mobile-gallery behavior.
 

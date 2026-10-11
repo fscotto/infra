@@ -72,7 +72,9 @@ atlas_nextcloud_external_mounts:
     source: /zpool/archive/Documents
     target: /mnt/archive-documents
     readonly: false
-  - name: Foto iCloud
+  # Expose the iCloudPD originals directly in Fabio's canonical Photos folder.
+  # This remains a read-only external mount; iCloudPD is the sole writer.
+  - name: Photos
     user: fabio
     source: /zpool/archive/Pictures/iCloudPD
     target: /mnt/archive-icloud

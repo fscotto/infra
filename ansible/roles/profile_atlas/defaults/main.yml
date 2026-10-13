@@ -325,3 +325,30 @@ atlas_aria2_rpc_port: 6800
 atlas_ariang_web_port: 8091
 atlas_aria2_image: CHANGEME_PINNED_ARIA2_IMAGE
 atlas_ariang_image: CHANGEME_PINNED_ARIANG_IMAGE
+
+# Rootless Paperless-ngx document management. Secrets live only in the encrypted Vault.
+atlas_manage_paperless: false
+atlas_paperless_dataset: "{{ atlas_zfs_pool }}/services/data/paperless"
+atlas_paperless_root: "{{ atlas_app_data_mountpoint }}/paperless"
+atlas_paperless_private_dir: "{{ atlas_admin_home }}/.config/atlas-paperless"
+atlas_paperless_quadlet_dir: "{{ atlas_admin_home }}/.config/containers/systemd"
+atlas_paperless_domain: ""
+atlas_paperless_http_port: 8002
+atlas_paperless_network_subnet: 10.90.11.0/24
+atlas_paperless_network_gateway: 10.90.11.1
+atlas_paperless_ocr_language: ita+eng
+atlas_paperless_image: ""
+atlas_paperless_postgres_image: ""
+atlas_paperless_valkey_image: ""
+atlas_paperless_tika_image: ""
+atlas_paperless_gotenberg_image: ""
+atlas_paperless_ollama_image: ""
+atlas_paperless_llm_model: qwen2.5:1.5b-instruct-q4_K_M
+atlas_paperless_embedding_model: nomic-embed-text:v1.5
+atlas_paperless_services:
+  - atlas-paperless-db.service
+  - atlas-paperless-valkey.service
+  - atlas-paperless-tika.service
+  - atlas-paperless-gotenberg.service
+  - atlas-paperless-ollama.service
+  - atlas-paperless.service

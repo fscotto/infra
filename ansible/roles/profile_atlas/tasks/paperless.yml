@@ -1,0 +1,255 @@
+---
+- name: Manage Atlas rootless Paperless-ngx
+  tags: [atlas, paperless]
+  when: atlas_manage_paperless | bool
+  block:
+    - name: Require isolated Paperless state, public domain and pinned images
+      ansible.builtin.assert:
+        that:
+          - atlas_manage_storage | bool
+          - atlas_manage_firewall | bool
+          - atlas_paperless_root == atlas_app_data_mountpoint ~ '/paperless'
+          - atlas_paperless_dataset == atlas_zfs_pool ~ '/services/data/paperless'
+          - atlas_paperless_domain is match('^[a-z0-9]+([.-][a-z0-9]+)+$')
+          - atlas_paperless_http_port | int > 1024
+          - atlas_paperless_http_port | int < 65536
+          - atlas_paperless_network_subnet != atlas_nextcloud_network_subnet
+          - item is search('@sha256:[0-9a-f]{64}$')
+      loop:
+        - "{{ atlas_paperless_image }}"
+        - "{{ atlas_paperless_postgres_image }}"
+        - "{{ atlas_paperless_valkey_image }}"
+        - "{{ atlas_paperless_tika_image }}"
+        - "{{ atlas_paperless_gotenberg_image }}"
+        - "{{ atlas_paperless_ollama_image }}"
+
+    - name: Require dedicated Paperless Vault secrets without exposing them
+      ansible.builtin.assert:
+        that:
+          - vault_paperless_database_password | default('') is match('^[a-zA-Z0-9]{32,}$')
+          - vault_paperless_secret_key | default('') | length >= 64
+      no_log: true
+
+    - name: Verify the existing application-data parent is mounted
+      community.general.zfs_facts:
+        name: "{{ atlas_zfs_pool }}/{{ atlas_zfs_dataset_app_data }}"
+        properties: name,mounted,mountpoint
+      register: atlas_paperless_parent
+
+    - name: Require the verified application-data parent
+      ansible.builtin.assert:
+        that:
+          - atlas_paperless_parent.ansible_facts.ansible_zfs_datasets | length == 1
+          - atlas_paperless_parent.ansible_facts.ansible_zfs_datasets[0].mounted == 'yes'
+          - atlas_paperless_parent.ansible_facts.ansible_zfs_datasets[0].mountpoint == atlas_app_data_mountpoint
+
+    - name: Create dedicated Paperless component datasets
+      community.general.zfs:
+        name: "{{ atlas_paperless_dataset }}{{ item }}"
+        state: present
+        extra_zfs_properties:
+          compression: zstd
+          mountpoint: "{{ atlas_paperless_root }}{{ item }}"
+      loop: ['', /data, /media, /consume, /database, /cache, /ollama]
+
+    - name: Prepare private Paperless paths and Quadlet directory
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0700"
+      loop:
+        - "{{ atlas_paperless_root }}"
+        - "{{ atlas_paperless_root }}/data"
+        - "{{ atlas_paperless_root }}/media"
+        - "{{ atlas_paperless_root }}/consume"
+        - "{{ atlas_paperless_root }}/ollama"
+        - "{{ atlas_paperless_private_dir }}"
+        - "{{ atlas_paperless_quadlet_dir }}"
+
+    - name: Derive the rootless PostgreSQL host UID
+      become_user: "{{ atlas_admin_username }}"
+      ansible.builtin.command:
+        argv:
+          - podman
+          - unshare
+          - python3
+          - -c
+          - >-
+            print(next(int(host) + 999 - int(container) for container, host, size in
+            (line.split() for line in open('/proc/self/uid_map'))
+            if int(container) <= 999 < int(container) + int(size)))
+      register: atlas_paperless_postgres_host_uid
+      check_mode: false
+      changed_when: false
+
+    - name: Allow the rootless PostgreSQL UID to traverse its dataset root
+      ansible.builtin.file:
+        path: "{{ atlas_paperless_root }}/database"
+        state: directory
+        owner: "{{ atlas_paperless_postgres_host_uid.stdout | trim }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0700"
+
+    - name: Allow the rootless Valkey UID to write its persistent cache
+      ansible.builtin.file:
+        path: "{{ atlas_paperless_root }}/cache"
+        state: directory
+        owner: "{{ atlas_paperless_postgres_host_uid.stdout | trim }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0700"
+      register: atlas_paperless_cache_root
+
+    - name: Store Paperless secrets in private mounted files
+      ansible.builtin.copy:
+        content: "{{ item.value }}\n"
+        dest: "{{ atlas_paperless_private_dir }}/{{ item.name }}"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0644"
+      loop:
+        - {name: postgres-password, value: "{{ vault_paperless_database_password }}"}
+        - {name: secret-key, value: "{{ vault_paperless_secret_key }}"}
+      no_log: true
+      diff: false
+      register: atlas_paperless_secret_files
+
+    - name: Admit only the Aegis gateway to the Paperless listener
+      ansible.posix.firewalld:
+        rich_rule: >-
+          rule family="ipv4" source address="{{ atlas_aegis_ip }}"
+          port port="{{ atlas_paperless_http_port }}" protocol="tcp" accept
+        zone: "{{ atlas_firewalld_zone }}"
+        state: enabled
+        permanent: true
+        immediate: true
+
+    - name: Keep the Paperless rootless user manager available at boot
+      ansible.builtin.command:
+        argv: [loginctl, enable-linger, "{{ atlas_admin_username }}"]
+      args:
+        creates: "/var/lib/systemd/linger/{{ atlas_admin_username }}"
+
+    - name: Render the private Paperless Quadlets
+      ansible.builtin.template:
+        src: "{{ item }}.j2"
+        dest: "{{ atlas_paperless_quadlet_dir }}/{{ item }}"
+        owner: "{{ atlas_admin_username }}"
+        group: "{{ atlas_admin_group }}"
+        mode: "0644"
+      loop:
+        - atlas-paperless.network
+        - atlas-paperless-db.container
+        - atlas-paperless-valkey.container
+        - atlas-paperless-tika.container
+        - atlas-paperless-gotenberg.container
+        - atlas-paperless-ollama.container
+        - atlas-paperless.container
+      register: atlas_paperless_quadlets
+
+    - name: Pull, start and verify Paperless
+      become_user: "{{ atlas_admin_username }}"
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ atlas_admin_uid }}"
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ atlas_admin_uid }}/bus"
+      when: not ansible_check_mode
+      block:
+        - name: Pull the pinned Paperless images before starting services
+          containers.podman.podman_image:
+            name: "{{ item }}"
+            state: present
+          loop:
+            - "{{ atlas_paperless_image }}"
+            - "{{ atlas_paperless_postgres_image }}"
+            - "{{ atlas_paperless_valkey_image }}"
+            - "{{ atlas_paperless_tika_image }}"
+            - "{{ atlas_paperless_gotenberg_image }}"
+            - "{{ atlas_paperless_ollama_image }}"
+
+        - name: Reload the rootless user manager for Paperless
+          ansible.builtin.systemd:
+            scope: user
+            daemon_reload: true
+
+        - name: Start Paperless component services
+          ansible.builtin.systemd:
+            scope: user
+            name: "{{ item }}"
+            state: >-
+              {{ 'restarted' if
+                 (atlas_paperless_quadlets.results |
+                  selectattr('item', 'equalto', item | replace('.service', '.container')) |
+                  selectattr('changed') | list | length > 0) or
+                 (atlas_paperless_quadlets.results |
+                  selectattr('item', 'equalto', 'atlas-paperless.network') |
+                  selectattr('changed') | list | length > 0) or
+                 (atlas_paperless_secret_files is changed and
+                  item in ['atlas-paperless-db.service', 'atlas-paperless.service']) or
+                 (atlas_paperless_cache_root is changed and
+                  item == 'atlas-paperless-valkey.service') else 'started' }}
+            enabled: true
+          loop: "{{ atlas_paperless_services }}"
+
+        - name: Verify the Paperless HTTP service through its LAN listener
+          ansible.builtin.uri:
+            url: "http://{{ ansible_host }}:{{ atlas_paperless_http_port }}/"
+            status_code: [200, 302]
+          register: atlas_paperless_http
+          retries: 60
+          delay: 5
+          until: atlas_paperless_http is succeeded
+
+        - name: Verify the private Ollama API from Paperless
+          ansible.builtin.command:
+            argv:
+              - podman
+              - exec
+              - atlas-paperless
+              - python3
+              - -c
+              - >-
+                import urllib.request;
+                urllib.request.urlopen('http://atlas-paperless-ollama:11434/api/tags', timeout=10).close()
+          register: atlas_paperless_ollama_health
+          changed_when: false
+          retries: 30
+          delay: 5
+          until: atlas_paperless_ollama_health.rc == 0
+
+        - name: Check whether the local AI models are present
+          ansible.builtin.command:
+            argv: [podman, exec, atlas-paperless-ollama, ollama, show, "{{ item }}"]
+          loop:
+            - "{{ atlas_paperless_llm_model }}"
+            - "{{ atlas_paperless_embedding_model }}"
+          register: atlas_paperless_model_checks
+          changed_when: false
+          failed_when: false
+
+        - name: Download missing local AI models
+          ansible.builtin.command:
+            argv: [podman, exec, atlas-paperless-ollama, ollama, pull, "{{ item.item }}"]
+          loop: "{{ atlas_paperless_model_checks.results }}"
+          when: item.rc != 0
+          loop_control:
+            label: "{{ item.item }}"
+
+        - name: Verify private Office conversion endpoints from Paperless
+          ansible.builtin.command:
+            argv:
+              - podman
+              - exec
+              - atlas-paperless
+              - python3
+              - -c
+              - >-
+                import urllib.request;
+                urls = ['http://atlas-paperless-tika:9998/version',
+                'http://atlas-paperless-gotenberg:3000/health'];
+                [urllib.request.urlopen(url, timeout=10).close() for url in urls]
+          register: atlas_paperless_office_health
+          changed_when: false
+          retries: 30
+          delay: 5
+          until: atlas_paperless_office_health.rc == 0

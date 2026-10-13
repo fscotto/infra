@@ -1,0 +1,18 @@
+[Unit]
+Description=Atlas Paperless private Apache Tika
+
+[Container]
+ContainerName=atlas-paperless-tika
+Image={{ atlas_paperless_tika_image }}
+Network=atlas-paperless.network
+NetworkAlias=atlas-paperless-tika
+PodmanArgs=--memory=1g
+NoNewPrivileges=true
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,21 @@
+[Unit]
+Description=Atlas Paperless private Valkey broker
+RequiresMountsFor={{ atlas_paperless_root }}/cache
+
+[Container]
+ContainerName=atlas-paperless-valkey
+Image={{ atlas_paperless_valkey_image }}
+Network=atlas-paperless.network
+NetworkAlias=atlas-paperless-valkey
+Volume={{ atlas_paperless_root }}/cache:/data:Z
+Exec=valkey-server --appendonly yes
+PodmanArgs=--memory=256m
+NoNewPrivileges=true
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

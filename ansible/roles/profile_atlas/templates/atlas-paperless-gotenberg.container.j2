@@ -1,0 +1,20 @@
+[Unit]
+Description=Atlas Paperless private Gotenberg
+
+[Container]
+ContainerName=atlas-paperless-gotenberg
+Image={{ atlas_paperless_gotenberg_image }}
+Network=atlas-paperless.network
+NetworkAlias=atlas-paperless-gotenberg
+# Keep external content and JavaScript disabled for email/Office conversion.
+Exec=gotenberg --chromium-disable-javascript=true --chromium-allow-list=^file:///tmp/.*
+PodmanArgs=--memory=2g
+NoNewPrivileges=true
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

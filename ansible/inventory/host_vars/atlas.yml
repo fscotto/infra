@@ -97,6 +97,17 @@ atlas_nextcloud_apps:
     url: https://github.com/nextcloud-releases/calendar/releases/download/v6.6.2/calendar-v6.6.2.tar.gz
     checksum: sha256:7e83632d4436d3037a34d1c73cbc06d5ccb6e8fc10f096a86a43a0515588529c
 # Rootless Gitea was restored from the stopped-source export before production activation.
+# Paperless runs rootless on dedicated ZFS datasets; NPM remains on Prometheus.
+atlas_manage_paperless: true
+atlas_paperless_domain: documents.fscotto.co
+# Resolved official amd64 images on 2026-10-12; upgrades remain deliberate.
+atlas_paperless_image: ghcr.io/paperless-ngx/paperless-ngx:3.2.1@sha256:5fa76604a81df6945086e0837b14b56543d137e8ce4f311cc5d9ebe907e74e79
+atlas_paperless_postgres_image: docker.io/library/postgres:17-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826
+atlas_paperless_valkey_image: docker.io/valkey/valkey:8-bookworm@sha256:fea8b3e67b15729d4bb70589eb03367bab9ad1ee89c876f54327fc7c6e618571
+atlas_paperless_tika_image: docker.io/apache/tika:3.3.1.0@sha256:90b7fa1dc018434075fce9e1d9b88b1e3d0ea6979d0cf86e116c79a8073ae973
+atlas_paperless_gotenberg_image: docker.io/gotenberg/gotenberg:8.37@sha256:f29984bd1e226bf1b93ba90af06000afa8b315853e99d27b9aaa41b93f15c769
+atlas_paperless_ollama_image: docker.io/ollama/ollama:0.40.3@sha256:adca95a12c2b386a8f9a995e7fa0600e187e3323b5e5522f5a6c3b1ec73eff99
+
 atlas_manage_gitea: true
 atlas_gitea_production_enabled: true
 atlas_gitea_public_domain: git.fscotto.co

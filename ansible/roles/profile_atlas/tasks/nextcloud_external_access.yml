@@ -74,6 +74,18 @@
     state: present
   loop: "{{ atlas_nextcloud_external_mounts }}"
 
+- name: Restore effective web write access inside writable external storage
+  ansible.posix.acl:
+    path: "{{ item.source }}"
+    etype: mask
+    permissions: rwX
+    recursive: true
+    follow: false
+    recalculate_mask: no_mask
+    state: present
+  loop: "{{ atlas_nextcloud_external_mounts }}"
+  when: not item.readonly
+
 - name: Inherit web access on new files and directories
   ansible.posix.acl:
     path: "{{ item.source }}"

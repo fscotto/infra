@@ -106,6 +106,14 @@
     state: present
     update_cache: false
 
+- name: Remove excluded packages on Void Linux
+  tags: [packages]
+  community.general.xbps:
+    name: "{{ void_removed_packages | default([]) }}"
+    state: absent
+    update_cache: false
+  when: (void_removed_packages | default([])) | length > 0
+
 - name: Check whether the selected display manager is active
   tags: [packages, display-manager]
   ansible.builtin.stat:

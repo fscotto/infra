@@ -183,7 +183,7 @@ profile_packages:
   - deluge-gtk
   - delve
   - dnsmasq
-  - evolution
+  - thunderbird
   - poppler-glib
   - poppler-utils
   - fontconfig-devel
@@ -223,6 +223,9 @@ profile_packages:
   - yaru
   - yaru-plus
   - zstd
+
+void_removed_packages:
+  - evolution
 
 profile_emacs_packages:
   - emacs-pgtk

@@ -122,6 +122,9 @@
 
   roles:
     - profile_desktop_gnome
+    - role: desktop_ai_media
+      when: desktop_ai_media_enabled | default(false) | bool
+      tags: [ai_media]
 
 - name: Configure Fedora workstation development layer
   hosts: workstation_dev_fedora

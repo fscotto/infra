@@ -1,0 +1,10 @@
+---
+desktop_ai_media_enabled: false
+desktop_ai_media_root: "{{ user_home }}/.local/share/ai-media"
+desktop_ai_media_build_root: "{{ user_home }}/.local/share/ai-media-build"
+desktop_ai_media_debian_snapshot: "20261013T000000Z"
+desktop_ai_media_base_image: >-
+  docker.io/library/python@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
+desktop_ai_media_facefusion_revision: 72470819a0373be3388b3929c8f8f311f418fc3c
+desktop_ai_media_rvc_revision: 81eed5e8f68b6bed1789f682fe78cdd324495afc
+desktop_ai_media_apps: [facefusion, rvc]

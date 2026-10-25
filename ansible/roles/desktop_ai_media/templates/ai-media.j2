@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root={{ desktop_ai_media_root | quote }}
+app="${1:-}"
+case "$app" in
+    facefusion|rvc) shift ;;
+    ffmpeg) app=facefusion; shift; set -- ffmpeg "$@" ;;
+    verify)
+        for tool in facefusion rvc; do
+            podman --remote=false run --rm --pull=never --network=none --read-only \
+                --cap-drop=ALL --cap-add=SYS_CHROOT \
+                --security-opt=no-new-privileges --userns=keep-id --http-proxy=false \
+                --tmpfs "/tmp:rw,nosuid,nodev,size=4g,mode=1777" \
+                --tmpfs "/home/media:rw,nosuid,nodev,size=128m,mode=1777" \
+                --tmpfs "/work/state:rw,nosuid,nodev,size=128m,mode=1777" \
+                --tmpfs "/work/models:rw,nosuid,nodev,size=128m,mode=1777" \
+                "localhost/ai-media-$tool:managed" verify
+        done
+        exit 0 ;;
+    *) echo "Usage: ai-media {facefusion|rvc|ffmpeg|verify} [cli ...]" >&2; exit 2 ;;
+esac
+# Fail closed if an existing data path was replaced by a symlink.
+for path in "$root" "$root/input" "$root/output" "$root/models" "$root/state/$app"; do
+    [[ -d "$path" && "$(realpath -- "$path")" == "$path" ]] || {
+        echo "Unsafe or missing media directory: $path" >&2; exit 1;
+    }
+done
+python3 {{ (desktop_ai_media_build_root + "/check_storage.py") | quote }} "$root"
+# Run interactive sessions under the user manager, not the launching terminal.
+# No autostart or automatic restart: recovering a training run remains explicit.
+if [[ "$app" == rvc || "$app" == facefusion ]] && [[ $# -eq 0 ]]; then
+    : "${XDG_RUNTIME_DIR:?Run this launcher from the GNOME Wayland session}"
+    : "${WAYLAND_DISPLAY:?A Wayland session is required}"
+    [[ "$WAYLAND_DISPLAY" != */* && -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]] || exit 1
+    active=$(podman --remote=false ps --filter "ancestor=localhost/ai-media-$app:managed" --format '{{ '{{.ID}}' }}')
+    if [[ -n "$active" ]]; then
+        echo "$app is already running; leave its training session open." >&2
+        exit 1
+    fi
+    exec systemd-run --user --collect --unit="ai-media-$app" \
+        --property=Type=exec --property=Restart=no --property=Delegate=yes \
+        --setenv="XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" --setenv="WAYLAND_DISPLAY=$WAYLAND_DISPLAY" \
+        -- /usr/bin/bash "$(realpath -- "$0")" "$app" --foreground
+fi
+if [[ "${1:-}" == --foreground ]]; then
+    shift
+fi
+args=(
+    run --rm --pull=never --network=none --read-only --userns=keep-id --http-proxy=false
+    --cap-drop=ALL --security-opt=no-new-privileges
+    --tmpfs "/tmp:rw,nosuid,nodev,size=8g,mode=1777"
+    --tmpfs "/home/media:rw,nosuid,nodev,size=128m,mode=1777"
+    --shm-size=512m
+    --volume "$root/input:/work/input:ro,Z"
+    --volume "$root/output:/work/output:rw,Z"
+    --volume "$root/models:/work/models:ro,Z"
+    --volume "$root/state/$app:/work/state:rw,Z"
+)
+if [[ "${1:-}" != cli && "${1:-}" != ffmpeg ]]; then
+    : "${XDG_RUNTIME_DIR:?Run this launcher from the GNOME Wayland session}"
+    : "${WAYLAND_DISPLAY:?A Wayland session is required}"
+    [[ "$WAYLAND_DISPLAY" != */* && -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]] || exit 1
+    # Share only the display socket, never the runtime directory, D-Bus, home
+    # directory or host browser. Do not relabel the compositor's socket.
+    args+=(
+        --cap-add=SYS_CHROOT
+        --security-opt label=disable
+        --tmpfs "/run/media:rw,nosuid,nodev,size=1m,mode=1777"
+        --volume "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY:/run/media/wayland-0:ro"
+        --env WAYLAND_DISPLAY=wayland-0
+    )
+    if [[ -S "$XDG_RUNTIME_DIR/pulse/native" ]]; then
+        args+=(
+            --volume "$XDG_RUNTIME_DIR/pulse/native:/run/media/pulse-native:ro"
+            --env PULSE_SERVER=unix:/run/media/pulse-native
+        )
+    fi
+fi
+exec podman --remote=false "${args[@]}" "localhost/ai-media-$app:managed" "$@"

@@ -1,0 +1,134 @@
+---
+desktop_ai_media_public_models:
+  - app: facefusion
+    path: .assets/models/2dfan4.hash
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/2dfan4.hash
+    sha256: e6a6ef99b10b9fdb790c790879ca201f7afbe52560e4379248922324a9d503e8
+  - app: facefusion
+    path: .assets/models/2dfan4.onnx
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/2dfan4.onnx
+    sha256: 678c6fa539d52335a31c980feefdf4a6e02d781d83dce00af8a894f114557285
+  - app: facefusion
+    path: .assets/models/arcface_w600k_r50.hash
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/arcface_w600k_r50.hash
+    sha256: e3a6d709939a81fe09e71c7d36f96d54a0deede904e31a38c191a1904e808371
+  - app: facefusion
+    path: .assets/models/arcface_w600k_r50.onnx
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/arcface_w600k_r50.onnx
+    sha256: f1f79dc3b0b79a69f94799af1fffebff09fbd78fd96a275fd8f0cbbea23270d1
+  - app: facefusion
+    path: .assets/models/bisenet_resnet_34.hash
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/bisenet_resnet_34.hash
+    sha256: bfca5e43ca55110701ab691d864cacfddccad324dc42043aea8c001a949ce1f8
+  - app: facefusion
+    path: .assets/models/bisenet_resnet_34.onnx
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/bisenet_resnet_34.onnx
+    sha256: 4a0b8c958a3c938913bd06a8365dbb3c8761afba6ecbf0d14b3b1f77eb230c96
+  - app: facefusion
+    path: .assets/models/fairface.hash
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/fairface.hash
+    sha256: e232c933114a6c9ce446195e4a96bf1c3327dd31c13165849cd00f9f19a2ea62
+  - app: facefusion
+    path: .assets/models/fairface.onnx
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/fairface.onnx
+    sha256: b176b1e4b0739496e7943af7ba4ff306271fecf837bca5ec5d9a48201959db37
+  - app: facefusion
+    path: .assets/models/fan_68_5.hash
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/fan_68_5.hash
+    sha256: 092d902410959b3ce01294d7c1ad157f1c602e3918238117e7ef87157be9534e
+  - app: facefusion
+    path: .assets/models/fan_68_5.onnx
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/fan_68_5.onnx
+    sha256: ea05f7d9d014ae1d9cdc6e9c72643d8f00d198b5db3fdd384148ddff499a613e
+  - app: facefusion
+    path: .assets/models/hyperswap_1a_256.hash
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.3.0/hyperswap_1a_256.hash
+    sha256: 70b33d0a9d6044847d9b29f9d08ce7afc140a2cada5b4b5f532bbd6440ba48c1
+  - app: facefusion
+    path: .assets/models/hyperswap_1a_256.onnx
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.3.0/hyperswap_1a_256.onnx
+    sha256: c0e98a8a03a238f461ed3d2570e426b49f46745ee400854a60dceeb70c246add
+  - app: facefusion
+    path: .assets/models/kim_vocal_2.hash
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/kim_vocal_2.hash
+    sha256: fcd81ca30adf430b697fe58d60183031173c8ab0ca82efef308d652b1afb4197
+  - app: facefusion
+    path: .assets/models/kim_vocal_2.onnx
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/kim_vocal_2.onnx
+    sha256: fbde1fd7d35a6b1785add2225ce03255a01ccef6c8a5fb7b2ccd4e0c1e9097f7
+  - app: facefusion
+    path: .assets/models/nsfw_1.hash
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.3.0/nsfw_1.hash
+    sha256: 48c61a15ffcda1ae9e6d4c790224072c8e5648d4ba2f767cf4cfe0be7e282853
+  - app: facefusion
+    path: .assets/models/nsfw_1.onnx
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.3.0/nsfw_1.onnx
+    sha256: 3debfd72763bc931dd308f57d1e9299ae13bb309d14ddbdc17ce8f1fd42f96af
+  - app: facefusion
+    path: .assets/models/nsfw_2.hash
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.3.0/nsfw_2.hash
+    sha256: 64cbc0c1a4d72e181fae364281b6d2130be3b87d5784909c5a29adf436f09a01
+  - app: facefusion
+    path: .assets/models/nsfw_2.onnx
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.3.0/nsfw_2.onnx
+    sha256: 5aae1806ce44e3c27fab0a7d44eed581dd25ca71a4387ff809a191c98239c1be
+  - app: facefusion
+    path: .assets/models/nsfw_3.hash
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.3.0/nsfw_3.hash
+    sha256: b15c591d8177511959174a0c6761827e3bf9c0aa1d63aaa79645d9fc9a4e774b
+  - app: facefusion
+    path: .assets/models/nsfw_3.onnx
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.3.0/nsfw_3.onnx
+    sha256: 778139fb930240ac39812a1480295bfc5dc2cec8a8e46ee6b453481d600c0fa2
+  - app: facefusion
+    path: .assets/models/xseg_1.hash
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.1.0/xseg_1.hash
+    sha256: da3648ccecaa79f3be5ca0e1c3713f775504dd5c5dff716c095925132c02b08e
+  - app: facefusion
+    path: .assets/models/xseg_1.onnx
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.1.0/xseg_1.onnx
+    sha256: c4d1498b8a03b5fe2a3a5d2ef2a0402ab03bd51edaf5b2d8d5fb764702a97dd3
+  - app: facefusion
+    path: .assets/models/yoloface_8n.hash
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/yoloface_8n.hash
+    sha256: 7a4bd7e1a8cd938db2234dba41d4a8b7719bedbf7496d35510927cbd4b71683f
+  - app: facefusion
+    path: .assets/models/yoloface_8n.onnx
+    url: https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/yoloface_8n.onnx
+    sha256: 821cdbb1e65fbbabdde7dd0933f754797a343e56fd962729c61ffcefcd135929
+  - app: rvc
+    path: assets/hubert_base/config.json
+    url: https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/e6d0c1a17da07c33557852f9dfa2bd44cc75737d/hubert_base/config.json
+    sha256: 0346950779dfb7f9316fa74ed846e2b8a22a08eedfdc5387b73f327cb1a4a7cf
+  - app: rvc
+    path: assets/hubert_base/preprocessor_config.json
+    url: https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/e6d0c1a17da07c33557852f9dfa2bd44cc75737d/hubert_base/preprocessor_config.json
+    sha256: 7c1976a680fb7acc757cd36fb08eef878fa36c70b4c9d2d595df9c608bbbbf0e
+  - app: rvc
+    path: assets/hubert_base/pytorch_model.bin
+    url: https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/e6d0c1a17da07c33557852f9dfa2bd44cc75737d/hubert_base/pytorch_model.bin
+    sha256: cc8c20f4b90a520757260197a3ff2505705a7adbd20ad9eeaa4e1a9b38442ef5
+  - app: rvc
+    path: assets/rmvpe/rmvpe.pt
+    url: https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/e6d0c1a17da07c33557852f9dfa2bd44cc75737d/rmvpe.pt
+    sha256: 6d62215f4306e3ca278246188607209f09af3dc77ed4232efdd069798c4ec193
+  - app: rvc
+    path: assets/mute.zip
+    url: https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/e6d0c1a17da07c33557852f9dfa2bd44cc75737d/mute.zip
+    sha256: ee948e85213e4ed2f2ba2f8dfcee810bfd0b63131d91450e920bbe1cbd0321d0
+  - app: rvc
+    path: assets/pretrained_v2/f0D40k.pth
+    url: https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/e6d0c1a17da07c33557852f9dfa2bd44cc75737d/pretrained_v2/f0D40k.pth
+    sha256: 6b6ab091e70801b28e3f41f335f2fc5f3f35c75b39ae2628d419644ec2b0fa09
+  - app: rvc
+    path: assets/pretrained_v2/f0G40k.pth
+    url: https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/e6d0c1a17da07c33557852f9dfa2bd44cc75737d/pretrained_v2/f0G40k.pth
+    sha256: 3b2c44035e782c4b14ddc0bede9e2f4a724d025cd073f736d4f43708453adfcb
+  - app: rvc
+    path: assets/pymss_weights/model_bs_roformer_ep_368_sdr_12.9628.ckpt
+    url: https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/e6d0c1a17da07c33557852f9dfa2bd44cc75737d/pymss_weights/model_bs_roformer_ep_368_sdr_12.9628.ckpt
+    sha256: 97c9e1011924ff647d147b474638c161b80586fd5b9e83fab59cbbb70014bf62
+  - app: rvc
+    path: assets/pymss_weights/model_bs_roformer_ep_368_sdr_12.9628.yaml
+    url: https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/e6d0c1a17da07c33557852f9dfa2bd44cc75737d/pymss_weights/model_bs_roformer_ep_368_sdr_12.9628.yaml
+    sha256: 105fd8e6a1ef1b038db2aa657a9f9696283d506dbc815bd7134a57aa80ec9f10

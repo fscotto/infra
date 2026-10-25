@@ -1,0 +1,40 @@
+FROM {{ desktop_ai_media_base_image }}
+LABEL io.fscotto.ai-media.models="{{ desktop_ai_media_public_models | selectattr('app', 'equalto', item) | list | to_json | hash('sha256') }}"
+ENV DEBIAN_FRONTEND=noninteractive PIP_DISABLE_PIP_VERSION_CHECK=1
+RUN sed -i \
+    -e 's|http://deb.debian.org/debian$|https://snapshot.debian.org/archive/debian/{{ desktop_ai_media_debian_snapshot }}/|' \
+    -e 's|http://deb.debian.org/debian-security$|https://snapshot.debian.org/archive/debian-security/{{ desktop_ai_media_debian_snapshot }}/|' \
+    /etc/apt/sources.list.d/debian.sources \
+    && apt-get -o Acquire::Check-Valid-Until=false update \
+    && apt-get install -y --no-install-recommends \
+    ca-certificates curl git ffmpeg firefox-esr fonts-dejavu-core libgl1 libglib2.0-0 libportaudio2 \
+    && rm -rf /var/lib/apt/lists/*
+COPY requirements-{{ item }}.lock /opt/requirements.lock
+WORKDIR /opt/app
+{% if item == 'facefusion' %}
+RUN git init . && git remote add origin https://github.com/facefusion/facefusion.git \
+    && git fetch --depth 1 origin {{ desktop_ai_media_facefusion_revision }} \
+    && git checkout --detach FETCH_HEAD && rm -rf .git \
+    && pip install --no-cache-dir -r /opt/requirements.lock
+{% else %}
+RUN git init . && git remote add origin https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI.git \
+    && git fetch --depth 1 origin {{ desktop_ai_media_rvc_revision }} \
+    && git checkout --detach FETCH_HEAD && rm -rf .git \
+    && pip install --no-cache-dir -r /opt/requirements.lock
+{% endif %}
+{% for model in desktop_ai_media_public_models if model.app == item %}
+COPY models/{{ model.app }}/{{ model.path }} /opt/app/{{ model.path }}
+{% endfor %}
+COPY prepare.py /opt/
+RUN python /opt/prepare.py {{ item }} \
+    && pip freeze --all > /opt/python-requirements.lock \
+    && test -s /opt/model-checksums.sha256
+COPY session.py verify.py /opt/
+RUN mkdir -p /work/input /work/output /work/state /work/models /home/media
+ENV GRADIO_ANALYTICS_ENABLED=False HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+    HF_HUB_DISABLE_TELEMETRY=1 DO_NOT_TRACK=1 HOME=/home/media \
+    XDG_RUNTIME_DIR=/run/media MOZ_ENABLE_WAYLAND=1 GTK_USE_PORTAL=0 \
+    LIBGL_ALWAYS_SOFTWARE=1 GRADIO_SERVER_NAME=127.0.0.1 GRADIO_SERVER_PORT=7860 \
+    PYTHONPATH=/opt/app PYTHONSAFEPATH=1 PYTHONDONTWRITEBYTECODE=1 NUMBA_CACHE_DIR=/tmp/numba MPLCONFIGDIR=/tmp/matplotlib \
+    GRADIO_TEMP_DIR=/tmp/gradio APP={{ item }}
+ENTRYPOINT ["python", "/opt/session.py"]

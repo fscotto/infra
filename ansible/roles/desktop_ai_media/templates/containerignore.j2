@@ -1,0 +1,15 @@
+*
+!Containerfile.*
+!prepare.py
+!session.py
+!verify.py
+!requirements-facefusion.lock
+!requirements-rvc.lock
+!models/
+{% for model in desktop_ai_media_public_models %}
+!models/{{ model.app }}/
+{% for depth in range(1, model.path.split('/') | length) %}
+!models/{{ model.app }}/{{ model.path.split('/')[:depth] | join('/') }}/
+{% endfor %}
+!models/{{ model.app }}/{{ model.path }}
+{% endfor %}

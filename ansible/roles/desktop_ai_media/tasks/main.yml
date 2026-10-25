@@ -1,0 +1,217 @@
+---
+- name: Configure isolated desktop media tools as the desktop user
+  become: false
+  block:
+    - name: Load pinned public model manifest
+      ansible.builtin.include_vars: models.yml
+
+    - name: Identify unprivileged desktop user
+      ansible.builtin.command:
+        argv: [id, -un]
+      register: desktop_ai_media_user
+      changed_when: false
+      check_mode: false
+
+    - name: Verify local Fedora desktop scope
+      ansible.builtin.assert:
+        that:
+          - "'platform_fedora' in group_names"
+          - "'desktop_gnome' in group_names"
+          - ansible_connection == 'local'
+          - desktop_ai_media_user.stdout == username
+          - ansible_facts.architecture == 'x86_64'
+          - desktop_ai_media_root.startswith(user_home + '/')
+          - desktop_ai_media_root != user_home
+          - desktop_ai_media_build_root != desktop_ai_media_root
+          - desktop_ai_media_facefusion_revision is match('^[0-9a-f]{40}$')
+          - desktop_ai_media_rvc_revision is match('^[0-9a-f]{40}$')
+          - "'@sha256:' in desktop_ai_media_base_image"
+          - desktop_ai_media_debian_snapshot is match('^[0-9]{8}T[0-9]{6}Z$')
+          - desktop_ai_media_public_models | length > 0
+          - >-
+            desktop_ai_media_apps | difference(
+            desktop_ai_media_public_models | map(attribute='app') | list) | length == 0
+
+    - name: Verify existing rootless Podman runtime
+      ansible.builtin.command:
+        argv: [podman, --remote=false, info, --format, "{{ '{{.Host.Security.Rootless}}' }}"]
+      register: desktop_ai_media_podman
+      changed_when: false
+      check_mode: false
+
+    - name: Require rootless containers
+      ansible.builtin.assert:
+        that: desktop_ai_media_podman.stdout == 'true'
+
+    - name: Reject remote or synchronized media storage before provisioning
+      ansible.builtin.command:
+        argv: [python3, "-", "{{ desktop_ai_media_root }}"]
+        stdin: "{{ lookup('ansible.builtin.file', role_path + '/files/check_storage.py') }}"
+      changed_when: false
+      check_mode: false
+
+    - name: Create private application and media directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0700"
+      loop:
+        - "{{ desktop_ai_media_root }}"
+        - "{{ desktop_ai_media_root }}/input"
+        - "{{ desktop_ai_media_root }}/input/voice"
+        - "{{ desktop_ai_media_root }}/output"
+        - "{{ desktop_ai_media_root }}/models"
+        - "{{ desktop_ai_media_root }}/models/weights"
+        - "{{ desktop_ai_media_root }}/models/indices"
+        - "{{ desktop_ai_media_root }}/state"
+        - "{{ desktop_ai_media_root }}/state/facefusion"
+        - "{{ desktop_ai_media_root }}/state/rvc"
+        - "{{ desktop_ai_media_build_root }}"
+
+    - name: Ensure user launcher directories exist without changing existing permissions
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - "{{ user_home }}/.local/bin"
+        - "{{ user_home }}/.local/share/applications"
+
+    - name: Install runtime and model preparation code into the data-free build context
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ desktop_ai_media_build_root }}/{{ item }}"
+        mode: "0644"
+      loop: [session.py, prepare.py, verify.py, check_storage.py]
+      register: desktop_ai_media_support
+
+    - name: Create public model cache directories
+      ansible.builtin.file:
+        path: "{{ desktop_ai_media_build_root }}/models/{{ item.app }}/{{ item.path | dirname }}"
+        state: directory
+        mode: "0700"
+      loop: "{{ desktop_ai_media_public_models }}"
+      loop_control:
+        label: "{{ item.app }}/{{ item.path }}"
+
+    - name: Cache public models using pinned SHA256 checksums without personal data
+      ansible.builtin.get_url:
+        url: "{{ item.url }}"
+        dest: "{{ desktop_ai_media_build_root }}/models/{{ item.app }}/{{ item.path }}"
+        checksum: "sha256:{{ item.sha256 }}"
+        mode: "0644"
+        timeout: 60
+        use_netrc: false
+        use_proxy: false
+      loop: "{{ desktop_ai_media_public_models }}"
+      loop_control:
+        label: "{{ item.app }}/{{ item.path }}"
+      register: desktop_ai_media_model_cache
+
+    - name: Install complete Python dependency locks
+      ansible.builtin.copy:
+        src: "requirements-{{ item }}.lock"
+        dest: "{{ desktop_ai_media_build_root }}/requirements-{{ item }}.lock"
+        mode: "0644"
+      loop: "{{ desktop_ai_media_apps }}"
+      register: desktop_ai_media_locks
+
+    - name: Restrict the build context to code and checksum-pinned public models
+      ansible.builtin.template:
+        src: containerignore.j2
+        dest: "{{ desktop_ai_media_build_root }}/.containerignore"
+        mode: "0644"
+      register: desktop_ai_media_ignore
+
+    - name: Render separate pinned application builds
+      ansible.builtin.template:
+        src: Containerfile.j2
+        dest: "{{ desktop_ai_media_build_root }}/Containerfile.{{ item }}"
+        mode: "0644"
+      loop: "{{ desktop_ai_media_apps }}"
+      register: desktop_ai_media_containerfiles
+
+    - name: Fingerprint the complete application build specification
+      ansible.builtin.set_fact:
+        desktop_ai_media_build_keys: >-
+          {{ desktop_ai_media_build_keys | default({}) | combine({
+             item: (
+               lookup('ansible.builtin.template', role_path + '/templates/Containerfile.j2')
+               + lookup('ansible.builtin.file', role_path + '/files/prepare.py')
+               + lookup('ansible.builtin.file', role_path + '/files/session.py')
+               + lookup('ansible.builtin.file', role_path + '/files/verify.py')
+               + lookup('ansible.builtin.file', role_path + '/files/requirements-' + item + '.lock')
+               + lookup('ansible.builtin.file', role_path + '/templates/containerignore.j2')
+             ) | hash('sha256')
+          }) }}
+      loop: "{{ desktop_ai_media_apps }}"
+
+    - name: Inspect installed media images
+      ansible.builtin.command:
+        argv: [podman, --remote=false, image, exists, "localhost/ai-media-{{ item }}:managed"]
+      loop: "{{ desktop_ai_media_apps }}"
+      register: desktop_ai_media_images
+      failed_when: desktop_ai_media_images.rc not in [0, 1]
+      changed_when: false
+      check_mode: false
+
+    - name: Inspect committed image build fingerprints
+      ansible.builtin.command:
+        argv:
+          - podman
+          - --remote=false
+          - image
+          - inspect
+          - --format
+          - "{{ '{{ index .Labels \"io.fscotto.ai-media.build-key\" }}' }}"
+          - "localhost/ai-media-{{ item.item }}:managed"
+      loop: "{{ desktop_ai_media_images.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when: item.rc == 0
+      register: desktop_ai_media_image_keys
+      changed_when: false
+      check_mode: false
+
+    - name: Build media images without mounting personal data
+      ansible.builtin.command:
+        argv:
+          - podman
+          - --remote=false
+          - build
+          - --http-proxy=false
+          - --pull=missing
+          - --label
+          - "io.fscotto.ai-media.build-key={{ desktop_ai_media_build_keys[item.item] }}"
+          - --tag
+          - "localhost/ai-media-{{ item.item }}:managed"
+          - --file
+          - "{{ desktop_ai_media_build_root }}/Containerfile.{{ item.item }}"
+          - "{{ desktop_ai_media_build_root }}"
+      loop: "{{ desktop_ai_media_images.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when: >-
+        item.rc != 0 or
+        desktop_ai_media_image_keys.results[desktop_ai_media_apps.index(item.item)].stdout | default('') !=
+        desktop_ai_media_build_keys[item.item]
+      changed_when: true
+      timeout: 3600
+
+    - name: Install offline launcher
+      ansible.builtin.template:
+        src: ai-media.j2
+        dest: "{{ user_home }}/.local/bin/ai-media"
+        mode: "0755"
+
+    - name: Install manual offline desktop entries
+      ansible.builtin.template:
+        src: application.desktop.j2
+        dest: "{{ user_home }}/.local/share/applications/ai-media-{{ item }}.desktop"
+        mode: "0644"
+      loop: "{{ desktop_ai_media_apps }}"
+
+    - name: Verify offline networking and application readiness without personal files
+      ansible.builtin.command:
+        argv: ["{{ user_home }}/.local/bin/ai-media", verify]
+      changed_when: false
+      when: not ansible_check_mode

@@ -42,6 +42,10 @@
     global: true
     state: latest
   become: true
+  register: ai_agent_npm_install
+  retries: "{{ ai_agents_npm_install_retries }}"
+  delay: "{{ ai_agents_npm_install_retry_delay }}"
+  until: ai_agent_npm_install is succeeded
   loop: "{{ ai_agents | dict2items | selectattr('value.npm_package', 'defined') | list }}"
   when:
     - item.value.install_enabled | bool

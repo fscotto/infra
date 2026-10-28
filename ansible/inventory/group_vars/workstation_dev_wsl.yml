@@ -1,4 +1,8 @@
 ---
+# Claude Code is managed only on the Fedora WSL development profile.
+claude_code_install_enabled: true
+claude_code_uninstall_enabled: false
+
 enabled_services:
   - docker
 

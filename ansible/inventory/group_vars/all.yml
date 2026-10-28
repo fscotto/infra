@@ -94,6 +94,13 @@ common_dotfiles:
 # Installation and removal are mutually exclusive per agent; the common
 # pre-task enforces this before any changes are made.
 codex_relay_install_enabled: false
+claude_code_install_enabled: false
+claude_code_uninstall_enabled: true
+
+# npm registry requests can be interrupted transiently.  Keep retries bounded
+# so persistent proxy, DNS, or registry failures still fail the play clearly.
+ai_agents_npm_install_retries: 3
+ai_agents_npm_install_retry_delay: 10
 
 ai_agents:
   opencode:
@@ -103,9 +110,9 @@ ai_agents:
     uninstall_enabled: false
   claude_code:
     npm_package: "@anthropic-ai/claude-code"
-    install_enabled: false
+    install_enabled: "{{ claude_code_install_enabled }}"
     deploy_enabled: false
-    uninstall_enabled: true
+    uninstall_enabled: "{{ claude_code_uninstall_enabled }}"
   codex:
     npm_package: "@openai/codex"
     install_enabled: true

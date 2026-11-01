@@ -610,6 +610,35 @@ only in the entry for the agent being removed, then run:
 ansible-playbook ansible/site.yml --limit deadalus --tags ai_agents --check --diff
 ```
 
+### OpenCode Desktop on Fedora
+
+`packages_fedora` also installs the [official OpenCode Desktop RPM](https://opencode.ai/download)
+on the Fedora/GNOME workstations `ikaros` and `nymph`. WSL, Fedora IoT, Void,
+and servers are excluded. This is independent of the npm-managed OpenCode CLI;
+its configuration, credentials, and lifecycle flags remain unchanged.
+
+The version and per-architecture SHA-256 digests are pinned in
+`ansible/inventory/group_vars/fedora.yml`; update both together from the official
+[GitHub release](https://github.com/anomalyco/opencode/releases).
+Confirm the current Desktop version through the official download page, not
+GitHub's `/releases/latest` endpoint alone: on 2026-11-01 the official RPM download
+resolved to 2.2.5 while GitHub's `latest` still selected 1.19.5. The 1.x Desktop
+can reject free models and require an upgrade. Desktop is pinned to 2.2.5;
+the separately managed CLI remains unchanged.
+Upstream RPMs are unsigned, so only this DNF task disables signature checking,
+after verifying the downloaded RPM against its pinned checksum. No repository
+signature policy is changed. Set `opencode_desktop_enabled: false` to stop managing
+installation without uninstalling the application.
+
+```bash
+ansible-playbook ansible/site.yml --limit ikaros --tags opencode_desktop --check --diff
+ansible-playbook ansible/site.yml --limit ikaros --tags opencode_desktop -K
+```
+
+Run locally on each workstation (`ansible_connection: local`); use `--limit nymph`
+on the laptop. With a cold RPM cache, check mode reports that dependency resolution
+is not validated; the real run downloads, verifies, and installs the package.
+
 ## Main roles
 
 | Role | What it does |

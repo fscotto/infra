@@ -91,3 +91,13 @@ fedora_flatpak_packages:
   - com.spotify.Client
   - org.onlyoffice.desktopeditors
   - org.telegram.desktop
+
+# GNOME-only dotfiles. Kept out of desktop_common_dotfiles so the Void desktops
+# do not receive XDG autostart entries for applications they do not install.
+# Nextcloud desktop is the `nextcloud-client` package in fedora_desktop_packages;
+# this entry matches what the client itself writes when "Launch on startup" is on.
+desktop_gnome_dotfiles:
+  - name: Nextcloud autostart entry
+    src: .config/autostart/Nextcloud.desktop
+    dest: .config/autostart/Nextcloud.desktop
+    mode: "0644"

@@ -41,7 +41,7 @@
     owner: "{{ username }}"
     group: "{{ user_group }}"
     mode: "{{ item.mode }}"
-  loop: "{{ desktop_common_dotfiles | default([]) }}"
+  loop: "{{ (desktop_common_dotfiles | default([])) + (desktop_gnome_dotfiles | default([])) }}"
   loop_control:
     label: "{{ item.dest }}"
 

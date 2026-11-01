@@ -84,6 +84,14 @@
       loop: [session.py, prepare.py, verify.py, check_storage.py]
       register: desktop_ai_media_support
 
+    - name: Install host-side offline preset workers without rebuilding images
+      tags: [ai_media_presets]
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ desktop_ai_media_build_root }}/{{ item }}"
+        mode: "0644"
+      loop: [preset.py, preset_rvc.py]
+
     - name: Create public model cache directories
       ansible.builtin.file:
         path: "{{ desktop_ai_media_build_root }}/models/{{ item.app }}/{{ item.path | dirname }}"

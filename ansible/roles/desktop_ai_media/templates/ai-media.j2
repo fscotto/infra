@@ -1,10 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 root={{ desktop_ai_media_root | quote }}
+build_root={{ desktop_ai_media_build_root | quote }}
 app="${1:-}"
 case "$app" in
     facefusion|rvc) shift ;;
     ffmpeg) app=facefusion; shift; set -- ffmpeg "$@" ;;
+    preset)
+        shift
+        for path in "$root" "$root/input" "$root/output"; do
+            [[ -d "$path" && "$(realpath -- "$path")" == "$path" ]] || {
+                echo "Unsafe or missing media directory: $path" >&2; exit 1;
+            }
+        done
+        python3 "$build_root/check_storage.py" "$root"
+        exec python3 "$build_root/preset.py" "$root" "$(realpath -- "$0")" "$@" ;;
     verify)
         for tool in facefusion rvc; do
             podman --remote=false run --rm --pull=never --network=none --read-only \
@@ -17,7 +27,7 @@ case "$app" in
                 "localhost/ai-media-$tool:managed" verify
         done
         exit 0 ;;
-    *) echo "Usage: ai-media {facefusion|rvc|ffmpeg|verify} [cli ...]" >&2; exit 2 ;;
+    *) echo "Usage: ai-media {facefusion|rvc|ffmpeg|preset|verify} [args ...]" >&2; exit 2 ;;
 esac
 # Fail closed if an existing data path was replaced by a symlink.
 for path in "$root" "$root/input" "$root/output" "$root/models" "$root/state/$app"; do
@@ -45,6 +55,13 @@ fi
 if [[ "${1:-}" == --foreground ]]; then
     shift
 fi
+if [[ "$app" == rvc && "${1:-}" == cli ]]; then
+    shift
+    rvc_cli=1
+    set -- /opt/preset_rvc.py "$@"
+else
+    rvc_cli=0
+fi
 args=(
     run --rm --pull=never --network=none --read-only --userns=keep-id --http-proxy=false
     --cap-drop=ALL --security-opt=no-new-privileges
@@ -56,7 +73,10 @@ args=(
     --volume "$root/models:/work/models:ro,Z"
     --volume "$root/state/$app:/work/state:rw,Z"
 )
-if [[ "${1:-}" != cli && "${1:-}" != ffmpeg ]]; then
+if [[ "$rvc_cli" == 1 ]]; then
+    args+=(--volume "$build_root/preset_rvc.py:/opt/preset_rvc.py:ro,Z" --entrypoint python)
+fi
+if [[ "$rvc_cli" != 1 && "${1:-}" != cli && "${1:-}" != ffmpeg ]]; then
     : "${XDG_RUNTIME_DIR:?Run this launcher from the GNOME Wayland session}"
     : "${WAYLAND_DISPLAY:?A Wayland session is required}"
     [[ "$WAYLAND_DISPLAY" != */* && -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]] || exit 1

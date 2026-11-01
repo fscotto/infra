@@ -596,6 +596,13 @@ instructions, credentials, and user data. Installation and removal are mutually
 exclusive per agent: the playbook fails before making changes when both flags are
 true for the same agent. Servers set `ai_agents: {}` and therefore manage none.
 
+OpenCode Mobile (`opencode-mobile`) is installed globally through the same npm
+lifecycle on Fedora, Void desktops, and WSL. Its plugin declaration and `/mobile`
+command are deployed with the OpenCode dotfiles, so its `deploy_enabled` stays
+false. The playbook does not run the interactive installer, configure tunnel
+providers, or register phone push tokens. Pairing and connectivity remain manual;
+see the [upstream instructions](https://github.com/doza62/opencode-mobile#readme).
+
 Run a focused dry run with:
 
 ```bash
@@ -646,10 +653,18 @@ iCloud account is already declared: IMAP `imap.mail.me.com:993` over SSL/TLS, SM
 `smtp.mail.me.com:587` over STARTTLS, the identity and folder mapping, one CalDAV
 calendar (`caldav.icloud.com`) and one CardDAV address book (`contacts.icloud.com`).
 
-The account defaults live in a managed `user.js`, not in `prefs.js`: Thunderbird
-rewrites `prefs.js` on exit, while `user.js` is re-applied at every start.
-`profiles.ini` is only seeded when absent, so a profile list Thunderbird already
-owns is never replaced.
+Before provisioning, the role checks both `~/.thunderbird` and
+`~/.config/thunderbird`, including registered absolute profile paths. If a profile
+already has a configured mail account, it selects that profile without modifying
+its account preferences, passwords, calendars or address books. Registered default
+profiles take priority over other discovered profiles. The active registry keeps
+its other profiles and is backed up before changes, including installation defaults.
+
+Only when no configured account exists does the role create the iCloud profile
+and seed `user.js` without overwriting an existing file. Thunderbird must be closed
+before applying this tag; the playbook never stops it automatically. No profile or
+mail data is deleted or copied. A fresh installation uses `~/.config/thunderbird`;
+an existing legacy `~/.thunderbird` directory is retained.
 
 The address comes from `vault_icloud_email` and the display name from
 `vault_personal_full_name`. The password is deliberately not stored: iCloud mail

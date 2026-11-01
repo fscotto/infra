@@ -3,5 +3,8 @@
   "instructions": [
     "~/.config/ai/bootstrap.md",
     "~/.config/ai/rules/safety.md"
+  ],
+  "plugin": [
+    "opencode-mobile@latest"
   ]
 }

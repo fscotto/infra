@@ -1,52 +1,126 @@
 ---
-- name: Require the iCloud address for the managed Thunderbird profile
+- name: Inspect existing Thunderbird profiles without changing them
+  tags: [thunderbird]
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_facts.python.executable }}"
+      - -c
+      - "{{ lookup('ansible.builtin.file', role_path + '/files/thunderbird_profile.py') }}"
+      - "{{ user_home }}"
+      - "{{ thunderbird_profile_dir }}"
+      - "{{ thunderbird_profile_name }}"
+  become: true
+  become_user: "{{ username }}"
+  register: thunderbird_profile_probe
+  changed_when: false
+  check_mode: false
+
+- name: Select an existing account or plan an iCloud bootstrap
+  tags: [thunderbird]
+  ansible.builtin.set_fact:
+    thunderbird_selected: "{{ thunderbird_profile_probe.stdout | from_json }}"
+
+- name: Require the iCloud address only when no configured account exists
   tags: [thunderbird]
   ansible.builtin.assert:
     that:
       - vault_icloud_email is defined
       - vault_icloud_email | length > 0
       - vault_icloud_email != 'REPLACE_ME'
-      - vault_icloud_email is match('^[^@\s]+@[^@\s]+$')
+      - vault_icloud_email is match('^[^@\\s]+@[^@\\s]+$')
     fail_msg: >-
-      vault_icloud_email must hold the iCloud mail address before the
+      vault_icloud_email must hold the iCloud mail address before a new
       Thunderbird profile can be provisioned.
     quiet: true
+  when: not thunderbird_selected.existing_account
 
-- name: Create the Thunderbird configuration directory
+- name: Check whether Thunderbird is running
+  tags: [thunderbird]
+  ansible.builtin.command:
+    argv: [pgrep, -u, "{{ username }}", -x, thunderbird]
+  register: thunderbird_running
+  changed_when: false
+  failed_when: thunderbird_running.rc not in [0, 1]
+  check_mode: false
+
+- name: Require Thunderbird to be closed before selecting its profile
+  tags: [thunderbird]
+  ansible.builtin.assert:
+    that: thunderbird_running.rc == 1
+    fail_msg: Close Thunderbird before running the thunderbird tag; it is never stopped automatically.
+
+- name: Create the selected Thunderbird registry directory
   tags: [thunderbird]
   ansible.builtin.file:
-    path: "{{ user_home }}/.thunderbird"
+    path: "{{ thunderbird_selected.root }}"
     state: directory
     owner: "{{ username }}"
     group: "{{ user_group }}"
     mode: "0700"
 
-- name: Create the managed Thunderbird profile directory
+- name: Create a new profile only when no configured account exists
   tags: [thunderbird]
   ansible.builtin.file:
-    path: "{{ user_home }}/.thunderbird/{{ thunderbird_profile_dir }}"
+    path: "{{ thunderbird_selected.profile }}"
     state: directory
     owner: "{{ username }}"
     group: "{{ user_group }}"
     mode: "0700"
+  when: not thunderbird_selected.existing_account
 
-- name: Seed the Thunderbird profile registry when absent
-  tags: [thunderbird]
-  ansible.builtin.template:
-    src: thunderbird/profiles.ini.j2
-    dest: "{{ user_home }}/.thunderbird/profiles.ini"
-    owner: "{{ username }}"
-    group: "{{ user_group }}"
-    mode: "0600"
-    # Never rewrite a profile list Thunderbird has already taken over.
-    force: false
-
-- name: Render the managed Thunderbird account defaults
+- name: Seed iCloud defaults only in a profile without a configured account
   tags: [thunderbird]
   ansible.builtin.template:
     src: thunderbird/user.js.j2
-    dest: "{{ user_home }}/.thunderbird/{{ thunderbird_profile_dir }}/user.js"
+    dest: "{{ thunderbird_selected.profile }}/user.js"
     owner: "{{ username }}"
     group: "{{ user_group }}"
     mode: "0600"
+    force: false
   no_log: true
+  when: not thunderbird_selected.existing_account
+
+- name: Discover the Thunderbird installation directory for first-start profile adoption
+  tags: [thunderbird]
+  ansible.builtin.stat:
+    path: "{{ item }}/application.ini"
+  loop: [/usr/lib64/thunderbird, /usr/lib/thunderbird]
+  register: thunderbird_installation
+  when: not thunderbird_selected.existing_account
+
+- name: Seed compatibility information so Thunderbird adopts the new default profile
+  tags: [thunderbird]
+  ansible.builtin.copy:
+    content: |
+      [Compatibility]
+      LastPlatformDir={{ item.item }}
+      LastAppDir={{ item.item }}
+    dest: "{{ thunderbird_selected.profile }}/compatibility.ini"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0600"
+    force: false
+  loop: "{{ thunderbird_installation.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when:
+    - not thunderbird_selected.existing_account
+    - item.stat.exists | default(false)
+
+- name: Select the profile while preserving other registered profiles
+  tags: [thunderbird]
+  ansible.builtin.copy:
+    content: "{{ item.content }}"
+    dest: "{{ thunderbird_selected.root }}/{{ item.name }}"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0600"
+    backup: true
+  loop:
+    - name: profiles.ini
+      content: "{{ thunderbird_selected.profiles_ini }}"
+    - name: installs.ini
+      content: "{{ thunderbird_selected.installs_ini }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.content | length > 0

@@ -103,8 +103,8 @@ desktop_gnome_dotfiles:
     mode: "0644"
 
 # Thunderbird is provisioned from a seeded profile plus a managed user.js:
-# Thunderbird rewrites prefs.js on exit, so the declared account, calendar and
-# address book defaults are re-applied at every start from user.js instead.
+# Existing Thunderbird accounts are reused without changing their preferences.
+# Only a new profile receives account, calendar and address book defaults in user.js.
 # The address comes from Vault; the app-specific password is never stored here
 # and is requested by Thunderbird on first use.
 thunderbird_icloud_enabled: true

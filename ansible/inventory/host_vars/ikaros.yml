@@ -206,7 +206,7 @@ gnome_gsettings_settings:
     value: "false"
   - schema: org.gnome.nautilus.preferences
     key: default-folder-viewer
-    value: "'list-view'"
+    value: "'icon-view'"
   - schema: org.gnome.nautilus.preferences
     key: show-create-link
     value: "true"
@@ -246,7 +246,7 @@ gnome_gsettings_settings:
   - schema: org.gnome.shell
     key: favorite-apps
     value: >-
-      ['org.gnome.Nautilus.desktop', 'org.mozilla.firefox.desktop', 'com.spotify.Client.desktop', 'net.thunderbird.Thunderbird.desktop', 'org.telegram.desktop.desktop', 'chatgpt.desktop', 'org.gnome.Ptyxis.desktop', 'virt-manager.desktop']
+      ['org.gnome.Nautilus.desktop', 'org.mozilla.firefox.desktop', 'com.spotify.Client.desktop', 'net.thunderbird.Thunderbird.desktop', 'org.telegram.desktop.desktop', 'chatgpt.desktop', 'ai.opencode.desktop.desktop', 'org.gnome.Ptyxis.desktop', 'virt-manager.desktop']
   - schema: org.gnome.shell
     key: remember-mount-password
     value: "true"

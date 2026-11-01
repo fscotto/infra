@@ -94,6 +94,10 @@ common_dotfiles:
 # Installation and removal are mutually exclusive per agent; the common
 # pre-task enforces this before any changes are made.
 codex_relay_install_enabled: false
+codex_relay_uninstall_enabled: false
+gemini_cli_install_enabled: true
+gemini_cli_deploy_enabled: true
+gemini_cli_uninstall_enabled: false
 claude_code_install_enabled: false
 claude_code_uninstall_enabled: true
 
@@ -127,12 +131,12 @@ ai_agents:
     npm_package: codex-relay
     install_enabled: "{{ codex_relay_install_enabled }}"
     deploy_enabled: false
-    uninstall_enabled: false
+    uninstall_enabled: "{{ codex_relay_uninstall_enabled }}"
   gemini_cli:
     npm_package: "@google/gemini-cli"
-    install_enabled: true
-    deploy_enabled: true
-    uninstall_enabled: false
+    install_enabled: "{{ gemini_cli_install_enabled }}"
+    deploy_enabled: "{{ gemini_cli_deploy_enabled }}"
+    uninstall_enabled: "{{ gemini_cli_uninstall_enabled }}"
   github_copilot:
     npm_package: "@github/copilot"
     install_enabled: false

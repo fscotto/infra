@@ -1,7 +1,11 @@
 ---
 hostname: ikaros
 
-codex_relay_install_enabled: true
+codex_relay_install_enabled: false
+codex_relay_uninstall_enabled: true
+gemini_cli_install_enabled: false
+gemini_cli_deploy_enabled: false
+gemini_cli_uninstall_enabled: true
 chatgpt_desktop_enabled: true
 desktop_ai_media_enabled: true
 

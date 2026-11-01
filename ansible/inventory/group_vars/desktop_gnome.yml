@@ -101,3 +101,23 @@ desktop_gnome_dotfiles:
     src: .config/autostart/Nextcloud.desktop
     dest: .config/autostart/Nextcloud.desktop
     mode: "0644"
+
+# Thunderbird is provisioned from a seeded profile plus a managed user.js:
+# Thunderbird rewrites prefs.js on exit, so the declared account, calendar and
+# address book defaults are re-applied at every start from user.js instead.
+# The address comes from Vault; the app-specific password is never stored here
+# and is requested by Thunderbird on first use.
+thunderbird_icloud_enabled: true
+thunderbird_profile_name: "{{ username }}"
+thunderbird_profile_dir: "{{ username }}.default-release"
+thunderbird_full_name: "{{ vault_personal_full_name | default(username) }}"
+thunderbird_icloud_email: "{{ vault_icloud_email }}"
+thunderbird_icloud_account_name: iCloud
+thunderbird_icloud_imap_host: imap.mail.me.com
+thunderbird_icloud_imap_port: 993
+thunderbird_icloud_smtp_host: smtp.mail.me.com
+thunderbird_icloud_smtp_port: 587
+thunderbird_icloud_caldav_url: https://caldav.icloud.com/
+thunderbird_icloud_carddav_url: https://contacts.icloud.com/
+thunderbird_icloud_calendar_id: 4f2c1d6e-9b3a-4f7c-8e21-6d5a0c9b7e13
+thunderbird_icloud_addressbook_uid: 9e0b7c4a-2d51-4a8f-b6c3-1f7d5e2a8b46

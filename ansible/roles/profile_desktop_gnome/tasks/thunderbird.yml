@@ -1,0 +1,52 @@
+---
+- name: Require the iCloud address for the managed Thunderbird profile
+  tags: [thunderbird]
+  ansible.builtin.assert:
+    that:
+      - vault_icloud_email is defined
+      - vault_icloud_email | length > 0
+      - vault_icloud_email != 'REPLACE_ME'
+      - vault_icloud_email is match('^[^@\s]+@[^@\s]+$')
+    fail_msg: >-
+      vault_icloud_email must hold the iCloud mail address before the
+      Thunderbird profile can be provisioned.
+    quiet: true
+
+- name: Create the Thunderbird configuration directory
+  tags: [thunderbird]
+  ansible.builtin.file:
+    path: "{{ user_home }}/.thunderbird"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0700"
+
+- name: Create the managed Thunderbird profile directory
+  tags: [thunderbird]
+  ansible.builtin.file:
+    path: "{{ user_home }}/.thunderbird/{{ thunderbird_profile_dir }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0700"
+
+- name: Seed the Thunderbird profile registry when absent
+  tags: [thunderbird]
+  ansible.builtin.template:
+    src: thunderbird/profiles.ini.j2
+    dest: "{{ user_home }}/.thunderbird/profiles.ini"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0600"
+    # Never rewrite a profile list Thunderbird has already taken over.
+    force: false
+
+- name: Render the managed Thunderbird account defaults
+  tags: [thunderbird]
+  ansible.builtin.template:
+    src: thunderbird/user.js.j2
+    dest: "{{ user_home }}/.thunderbird/{{ thunderbird_profile_dir }}/user.js"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0600"
+  no_log: true

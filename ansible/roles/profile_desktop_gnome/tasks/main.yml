@@ -279,3 +279,8 @@
   loop_control:
     label: "{{ item }}"
   when: workstation_firewall_backend | default('firewalld') == 'firewalld'
+
+- name: Configure Thunderbird for iCloud
+  tags: [dotfiles, dotfiles:desktop, gnome, thunderbird]
+  ansible.builtin.import_tasks: thunderbird.yml
+  when: thunderbird_icloud_enabled | default(false) | bool

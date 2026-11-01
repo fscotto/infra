@@ -639,6 +639,29 @@ Run locally on each workstation (`ansible_connection: local`); use `--limit nymp
 on the laptop. With a cold RPM cache, check mode reports that dependency resolution
 is not validated; the real run downloads, verifies, and installs the package.
 
+### Thunderbird iCloud profile on Fedora
+
+`profile_desktop_gnome` seeds a Thunderbird profile for `ikaros` and `nymph` so the
+iCloud account is already declared: IMAP `imap.mail.me.com:993` over SSL/TLS, SMTP
+`smtp.mail.me.com:587` over STARTTLS, the identity and folder mapping, one CalDAV
+calendar (`caldav.icloud.com`) and one CardDAV address book (`contacts.icloud.com`).
+
+The account defaults live in a managed `user.js`, not in `prefs.js`: Thunderbird
+rewrites `prefs.js` on exit, while `user.js` is re-applied at every start.
+`profiles.ini` is only seeded when absent, so a profile list Thunderbird already
+owns is never replaced.
+
+The address comes from `vault_icloud_email` and the display name from
+`vault_personal_full_name`. The password is deliberately not stored: iCloud mail
+requires an app-specific password, which Thunderbird requests on first use and
+keeps in its own credential store. Set `thunderbird_icloud_enabled: false` to stop
+managing the profile without deleting it.
+
+```bash
+ansible-playbook ansible/site.yml --limit ikaros --tags thunderbird --check --diff
+ansible-playbook ansible/site.yml --limit ikaros --tags thunderbird -K
+```
+
 ## Main roles
 
 | Role | What it does |

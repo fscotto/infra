@@ -57,6 +57,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
   - Emacs is disabled by default; temporary Emacs check: `ansible-playbook ansible/site.yml --limit <host> --tags emacs --check --diff -e emacs_enabled=true`
   - AI coding agents: `ansible-playbook ansible/site.yml --limit <host> --tags ai_agents --check --diff`
   - Mail bootstrap: `sh -n scripts/bootstrap_mail.sh` and `shellcheck scripts/bootstrap_mail.sh`
+  - Thunderbird iCloud profile: `ansible-playbook ansible/site.yml --limit ikaros --tags thunderbird --check --diff`
   - Server NPM Quadlet: `systemctl status prometheus-npm.service`; the Compose fallback is retired.
   - Explicit Prometheus legacy cleanup (destructive only without check mode):
     `ansible-playbook ansible/site.yml --limit prometheus --tags server_legacy_cleanup --check --diff -e server_legacy_cleanup=true`
@@ -116,6 +117,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
   - `dotfiles/desktop/.config/niri/config.kdl` and `session-env` deployed via `desktop_niri_dotfiles` (Niri / Wayland)
 - Void Niri lives in `profile_desktop_niri`, gated on `'niri' in desktop_sessions_enabled`; it installs the `emptty` `niri.desktop` session, the `/usr/local/bin/start-niri` launcher, and the xdg-desktop-portal config, mirroring `profile_desktop_sway`.
 - Fedora GNOME (`desktop_gnome`) assumes GNOME comes from the Fedora Workstation base install; Ansible deploys shared desktop dotfiles and git/GPG config for `ikaros` and `nymph`, not GNOME settings.
+- `profile_desktop_gnome` also seeds a Thunderbird profile for `ikaros` and `nymph` with the iCloud IMAP/SMTP account, one CalDAV calendar and one CardDAV address book. Account defaults are rendered into a managed `user.js` because Thunderbird rewrites `prefs.js`; `profiles.ini` is only seeded when absent. The address comes from `vault_icloud_email` and the app-specific password is never stored.
 - Do not switch or restart the display manager during a playbook run from an active graphical session.
 - `nymph` is the Fedora/GNOME laptop target; keep GNOME settings unmanaged for now and add host-specific tuning only after real use.
 

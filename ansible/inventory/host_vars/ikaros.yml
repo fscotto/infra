@@ -8,6 +8,9 @@ gemini_cli_deploy_enabled: false
 gemini_cli_uninstall_enabled: true
 chatgpt_desktop_enabled: true
 desktop_ai_media_enabled: true
+desktop_ai_media_external_storage_enabled: true
+desktop_ai_media_external_mountpoint: /run/media/fscotto/Backup
+desktop_ai_media_external_source: /run/media/fscotto/Backup/ai-media
 
 host_packages:
   - podman

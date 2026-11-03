@@ -1,4 +1,86 @@
 ---
+- name: Configure on-demand external ai-media storage
+  become: true
+  when: desktop_ai_media_external_storage_enabled | bool
+  tags: [ai_media, ai_media_storage]
+  block:
+    - name: Validate external ai-media storage paths
+      ansible.builtin.assert:
+        that:
+          - desktop_ai_media_external_mountpoint is match('^/run/media/[^/]+/[^/]+$')
+          - desktop_ai_media_external_source.startswith(desktop_ai_media_external_mountpoint + '/')
+          - desktop_ai_media_external_source != desktop_ai_media_external_mountpoint
+          - desktop_ai_media_root.startswith(user_home + '/')
+          - desktop_ai_media_root != user_home
+
+    - name: Derive external source mount unit name
+      ansible.builtin.command:
+        argv:
+          - systemd-escape
+          - -p
+          - --suffix=mount
+          - "{{ desktop_ai_media_external_mountpoint }}"
+      register: desktop_ai_media_external_source_mount_unit
+      changed_when: false
+      check_mode: false
+
+    - name: Derive ai-media bind mount unit name
+      ansible.builtin.command:
+        argv:
+          - systemd-escape
+          - -p
+          - --suffix=mount
+          - "{{ desktop_ai_media_root }}"
+      register: desktop_ai_media_bind_mount_unit
+      changed_when: false
+      check_mode: false
+
+    - name: Derive ai-media bind automount unit name
+      ansible.builtin.command:
+        argv:
+          - systemd-escape
+          - -p
+          - --suffix=automount
+          - "{{ desktop_ai_media_root }}"
+      register: desktop_ai_media_bind_automount_unit
+      changed_when: false
+      check_mode: false
+
+    - name: Create ai-media mount destination in the user home
+      ansible.builtin.file:
+        path: "{{ desktop_ai_media_root }}"
+        state: directory
+        owner: "{{ username }}"
+        group: "{{ username }}"
+        mode: "0700"
+
+    - name: Install ai-media bind mount unit
+      ansible.builtin.template:
+        src: ai-media-bind.mount.j2
+        dest: "/etc/systemd/system/{{ desktop_ai_media_bind_mount_unit.stdout }}"
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload systemd units
+
+    - name: Install ai-media bind automount unit
+      ansible.builtin.template:
+        src: ai-media-bind.automount.j2
+        dest: "/etc/systemd/system/{{ desktop_ai_media_bind_automount_unit.stdout }}"
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload systemd units
+
+    - name: Flush systemd unit changes
+      ansible.builtin.meta: flush_handlers
+
+    - name: Enable and start ai-media bind automount
+      ansible.builtin.systemd_service:
+        name: "{{ desktop_ai_media_bind_automount_unit.stdout }}"
+        enabled: true
+        state: started
+
 - name: Configure isolated desktop media tools as the desktop user
   become: false
   block:

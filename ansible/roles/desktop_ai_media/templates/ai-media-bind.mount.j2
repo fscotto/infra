@@ -1,0 +1,12 @@
+[Unit]
+Description=Bind mount ai-media from the Backup LUKS volume
+RequiresMountsFor={{ desktop_ai_media_external_mountpoint }}
+After={{ desktop_ai_media_external_source_mount_unit.stdout }}
+BindsTo={{ desktop_ai_media_external_source_mount_unit.stdout }}
+ConditionPathIsMountPoint={{ desktop_ai_media_external_mountpoint }}
+ConditionPathIsDirectory={{ desktop_ai_media_external_source }}
+
+[Mount]
+What={{ desktop_ai_media_external_source }}
+Where={{ desktop_ai_media_root }}
+Options=bind

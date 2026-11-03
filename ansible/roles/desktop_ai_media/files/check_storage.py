@@ -15,12 +15,23 @@ for line in pathlib.Path("/proc/self/mountinfo").read_text().splitlines():
     fields, description = line.split(" - ", 1)
     mount = re.sub(r"\\([0-7]{3})", lambda m: chr(int(m[1], 8)), fields.split()[4])
     mounts.append((pathlib.Path(mount), description.split()[0]))
-covering = [(p, kind) for p, kind in mounts if root == p or root.is_relative_to(p)]
+automount_at_root = any(p == root and kind == "autofs" for p, kind in mounts)
+backing_mount_at_root = any(
+    p == root and kind != "autofs" for p, kind in mounts
+)
+if automount_at_root and not backing_mount_at_root:
+    raise SystemExit("Media storage automount is not active; refusing to start")
+covering = [
+    (p, kind) for p, kind in mounts
+    if kind != "autofs" and (root == p or root.is_relative_to(p))
+]
 if covering:
     selected = max(covering, key=lambda entry: len(entry[0].parts))
     if selected[1] not in local_filesystems:
         raise SystemExit("Media storage is not on a local filesystem; refusing to start")
 for mount, kind in mounts:
+    if mount == root and kind == "autofs":
+        continue
     if mount.is_relative_to(root) and kind not in local_filesystems:
         raise SystemExit("Non-local mount beneath media storage; refusing to start")
 sync_roots = []

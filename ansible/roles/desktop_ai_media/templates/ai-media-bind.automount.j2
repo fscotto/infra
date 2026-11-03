@@ -1,6 +1,7 @@
 [Unit]
 Description=On-demand ai-media bind mount from the Backup LUKS volume
 ConditionPathIsDirectory={{ desktop_ai_media_root }}
+OnFailure=ai-media-bind-restarter.service
 
 [Automount]
 Where={{ desktop_ai_media_root }}

@@ -1,0 +1,7 @@
+[Unit]
+Description=Recover the ai-media bind automount after an unavailable Backup volume
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/sleep 3
+ExecStart=/usr/bin/bash -c '/usr/bin/systemctl restart "$(/usr/bin/systemd-escape -p --suffix=automount {{ desktop_ai_media_root }})"'

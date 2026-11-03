@@ -20,7 +20,7 @@ backing_mount_at_root = any(
     p == root and kind != "autofs" for p, kind in mounts
 )
 if automount_at_root and not backing_mount_at_root:
-    raise SystemExit("Media storage automount is not active; refusing to start")
+    raise SystemExit("Media storage is not mounted; refusing to start")
 covering = [
     (p, kind) for p, kind in mounts
     if kind != "autofs" and (root == p or root.is_relative_to(p))

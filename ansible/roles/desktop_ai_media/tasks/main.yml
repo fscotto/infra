@@ -72,8 +72,25 @@
         mode: "0644"
       notify: Reload systemd units
 
+    - name: Install ai-media bind automount failure restarter
+      ansible.builtin.template:
+        src: ai-media-bind-restarter.service.j2
+        dest: /etc/systemd/system/ai-media-bind-restarter.service
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload systemd units
+
     - name: Flush systemd unit changes
       ansible.builtin.meta: flush_handlers
+
+    - name: Stop a stale ai-media bind mount when the Backup source is absent
+      ansible.builtin.systemd_service:
+        name: "{{ desktop_ai_media_bind_mount_unit.stdout }}"
+        state: stopped
+      when:
+        - desktop_ai_media_root in (ansible_facts['mounts'] | default([]) | selectattr('fstype', 'ne', 'autofs') | map(attribute='mount') | list)
+        - desktop_ai_media_external_mountpoint not in (ansible_facts['mounts'] | default([]) | map(attribute='mount') | list)
 
     - name: Enable and start ai-media bind automount
       ansible.builtin.systemd_service:
@@ -84,6 +101,13 @@
 - name: Configure isolated desktop media tools as the desktop user
   become: false
   block:
+    - name: Determine whether the ai-media storage source is currently available
+      ansible.builtin.set_fact:
+        desktop_ai_media_external_available: >-
+          {{ (not (desktop_ai_media_external_storage_enabled | bool)) or
+             (desktop_ai_media_external_mountpoint in
+              (ansible_facts['mounts'] | default([]) | map(attribute='mount') | list)) }}
+
     - name: Load pinned public model manifest
       ansible.builtin.include_vars: models.yml
 
@@ -131,8 +155,15 @@
         stdin: "{{ lookup('ansible.builtin.file', role_path + '/files/check_storage.py') }}"
       changed_when: false
       check_mode: false
+      when: desktop_ai_media_external_available | bool
 
-    - name: Create private application and media directories
+    - name: Create the data-free local build context
+      ansible.builtin.file:
+        path: "{{ desktop_ai_media_build_root }}"
+        state: directory
+        mode: "0700"
+
+    - name: Create private application and media directories on mounted media storage
       ansible.builtin.file:
         path: "{{ item }}"
         state: directory
@@ -148,7 +179,7 @@
         - "{{ desktop_ai_media_root }}/state"
         - "{{ desktop_ai_media_root }}/state/facefusion"
         - "{{ desktop_ai_media_root }}/state/rvc"
-        - "{{ desktop_ai_media_build_root }}"
+      when: desktop_ai_media_external_available | bool
 
     - name: Ensure user launcher directories exist without changing existing permissions
       ansible.builtin.file:

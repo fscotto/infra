@@ -1,0 +1,60 @@
+---
+- name: Configure Microsoft VS Code repository
+  ansible.builtin.yum_repository:
+    name: code
+    description: Visual Studio Code
+    baseurl: https://packages.microsoft.com/yumrepos/vscode
+    enabled: true
+    gpgcheck: true
+    gpgkey: https://packages.microsoft.com/keys/microsoft.asc
+
+- name: Install native VS Code
+  ansible.builtin.dnf:
+    name: code
+    state: present
+
+- name: List installed VS Code extensions
+  ansible.builtin.command:
+    argv: [code, --list-extensions]
+  become: true
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  register: vscode_installed_extensions
+  changed_when: false
+  check_mode: false
+  when:
+    - vscode_extensions | length > 0
+    - not ansible_check_mode
+
+- name: Install missing VS Code extensions
+  ansible.builtin.command:
+    argv: [code, --install-extension, "{{ item }}"]
+  become: true
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+  loop: "{{ vscode_extensions }}"
+  when:
+    - not ansible_check_mode
+    - item | lower not in (vscode_installed_extensions.stdout_lines | default([]) | map('lower') | list)
+  changed_when: true
+
+- name: Ensure VS Code user configuration directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/Code/User"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+  when: vscode_settings is not none
+
+- name: Deploy explicitly managed VS Code settings
+  ansible.builtin.copy:
+    dest: "{{ user_home }}/.config/Code/User/settings.json"
+    content: "{{ vscode_settings | to_nice_json }}\n"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0644"
+    backup: true
+  when: vscode_settings is not none

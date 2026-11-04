@@ -284,3 +284,7 @@
   tags: [dotfiles, dotfiles:desktop, gnome, thunderbird]
   ansible.builtin.import_tasks: thunderbird.yml
   when: thunderbird_icloud_enabled | default(false) | bool
+
+- name: Configure native VS Code
+  tags: [vscode]
+  ansible.builtin.import_tasks: vscode.yml

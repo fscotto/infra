@@ -121,3 +121,7 @@ thunderbird_icloud_caldav_url: https://caldav.icloud.com/
 thunderbird_icloud_carddav_url: https://contacts.icloud.com/
 thunderbird_icloud_calendar_id: 4f2c1d6e-9b3a-4f7c-8e21-6d5a0c9b7e13
 thunderbird_icloud_addressbook_uid: 9e0b7c4a-2d51-4a8f-b6c3-1f7d5e2a8b46
+
+# Native VS Code; opt in to managing settings only after defining them.
+vscode_extensions: []
+vscode_settings: null

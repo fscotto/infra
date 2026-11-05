@@ -123,5 +123,21 @@ thunderbird_icloud_calendar_id: 4f2c1d6e-9b3a-4f7c-8e21-6d5a0c9b7e13
 thunderbird_icloud_addressbook_uid: 9e0b7c4a-2d51-4a8f-b6c3-1f7d5e2a8b46
 
 # Native VS Code; opt in to managing settings only after defining them.
-vscode_extensions: []
+vscode_extensions:
+  - esbenp.prettier-vscode
+  - github.remotehub
+  - ms-azuretools.vscode-containers
+  - ms-azuretools.vscode-docker
+  - ms-vscode-remote.remote-containers
+  - ms-vscode-remote.remote-ssh
+  - ms-vscode-remote.remote-ssh-edit
+  - ms-vscode-remote.remote-wsl
+  - ms-vscode-remote.vscode-remote-extensionpack
+  - ms-vscode.azure-repos
+  - ms-vscode.remote-explorer
+  - ms-vscode.remote-repositories
+  - ms-vscode.remote-server
+  - redhat.vscode-xml
+  - redhat.vscode-yaml
+  - vscodevim.vim
 vscode_settings: null

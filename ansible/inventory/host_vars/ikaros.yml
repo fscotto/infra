@@ -9,6 +9,7 @@ gemini_cli_uninstall_enabled: true
 chatgpt_desktop_enabled: true
 desktop_ai_media_enabled: true
 desktop_ai_media_external_storage_enabled: true
+desktop_ai_media_external_luks_uuid: 6948c504-2d60-4cc8-9e7f-3ccdf28e80d7
 desktop_ai_media_external_mountpoint: /run/media/fscotto/Backup
 desktop_ai_media_external_source: /run/media/fscotto/Backup/ai-media
 

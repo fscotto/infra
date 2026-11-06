@@ -2,8 +2,96 @@
 set -euo pipefail
 root={{ desktop_ai_media_root | quote }}
 build_root={{ desktop_ai_media_build_root | quote }}
+{% set manage_luks = desktop_ai_media_external_storage_enabled | default(false) and desktop_ai_media_external_luks_uuid | default('') %}
+{% if manage_luks %}
+encrypted={{ ('/dev/disk/by-uuid/' + desktop_ai_media_external_luks_uuid) | quote }}
+external_mount={{ desktop_ai_media_external_mountpoint | quote }}
+bind_fsroot={{ (desktop_ai_media_external_source | replace(desktop_ai_media_external_mountpoint, '', 1)) | quote }}
+
+fail() { echo "$*" >&2; exit 1; }
+
+read_mapper() {
+    local devices mapping
+    devices=$(lsblk -nrpo NAME,TYPE,MAJ:MIN -- "$encrypted") ||
+        fail "The configured LUKS volume is not available: $encrypted"
+    mapping=$(awk '$2 == "crypt" {print $1, $3}' <<< "$devices")
+    [[ "$mapping" != *$'\n'* ]] || fail "Multiple mappings for $encrypted; refusing to continue"
+    read -r mapper mapper_id <<< "$mapping"
+}
+
+mount_info() {
+    # Inspect the kernel mount table without following the automount path.
+    findmnt -krnC --mountpoint "$1" --types noautofs --output MAJ:MIN,FSROOT || [[ $? == 1 ]]
+}
+
+volume_mounts() {
+    [[ -n "$mapper_id" ]] || return 0
+    findmnt -krnC --source "$mapper_id" --output TARGET || [[ $? == 1 ]]
+}
+
+require_external_bind() {
+    read_mapper
+    [[ -n "$mapper_id" && "$(mount_info "$root")" == "$mapper_id $bind_fsroot" ]] ||
+        fail "Encrypted media storage is not mounted; run ai-media mount first"
+}
+
+manage_volume() {
+    local action=$1 mapper mapper_id bind_unit automount_unit mounted bind jobs containers
+    [[ $# == 1 ]] || fail "Usage: ai-media $action"
+    bind_unit=$(systemd-escape -p --suffix=mount -- "$root")
+    automount_unit=$(systemd-escape -p --suffix=automount -- "$root")
+    read_mapper
+    mounted=$(mount_info "$external_mount")
+    bind=$(mount_info "$root")
+    [[ -z "$mounted" || "$mounted" == "$mapper_id /" ]] ||
+        fail "Unexpected filesystem at $external_mount; refusing to continue"
+    [[ -z "$bind" || "$bind" == "$mapper_id $bind_fsroot" ]] ||
+        fail "Unexpected filesystem at $root; refusing to continue"
+
+    if [[ "$action" == mount ]]; then
+        if [[ -z "$mapper" ]]; then
+            udisksctl unlock --block-device "$encrypted"
+            read_mapper
+            [[ -n "$mapper" ]] || fail "No decrypted block device found after unlock"
+        fi
+        if [[ -z "$mounted" ]]; then
+            [[ -z "$(volume_mounts)" ]] || fail "The LUKS volume is already mounted elsewhere"
+            udisksctl mount --block-device "$mapper"
+        fi
+        [[ "$(mount_info "$external_mount")" == "$mapper_id /" ]] ||
+            fail "The LUKS volume is not mounted at the expected path: $external_mount"
+        systemctl start "$automount_unit" "$bind_unit"
+        require_external_bind
+        echo "Encrypted media storage mounted at $root"
+    else
+        jobs=$(systemctl --user list-units --type=service --state=active,activating,deactivating \
+            --no-legend --no-pager 'ai-media-*.service')
+        containers=$(podman --remote=false ps -q \
+            --filter ancestor=localhost/ai-media-facefusion:managed \
+            --filter ancestor=localhost/ai-media-rvc:managed)
+        [[ -z "$jobs" && -z "$containers" ]] ||
+            fail "Stop the running ai-media jobs and applications before unmounting"
+        systemctl stop ai-media-bind-restarter.service "$automount_unit" "$bind_unit"
+        [[ -z "$(mount_info "$root")" ]] || fail "The media bind mount is still in use"
+        mounted=$(volume_mounts)
+        if [[ -n "$mounted" ]]; then
+            [[ "$mounted" == "$external_mount" && "$(mount_info "$external_mount")" == "$mapper_id /" ]] ||
+                fail "The LUKS volume has other mounts; refusing to unmount or lock it"
+            udisksctl unmount --block-device "$mapper"
+        fi
+        if [[ -n "$mapper" ]]; then
+            [[ -z "$(volume_mounts)" ]] || fail "The LUKS volume is still mounted"
+            udisksctl lock --block-device "$encrypted"
+        fi
+        echo "Encrypted media storage unmounted and locked"
+    fi
+}
+{% endif %}
 app="${1:-}"
 case "$app" in
+{% if manage_luks %}
+    mount|umount) manage_volume "$@"; exit ;;
+{% endif %}
     facefusion|rvc) shift ;;
     ffmpeg) app=facefusion; shift; set -- ffmpeg "$@" ;;
     preset)
@@ -13,6 +101,9 @@ case "$app" in
                 echo "Unsafe or missing media directory: $path" >&2; exit 1;
             }
         done
+{% if manage_luks %}
+        require_external_bind
+{% endif %}
         python3 "$build_root/check_storage.py" "$root"
         exec python3 "$build_root/preset.py" "$root" "$(realpath -- "$0")" "$@" ;;
     verify)
@@ -27,7 +118,7 @@ case "$app" in
                 "localhost/ai-media-$tool:managed" verify
         done
         exit 0 ;;
-    *) echo "Usage: ai-media {facefusion|rvc|ffmpeg|preset|verify} [args ...]" >&2; exit 2 ;;
+    *) echo "Usage: ai-media {facefusion|rvc|ffmpeg|preset|verify{% if manage_luks %}|mount|umount{% endif %}} [args ...]" >&2; exit 2 ;;
 esac
 # Fail closed if an existing data path was replaced by a symlink.
 for path in "$root" "$root/input" "$root/output" "$root/models" "$root/state/$app"; do
@@ -35,6 +126,9 @@ for path in "$root" "$root/input" "$root/output" "$root/models" "$root/state/$ap
         echo "Unsafe or missing media directory: $path" >&2; exit 1;
     }
 done
+{% if manage_luks %}
+require_external_bind
+{% endif %}
 python3 {{ (desktop_ai_media_build_root + "/check_storage.py") | quote }} "$root"
 # Run interactive sessions under the user manager, not the launching terminal.
 # No autostart or automatic restart: recovering a training run remains explicit.

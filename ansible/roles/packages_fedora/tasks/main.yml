@@ -66,12 +66,16 @@
   ansible.builtin.dnf:
     update_cache: true
 
-- name: Install HEIC decoder on Fedora desktops
+- name: Install HEIC decoder when RPM Fusion has a compatible build
   tags: [packages, heic]
   ansible.builtin.dnf:
     name: libheif-freeworld
     state: present
     update_cache: true
+    # libheif-freeworld requires the exact libheif build.  RPM Fusion can lag
+    # Fedora Updates, so retry on later runs instead of blocking all desktop
+    # package convergence while the matching build is unavailable.
+    skip_broken: true
   when: "'graphical_desktop' in group_names"
 
 - name: Install packages on Fedora

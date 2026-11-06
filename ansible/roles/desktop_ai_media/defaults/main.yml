@@ -3,6 +3,7 @@ desktop_ai_media_enabled: false
 desktop_ai_media_root: "{{ user_home }}/.local/share/ai-media"
 desktop_ai_media_build_root: "{{ user_home }}/.local/share/ai-media-build"
 desktop_ai_media_external_storage_enabled: false
+desktop_ai_media_external_luks_uuid: ""
 desktop_ai_media_external_mountpoint: ""
 desktop_ai_media_external_source: ""
 desktop_ai_media_debian_snapshot: "20261013T000000Z"

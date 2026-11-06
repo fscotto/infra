@@ -1,5 +1,22 @@
 # Preset offline `ai-media`
 
+## Volume cifrato Backup (Ikaros)
+
+```bash
+ai-media mount    # sblocca Backup e rende disponibili i file di ai-media
+ai-media umount   # smonta prima il bind, poi Backup, e richiude LUKS
+```
+
+Eseguire i comandi come utente desktop, da un terminale: UDisks chiede la
+passphrase LUKS se il volume è chiuso e systemd può chiedere l'autenticazione
+amministrativa. La passphrase non viene salvata dal launcher. Prima di
+`umount`, chiudere FaceFusion/RVC, attendere i job dei preset e chiudere file
+e terminali aperti sul disco. Il comando riguarda **tutto il volume Backup**,
+non solo la directory di ai-media, e non forza lo smontaggio. Non scollegare
+il disco se il comando segnala un errore.
+
+## Preset disponibili
+
 Tutti i preset video accettano un nome MP4 locale oppure un URL HTTP(S).
 I file locali vanno in `~/.local/share/ai-media/input/`. I preset avviano un servizio
 `systemd --user` e tornano subito; FaceFusion e RVC restano nei container

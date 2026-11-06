@@ -8,6 +8,9 @@
       ansible.builtin.assert:
         that:
           - desktop_ai_media_external_mountpoint is match('^/run/media/[^/]+/[^/]+$')
+          - >-
+            not desktop_ai_media_external_luks_uuid or
+            desktop_ai_media_external_luks_uuid is match('^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$')
           - desktop_ai_media_external_source.startswith(desktop_ai_media_external_mountpoint + '/')
           - desktop_ai_media_external_source != desktop_ai_media_external_mountpoint
           - desktop_ai_media_root.startswith(user_home + '/')
@@ -319,10 +322,12 @@
       timeout: 3600
 
     - name: Install offline launcher
+      tags: [ai_media_launcher]
       ansible.builtin.template:
         src: ai-media.j2
         dest: "{{ user_home }}/.local/bin/ai-media"
         mode: "0755"
+        validate: /usr/bin/bash -n %s
 
     - name: Install manual offline desktop entries
       ansible.builtin.template:

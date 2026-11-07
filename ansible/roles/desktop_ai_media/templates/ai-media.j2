@@ -60,7 +60,7 @@ manage_volume() {
         fi
         [[ "$(mount_info "$external_mount")" == "$mapper_id /" ]] ||
             fail "The LUKS volume is not mounted at the expected path: $external_mount"
-        systemctl start "$automount_unit" "$bind_unit"
+        sudo systemctl start "$automount_unit" "$bind_unit"
         require_external_bind
         echo "Encrypted media storage mounted at $root"
     else
@@ -71,7 +71,7 @@ manage_volume() {
             --filter ancestor=localhost/ai-media-rvc:managed)
         [[ -z "$jobs" && -z "$containers" ]] ||
             fail "Stop the running ai-media jobs and applications before unmounting"
-        systemctl stop ai-media-bind-restarter.service "$automount_unit" "$bind_unit"
+        sudo systemctl stop ai-media-bind-restarter.service "$automount_unit" "$bind_unit"
         [[ -z "$(mount_info "$root")" ]] || fail "The media bind mount is still in use"
         mounted=$(volume_mounts)
         if [[ -n "$mounted" ]]; then

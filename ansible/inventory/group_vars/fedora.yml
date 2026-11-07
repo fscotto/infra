@@ -8,7 +8,10 @@ fedora_packages_base:
   - htop
   - jq
   - make
-  - nodejs
+  # Keep the LTS stream explicit.  Fedora 45's rolling `nodejs` package
+  # conflicts with the nodejs22-bin alternative installed by the F44→F45
+  # upgrade.
+  - nodejs22
   - openssl
   - ripgrep
 
@@ -73,6 +76,7 @@ chatgpt_desktop_enabled: false
 chatgpt_desktop_supported_fedora_versions:
   - "43"
   - "44"
+  - "45"
 chatgpt_desktop_supported_architectures:
   - x86_64
   - aarch64

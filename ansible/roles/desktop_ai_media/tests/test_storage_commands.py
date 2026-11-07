@@ -49,7 +49,9 @@ root = os.environ["STORAGE_TEST_ROOT"]
 external = "/run/media/test/Backup"
 with open(os.environ["STORAGE_TEST_LOG"], "a") as log:
     log.write(json.dumps([cmd, *args]) + "\\n")
-if cmd == "lsblk":
+if cmd == "sudo":
+    os.execvp(args[0], args)
+elif cmd == "lsblk":
     if state.get("missing"):
         sys.exit(1)
     print("/dev/sda1 part 8:1")
@@ -98,11 +100,15 @@ elif cmd == "udisksctl":
 state_file.write_text(json.dumps(state))
 ''')
         mock.chmod(0o755)
-        for command in ("lsblk", "findmnt", "systemctl", "podman", "udisksctl"):
+        for command in ("lsblk", "findmnt", "systemctl", "podman", "udisksctl", "sudo"):
             (self.root / command).symlink_to(mock)
         self.env = dict(os.environ, PATH=f"{self.root}:{os.environ['PATH']}",
                         STORAGE_TEST_STATE=str(self.state), STORAGE_TEST_LOG=str(self.log),
                         STORAGE_TEST_ROOT=str(self.media))
+
+    def units(self):
+        return [subprocess.check_output(["systemd-escape", "-p", "--suffix=" + suffix, "--", str(self.media)], text=True).strip()
+                for suffix in ("automount", "mount")]
 
     def launch(self, *args, **state):
         self.state.write_text(json.dumps(state))
@@ -111,7 +117,7 @@ state_file.write_text(json.dumps(state))
                                 capture_output=True, text=True, timeout=10)
         operations = [row[:2] if row[0] == "systemctl" else row
                       for line in self.log.read_text().splitlines()
-                      if (row := json.loads(line))[0] in ("udisksctl", "systemctl")]
+                      if (row := json.loads(line))[0] in ("udisksctl", "systemctl", "sudo")]
         return result, operations
 
     def test_mount_unlocks_only_the_configured_volume_then_starts_bind(self):
@@ -120,20 +126,21 @@ state_file.write_text(json.dumps(state))
         self.assertEqual(operations, [
             ["udisksctl", "unlock", "--block-device", f"/dev/disk/by-uuid/{UUID}"],
             ["udisksctl", "mount", "--block-device", "/dev/dm-0"],
+            ["sudo", "systemctl", "start", *self.units()],
             ["systemctl", "start"],
         ])
 
     def test_mount_does_not_reopen_already_mounted_volume(self):
         result, operations = self.launch("mount", unlocked=True, mounted="252:0 /")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(operations, [["systemctl", "start"]])
+        self.assertEqual(operations, [["sudo", "systemctl", "start", *self.units()], ["systemctl", "start"]])
 
     def test_umount_stops_bind_before_unmount_and_lock(self):
         result, operations = self.launch("umount", unlocked=True, mounted="252:0 /",
                                          bind="252:0 /ai-media")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(operations, [
-            ["systemctl", "--user"], ["systemctl", "stop"],
+            ["systemctl", "--user"], ["sudo", "systemctl", "stop", "ai-media-bind-restarter.service", *self.units()], ["systemctl", "stop"],
             ["udisksctl", "unmount", "--block-device", "/dev/dm-0"],
             ["udisksctl", "lock", "--block-device", f"/dev/disk/by-uuid/{UUID}"],
         ])
@@ -155,7 +162,7 @@ state_file.write_text(json.dumps(state))
         result, operations = self.launch("umount", unlocked=True, mounted="252:0 /",
                                          other_mounts=["/mnt/other"])
         self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(operations, [["systemctl", "--user"], ["systemctl", "stop"]])
+        self.assertEqual(operations, [["systemctl", "--user"], ["sudo", "systemctl", "stop", "ai-media-bind-restarter.service", *self.units()], ["systemctl", "stop"]])
 
     def test_rejects_foreign_mount_missing_device_and_extra_arguments(self):
         for args, state in [

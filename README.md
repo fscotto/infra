@@ -596,6 +596,10 @@ instructions, credentials, and user data. Installation and removal are mutually
 exclusive per agent: the playbook fails before making changes when both flags are
 true for the same agent. Servers set `ai_agents: {}` and therefore manage none.
 
+On WSL (`deadalus`), Codex installation and dotfile deployment are disabled through
+host overrides; the managed `@openai/codex` npm package is selected for removal.
+Existing Codex configuration, credentials, and user data are left untouched.
+
 OpenCode Mobile (`opencode-mobile`) is installed globally through the same npm
 lifecycle on Fedora, Void desktops, and WSL. Its plugin declaration and `/mobile`
 command are deployed with the OpenCode dotfiles, so its `deploy_enabled` stays

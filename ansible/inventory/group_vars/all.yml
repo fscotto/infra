@@ -93,6 +93,9 @@ common_dotfiles:
 # AI coding-agent lifecycle controls are independent for every agent.
 # Installation and removal are mutually exclusive per agent; the common
 # pre-task enforces this before any changes are made.
+codex_install_enabled: true
+codex_deploy_enabled: true
+codex_uninstall_enabled: false
 codex_relay_install_enabled: false
 codex_relay_uninstall_enabled: false
 gemini_cli_install_enabled: true
@@ -124,9 +127,9 @@ ai_agents:
     uninstall_enabled: "{{ claude_code_uninstall_enabled }}"
   codex:
     npm_package: "@openai/codex"
-    install_enabled: true
-    deploy_enabled: true
-    uninstall_enabled: false
+    install_enabled: "{{ codex_install_enabled }}"
+    deploy_enabled: "{{ codex_deploy_enabled }}"
+    uninstall_enabled: "{{ codex_uninstall_enabled }}"
   codex_relay:
     npm_package: codex-relay
     install_enabled: "{{ codex_relay_install_enabled }}"

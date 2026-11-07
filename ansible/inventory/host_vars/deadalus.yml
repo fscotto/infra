@@ -2,6 +2,11 @@
 hostname: deadalus
 workstation_wsl_windows_user_home: /mnt/c/Users/FABIOSCOTTODISANTOLO
 
+# Codex is not installed or configured on WSL; remove the managed npm package.
+codex_install_enabled: false
+codex_deploy_enabled: false
+codex_uninstall_enabled: true
+
 host_packages: []
 host_enabled_services: []
 

@@ -600,12 +600,11 @@ On WSL (`deadalus`), Codex installation and dotfile deployment are disabled thro
 host overrides; the managed `@openai/codex` npm package is selected for removal.
 Existing Codex configuration, credentials, and user data are left untouched.
 
-OpenCode Mobile (`opencode-mobile`) is installed globally through the same npm
-lifecycle on Fedora, Void desktops, and WSL. Its plugin declaration and `/mobile`
-command are deployed with the OpenCode dotfiles, so its `deploy_enabled` stays
-false. The playbook does not run the interactive installer, configure tunnel
-providers, or register phone push tokens. Pairing and connectivity remain manual;
-see the [upstream instructions](https://github.com/doza62/opencode-mobile#readme).
+The `opencode-mobile` npm package is no longer installed on managed hosts: its
+agent entry sets `install_enabled: false` and `uninstall_enabled: true`, so the
+playbook removes the managed package. The plugin declaration and `/mobile`
+command are still deployed with the OpenCode dotfiles, and pairing and
+connectivity remain manual; see the [upstream instructions](https://github.com/doza62/opencode-mobile#readme).
 
 Run a focused dry run with:
 

@@ -117,9 +117,9 @@ ai_agents:
     uninstall_enabled: false
   opencode_mobile:
     npm_package: opencode-mobile
-    install_enabled: true
+    install_enabled: false
     deploy_enabled: false
-    uninstall_enabled: false
+    uninstall_enabled: true
   claude_code:
     npm_package: "@anthropic-ai/claude-code"
     install_enabled: "{{ claude_code_install_enabled }}"

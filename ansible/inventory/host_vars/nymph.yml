@@ -7,7 +7,7 @@ gemini_cli_install_enabled: false
 gemini_cli_deploy_enabled: false
 gemini_cli_uninstall_enabled: true
 
-chatgpt_desktop_enabled: true
+chatgpt_desktop_install_enabled: true
 
 # Fedora Workstation/GNOME laptop target. GNOME is provided by the base Fedora
 # Workstation install; Ansible deploys shared desktop dotfiles but leaves GNOME

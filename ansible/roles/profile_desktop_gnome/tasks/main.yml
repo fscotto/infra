@@ -292,4 +292,4 @@
 - name: Pin Cline Desktop in GNOME
   tags: [cline_desktop]
   ansible.builtin.import_tasks: cline_desktop.yml
-  when: cline_desktop_enabled | default(false) | bool
+  when: cline_desktop_install_enabled | default(false) | bool

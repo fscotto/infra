@@ -1,0 +1,78 @@
+---
+# OpenCode Desktop ships unsigned RPMs from its GitHub releases; only the
+# checksum-verified download makes the local installation trustworthy.
+- name: Validate OpenCode Desktop architecture on Fedora
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['architecture'] in opencode_desktop_rpm_checksums
+    fail_msg: "No verified OpenCode Desktop RPM for {{ ansible_facts['architecture'] }}."
+  when: opencode_desktop_install_enabled | default(false) | bool
+
+# Runs for both flows so the register below is always valid.
+- name: Check for cached OpenCode Desktop RPM
+  ansible.builtin.stat:
+    path: "{{ opencode_desktop_rpm_path }}"
+    get_checksum: false
+  register: opencode_desktop_rpm_cache
+
+- name: Download verified OpenCode Desktop RPM
+  ansible.builtin.get_url:
+    url: "{{ opencode_desktop_rpm_url }}"
+    dest: "{{ opencode_desktop_rpm_path }}"
+    checksum: "{{ opencode_desktop_rpm_checksums[ansible_facts['architecture']] }}"
+    owner: root
+    group: root
+    mode: "0644"
+  # get_url only sends HEAD in check mode and cannot populate a cold cache.
+  when:
+    - opencode_desktop_install_enabled | default(false) | bool
+    - not ansible_check_mode
+
+- name: Install OpenCode Desktop on Fedora
+  ansible.builtin.dnf:
+    name: "{{ opencode_desktop_rpm_path }}"
+    state: present
+    # Upstream ships an unsigned RPM. The download above verifies its pinned
+    # SHA-256; do not disable signature checks in system repository settings.
+    disable_gpg_check: true
+  when:
+    - opencode_desktop_install_enabled | default(false) | bool
+    - not ansible_check_mode
+      or opencode_desktop_rpm_cache.stat.exists
+
+- name: Explain OpenCode Desktop cold-cache check-mode limitation
+  ansible.builtin.debug:
+    msg: >-
+      A real run will download and SHA-256 verify OpenCode Desktop
+      {{ opencode_desktop_version }} before ensuring it is installed.
+      The RPM is not cached, so this dry run cannot validate DNF dependencies.
+  when:
+    - opencode_desktop_install_enabled | default(false) | bool
+    - ansible_check_mode
+    - not opencode_desktop_rpm_cache.stat.exists
+
+# The `opencode` RPM package name is verified from the pinned release header;
+# removal never touches the npm-managed opencode-ai CLI or user data.
+- name: Remove OpenCode Desktop from Fedora
+  ansible.builtin.dnf:
+    name: opencode
+    state: absent
+  when: opencode_desktop_uninstall_enabled | default(false) | bool
+
+# Clean every cached download so retirement also removes outdated pins.
+- name: Find cached OpenCode Desktop RPM downloads
+  ansible.builtin.find:
+    paths: /var/cache
+    patterns: "opencode-desktop-*.rpm"
+    file_type: file
+  register: opencode_desktop_cached_rpms
+  when: opencode_desktop_uninstall_enabled | default(false) | bool
+
+- name: Remove cached OpenCode Desktop RPM downloads
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ opencode_desktop_cached_rpms.files | default([]) }}"
+  loop_control:
+    label: "{{ item.path }}"
+  when: opencode_desktop_uninstall_enabled | default(false) | bool

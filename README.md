@@ -63,9 +63,11 @@ nymph is allowed to break
 
 `ikaros` is the stable personal Fedora/GNOME desktop. `nymph` is the laptop and gets the same shared desktop dotfiles while GNOME itself stays close to the Fedora defaults. The legacy `void` and `desktop` groups are compatibility parents; the main axes are `platform_*`, `role_*`, and `desktop_*`.
 
-The official ChatGPT desktop RPM is enabled only on `ikaros` and `nymph`. The
-playbook configures OpenAI's signed RPM repository and imports its pinned RPM
-signing key before installation; subsequent updates are handled by DNF.
+The official ChatGPT desktop RPM is installed only on `ikaros` and `nymph`
+through their `chatgpt_desktop_install_enabled` host overrides. The playbook
+configures OpenAI's signed RPM repository and imports its pinned RPM signing
+key before installation; subsequent updates are handled by DNF. Enabling
+`chatgpt_desktop_uninstall_enabled` removes the package, repository, and key.
 
 ## Deferred planned node: Cerberus
 
@@ -620,6 +622,26 @@ only in the entry for the agent being removed, then run:
 ansible-playbook ansible/site.yml --limit deadalus --tags ai_agents --check --diff
 ```
 
+### AI desktop applications
+
+The same lifecycle-flag pattern manages the Fedora desktop applications
+through `ai_desktop_apps` in `ansible/inventory/group_vars/fedora.yml`.
+`chatgpt_desktop`, `opencode_desktop` and `cline_desktop` each expose
+`install_enabled` and `uninstall_enabled`, and the common pre-task rejects
+both being true for the same app. ChatGPT opts in per host (`ikaros`, `nymph`),
+Cline opts in through `desktop_gnome` group vars, and OpenCode Desktop keeps
+removal selected because Cline replaced it.
+
+Removal deletes only what the playbook manages — the installed RPM package,
+ChatGPT's managed repository and signing key, and every cached download — and
+leaves GNOME favorites, user data, and the npm-managed CLI counterparts
+untouched. To switch an app between installed and removed, flip exactly one
+of its lifecycle flags, then preview with:
+
+```bash
+ansible-playbook ansible/site.yml --limit ikaros --tags chatgpt,opencode_desktop,cline_desktop --check --diff
+```
+
 ### Cline Desktop on Fedora
 
 The [official Cline Desktop RPM](https://cline.bot/desktop) is managed on the
@@ -643,9 +665,11 @@ ansible-playbook ansible/site.yml --limit ikaros --tags cline_desktop -K
 Run locally on each workstation (`ansible_connection: local`); use `--limit nymph`
 on the laptop. With a cold RPM cache, check mode reports that dependency resolution
 is not validated; the real run downloads, verifies, and installs the package.
-Once Cline is installed, any previously installed OpenCode Desktop RPM can be
-retired once with `sudo rpm -e opencode`. This does not remove the npm CLI or
-user data; package removal is not part of ongoing convergence.
+Cline replaced OpenCode Desktop: its `ai_desktop_apps` entry keeps
+`opencode_desktop_uninstall_enabled: true` by default, so a previously
+installed `opencode` RPM converges away on graphical hosts. Flip the entry's
+flags to reinstall the pinned release instead. Neither removal touches the
+npm CLI or user data.
 
 ### Thunderbird iCloud profile on Fedora
 

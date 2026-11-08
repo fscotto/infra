@@ -33,6 +33,19 @@
       loop_control:
         label: "{{ item.key }}"
 
+    - name: Reject conflicting AI desktop-app lifecycle flags
+      tags: [always, ai_desktop_apps]
+      ansible.builtin.assert:
+        that:
+          - not (item.value.install_enabled | default(false)
+                and item.value.uninstall_enabled | default(false) | bool)
+        fail_msg: >-
+          {{ item.key }} has both install_enabled and uninstall_enabled set to true.
+          Choose either installation or removal before running the playbook.
+      loop: "{{ ai_desktop_apps | default({}) | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+
   roles:
     - role: dotfiles_common
       when:

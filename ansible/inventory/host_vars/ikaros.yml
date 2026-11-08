@@ -6,7 +6,7 @@ codex_relay_uninstall_enabled: true
 gemini_cli_install_enabled: false
 gemini_cli_deploy_enabled: false
 gemini_cli_uninstall_enabled: true
-chatgpt_desktop_enabled: true
+chatgpt_desktop_install_enabled: true
 desktop_ai_media_enabled: true
 desktop_ai_media_external_storage_enabled: true
 desktop_ai_media_external_luks_uuid: 6948c504-2d60-4cc8-9e7f-3ccdf28e80d7

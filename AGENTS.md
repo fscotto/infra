@@ -56,6 +56,7 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
 - Focused checks:
   - Emacs is disabled by default; temporary Emacs check: `ansible-playbook ansible/site.yml --limit <host> --tags emacs --check --diff -e emacs_enabled=true`
   - AI coding agents: `ansible-playbook ansible/site.yml --limit <host> --tags ai_agents --check --diff`
+  - AI desktop apps lifecycle: `ansible-playbook ansible/site.yml --limit ikaros --tags chatgpt,opencode_desktop,cline_desktop --check --diff`
   - Mail bootstrap: `sh -n scripts/bootstrap_mail.sh` and `shellcheck scripts/bootstrap_mail.sh`
   - Thunderbird iCloud profile: `ansible-playbook ansible/site.yml --limit ikaros --tags thunderbird --check --diff`
   - Server NPM Quadlet: `systemctl status prometheus-npm.service`; the Compose fallback is retired.
@@ -551,6 +552,9 @@ validated exports of older historical data will use a dedicated Atlas NFS datase
 - `dotfiles_common` deploys `ai_agents_dotfiles` and renders `ai_agents_templates` only when deployment is enabled.
 - Removal is limited to the managed npm packages and `/usr/local/bin/bob`; never remove agent dotfiles, instructions, credentials, or user data.
 - Keep `.config/ai/` as the common instruction source; update agent-specific entrypoints to reference it rather than duplicating instruction text.
+- Fedora desktop AI apps (`chatgpt_desktop`, `opencode_desktop`, `cline_desktop`) follow the same lifecycle pattern through `ai_desktop_apps` in `ansible/inventory/group_vars/fedora.yml`; `install_enabled` and `uninstall_enabled` are independent per app and mutually exclusive (enforced by the common pre-task).
+- ChatGPT opts in per host (`ikaros`, `nymph`); Cline opts in through `desktop_gnome` group vars; OpenCode Desktop keeps removal selected by default because Cline replaced it.
+- Desktop-app removal deletes only managed artifacts: the RPM package (`chatgpt`, `opencode`, `cline`), ChatGPT's managed repository and signing key, and every cached download; it never removes user data, GNOME favorites, or the npm-managed CLI counterparts.
 
 ## Tooling Notes
 - Install local tooling with:

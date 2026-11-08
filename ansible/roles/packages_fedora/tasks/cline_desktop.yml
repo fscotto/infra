@@ -1,10 +1,14 @@
 ---
+# Cline Desktop ships unsigned RPMs from its GitHub releases; only the
+# checksum-verified download makes the local installation trustworthy.
 - name: Validate Cline Desktop architecture on Fedora
   ansible.builtin.assert:
     that:
       - ansible_facts['architecture'] in cline_desktop_rpm_checksums
     fail_msg: "No verified Cline Desktop RPM for {{ ansible_facts['architecture'] }}."
+  when: cline_desktop_install_enabled | default(false) | bool
 
+# Runs for both flows so the register below is always valid.
 - name: Check for cached Cline Desktop RPM
   ansible.builtin.stat:
     path: "{{ cline_desktop_rpm_path }}"
@@ -20,7 +24,9 @@
     group: root
     mode: "0644"
   # get_url only sends HEAD in check mode and cannot populate a cold cache.
-  when: not ansible_check_mode
+  when:
+    - cline_desktop_install_enabled | default(false) | bool
+    - not ansible_check_mode
 
 - name: Install Cline Desktop on Fedora
   ansible.builtin.dnf:
@@ -29,7 +35,10 @@
     # Upstream ships an unsigned RPM. The download above verifies its pinned
     # SHA-256; do not disable signature checks in system repository settings.
     disable_gpg_check: true
-  when: not ansible_check_mode or cline_desktop_rpm_cache.stat.exists
+  when:
+    - cline_desktop_install_enabled | default(false) | bool
+    - not ansible_check_mode
+      or cline_desktop_rpm_cache.stat.exists
 
 - name: Explain Cline Desktop cold-cache check-mode limitation
   ansible.builtin.debug:
@@ -38,5 +47,32 @@
       {{ cline_desktop_version }} before ensuring it is installed.
       The RPM is not cached, so this dry run cannot validate DNF dependencies.
   when:
+    - cline_desktop_install_enabled | default(false) | bool
     - ansible_check_mode
     - not cline_desktop_rpm_cache.stat.exists
+
+# The `cline` RPM package name is verified from the pinned release header;
+# removal never touches the npm-managed cline CLI or user data.
+- name: Remove Cline Desktop from Fedora
+  ansible.builtin.dnf:
+    name: cline
+    state: absent
+  when: cline_desktop_uninstall_enabled | default(false) | bool
+
+# Clean every cached download so retirement also removes outdated pins.
+- name: Find cached Cline Desktop RPM downloads
+  ansible.builtin.find:
+    paths: /var/cache
+    patterns: "cline-desktop-*.rpm"
+    file_type: file
+  register: cline_desktop_cached_rpms
+  when: cline_desktop_uninstall_enabled | default(false) | bool
+
+- name: Remove cached Cline Desktop RPM downloads
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ cline_desktop_cached_rpms.files | default([]) }}"
+  loop_control:
+    label: "{{ item.path }}"
+  when: cline_desktop_uninstall_enabled | default(false) | bool

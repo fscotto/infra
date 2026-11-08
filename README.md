@@ -602,6 +602,31 @@ On WSL (`deadalus`), Codex installation and dotfile deployment are disabled thro
 host overrides; the managed `@openai/codex` npm package is selected for removal.
 Existing Codex configuration, credentials, and user data are left untouched.
 
+The shared agent context is centralized in `dotfiles/common/.config/ai/` and
+deployed to `~/.config/ai/` for every enabled agent: `bootstrap.md` (operating
+context), `AGENTS.md` (task-specific file dispatcher), plus `knowledge/`,
+`rules/`, and `patterns/`. Each agent is wired to it: OpenCode through the
+`instructions` array in `opencode.json`, Codex through `model_instructions_file`
+plus the global `~/.codex/AGENTS.md`, Gemini CLI through its settings context
+files, Claude Code through the `@` imports in `~/.claude/CLAUDE.md`, and Cline
+through the cross-tool `~/.agents/AGENTS.md` pointer (deployed with
+`cline_deploy_enabled: true`).
+
+ChatGPT conversation memory lives in
+`dotfiles/common/.config/ai/memory/chatgpt/`: one Markdown transcript per
+conversation, a generated `INDEX.md`, and topic-distilled knowledge files under
+`memory/chatgpt/knowledge/` that agents load through the dispatcher. Regenerate
+it incrementally from an official ChatGPT data export with:
+
+```bash
+python3 scripts/chatgpt_export_to_memory.py --export-dir ~/Downloads/<export>
+```
+
+Binary and personal assets (PDFs, images) are deliberately not imported;
+textual ones are copied under `memory/chatgpt/assets/`. Non-technical personal
+conversations are excluded from import by a privacy blocklist in the script,
+which also prunes any previously imported copy.
+
 The `opencode-mobile` npm package is no longer installed on managed hosts: its
 agent entry sets `install_enabled: false` and `uninstall_enabled: true`, so the
 playbook removes the managed package. The plugin declaration and `/mobile`

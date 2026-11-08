@@ -6,9 +6,10 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
 - Main orchestration: `ansible/site.yml`
 - Inventory and layering inputs: `ansible/inventory/hosts.yml`, `ansible/inventory/group_vars/*.yml`, `ansible/inventory/host_vars/*.yml`
 - Dotfiles live under `dotfiles/`
-- AI agent instructions (bootstrap, rules, knowledge) are centralized in `dotfiles/common/.config/ai/` and shared between OpenCode, Codex, and Gemini CLI.
-- OpenCode loads its entrypoint configuration from `dotfiles/common/.config/opencode/opencode.json`.
+- AI agent instructions (bootstrap, dispatcher, knowledge, rules, patterns) are centralized in `dotfiles/common/.config/ai/` and shared between OpenCode, Codex, Gemini CLI, and Cline.
+- OpenCode loads its entrypoint configuration from `dotfiles/common/.config/opencode/opencode.json`; Codex global instructions deploy from `dotfiles/common/.codex/AGENTS.md`; Cline global instructions deploy from the cross-tool `dotfiles/common/.agents/AGENTS.md` (to `~/.agents/AGENTS.md`).
 - Codex config is rendered from `dotfiles/common/.codex/config.toml.j2` so `model_instructions_file` points to the deployed `~/.config/ai/bootstrap.md`.
+- ChatGPT conversation memory is stored in `dotfiles/common/.config/ai/memory/chatgpt/` and regenerated incrementally by `scripts/chatgpt_export_to_memory.py` from an official ChatGPT data export.
 
 ## Topology
 - Current personal desktop: `ikaros = platform_fedora + role_personal_workstation + graphical_desktop + desktop_gnome`

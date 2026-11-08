@@ -754,7 +754,7 @@ Allo stato attuale `ansible/site.yml` espone questi tag:
 | Tag | Scopo | Ambito principale |
 | --- | --- | --- |
 | `always` | pre-task sempre eseguiti, inclusi caricamento vault e validazioni preliminari | common |
-| `ai_agents` | installazione agenti AI condivisi | Fedora, WSL |
+| `ai_agents` | installazione agenti AI condivisi e distribuzione del contesto condiviso (bootstrap, regole, memoria ChatGPT) | Fedora, WSL |
 | `atlas` | account, storage, condivisioni e container Atlas | NAS Atlas |
 | `backend_phase1` | Quadlet rootless Navidrome e Syncthing | NAS Atlas |
 | `containers` | Quadlet rootful Atlas | NAS Atlas |

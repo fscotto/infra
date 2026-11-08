@@ -1,8 +1,10 @@
+{% set in_container = workstation_git_in_devcontainer | default(false) %}
+{% set git_support_dir = '/run/ecaas-git' if in_container else '~' %}
 [init]
   defaultBranch = main
 
 [core]
-  excludesfile = ~/.gitignore_global
+  excludesfile = {{ git_support_dir }}/.gitignore_global
   pager = delta
 
 [user]
@@ -24,11 +26,21 @@
 
 [merge]
   conflictstyle = diff3
-  tool = bobide
+  tool = {{ 'vscode' if in_container else 'bobide' }}
 
 [mergetool]
   prompt = false
 
+{% if in_container %}
+[mergetool "vscode"]
+  cmd = code --wait --merge \"$REMOTE\" \"$LOCAL\" \"$BASE\" \"$MERGED\"
+
+[diff]
+  tool = vscode
+
+[difftool "vscode"]
+  cmd = code --wait --diff \"$LOCAL\" \"$REMOTE\"
+{% else %}
 [mergetool "bobide"]
   cmd = bobide --reuse-window --wait $MERGED
 
@@ -37,6 +49,7 @@
 
 [difftool "bobide"]
   cmd = bobide --reuse-window --wait --diff $LOCAL $REMOTE
+{% endif %}
 
 [color]
   ui = always
@@ -79,7 +92,7 @@
   gcunreachablenow = gc --prune=now
 
 [include]
-  path = ~/.themes.gitignore
+  path = {{ git_support_dir }}/.themes.gitignore
 
 [delta]
   features = catppuccin-mocha navigate
@@ -88,14 +101,16 @@
   tabs = 4
   side-by-side = true
 
-[http "https://gitlab.ecaas.datacenter.comune.roma"]
+{% for ca in workstation_git_container_cas | default(workstation_git_https_cas) %}
+[http "{{ ca.url }}"]
+{% if not in_container %}
   sslBackend = openssl
-  sslCAInfo = ~/.local/share/certs/ecaas.datacenter.comune.roma.crt
+{% endif %}
+  sslCAInfo = {{ '/run/ecaas-git-ca' if in_container else '~/.local/share/certs' }}/{{ ca.certificate }}
 
-[http "https://gitlab.datacenter.comune.roma"]
-  sslBackend = openssl
-  sslCAInfo = ~/.local/share/certs/datacenter.comune.roma.crt
-
+{% endfor %}
+{% if not in_container %}
 [credential]
   helper = store
+{% endif %}
 

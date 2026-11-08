@@ -1,0 +1,56 @@
+---
+- name: Find the installed Cline Desktop launcher
+  ansible.builtin.stat:
+    path: "/usr/share/applications/{{ cline_desktop_launcher }}"
+    get_checksum: false
+  register: cline_desktop_launcher_stat
+
+- name: Verify Cline Desktop installed its expected launcher
+  ansible.builtin.assert:
+    that: cline_desktop_launcher_stat.stat.isreg | default(false)
+    fail_msg: "Cline Desktop did not install {{ cline_desktop_launcher }}."
+  when: not ansible_check_mode
+
+- name: Find the GNOME account for the Cline favorite
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ username }}"
+  when: cline_desktop_launcher_stat.stat.isreg | default(false)
+
+- name: Update only the Cline and OpenCode entries in GNOME favorites
+  become_user: "{{ username }}"
+  environment:
+    HOME: "{{ user_home }}"
+    XDG_RUNTIME_DIR: "/run/user/{{ ansible_facts.getent_passwd[username][1] }}"
+    DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ ansible_facts.getent_passwd[username][1] }}/bus"
+  when: cline_desktop_launcher_stat.stat.isreg | default(false)
+  block:
+    - name: Read the current GNOME favorites for Cline Desktop
+      ansible.builtin.command:
+        argv: [gsettings, get, org.gnome.shell, favorite-apps]
+      register: cline_gnome_favorites_current
+      changed_when: false
+      check_mode: false
+
+    - name: Pin the Cline Desktop launcher without reordering other favorites
+      ansible.builtin.command:
+        argv:
+          - gsettings
+          - set
+          - org.gnome.shell
+          - favorite-apps
+          - "{{ cline_gnome_favorites_desired | to_json }}"
+      vars:
+        cline_gnome_favorites_existing: "{{ cline_gnome_favorites_current.stdout | regex_replace('^@as ', '') | from_yaml }}"
+        cline_gnome_favorites_desired: >-
+          {%- set ns = namespace(apps=[]) -%}
+          {%- for app in cline_gnome_favorites_existing -%}
+            {%- set launcher = cline_desktop_launcher
+                if app in ['ai.opencode.desktop.desktop', 'opencode-desktop.desktop'] else app -%}
+            {%- if launcher != cline_desktop_launcher or launcher not in ns.apps -%}
+              {%- set ns.apps = ns.apps + [launcher] -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ ns.apps if cline_desktop_launcher in ns.apps else ns.apps + [cline_desktop_launcher] }}
+      when: cline_gnome_favorites_desired != cline_gnome_favorites_existing
+      changed_when: true

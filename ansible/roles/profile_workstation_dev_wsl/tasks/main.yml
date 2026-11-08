@@ -1,4 +1,9 @@
 ---
+- name: Deploy the ecaas Java 11 dev container
+  ansible.builtin.import_tasks: ecaas_devcontainer.yml
+  when: workstation_ecaas_workspace is defined
+  tags: [ecaas_devcontainer]
+
 - name: Ensure Windows Emacs authoring directories exist
   tags: [dotfiles, dotfiles:workstation, emacs, wsl]
   ansible.builtin.file:

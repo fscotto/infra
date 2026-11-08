@@ -1,0 +1,109 @@
+---
+- name: Refuse to deploy the ecaas workspace outside WSL
+  ansible.builtin.assert:
+    that:
+      - "'wsl2' in (ansible_facts.kernel | default('') | lower)"
+      - ansible_facts.distribution | default('') == 'Fedora'
+    fail_msg: Run this deployment from the Fedora WSL 2 distribution on deadalus.
+
+- name: Prepare the ecaas workspace and private configuration
+  vars:
+    ecaas_agent_state: "{{ user_home }}/.local/state/ecaas-devcontainer"
+    ecaas_git_available_cas: >-
+      {{ ecaas_git_ca_probe.results | selectattr('stat.isreg', 'defined') |
+         selectattr('stat.isreg') | map(attribute='item') | list }}
+    ecaas_agent_config:
+      - src: .claude/settings.json
+        dest: claude/settings.json
+      - src: .claude/CLAUDE.md
+        dest: claude/CLAUDE.md
+      - src: .claude/rules
+        dest: claude/rules
+      - src: .claude/skills
+        dest: claude/skills
+      - src: .config/ai/bootstrap.md
+        dest: ai/bootstrap.md
+      - src: .cline/data/globalState.json
+        dest: cline/data/globalState.json
+      - src: .cline/data/settings/global-settings.json
+        dest: cline/data/settings/global-settings.json
+      - src: .cline/rules
+        dest: cline/rules
+      - src: .cline/skills
+        dest: cline/skills
+  block:
+    - name: Prepare the ecaas Git configuration
+      ansible.builtin.import_tasks: ecaas_git.yml
+
+    - name: Ensure the ecaas dev container directory exists
+      ansible.builtin.file:
+        path: "{{ workstation_ecaas_workspace }}/.devcontainer"
+        state: directory
+        owner: "{{ username }}"
+        group: "{{ user_group }}"
+        mode: "0755"
+
+    - name: Ensure private ecaas agent state directories exist
+      ansible.builtin.file:
+        path: "{{ ecaas_agent_state }}{{ item }}"
+        state: directory
+        owner: "{{ username }}"
+        group: "{{ user_group }}"
+        mode: "0700"
+      loop:
+        - ""
+        - /ai
+        - /claude
+        - /cline
+        - /cline/data
+        - /cline/data/settings
+
+    - name: Locate supported WSL agent configuration
+      ansible.builtin.stat:
+        path: "{{ user_home }}/{{ item.src }}"
+        follow: false
+        get_checksum: false
+        get_mime: false
+      loop: "{{ ecaas_agent_config }}"
+      register: ecaas_agent_config_sources
+
+    - name: Seed missing private agent settings without importing credential stores
+      ansible.builtin.copy:
+        src: "{{ user_home }}/{{ item.item.src }}{{ '/' if item.stat.isdir | default(false) else '' }}"
+        dest: "{{ ecaas_agent_state }}/{{ item.item.dest }}"
+        remote_src: true
+        mode: preserve
+        force: false
+        local_follow: false
+      become_user: "{{ username }}"
+      when:
+        - item.stat.isreg | default(false) or item.stat.isdir | default(false)
+        - not ansible_check_mode
+      loop: "{{ ecaas_agent_config_sources.results }}"
+      no_log: true
+      diff: false
+
+    - name: Deploy the ecaas dev container configuration
+      ansible.builtin.template:
+        src: ecaas-devcontainer.json.j2
+        dest: "{{ workstation_ecaas_workspace }}/.devcontainer/devcontainer.json"
+        owner: "{{ username }}"
+        group: "{{ user_group }}"
+        mode: "0644"
+        backup: true
+
+    - name: Deploy the ecaas dev container build files
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ workstation_ecaas_workspace }}/.devcontainer/{{ item.dest }}"
+        owner: "{{ username }}"
+        group: "{{ user_group }}"
+        mode: "0644"
+        backup: true
+      loop:
+        - src: ecaas-devcontainer.Dockerfile
+          dest: Dockerfile
+        - src: "{{ playbook_dir }}/../dotfiles/common/.bashrc"
+          dest: bashrc
+      loop_control:
+        label: "{{ item.dest }}"

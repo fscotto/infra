@@ -1,0 +1,65 @@
+---
+- name: Locate the Git CA files configured for the workstation
+  ansible.builtin.stat:
+    path: "{{ user_home }}/.local/share/certs/{{ item.certificate }}"
+    follow: true
+    get_checksum: false
+    get_mime: false
+  loop: "{{ workstation_git_https_cas }}"
+  loop_control:
+    label: "{{ item.certificate }}"
+  register: ecaas_git_ca_probe
+
+- name: Require the ecaas Git CA before deploying the dev container
+  ansible.builtin.assert:
+    that:
+      - workstation_ecaas_git_required_ca in (ecaas_git_available_cas | map(attribute='certificate') | list)
+    fail_msg: "Install the existing workstation CA at {{ user_home }}/.local/share/certs/{{ workstation_ecaas_git_required_ca }} first."
+
+- name: Verify the available Git CA files are public PEM certificates
+  ansible.builtin.shell: |
+    if grep -q -- 'PRIVATE KEY-----' "$ECAAS_GIT_CA"; then
+      exit 1
+    fi
+    openssl x509 -in "$ECAAS_GIT_CA" -noout
+  environment:
+    ECAAS_GIT_CA: "{{ user_home }}/.local/share/certs/{{ item.item.certificate }}"
+  become_user: "{{ username }}"
+  check_mode: false
+  changed_when: false
+  when: item.stat.isreg | default(false)
+  loop: "{{ ecaas_git_ca_probe.results }}"
+  loop_control:
+    label: "{{ item.item.certificate }}"
+
+- name: Ensure the private ecaas Git configuration directory exists
+  ansible.builtin.file:
+    path: "{{ ecaas_agent_state }}/git"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0700"
+
+- name: Render the workstation Git configuration for the ecaas container
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/templates/workstation/.gitconfig.j2"
+    dest: "{{ ecaas_agent_state }}/git/gitconfig"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0600"
+  vars:
+    workstation_git_in_devcontainer: true
+    workstation_git_container_cas: "{{ ecaas_git_available_cas }}"
+  no_log: true
+  diff: false
+
+- name: Deploy the workstation Git ignore and delta theme files
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dotfiles/workstation/{{ item }}"
+    dest: "{{ ecaas_agent_state }}/git/{{ item }}"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0644"
+  loop:
+    - .gitignore_global
+    - .themes.gitignore

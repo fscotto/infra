@@ -103,6 +103,9 @@ gemini_cli_deploy_enabled: true
 gemini_cli_uninstall_enabled: false
 claude_code_install_enabled: false
 claude_code_uninstall_enabled: true
+cline_install_enabled: true
+cline_deploy_enabled: false
+cline_uninstall_enabled: false
 
 # npm registry requests can be interrupted transiently.  Keep retries bounded
 # so persistent proxy, DNS, or registry failures still fail the play clearly.
@@ -140,6 +143,11 @@ ai_agents:
     install_enabled: "{{ gemini_cli_install_enabled }}"
     deploy_enabled: "{{ gemini_cli_deploy_enabled }}"
     uninstall_enabled: "{{ gemini_cli_uninstall_enabled }}"
+  cline:
+    npm_package: cline
+    install_enabled: "{{ cline_install_enabled }}"
+    deploy_enabled: "{{ cline_deploy_enabled }}"
+    uninstall_enabled: "{{ cline_uninstall_enabled }}"
   github_copilot:
     npm_package: "@github/copilot"
     install_enabled: false

@@ -1,6 +1,12 @@
 ---
 emacs_enabled: true
 
+workstation_git_https_cas:
+  - url: https://gitlab.ecaas.datacenter.comune.roma
+    certificate: ecaas.datacenter.comune.roma.crt
+  - url: https://gitlab.datacenter.comune.roma
+    certificate: datacenter.comune.roma.crt
+
 workstation_user_directories:
   - path: "{{ user_home }}/.config"
     mode: "0755"

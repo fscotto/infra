@@ -254,7 +254,7 @@ gnome_gsettings_settings:
   - schema: org.gnome.shell
     key: favorite-apps
     value: >-
-      ['org.gnome.Nautilus.desktop', 'org.mozilla.firefox.desktop', 'com.spotify.Client.desktop', 'net.thunderbird.Thunderbird.desktop', 'org.telegram.desktop.desktop', 'chatgpt.desktop', 'ai.opencode.desktop.desktop', 'com.microsoft.VSCode.desktop', 'org.gnome.Ptyxis.desktop', 'virt-manager.desktop']
+      ['org.gnome.Nautilus.desktop', 'org.mozilla.firefox.desktop', 'com.spotify.Client.desktop', 'net.thunderbird.Thunderbird.desktop', 'org.telegram.desktop.desktop', 'chatgpt.desktop', 'Cline.desktop', 'com.microsoft.VSCode.desktop', 'org.gnome.Ptyxis.desktop', 'virt-manager.desktop']
   - schema: org.gnome.shell
     key: remember-mount-password
     value: "true"

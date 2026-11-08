@@ -168,12 +168,12 @@
   loop_control:
     label: "{{ item.key }}"
 
-- name: Manage OpenCode Desktop on Fedora graphical workstations
-  tags: [packages, opencode_desktop]
-  ansible.builtin.import_tasks: opencode_desktop.yml
+- name: Manage Cline Desktop on Fedora GNOME workstations
+  tags: [packages, cline_desktop]
+  ansible.builtin.import_tasks: cline_desktop.yml
   when:
-    - "'graphical_desktop' in group_names"
-    - opencode_desktop_enabled | default(false) | bool
+    - "'desktop_gnome' in group_names"
+    - cline_desktop_enabled | default(false) | bool
 
 - name: Validate ChatGPT desktop architecture on Fedora
   tags: [packages, chatgpt]

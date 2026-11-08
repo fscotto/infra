@@ -288,3 +288,8 @@
 - name: Configure native VS Code
   tags: [vscode]
   ansible.builtin.import_tasks: vscode.yml
+
+- name: Pin Cline Desktop in GNOME
+  tags: [cline_desktop]
+  ansible.builtin.import_tasks: cline_desktop.yml
+  when: cline_desktop_enabled | default(false) | bool

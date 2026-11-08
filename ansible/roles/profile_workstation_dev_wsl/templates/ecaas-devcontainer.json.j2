@@ -1,0 +1,47 @@
+{
+  "name": "ecaas — Java 11",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "MAVEN_VERSION": {{ workstation_mise_maven_version | to_json }}
+    }
+  },
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": true,
+  "containerEnv": {
+    "CLAUDE_CONFIG_DIR": "/home/vscode/.claude"
+  },
+  "mounts": [
+    {{ ('type=bind,source=' ~ ecaas_agent_state ~ '/git,target=/run/ecaas-git,readonly') | to_json }},
+{% for ca in ecaas_git_available_cas %}
+    {{ ('type=bind,source=' ~ user_home ~ '/.local/share/certs/' ~ ca.certificate ~ ',target=/run/ecaas-git-ca/' ~ ca.certificate ~ ',readonly') | to_json }},
+{% endfor %}
+    {{ ('type=bind,source=' ~ ecaas_agent_state ~ '/ai,target=/home/vscode/.config/ai,readonly') | to_json }},
+    {{ ('type=bind,source=' ~ ecaas_agent_state ~ '/claude,target=/home/vscode/.claude') | to_json }},
+    {{ ('type=bind,source=' ~ ecaas_agent_state ~ '/cline,target=/home/vscode/.cline') | to_json }}
+  ],
+  "forwardPorts": [8080],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vmware.vscode-boot-dev-pack",
+        "redhat.vscode-xml",
+        "redhat.vscode-yaml",
+        "anthropic.claude-code",
+        "saoudrizwan.claude-dev"
+      ],
+      "settings": {
+        "java.jdt.ls.java.home": "/opt/jdk-21",
+        "spring-boot.ls.java.home": "/opt/jdk-21",
+        "java.configuration.runtimes": [
+          {
+            "name": "JavaSE-11",
+            "path": "/usr/lib/jvm/msopenjdk-current",
+            "default": true
+          }
+        ]
+      }
+    }
+  }
+}

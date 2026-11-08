@@ -63,14 +63,14 @@ fedora_dev_packages:
 fedora_flatpak_remote_name: flathub
 fedora_flatpak_remote_url: https://dl.flathub.org/repo/flathub.flatpakrepo
 
-opencode_desktop_version: "2.2.5"
+cline_desktop_version: "0.0.49"
 # Digests published with the official GitHub release; update with the version.
-opencode_desktop_rpm_checksums:
-  x86_64: sha256:4feb27fe98df9b7579abd31a790d331e9aff87c95f67081beefa2aaaa76ebada
-  aarch64: sha256:e84b1e03e2b4fb337ddfe015b6457a7aa0dfe171338be08e643ad66b1657033a
-opencode_desktop_rpm_url: >-
-  https://github.com/anomalyco/opencode/releases/download/v{{ opencode_desktop_version }}/opencode-desktop-linux-{{ ansible_facts['architecture'] }}.rpm
-opencode_desktop_rpm_path: "/var/cache/opencode-desktop-{{ opencode_desktop_version }}-{{ ansible_facts['architecture'] }}.rpm"
+cline_desktop_rpm_checksums:
+  x86_64: sha256:e10036a036ee531451695559e2c96feceb3d621408a6615bdd708ffcf9e778ab
+  aarch64: sha256:aec36edb594bdc400b0c2275230f29de6814a78ad60add4938347d20cfb93b74
+cline_desktop_rpm_url: >-
+  https://github.com/cline/cline/releases/download/desktop-v{{ cline_desktop_version }}/Cline_{{ cline_desktop_version }}_{{ ansible_facts['architecture'] }}.rpm
+cline_desktop_rpm_path: "/var/cache/cline-desktop-{{ cline_desktop_version }}-{{ ansible_facts['architecture'] }}.rpm"
 
 chatgpt_desktop_enabled: false
 chatgpt_desktop_supported_fedora_versions:

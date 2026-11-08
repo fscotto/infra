@@ -104,7 +104,7 @@ gemini_cli_uninstall_enabled: false
 claude_code_install_enabled: false
 claude_code_uninstall_enabled: true
 cline_install_enabled: true
-cline_deploy_enabled: false
+cline_deploy_enabled: true
 cline_uninstall_enabled: false
 
 # npm registry requests can be interrupted transiently.  Keep retries bounded
@@ -188,6 +188,18 @@ ai_agents_dotfiles:
     mode: preserve
     agents:
       - claude_code
+  - name: Codex global AGENTS instructions
+    src: .codex/AGENTS.md
+    dest: .codex/AGENTS.md
+    mode: "0644"
+    agents:
+      - codex
+  - name: Cline cross-tool AGENTS instructions
+    src: .agents/AGENTS.md
+    dest: .agents/AGENTS.md
+    mode: "0644"
+    agents:
+      - cline
 
 ai_agents_templates:
   - name: Codex config

@@ -2,7 +2,8 @@
   "$schema": "https://opencode.ai/config.json",
   "instructions": [
     "~/.config/ai/bootstrap.md",
-    "~/.config/ai/rules/safety.md"
+    "~/.config/ai/rules/safety.md",
+    "~/.config/ai/AGENTS.md"
   ],
   "plugin": [
     "opencode-mobile@latest"

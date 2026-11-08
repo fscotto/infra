@@ -1,0 +1,114 @@
+#+TITLE: Correlazione tra Sistemi Operativi - Concetti ed esempi, 8ª ed. e APUE
+#+AUTHOR: Fabio Scotto di Santolo
+#+LANGUAGE: it
+#+OPTIONS: toc:2 num:nil
+
+* Nota
+Questa tabella mette in relazione i capitoli di /Sistemi Operativi - Concetti ed esempi/, 8ª edizione, di Silberschatz, Galvin e Gagne, con i capitoli di /Advanced Programming in the UNIX Environment/ (APUE), 3ª edizione, di Stevens e Rago.
+
+L'obiettivo non è sostituire nessuno dei due testi, ma usarli insieme:
+
+- *Sistemi Operativi* fornisce il modello teorico: processi, memoria, file system, scheduling, sincronizzazione, I/O.
+- *APUE* mostra come quei concetti emergono concretamente nelle API UNIX/POSIX.
+
+* Tabella di correlazione
+
+| Capitolo Sistemi Operativi, 8ª ed. | Tema teorico | Capitoli APUE correlati | API / argomenti APUE | Priorità per APUE | Note di studio |
+|------------------------------------+--------------+--------------------------+----------------------+-------------------+----------------|
+| Cap. 1 - Introduzione | Ruolo del sistema operativo, kernel, astrazioni, protezione, interrupt, system call | Cap. 1 - UNIX System Overview; Cap. 2 - UNIX Standardization and Implementations | architettura UNIX, kernel, shell, standard POSIX, system call, librerie | Alta | Da leggere prima di APUE per avere il lessico base: kernel, user mode, system call, processo, file. |
+| Cap. 2 - Strutture dei sistemi operativi | Servizi OS, interfacce, system call, struttura kernel, macchine virtuali | Cap. 1; Cap. 2; Cap. 3 - File I/O | syscall vs funzioni di libreria, POSIX, primitive UNIX | Alta | Aiuta a capire perché APUE distingue spesso tra interfaccia standard, implementazione e comportamento specifico del sistema. |
+| Cap. 3 - Processi | Processo, PCB, stati, context switch, creazione/terminazione, IPC base | Cap. 7 - Process Environment; Cap. 8 - Process Control; Cap. 9 - Process Relationships; Cap. 15 - Interprocess Communication | =fork()=, =exec()=, =wait()=, exit status, environment, pipe, FIFO | Fondamentale | È il ponte più importante: APUE diventa molto più chiaro se hai già il modello teorico di processo. |
+| Cap. 4 - Thread | Thread, modelli user/kernel, multithreading, concorrenza nello stesso processo | Cap. 11 - Threads; Cap. 12 - Thread Control | =pthread_create()=, mutex, condition variable, thread attributes, cancellazione | Alta | APUE è molto pratico sui pthread; il capitolo teorico serve per capire condivisione di memoria, stack, race e scheduling. |
+| Cap. 5 - Scheduling della CPU | Scheduler, processi ready/running/waiting, algoritmi FCFS/SJF/RR/priorità | Cap. 8; Cap. 9; Cap. 11 | ordine non deterministico tra processi/thread, =nice()=, priorità, timing | Media | Non serve conoscere tutti gli algoritmi per APUE, ma serve capire che l'ordine di esecuzione non è garantito. |
+| Cap. 6 - Sincronizzazione dei processi | Race condition, sezione critica, mutex, semafori, monitor | Cap. 10 - Signals; Cap. 11; Cap. 12; Cap. 15 | signal safety, mutex, condition variable, semafori POSIX/System V, IPC | Fondamentale | Cruciale per scrivere codice robusto: segnali, thread e IPC senza modello di concorrenza diventano pericolosi. |
+| Cap. 7 - Deadlock | Condizioni di deadlock, prevenzione, avoidance, rilevamento | Cap. 11; Cap. 12; Cap. 15; Cap. 17 - Advanced IPC | lock ordering, mutex multipli, file locking, record locking, IPC | Media | APUE non tratta il deadlock in modo teorico esteso, ma il concetto è essenziale quando usi lock e risorse condivise. |
+| Cap. 8 - Memoria principale | Address space, linking/loading, paginazione, segmentazione, memoria virtuale di base | Cap. 7; Cap. 8; Cap. 14 - Advanced I/O | layout processo, stack, heap, =fork()=, =exec()=, =mmap()= | Alta | Serve per capire cosa viene ereditato dopo =fork()=, cosa cambia con =exec()= e perché la memoria del processo è un'astrazione. |
+| Cap. 9 - Memoria virtuale | Demand paging, copy-on-write, page replacement, mmap concettuale | Cap. 7; Cap. 8; Cap. 14 | copy-on-write dopo =fork()=, memory mapping, file mappati in memoria | Alta | Molto utile per non interpretare =fork()= come una copia fisica ingenua dell'intero processo. |
+| Cap. 10 - Interfaccia del file system | File, directory, attributi, permessi, operazioni, link | Cap. 3 - File I/O; Cap. 4 - Files and Directories; Cap. 6 - System Data Files and Information | =open()=, =read()=, =write()=, =stat()=, =chmod()=, =link()=, =symlink()=, =opendir()= | Fondamentale | È il cuore dell'I/O UNIX: inode, directory, permessi e pathname spiegano moltissimo di APUE. |
+| Cap. 11 - Implementazione del file system | Strutture interne, allocazione, free space, buffer cache, journaling | Cap. 3; Cap. 4; Cap. 5 - Standard I/O Library; Cap. 14 | buffer cache, sync, fsync, stdio buffering, performance I/O | Alta | Aiuta a capire differenza tra scrivere in un buffer utente, nella cache kernel e su disco fisico. |
+| Cap. 12 - Struttura dei dispositivi di memoria di massa | Dischi, scheduling disco, blocchi, affidabilità | Cap. 3; Cap. 4; Cap. 14 | I/O sequenziale/casuale, blocchi, =lseek()=, performance, =fsync()= | Media | Utile soprattutto se studi performance I/O, filesystem e comportamento reale della persistenza. |
+| Cap. 13 - Sistemi di I/O | Driver, interrupt, DMA, buffering, caching, blocking/non-blocking I/O | Cap. 3; Cap. 5; Cap. 14; Cap. 18 - Terminal I/O; Cap. 19 - Pseudo Terminals | =fcntl()=, nonblocking I/O, =select()=, =poll()=, terminal driver, pty | Alta | Spiega bene perché una =read()= può bloccare, essere interrotta, o comportarsi diversamente su file, terminali, pipe e socket. |
+| Cap. 14 - Protezione | Domini di protezione, access control, capability, permessi | Cap. 4; Cap. 6; Cap. 7; Cap. 8 | UID/GID, effective UID, setuid, file permissions, =umask()= | Alta | Fondamentale per capire il modello di sicurezza UNIX: identità del processo più permessi del file. |
+| Cap. 15 - Sicurezza | Minacce, autenticazione, attacchi, hardening | Cap. 4; Cap. 6; Cap. 8; Cap. 13 - Daemon Processes; Cap. 16 - Network IPC: Sockets | setuid, daemon, socket, permessi, ambiente, file temporanei | Media | APUE non è un libro di security, ma molte API UNIX sono pericolose se usate senza questo contesto. |
+| Cap. 16 - Strutture dei sistemi distribuiti | Sistemi distribuiti, comunicazione, modelli client/server | Cap. 16; Cap. 17 | socket, client/server, descriptor passing, IPC avanzata | Media | Utile quando passi dalla programmazione locale a processi che comunicano via rete. |
+| Cap. 17 - File system distribuiti | File remoti, naming, caching, coerenza | Cap. 3; Cap. 4; Cap. 14; Cap. 16 | semantica file su NFS/remote FS, errori I/O, locking, caching | Bassa/Media | Non è indispensabile all'inizio, ma spiega perché non tutti i filesystem rispettano esattamente le stesse assunzioni. |
+| Cap. 18 - Coordinamento distribuito | Ordinamento eventi, mutua esclusione distribuita, recovery | Cap. 15; Cap. 16; Cap. 17 | IPC, socket, protocolli applicativi, sincronizzazione tra processi | Bassa | Utile solo se vuoi estendere APUE verso sistemi distribuiti o server complessi. |
+| Cap. 19 - Sistemi real-time | Vincoli temporali, scheduling real-time, latenza | Cap. 8; Cap. 11; Cap. 12; Cap. 14 | scheduling, priorità, segnali, timer, I/O non bloccante | Bassa/Media | Interessante, ma non propedeutico alla maggior parte di APUE. |
+| Cap. 20 - Sistemi multimediali | Scheduling e I/O per audio/video, continuità temporale | Cap. 14; Cap. 16 | I/O avanzato, buffering, rete, timing | Bassa | Poco centrale per APUE classico. |
+| Cap. 21 - Il sistema Linux | Linux come caso di studio: processi, memoria, filesystem, moduli, I/O | Tutto APUE, in particolare Cap. 1, 3, 4, 7, 8, 10, 11, 14, 15, 16 | comportamento reale su Linux delle API UNIX/POSIX | Alta | Molto utile per collegare teoria, APUE e ambiente GNU/Linux reale. |
+| Cap. 22 - Windows XP | Architettura Windows, processi, thread, memoria, I/O, sicurezza | Confronto indiretto con APUE | differenze rispetto a POSIX/UNIX | Bassa | Utile solo come confronto architetturale, non necessario per studiare APUE. |
+| Cap. 23 - Sistemi operativi influenti | UNIX, BSD, Linux, Mach, altri sistemi storici | Cap. 1; Cap. 2 | contesto storico UNIX/POSIX/BSD/System V | Media | Aiuta a capire perché APUE cita spesso differenze storiche tra UNIX, BSD, System V e POSIX. |
+
+* Percorso consigliato
+
+** Prima passata: capitoli teorici davvero propedeutici ad APUE
+
+Se vuoi leggere il minimo indispensabile prima o durante APUE, concentrati su:
+
+| Priorità | Capitoli Sistemi Operativi | Perché |
+|----------+----------------------------+--------|
+| 1 | Cap. 1 - Introduzione | Lessico base: kernel, processi, system call, protezione. |
+| 2 | Cap. 2 - Strutture dei sistemi operativi | Capire interfacce, servizi OS e ruolo delle syscall. |
+| 3 | Cap. 3 - Processi | Necessario per =fork()=, =exec()=, =wait()=, zombie, orphan. |
+| 4 | Cap. 8 - Memoria principale | Necessario per address space, stack, heap, ereditarietà dopo =fork()=. |
+| 5 | Cap. 9 - Memoria virtuale | Necessario per copy-on-write e =mmap()=. |
+| 6 | Cap. 10 - Interfaccia del file system | Necessario per file descriptor, directory, inode, link, permessi. |
+| 7 | Cap. 13 - Sistemi di I/O | Necessario per blocking I/O, buffering, driver, terminali. |
+| 8 | Cap. 6 - Sincronizzazione dei processi | Necessario per thread, segnali e IPC robusto. |
+
+** Seconda passata: lettura APUE guidata dalla teoria
+
+| Blocco APUE | Capitoli APUE | Teoria da affiancare |
+|-------------+---------------+----------------------|
+| Fondamenti UNIX | APUE 1-2 | Sistemi Operativi 1-2, 23 |
+| File e directory | APUE 3-5 | Sistemi Operativi 10-13 |
+| Ambiente di processo | APUE 6-7 | Sistemi Operativi 1-3, 8 |
+| Processi | APUE 8-9 | Sistemi Operativi 3, 5, 8, 9 |
+| Segnali | APUE 10 | Sistemi Operativi 3, 6, 13 |
+| Thread | APUE 11-12 | Sistemi Operativi 4, 5, 6, 7 |
+| Daemon | APUE 13 | Sistemi Operativi 3, 14, 15 |
+| I/O avanzato | APUE 14 | Sistemi Operativi 11-13 |
+| IPC | APUE 15, 17 | Sistemi Operativi 3, 6, 7, 16, 18 |
+| Socket | APUE 16 | Sistemi Operativi 16 |
+| Terminali | APUE 18-19 | Sistemi Operativi 13 |
+
+* Lettura pratica consigliata
+
+** Metodo
+Per ogni argomento APUE, fai questo ciclo:
+
+1. Leggi il capitolo APUE.
+2. Torna al capitolo teorico corrispondente di /Sistemi Operativi/.
+3. Scrivi un piccolo programma C che dimostri il comportamento.
+4. Osserva con strumenti come =strace=, =lsof=, =ps=, =pstree=, =top=, =gdb=.
+
+** Esempi concreti
+
+| Tema | Teoria | APUE | Esperimento C |
+|------+--------+------+---------------|
+| =fork()= | Processi + memoria virtuale | APUE 8 | Modifica una variabile dopo =fork()= e osserva che padre e figlio non condividono lo stesso valore. |
+| Buffering | I/O + file system implementation | APUE 5 | Usa =printf()= prima di =fork()= e confronta con =write()=. |
+| File descriptor | File system + I/O | APUE 3-4 | Apri un file, fai =fork()=, scrivi da padre e figlio, osserva offset condiviso. |
+| Zombie | Process lifecycle | APUE 8 | Crea un figlio che termina senza =wait()= e osserva con =ps=. |
+| Pipe | IPC | APUE 15 | Implementa =ls | wc -l= con =pipe()=, =fork()=, =dup2()=, =execvp()=. |
+| Signal safety | Sincronizzazione + interrupt | APUE 10 | Gestisci =SIGINT= usando =sigaction()= e solo funzioni async-signal-safe. |
+| Thread race | Thread + sincronizzazione | APUE 11-12 | Incrementa un contatore condiviso con e senza mutex. |
+| mmap | Memoria virtuale + I/O | APUE 14 | Mappa un file in memoria e modifica il contenuto tramite puntatore. |
+
+* Sintesi operativa
+
+Per capire bene APUE, i capitoli più propedeutici di /Sistemi Operativi - Concetti ed esempi/ sono:
+
+1. Cap. 1 - Introduzione
+2. Cap. 2 - Strutture dei sistemi operativi
+3. Cap. 3 - Processi
+4. Cap. 4 - Thread
+5. Cap. 6 - Sincronizzazione dei processi
+6. Cap. 8 - Memoria principale
+7. Cap. 9 - Memoria virtuale
+8. Cap. 10 - Interfaccia del file system
+9. Cap. 11 - Implementazione del file system
+10. Cap. 13 - Sistemi di I/O
+11. Cap. 14 - Protezione
+
+Il resto è utile, ma può essere letto dopo o solo quando APUE porta naturalmente verso quei temi.

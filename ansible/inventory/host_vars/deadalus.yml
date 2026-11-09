@@ -1,7 +1,7 @@
 ---
 hostname: deadalus
 workstation_wsl_windows_user_home: /mnt/c/Users/FABIOSCOTTODISANTOLO
-workstation_ecaas_workspace: "{{ user_home }}/Work/ecaas"
+workstation_ecaas_workspace: "{{ user_home }}/Work/sipo/ecaas"
 workstation_ecaas_git_required_ca: ecaas.datacenter.comune.roma.crt
 
 # Codex is not installed or configured on WSL; remove the managed npm package.

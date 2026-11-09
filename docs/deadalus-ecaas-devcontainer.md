@@ -6,7 +6,7 @@ From the AnsiblePlaybook checkout **in Fedora WSL 2 on deadalus**:
 ansible-playbook ansible/site.yml --limit deadalus --tags ecaas_devcontainer -K
 ```
 
-This creates `~/Work/ecaas/.devcontainer/` and deploys `devcontainer.json`,
+This creates `~/Work/sipo/ecaas/.devcontainer/` and deploys `devcontainer.json`,
 `Dockerfile` and `bashrc`, backing up previous versions if they change. It does
 not clone or modify application sources, change VS Code's Windows settings, or
 start Docker containers. The Docker context selection remains in the local

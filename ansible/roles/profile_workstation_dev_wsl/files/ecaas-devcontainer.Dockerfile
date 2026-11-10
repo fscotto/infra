@@ -29,7 +29,21 @@ RUN apt-get update \
     && echo "$sha256  /tmp/git-delta.deb" | sha256sum -c - \
     && apt-get install -y --no-install-recommends /tmp/git-delta.deb \
     && rm -rf /var/lib/apt/lists/* /tmp/git-delta.deb
+ARG GLAB_VERSION=1.114.0
+RUN arch="$(dpkg --print-architecture)" \
+    && case "$arch" in \
+      amd64) sha256=6df680f88a2a45700d1dd6a08a44a74838473ef3dcc5cb1ad243f4d1fd704ad0 ;; \
+      arm64) sha256=c2bcb44cc10d849cccb879e687f3b9e102a3415c3d02f0cecfd9ce1442519350 ;; \
+      *) echo "Unsupported architecture for glab: $arch" >&2; exit 1 ;; \
+    esac \
+    && curl -fsSL --retry 3 "https://gitlab.com/gitlab-org/cli/-/releases/v${GLAB_VERSION}/downloads/glab_${GLAB_VERSION}_linux_${arch}.deb" -o /tmp/glab.deb \
+    && echo "$sha256  /tmp/glab.deb" | sha256sum -c - \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends /tmp/glab.deb \
+    && rm -rf /var/lib/apt/lists/* /tmp/glab.deb \
+    && glab --version
 COPY --chown=vscode:vscode bashrc /home/vscode/.bashrc
+COPY --chown=vscode:vscode bashrc.aliases /home/vscode/.bashrc.aliases
 USER vscode
 # Keep this file writable so VS Code can register its Git credential helper.
 RUN git config --file /home/vscode/.gitconfig include.path /run/ecaas-git/gitconfig

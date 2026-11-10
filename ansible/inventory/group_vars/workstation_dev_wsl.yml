@@ -11,26 +11,17 @@ workstation_dev_wsl_packages:
   - helm
   # Fedora ships the kubectl client binary in the kubernetes-client package.
   - kubernetes-client
-  - mise
   - pinentry-curses
   - python3-pip
   - tmux
 
-# Java 11, Java 25 and Maven are managed by Mise on this Fedora WSL profile.
-# Keep their versions pinned; update them deliberately.
-workstation_mise_java_version: temurin-11.0.31+11
-workstation_mise_java_25_version: 25.0.2
-workstation_mise_maven_version: 3.9.16
+# Maven version pinned in the devcontainer images; update it deliberately.
+workstation_maven_version: 3.9.16
+workstation_cdp_node_version: 20.18.3
 
 workstation_is_wsl: true
 workstation_wsl_systemd_enabled: true
 workstation_dev_wsl_dotfiles:
-  - src: .bashrc.d/30-mise.sh
-    dest: .bashrc.d/30-mise.sh
-    mode: "0644"
-  - src: .config/mise/
-    dest: .config/mise/
-    mode: preserve
   - src: .gnupg/gpg-agent.conf
     dest: .gnupg/gpg-agent.conf
     mode: "0600"

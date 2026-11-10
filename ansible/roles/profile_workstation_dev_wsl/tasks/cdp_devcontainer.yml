@@ -1,0 +1,98 @@
+---
+- name: Refuse to deploy the cdp workspace outside WSL
+  ansible.builtin.assert:
+    that:
+      - "'wsl2' in (ansible_facts.kernel | default('') | lower)"
+      - ansible_facts.distribution | default('') == 'Fedora'
+    fail_msg: Run this deployment from the Fedora WSL 2 distribution on deadalus.
+
+- name: Prepare the cdp workspace and private configuration
+  vars:
+    ecaas_agent_state: "{{ user_home }}/.local/state/ecaas-devcontainer"
+    ecaas_git_available_cas: >-
+      {{ ecaas_git_ca_probe.results | selectattr('stat.isreg', 'defined') |
+         selectattr('stat.isreg') | map(attribute='item') | list }}
+  block:
+    - name: Prepare the shared Git configuration
+      ansible.builtin.import_tasks: ecaas_git.yml
+
+    - name: Ensure the cdp dev container directory exists
+      ansible.builtin.file:
+        path: "{{ workstation_cdp_workspace }}/.devcontainer"
+        state: directory
+        owner: "{{ username }}"
+        group: "{{ user_group }}"
+        mode: "0755"
+
+    - name: Ensure the local Maven directory mounted into the container exists
+      ansible.builtin.file:
+        path: "{{ user_home }}/.m2"
+        state: directory
+        owner: "{{ username }}"
+        group: "{{ user_group }}"
+        mode: "0755"
+
+    - name: Ensure the local Kubernetes directory mounted into the container exists
+      ansible.builtin.file:
+        path: "{{ user_home }}/.kube"
+        state: directory
+        owner: "{{ username }}"
+        group: "{{ user_group }}"
+        mode: "0700"
+
+    - name: Ensure the private ecaas Git state directory exists
+      ansible.builtin.file:
+        path: "{{ ecaas_agent_state }}"
+        state: directory
+        owner: "{{ username }}"
+        group: "{{ user_group }}"
+        mode: "0700"
+
+    - name: Ensure the local agent configuration directories mounted into the container exist
+      ansible.builtin.file:
+        path: "{{ user_home }}/{{ item.path }}"
+        state: directory
+        owner: "{{ username }}"
+        group: "{{ user_group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: .claude, mode: "0700" }
+        - { path: .cline, mode: "0700" }
+        - { path: .config/ai, mode: "0755" }
+        - { path: .config/glab-cli, mode: "0700" }
+
+    - name: Deploy the cdp dev container configuration
+      ansible.builtin.template:
+        src: cdp-devcontainer.json.j2
+        dest: "{{ workstation_cdp_workspace }}/.devcontainer/devcontainer.json"
+        owner: "{{ username }}"
+        group: "{{ user_group }}"
+        mode: "0644"
+        backup: true
+
+    - name: Deploy the cdp dev container build files
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ workstation_cdp_workspace }}/.devcontainer/{{ item.dest }}"
+        owner: "{{ username }}"
+        group: "{{ user_group }}"
+        mode: "0644"
+        backup: true
+      loop:
+        - src: cdp-devcontainer.Dockerfile
+          dest: Dockerfile
+        - src: "{{ playbook_dir }}/../dotfiles/common/.bashrc"
+          dest: bashrc
+      loop_control:
+        label: "{{ item.dest }}"
+
+    - name: Deploy the shared Bash aliases without the production tunnel
+      ansible.builtin.copy:
+        content: >-
+          {{ lookup('ansible.builtin.file', playbook_dir ~ '/../dotfiles/common/.bashrc.aliases')
+             | regex_replace('(?m)^(#[^\n]*Nginx Proxy Manager[^\n]*\n)?alias npm-tunnel=[^\n]*\n?', '') }}
+        dest: "{{ workstation_cdp_workspace }}/.devcontainer/bashrc.aliases"
+        owner: "{{ username }}"
+        group: "{{ user_group }}"
+        mode: "0644"
+        backup: true

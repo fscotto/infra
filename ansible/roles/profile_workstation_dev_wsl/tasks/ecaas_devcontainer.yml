@@ -12,25 +12,6 @@
     ecaas_git_available_cas: >-
       {{ ecaas_git_ca_probe.results | selectattr('stat.isreg', 'defined') |
          selectattr('stat.isreg') | map(attribute='item') | list }}
-    ecaas_agent_config:
-      - src: .claude/settings.json
-        dest: claude/settings.json
-      - src: .claude/CLAUDE.md
-        dest: claude/CLAUDE.md
-      - src: .claude/rules
-        dest: claude/rules
-      - src: .claude/skills
-        dest: claude/skills
-      - src: .config/ai/bootstrap.md
-        dest: ai/bootstrap.md
-      - src: .cline/data/globalState.json
-        dest: cline/data/globalState.json
-      - src: .cline/data/settings/global-settings.json
-        dest: cline/data/settings/global-settings.json
-      - src: .cline/rules
-        dest: cline/rules
-      - src: .cline/skills
-        dest: cline/skills
   block:
     - name: Prepare the ecaas Git configuration
       ansible.builtin.import_tasks: ecaas_git.yml
@@ -43,43 +24,63 @@
         group: "{{ user_group }}"
         mode: "0755"
 
-    - name: Ensure private ecaas agent state directories exist
+    - name: Ensure the local Maven directory mounted into the container exists
       ansible.builtin.file:
-        path: "{{ ecaas_agent_state }}{{ item }}"
+        path: "{{ user_home }}/.m2"
+        state: directory
+        owner: "{{ username }}"
+        group: "{{ user_group }}"
+        mode: "0755"
+
+    - name: Ensure the private ecaas Git state directory exists
+      ansible.builtin.file:
+        path: "{{ ecaas_agent_state }}"
         state: directory
         owner: "{{ username }}"
         group: "{{ user_group }}"
         mode: "0700"
+
+    - name: Ensure the local agent configuration directories mounted into the container exist
+      ansible.builtin.file:
+        path: "{{ user_home }}/{{ item.path }}"
+        state: directory
+        owner: "{{ username }}"
+        group: "{{ user_group }}"
+        mode: "{{ item.mode }}"
       loop:
-        - ""
-        - /ai
-        - /claude
-        - /cline
-        - /cline/data
-        - /cline/data/settings
+        - { path: .claude, mode: "0700" }
+        - { path: .cline, mode: "0700" }
+        - { path: .config/ai, mode: "0755" }
+        - { path: .config/glab-cli, mode: "0700" }
 
-    - name: Locate supported WSL agent configuration
-      ansible.builtin.stat:
-        path: "{{ user_home }}/{{ item.src }}"
-        follow: false
-        get_checksum: false
-        get_mime: false
-      loop: "{{ ecaas_agent_config }}"
-      register: ecaas_agent_config_sources
+    - name: Read the WSL Claude account state
+      ansible.builtin.slurp:
+        src: "{{ user_home }}/.claude.json"
+      register: ecaas_claude_account_state
+      failed_when: false
+      no_log: true
 
-    - name: Seed missing private agent settings without importing credential stores
+    - name: Read the Claude state used when CLAUDE_CONFIG_DIR is set
+      ansible.builtin.slurp:
+        src: "{{ user_home }}/.claude/.claude.json"
+      register: ecaas_claude_dir_state
+      failed_when: false
+      no_log: true
+
+    - name: Seed missing Claude account and onboarding state for the container
       ansible.builtin.copy:
-        src: "{{ user_home }}/{{ item.item.src }}{{ '/' if item.stat.isdir | default(false) else '' }}"
-        dest: "{{ ecaas_agent_state }}/{{ item.item.dest }}"
-        remote_src: true
-        mode: preserve
-        force: false
-        local_follow: false
-      become_user: "{{ username }}"
-      when:
-        - item.stat.isreg | default(false) or item.stat.isdir | default(false)
-        - not ansible_check_mode
-      loop: "{{ ecaas_agent_config_sources.results }}"
+        content: >-
+          {{ (ecaas_claude_account_state.content | b64decode | from_json
+              | dict2items
+              | selectattr('key', 'in', ['oauthAccount', 'hasCompletedOnboarding', 'userID'])
+              | items2dict)
+             | combine(ecaas_claude_dir_state.content | default('e30=' | b64encode) | b64decode | from_json)
+             | to_nice_json }}
+        dest: "{{ user_home }}/.claude/.claude.json"
+        owner: "{{ username }}"
+        group: "{{ user_group }}"
+        mode: "0600"
+      when: ecaas_claude_account_state.content is defined
       no_log: true
       diff: false
 
@@ -107,3 +108,14 @@
           dest: bashrc
       loop_control:
         label: "{{ item.dest }}"
+
+    - name: Deploy the shared Bash aliases without the production tunnel
+      ansible.builtin.copy:
+        content: >-
+          {{ lookup('ansible.builtin.file', playbook_dir ~ '/../dotfiles/common/.bashrc.aliases')
+             | regex_replace('(?m)^(#[^\n]*Nginx Proxy Manager[^\n]*\n)?alias npm-tunnel=[^\n]*\n?', '') }}
+        dest: "{{ workstation_ecaas_workspace }}/.devcontainer/bashrc.aliases"
+        owner: "{{ username }}"
+        group: "{{ user_group }}"
+        mode: "0644"
+        backup: true

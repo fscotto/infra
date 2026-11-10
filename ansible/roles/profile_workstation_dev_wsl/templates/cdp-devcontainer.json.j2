@@ -1,0 +1,60 @@
+{
+  "name": "cdp — Java 25 / Node 20",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "MAVEN_VERSION": {{ workstation_maven_version | to_json }},
+      "NODE_VERSION": {{ workstation_cdp_node_version | to_json }}
+    }
+  },
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": true,
+  "containerEnv": {
+    "CLAUDE_CONFIG_DIR": "/home/vscode/.claude"
+  },
+  "remoteEnv": {
+    "ANTHROPIC_AUTH_TOKEN": "${localEnv:ANTHROPIC_AUTH_TOKEN}"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": false
+    }
+  },
+  "mounts": [
+    {{ ('type=bind,source=' ~ ecaas_agent_state ~ '/git,target=/run/ecaas-git,readonly') | to_json }},
+{% for ca in ecaas_git_available_cas %}
+    {{ ('type=bind,source=' ~ user_home ~ '/.local/share/certs/' ~ ca.certificate ~ ',target=/run/ecaas-git-ca/' ~ ca.certificate ~ ',readonly') | to_json }},
+{% endfor %}
+    {{ ('type=bind,source=' ~ user_home ~ '/.config/ai,target=/home/vscode/.config/ai,readonly') | to_json }},
+    {{ ('type=bind,source=' ~ user_home ~ '/.claude,target=/home/vscode/.claude') | to_json }},
+    {{ ('type=bind,source=' ~ user_home ~ '/.cline,target=/home/vscode/.cline') | to_json }},
+    {{ ('type=bind,source=' ~ user_home ~ '/.m2,target=/home/vscode/.m2') | to_json }},
+    {{ ('type=bind,source=' ~ user_home ~ '/.config/glab-cli,target=/home/vscode/.config/glab-cli') | to_json }},
+    {{ ('type=bind,source=' ~ user_home ~ '/.kube,target=/home/vscode/.kube') | to_json }}
+  ],
+  "forwardPorts": [4200, 4201, 4202, 4210, 8083, 8084],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vmware.vscode-boot-dev-pack",
+        "redhat.vscode-xml",
+        "redhat.vscode-yaml",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "angular.ng-template",
+        "dbaeumer.vscode-eslint",
+        "emmanuelbeziat.vscode-great-icons"
+      ],
+      "settings": {
+        "workbench.iconTheme": "vscode-great-icons",
+        "java.configuration.runtimes": [
+          {
+            "name": "JavaSE-25",
+            "path": "/usr/lib/jvm/msopenjdk-current",
+            "default": true
+          }
+        ]
+      }
+    }
+  }
+}

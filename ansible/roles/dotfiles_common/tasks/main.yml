@@ -91,6 +91,20 @@
   loop_control:
     label: "{{ item.dest }}"
 
+- name: Ensure AI coding-agent dotfile parent directories exist
+  tags: [dotfiles, dotfiles:common, ai_agents]
+  ansible.builtin.file:
+    path: "{{ (effective_user_home ~ '/' ~ item.dest) | dirname }}"
+    state: directory
+    owner: "{{ effective_username }}"
+    group: "{{ effective_user_group }}"
+    mode: "0755"
+  loop: "{{ ai_agents_dotfiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+  when:
+    - (item.agents | intersect(ai_agents_deploy_enabled_names)) | length > 0
+
 - name: Deploy AI coding-agent dotfiles
   tags: [dotfiles, dotfiles:common, ai_agents]
   ansible.builtin.copy:

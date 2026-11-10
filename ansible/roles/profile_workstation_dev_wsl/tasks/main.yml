@@ -4,6 +4,11 @@
   when: workstation_ecaas_workspace is defined
   tags: [ecaas_devcontainer]
 
+- name: Deploy the cdp Java 25 dev container
+  ansible.builtin.import_tasks: cdp_devcontainer.yml
+  when: workstation_cdp_workspace is defined
+  tags: [cdp_devcontainer]
+
 - name: Ensure Windows Emacs authoring directories exist
   tags: [dotfiles, dotfiles:workstation, emacs, wsl]
   ansible.builtin.file:
@@ -59,51 +64,6 @@
   loop: "{{ workstation_dev_wsl_dotfiles | default([]) }}"
   loop_control:
     label: "{{ item.dest }}"
-
-- name: Check whether the pinned Java version is installed with Mise
-  tags: [packages, mise, java, wsl]
-  ansible.builtin.command:
-    cmd: "mise where java@{{ workstation_mise_java_version }}"
-  become_user: "{{ username }}"
-  environment:
-    HOME: "{{ user_home }}"
-  register: workstation_mise_java_where
-  changed_when: false
-  failed_when: false
-
-- name: Check whether the pinned Java 25 version is installed with Mise
-  tags: [packages, mise, java, wsl]
-  ansible.builtin.command:
-    cmd: "mise where java@{{ workstation_mise_java_25_version }}"
-  become_user: "{{ username }}"
-  environment:
-    HOME: "{{ user_home }}"
-  register: workstation_mise_java_25_where
-  changed_when: false
-  failed_when: false
-
-- name: Check whether the pinned Maven version is installed with Mise
-  tags: [packages, mise, maven, wsl]
-  ansible.builtin.command:
-    cmd: "mise where maven@{{ workstation_mise_maven_version }}"
-  become_user: "{{ username }}"
-  environment:
-    HOME: "{{ user_home }}"
-  register: workstation_mise_maven_where
-  changed_when: false
-  failed_when: false
-
-- name: Install the pinned Mise tools
-  tags: [packages, mise, java, maven, wsl]
-  ansible.builtin.command:
-    cmd: mise install
-  become_user: "{{ username }}"
-  environment:
-    HOME: "{{ user_home }}"
-  when: >-
-    workstation_mise_java_where.rc != 0 or
-    workstation_mise_java_25_where.rc != 0 or
-    workstation_mise_maven_where.rc != 0
 
 - name: Ensure WSL boot configuration file exists
   tags: [packages, services]

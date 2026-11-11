@@ -9,7 +9,8 @@
   "remoteUser": "vscode",
   "updateRemoteUserUID": true,
   "containerEnv": {
-    "CLAUDE_CONFIG_DIR": "/home/vscode/.claude"
+    "CLAUDE_CONFIG_DIR": "/home/vscode/.claude",
+    "HISTFILE": "/home/vscode/.bash_history.d/history"
   },
   "remoteEnv": {
     "ANTHROPIC_AUTH_TOKEN": "${localEnv:ANTHROPIC_AUTH_TOKEN}"
@@ -25,6 +26,7 @@
     {{ ('type=bind,source=' ~ user_home ~ '/.local/share/certs/' ~ ca.certificate ~ ',target=/run/ecaas-git-ca/' ~ ca.certificate ~ ',readonly') | to_json }},
 {% endfor %}
     {{ ('type=bind,source=' ~ user_home ~ '/.config/ai,target=/home/vscode/.config/ai,readonly') | to_json }},
+    {{ ('type=bind,source=' ~ user_home ~ '/.local/state/devcontainer-bash-history/ecaas,target=/home/vscode/.bash_history.d') | to_json }},
     {{ ('type=bind,source=' ~ user_home ~ '/.claude,target=/home/vscode/.claude') | to_json }},
     {{ ('type=bind,source=' ~ user_home ~ '/.cline,target=/home/vscode/.cline') | to_json }},
     {{ ('type=bind,source=' ~ user_home ~ '/.m2,target=/home/vscode/.m2') | to_json }},

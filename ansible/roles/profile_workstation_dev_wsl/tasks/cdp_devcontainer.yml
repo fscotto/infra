@@ -40,6 +40,14 @@
         group: "{{ user_group }}"
         mode: "0700"
 
+    - name: Ensure the persistent Bash history directory mounted into the container exists
+      ansible.builtin.file:
+        path: "{{ user_home }}/.local/state/devcontainer-bash-history/cdp"
+        state: directory
+        owner: "{{ username }}"
+        group: "{{ user_group }}"
+        mode: "0700"
+
     - name: Ensure the private ecaas Git state directory exists
       ansible.builtin.file:
         path: "{{ ecaas_agent_state }}"

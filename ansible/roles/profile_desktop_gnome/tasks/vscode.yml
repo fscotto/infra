@@ -47,7 +47,7 @@
     owner: "{{ username }}"
     group: "{{ user_group }}"
     mode: "0755"
-  when: vscode_settings is not none
+  when: vscode_settings is not none or vscode_keybindings | length > 0
 
 - name: Deploy explicitly managed VS Code settings
   ansible.builtin.copy:
@@ -58,3 +58,13 @@
     mode: "0644"
     backup: true
   when: vscode_settings is not none
+
+- name: Deploy managed VS Code keybindings
+  ansible.builtin.copy:
+    dest: "{{ user_home }}/.config/Code/User/keybindings.json"
+    content: "{{ vscode_keybindings | to_nice_json }}\n"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0644"
+    backup: true
+  when: vscode_keybindings | length > 0

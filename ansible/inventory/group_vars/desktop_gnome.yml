@@ -144,3 +144,12 @@ vscode_extensions:
   - saoudrizwan.claude-dev
   - vscodevim.vim
 vscode_settings: null
+# User-level keybindings apply to every window, including Dev Containers, SSH and WSL remotes.
+# Keys avoid Ctrl+<letter>, which the Vim extension uses for its motions; Alt is not bound by Vim.
+vscode_keybindings:
+  - key: alt+j
+    command: workbench.action.terminal.toggleTerminal
+    when: "!terminalFocus"
+  - key: alt+j
+    command: workbench.action.togglePanel
+    when: terminalFocus

@@ -105,6 +105,8 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
 - Prefer declarative modules over `command`/`shell`; when `shell` is required, make idempotency and failure behavior explicit.
 - Start YAML files with `---`, use 2-space indentation, and keep file modes quoted like `"0644"`.
 - Keep booleans as booleans and structured vars as YAML lists/maps.
+- Group similar tasks into list variables (typically in `group_vars`) and apply them
+  with a single task looping over the list, rather than one near-identical task per item.
 - Put host-specific overrides in `host_vars`, not shared `group_vars`.
 - Use `no_log: true` for secret-bearing task inputs or outputs.
 

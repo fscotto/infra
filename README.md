@@ -609,8 +609,12 @@ context), `AGENTS.md` (task-specific file dispatcher), plus `knowledge/`,
 `instructions` array in `opencode.json`, Codex through `model_instructions_file`
 plus the global `~/.codex/AGENTS.md`, Gemini CLI through its settings context
 files, Claude Code through the `@` imports in `~/.claude/CLAUDE.md`, and Cline
-through the cross-tool `~/.agents/AGENTS.md` pointer (deployed with
-`cline_deploy_enabled: true`).
+through both the cross-tool `~/.agents/AGENTS.md` pointer and the always-on
+global rule `~/.cline/rules/ai-context.md`, which binds `bootstrap.md`, the
+dispatcher, the safety directives, and the distilled ChatGPT knowledge under
+`memory/chatgpt/` (both deployed with `cline_deploy_enabled: true`). Cline
+shows the rule in its Rules panel as `global:ai-context`, where it can be
+toggled per project.
 
 ChatGPT conversation memory lives in
 `dotfiles/common/.config/ai/memory/chatgpt/`: one Markdown transcript per

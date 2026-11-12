@@ -170,6 +170,7 @@ ai_agents_dotfiles:
       - opencode
       - codex
       - gemini_cli
+      - cline
   - name: Gemini CLI config
     src: .gemini/
     dest: .gemini/
@@ -198,6 +199,12 @@ ai_agents_dotfiles:
     src: .agents/AGENTS.md
     dest: .agents/AGENTS.md
     mode: "0644"
+    agents:
+      - cline
+  - name: Cline global rules
+    src: .cline/rules/
+    dest: .cline/rules/
+    mode: preserve
     agents:
       - cline
 

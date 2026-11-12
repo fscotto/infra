@@ -29,9 +29,10 @@ Ansible-driven personal infrastructure repo for Fedora and Void desktops, Fedora
 - Keep completed one-time cleanup operations out of the playbook. Execute them directly
   with explicit authorization; retain only the ongoing desired-state configuration and
   historical documentation, not permanent cleanup flags or tasks.
-- Use Git Flow branch prefixes: `feature/` for new functionality, `bugfix/` for non-urgent fixes,
-  `hotfix/` for urgent production fixes, `release/` for release preparation, and `support/` for
-  maintained release lines. Do not use abbreviated prefixes such as `feat/`.
+- Use trunk-based development: `main` is the single long-lived branch. Land small,
+  validated changes quickly, either as direct commits or via short-lived branches merged
+  as soon as validation passes. Do not maintain `release/`, `support/`, or other
+  long-lived branch lines: tag releases from the trunk and fix production issues on it.
 - Desktop and WSL hosts use `ansible_connection: local`; remote infrastructure hosts use SSH.
 - Treat `secrets/` as sensitive. Never print secret values.
 - Tmux plugins are bootstrapped by TPM on the host; the repo only keeps tmux config and custom helper scripts.

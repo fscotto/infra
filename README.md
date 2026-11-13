@@ -577,8 +577,8 @@ ansible-playbook ansible/site.yml --limit <host> --tags emacs -e emacs_enabled=t
 ## AI coding agents
 
 The shared npm-managed agents are OpenCode, Claude Code, Codex, Gemini CLI, and
-GitHub Copilot; IBM Bob is also managed on `deadalus`. Codex Relay is installed
-only on `ikaros`. Each agent has its own lifecycle flags in
+GitHub Copilot; IBM Bob is also managed on Fedora workstations. Codex Relay is installed
+only on `ikaros`. On WSL (`deadalus`), Claude Code is the only installed coding agent. Each agent has its own lifecycle flags in
 `ansible/inventory/group_vars/all.yml`, so one agent can be installed,
 configured, or removed without affecting the others:
 
@@ -598,9 +598,9 @@ instructions, credentials, and user data. Installation and removal are mutually
 exclusive per agent: the playbook fails before making changes when both flags are
 true for the same agent. Servers set `ai_agents: {}` and therefore manage none.
 
-On WSL (`deadalus`), Codex installation and dotfile deployment are disabled through
-host overrides; the managed `@openai/codex` npm package is selected for removal.
-Existing Codex configuration, credentials, and user data are left untouched.
+On WSL (`deadalus`), every managed coding agent except Claude Code is disabled through
+host overrides and its managed npm package or `bob` binary is selected for removal.
+Existing configuration, credentials, and user data are left untouched.
 
 The shared agent context is centralized in `dotfiles/common/.config/ai/` and
 deployed to `~/.config/ai/` for every enabled agent: `bootstrap.md` (operating

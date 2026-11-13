@@ -5,10 +5,23 @@ workstation_ecaas_workspace: "{{ user_home }}/Work/sipo/ecaas"
 workstation_cdp_workspace: "{{ user_home }}/Work/sipo/cdp"
 workstation_ecaas_git_required_ca: ecaas.datacenter.comune.roma.crt
 
-# Codex is not installed or configured on WSL; remove the managed npm package.
+# Claude Code is the only coding agent on WSL; every other managed agent is removed.
+claude_code_install_enabled: true
+claude_code_uninstall_enabled: false
+opencode_install_enabled: false
+opencode_deploy_enabled: false
+opencode_uninstall_enabled: true
 codex_install_enabled: false
 codex_deploy_enabled: false
 codex_uninstall_enabled: true
+gemini_cli_install_enabled: false
+gemini_cli_deploy_enabled: false
+gemini_cli_uninstall_enabled: true
+cline_install_enabled: false
+cline_deploy_enabled: false
+cline_uninstall_enabled: true
+ibm_bob_install_enabled: false
+ibm_bob_uninstall_enabled: true
 
 host_packages: []
 host_enabled_services: []

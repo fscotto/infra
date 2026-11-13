@@ -93,6 +93,9 @@ common_dotfiles:
 # AI coding-agent lifecycle controls are independent for every agent.
 # Installation and removal are mutually exclusive per agent; the common
 # pre-task enforces this before any changes are made.
+opencode_install_enabled: true
+opencode_deploy_enabled: true
+opencode_uninstall_enabled: false
 codex_install_enabled: true
 codex_deploy_enabled: true
 codex_uninstall_enabled: false
@@ -106,6 +109,8 @@ claude_code_uninstall_enabled: true
 cline_install_enabled: true
 cline_deploy_enabled: true
 cline_uninstall_enabled: false
+ibm_bob_install_enabled: true
+ibm_bob_uninstall_enabled: false
 
 # npm registry requests can be interrupted transiently.  Keep retries bounded
 # so persistent proxy, DNS, or registry failures still fail the play clearly.
@@ -115,9 +120,9 @@ ai_agents_npm_install_retry_delay: 10
 ai_agents:
   opencode:
     npm_package: opencode-ai
-    install_enabled: true
-    deploy_enabled: true
-    uninstall_enabled: false
+    install_enabled: "{{ opencode_install_enabled }}"
+    deploy_enabled: "{{ opencode_deploy_enabled }}"
+    uninstall_enabled: "{{ opencode_uninstall_enabled }}"
   opencode_mobile:
     npm_package: opencode-mobile
     install_enabled: false
@@ -154,9 +159,9 @@ ai_agents:
     deploy_enabled: false
     uninstall_enabled: true
   ibm_bob:
-    install_enabled: true
+    install_enabled: "{{ ibm_bob_install_enabled }}"
     deploy_enabled: false
-    uninstall_enabled: false
+    uninstall_enabled: "{{ ibm_bob_uninstall_enabled }}"
 
 ai_agents_deploy_enabled_names: >-
   {{ ai_agents | dict2items | selectattr('value.deploy_enabled') | map(attribute='key') | list }}

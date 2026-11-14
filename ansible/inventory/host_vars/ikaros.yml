@@ -151,7 +151,7 @@ gnome_gsettings_settings:
     value: "'file:///usr/share/backgrounds/gnome/morphogenesis-l.svg'"
   - schema: org.gnome.desktop.search-providers
     key: sort-order
-    value: "['org.gnome.Settings.desktop', 'org.gnome.Contacts.desktop', 'org.gnome.Nautilus.desktop']"
+    value: "['org.gnome.Settings.desktop', 'org.gnome.Contacts.desktop', 'org.gnome.Nautilus.desktop', 'org.mozilla.firefox.desktop', 'org.gnome.seahorse.Application.desktop', 'org.gnome.Calculator.desktop', 'org.gnome.Calendar.desktop', 'org.gnome.Software.desktop', 'org.gnome.Characters.desktop', 'org.gnome.Boxes.desktop', 'org.gnome.clocks.desktop', 'com.mattjakeman.ExtensionManager.desktop']"
   - schema: org.gnome.desktop.wm.keybindings
     key: switch-to-workspace-1
     value: "['<Super>1']"

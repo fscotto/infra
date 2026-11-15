@@ -893,3 +893,10 @@ For a future Void desktop host:
 4. Put hardware-specific details in `host_vars/<host>.yml`.
 
 The legacy `void` and `desktop` groups remain compatibility parents, so hosts in `platform_void` and `graphical_desktop` still receive the existing Void and desktop variables.
+
+## Project devcontainer generator
+
+Generate a reusable language environment for an existing project with
+`python3 scripts/devcontainer.py ~/src/project --language python --agents codex,cline`.
+Git and selected coding-agent configuration are shared from the development host.
+See [profiles, host requirements and validation](docs/project-devcontainers.md).

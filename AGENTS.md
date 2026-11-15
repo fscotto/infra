@@ -612,3 +612,8 @@ validated exports of older historical data will use a dedicated Atlas NFS datase
 - Focused validation: `go -C cmd/devcontainer test ./...`.
 - Real engine builds, host credential forwarding and Fedora SELinux/Podman checks
   require target-host validation; do not report generator tests as runtime evidence.
+
+- `devcontainer_generator` builds the CLI natively on Fedora graphical desktops
+  and development workstations and installs it in `~/.local/bin/devcontainer`.
+  Validate with `ansible-playbook ansible/site.yml --limit ikaros --tags devcontainer_generator --check --diff`;
+  check mode skips compilation and binary installation explicitly.

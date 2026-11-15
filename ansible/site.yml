@@ -152,3 +152,12 @@
 
   roles:
     - profile_workstation_dev_wsl
+
+- name: Deploy project devcontainer generator
+  hosts: platform_fedora
+  become: true
+  tags: [devcontainer_generator]
+
+  roles:
+    - role: devcontainer_generator
+      when: "'graphical_desktop' in group_names or 'workstation_dev_fedora' in group_names"

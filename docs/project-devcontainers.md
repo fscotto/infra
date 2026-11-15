@@ -17,6 +17,28 @@ devcontainer ~/src/my-project --language python --agents codex,cline
 devcontainer ~/src/my-project --language c-cpp --agents none
 ```
 
+## Ansible deployment
+
+On ikaros, nymph or deadalus, from the local `infra` checkout:
+
+```sh
+ansible-playbook ansible/site.yml --limit ikaros --tags devcontainer_generator -K
+```
+
+Replace the limit with `nymph` or `deadalus` as appropriate. The task installs
+Fedora's Go compiler, copies the sources into the user's build cache, compiles
+natively without downloading Go modules, and installs `~/.local/bin/devcontainer`
+with mode `0755`. Subsequent runs update the executable only when its contents
+change. Rebuilds use the Go cache. The role targets Fedora graphical desktops
+and Fedora development workstations; it does not start any containers.
+
+Check mode validates packages and source deployment but skips compilation and
+binary installation, and reports that limitation explicitly:
+
+```sh
+ansible-playbook ansible/site.yml --limit ikaros --tags devcontainer_generator --check --diff
+```
+
 Profiles: `c-cpp`, `go`, `rust`, `python`, `node`, `java`, `infra`. They generate
 `.devcontainer/devcontainer.json` and `Dockerfile`. Open the project in local VS
 Code (in Fedora WSL on deadalus) and choose **Reopen in Container**. The generator

@@ -1,0 +1,4 @@
+---
+devcontainer_generator_go_binary: /usr/bin/go
+devcontainer_generator_install_go: true
+devcontainer_generator_build_dir: "{{ user_home }}/.cache/infra/devcontainer-generator"

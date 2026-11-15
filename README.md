@@ -900,3 +900,6 @@ Generate a reusable language environment for an existing project with
 `devcontainer ~/src/project --language python --agents codex,cline`.
 Git and selected coding-agent configuration are shared from the development host.
 See [profiles, host requirements and validation](docs/project-devcontainers.md).
+
+Deploy `~/.local/bin/devcontainer` on a Fedora desktop/workstation with
+`ansible-playbook ansible/site.yml --limit ikaros --tags devcontainer_generator -K`.

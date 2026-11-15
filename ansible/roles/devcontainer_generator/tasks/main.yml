@@ -1,0 +1,64 @@
+---
+- name: Install Go compiler for the devcontainer generator
+  ansible.builtin.dnf:
+    name: golang
+    state: present
+  when: devcontainer_generator_install_go | bool
+
+- name: Ensure devcontainer generator directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+  loop:
+    - "{{ user_home }}/.local/bin"
+    - "{{ devcontainer_generator_build_dir }}"
+
+- name: Copy devcontainer generator sources
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../cmd/devcontainer/"
+    dest: "{{ devcontainer_generator_build_dir }}/src/"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: preserve
+
+- name: Build devcontainer generator for the target host
+  ansible.builtin.command:
+    argv:
+      - "{{ devcontainer_generator_go_binary }}"
+      - build
+      - -trimpath
+      - -buildvcs=false
+      - -o
+      - "{{ devcontainer_generator_build_dir }}/devcontainer"
+      - .
+    chdir: "{{ devcontainer_generator_build_dir }}/src"
+  become_user: "{{ username }}"
+  environment:
+    GOCACHE: "{{ devcontainer_generator_build_dir }}/go-cache"
+    GOTOOLCHAIN: local
+    GOPROXY: "off"
+    GOSUMDB: "off"
+    CGO_ENABLED: "0"
+  # Compilation refreshes a cached artifact; copy below reports installation changes.
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Install devcontainer generator in the user PATH
+  ansible.builtin.copy:
+    src: "{{ devcontainer_generator_build_dir }}/devcontainer"
+    remote_src: true
+    dest: "{{ user_home }}/.local/bin/devcontainer"
+    owner: "{{ username }}"
+    group: "{{ user_group }}"
+    mode: "0755"
+  when: not ansible_check_mode
+
+- name: Explain devcontainer generator check-mode behavior
+  ansible.builtin.debug:
+    msg: >-
+      Check mode validates package and source deployment only. Compilation and
+      installation of {{ user_home }}/.local/bin/devcontainer require a normal run.
+  when: ansible_check_mode

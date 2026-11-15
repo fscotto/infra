@@ -897,6 +897,6 @@ The legacy `void` and `desktop` groups remain compatibility parents, so hosts in
 ## Project devcontainer generator
 
 Generate a reusable language environment for an existing project with
-`python3 scripts/devcontainer.py ~/src/project --language python --agents codex,cline`.
+`devcontainer ~/src/project --language python --agents codex,cline`.
 Git and selected coding-agent configuration are shared from the development host.
 See [profiles, host requirements and validation](docs/project-devcontainers.md).

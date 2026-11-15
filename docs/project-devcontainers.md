@@ -1,12 +1,20 @@
 # Reusable project devcontainers
 
-`scripts/devcontainer.py` is a Python 3 CLI (standard library only). Run it on
-**the development host**, from an `infra` checkout, against an existing project:
+`cmd/devcontainer/` is a Go CLI using only the standard library. Build it with
+Go 1.22 or newer, from an `infra` checkout:
 
 ```sh
-python3 scripts/devcontainer.py ~/src/my-project --language go
-python3 scripts/devcontainer.py ~/src/my-project --language python --agents codex,cline
-python3 scripts/devcontainer.py ~/src/my-project --language c-cpp --agents none
+go -C cmd/devcontainer build -o "$HOME/.local/bin/devcontainer" .
+```
+
+Create `~/.local/bin` first if needed and keep it on `PATH`. The resulting binary
+has no Python dependency. Run it on **the development host**, against an existing
+project:
+
+```sh
+devcontainer ~/src/my-project --language go
+devcontainer ~/src/my-project --language python --agents codex,cline
+devcontainer ~/src/my-project --language c-cpp --agents none
 ```
 
 Profiles: `c-cpp`, `go`, `rust`, `python`, `node`, `java`, `infra`. They generate
@@ -79,7 +87,8 @@ for projects that need to launch sibling containers.
 Host-side regression checks:
 
 ```sh
-python3 -m unittest discover -s tests -p test_devcontainer.py -v
+go -C cmd/devcontainer test ./...
+go -C cmd/devcontainer vet ./...
 ```
 
 On the target host, build/open a generated project, check the language toolchain,

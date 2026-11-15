@@ -606,9 +606,9 @@ validated exports of older historical data will use a dedicated Atlas NFS datase
   data, and MFA state were removed with the operator's explicit authorization.
 
 ## Project Devcontainer Generator
-- `scripts/devcontainer.py` generates standalone per-project language configurations;
+- `cmd/devcontainer/` generates standalone per-project language configurations;
   it does not replace existing deadalus ecaas/cdp provisioning or remove host tools.
 - Keep shared Git/agent behavior documented in `docs/project-devcontainers.md`.
-- Focused validation: `python3 -m unittest discover -s tests -p test_devcontainer.py -v`.
+- Focused validation: `go -C cmd/devcontainer test ./...`.
 - Real engine builds, host credential forwarding and Fedora SELinux/Podman checks
   require target-host validation; do not report generator tests as runtime evidence.

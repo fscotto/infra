@@ -7,6 +7,7 @@ readonly source_root={{ atlas_nextcloud_root | quote }}
 readonly backup_root={{ atlas_nextcloud_backup_root | quote }}
 readonly state=/var/lib/atlas-nextcloud-backup
 readonly keep={{ atlas_nextcloud_backup_keep | int }}
+readonly reuse_max={{ atlas_nextcloud_backup_reuse_max_seconds | int }}
 readonly owner={{ atlas_admin_username | quote }}
 readonly uid={{ atlas_admin_uid | int }}
 
@@ -64,6 +65,36 @@ recover() {
 }
 if [[ "${1:-}" == --recover ]]; then recover; exit; fi
 recover
+# Fast path: a structurally complete bundle from an earlier verified run is
+# reused while younger than the reuse window, without pausing the applications.
+# ATLAS_NEXTCLOUD_BACKUP_FORCE=1 ignores the window and prepares one anyway.
+if [[ "${ATLAS_NEXTCLOUD_BACKUP_FORCE:-0}" != 1 ]] && [[ "$reuse_max" -gt 0 ]]; then
+  target="$(readlink -f "$backup_root/latest" 2>/dev/null || true)"
+  if [[ -n "$target" && "$target" == "$backup_root/versions/"* ]]; then
+    name="${target##*/}"
+    if [[ "$name" =~ ^[0-9]{8}T[0-9]{6}Z-[0-9]+$ ]]; then
+      bundle_utc="${name:0:4}-${name:4:2}-${name:6:2} ${name:9:2}:${name:11:2}:${name:13:2} UTC"
+      created="$(date -u -d "$bundle_utc" +%s 2>/dev/null || true)"
+      if [[ -n "$created" ]]; then
+        now="$(date -u +%s)"
+        if [[ "$((now - created))" -le "$reuse_max" ]]; then
+          reusable=true
+          for component in manifest.txt SHA256SUMS database.dump \
+                           postgres-globals.sql database-toc.txt images.txt; do
+            [[ -s "$target/$component" ]] || { reusable=false; break; }
+          done
+          for component in app files; do
+            [[ -d "$target/$component" ]] || { reusable=false; break; }
+          done
+          if [[ "$reusable" == true ]]; then
+            echo "Reusing verified Nextcloud bundle $name (age $((now - created))s <= ${reuse_max}s); preparation skipped"
+            exit 0
+          fi
+        fi
+      fi
+    fi
+  fi
+fi
 [[ "$(zfs get -H -o value mounted "$dataset")" == yes ]]
 [[ "$(zfs get -H -o value mountpoint "$dataset")" == "$source_root" ]]
 [[ "$(zfs get -H -o value mounted {{ (atlas_zfs_pool ~ '/backup') | quote }})" == yes ]]

@@ -18,6 +18,11 @@ atlas_nextcloud_redis_image: ""
 atlas_onlyoffice_image: ""
 atlas_nextcloud_backup_root: "{{ atlas_mount_root }}/backup/nextcloud"
 atlas_nextcloud_backup_keep: 2
+# A structurally complete bundle from an earlier verified run younger than
+# this many seconds is reused instead of re-preparing. Keep it below 24h so
+# the nightly Borg run, spaced 24h plus its randomized delay, always refreshes
+# the bundle; 0 disables reuse.
+atlas_nextcloud_backup_reuse_max_seconds: 72000
 atlas_nextcloud_admin: admin
 atlas_nextcloud_users: []
 atlas_nextcloud_apps: []

@@ -230,6 +230,19 @@ The dotfile vars follow the same split: `desktop_common_dotfiles` carries mode-i
   injecting the private token for JSON-RPC POST clients; keep this route
   authenticated and never expose the gateway directly. See `docs/atlas-aria2.md`.
 
+- Atlas Nextcloud backup preparation (`atlas-nextcloud-backup.service`) is an ordered
+  requirement of the nightly `atlas-borg-backup.service` and the operator-started
+  `atlas-usb-backup.service`. A structurally complete bundle younger than
+  `atlas_nextcloud_backup_reuse_max_seconds` (20 h, asserted below 24 h so the nightly
+  Borg cycle always refreshes it) is reused without pausing the applications: a manual
+  USB run therefore reaches its LUKS prompt within seconds, while preparation failure
+  still blocks the dependent job. Force one fresh preparation with
+  `systemctl set-environment ATLAS_NEXTCLOUD_BACKUP_FORCE=1` before the start and unset
+  the variable afterwards. Deployed and validated on 2026-11-15: a dependency start reused
+  a verified bundle 14 h old and skipped preparation in 14 ms, and an operator-started
+  USB run reached its LUKS prompt in under a second; the FORCE path has not been exercised
+  in production yet. See `docs/atlas-nextcloud.md`.
+
 ## Atlas NAS TODO
 Completed validation: the existing RAIDZ2 pool and datasets, SELinux, LAN firewall, SSH, Cockpit with
 the selected 45Drives plugins, encrypted SMB3 `Archive`, the Aegis-only NFSv4 `photobook` export, and the

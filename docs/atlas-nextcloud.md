@@ -141,11 +141,22 @@ See `atlas-nextcloud-recovery-test.md` for scope, retained artifact and limitati
 
 ## Recurring consistent bundles
 
-`atlas-nextcloud-backup.service` is now an ordered requirement of both
+`atlas-nextcloud-backup.service` is an ordered requirement of both
 `atlas-borg-backup.service` and the operator-started `atlas-usb-backup.service`.
 No additional backup timer is needed: the existing Borg schedule prepares a fresh
-bundle before its pool snapshot, and a manual USB run does the same. Preparation
-failure blocks the dependent job rather than silently using an old dump.
+bundle before its pool snapshot. A structurally complete bundle from an earlier
+verified run is reused instead while younger than
+`atlas_nextcloud_backup_reuse_max_seconds` (20 h): a manual USB run then skips
+the application pause, reaches its LUKS prompt within seconds and captures the
+latest Borg-prepared bundle, while the remaining pool snapshot reflects the
+moment of the run. Reuse does not re-hash the bundle; it was checksum-verified
+at publication. The window is asserted below 24 h so the nightly Borg run,
+spaced 24 h plus its randomized delay, never reuses the previous night's bundle.
+Preparation failure still blocks the dependent job rather than silently using an
+old dump; only a verified, bounded-age bundle may be reused. Set
+`ATLAS_NEXTCLOUD_BACKUP_FORCE=1` with `systemctl set-environment` (the unit
+passes it through) to ignore the window once and prepare a fresh bundle; unset
+the variable afterwards.
 
 The helper checks the mounted datasets and healthy active application state,
 serializes preparations and briefly pauses cron, Nextcloud and ONLYOFFICE. It
@@ -171,10 +182,12 @@ sudo systemctl start atlas-nextcloud-backup.service
 sudo systemctl show atlas-nextcloud-backup.service -p Result -p ExecMainExitTimestamp
 ```
 
-The second command briefly interrupts the applications and is an explicit manual
-run of the recurring job, not a normal deployment side effect. The preparation
-unit is not enabled as a boot backup; only interrupted-job recovery is enabled.
-Do not stop a Borg/USB job, break its lock or unmount its source snapshot to run a test.
+A manual start briefly interrupts the applications only when it prepares a fresh
+bundle; inside the reuse window it logs `Reusing verified ...` and finishes in
+seconds without touching them. It remains an explicit manual run of the
+recurring job, not a normal deployment side effect. The preparation unit is not
+enabled as a boot backup; only interrupted-job recovery is enabled. Do not stop a
+Borg/USB job, break its lock or unmount its source snapshot to run a test.
 
 On 2026-10-04, both a new encrypted Borg archive and USB version
 `20261004T101101Z-3420114` were independently extracted and their consistent

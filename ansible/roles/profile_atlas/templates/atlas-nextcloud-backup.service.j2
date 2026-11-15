@@ -14,6 +14,9 @@ StateDirectory=atlas-nextcloud-backup
 StateDirectoryMode=0700
 ExecStart=/usr/local/sbin/atlas-nextcloud-backup
 ExecStopPost=/usr/local/sbin/atlas-nextcloud-backup --recover
+# systemctl set-environment ATLAS_NEXTCLOUD_BACKUP_FORCE=1 makes the next run
+# ignore the bundle reuse window; unset the variable afterwards.
+PassEnvironment=ATLAS_NEXTCLOUD_BACKUP_FORCE
 TimeoutStartSec=3h
 TimeoutStopSec=5min
 Nice=10

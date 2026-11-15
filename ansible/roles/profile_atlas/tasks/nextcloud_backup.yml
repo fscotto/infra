@@ -3,11 +3,14 @@
   tags: [atlas, nextcloud_backup]
   when: atlas_manage_nextcloud | bool
   block:
-    - name: Validate private backup scope and local bundle retention
+    - name: Validate private backup scope, retention, and bundle reuse window
       ansible.builtin.assert:
         that:
           - atlas_nextcloud_backup_root == atlas_mount_root ~ '/backup/nextcloud'
           - atlas_nextcloud_backup_keep | int >= 2
+          - atlas_nextcloud_backup_reuse_max_seconds | int >= 0
+          # Below 24h the nightly Borg run cannot reuse the previous bundle.
+          - atlas_nextcloud_backup_reuse_max_seconds | int < 86400
           - atlas_manage_borg_backup | bool
           - atlas_manage_usb_backup | bool
 

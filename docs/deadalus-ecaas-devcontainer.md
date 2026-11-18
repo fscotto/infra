@@ -19,8 +19,8 @@ Do not use the production context to build or open the workspace.
 
 The container uses Java 11 for the application and Maven, and Java 21 only for
 the Java and Spring language servers. VS Code installs the Java and Spring Boot
-extension packs, XML, YAML and the VSCode Great Icons theme (selected as the
-file icon theme) inside the container. The Java
+extension packs, XML, YAML, the Cline extension and the VSCode Great Icons theme
+(selected as the file icon theme) inside the container. The Java
 pack includes Maven, the Java debugger and test integration. Prefer the project's
 Maven wrapper where present. Node is provided for the Claude and Cline CLIs.
 
@@ -84,7 +84,13 @@ the container; changes made by `glab` inside affect the WSL configuration.
 
 Claude and Cline use the WSL configuration directly: `~/.claude` and `~/.cline`
 are bind-mounted read-write at `/home/vscode/.claude` and `/home/vscode/.cline`,
-and `~/.config/ai` read-only at `/home/vscode/.config/ai`. Settings, rules,
+the cross-tool `~/.agents` read-only at `/home/vscode/.agents`, and
+`~/.config/ai` read-only at `/home/vscode/.config/ai`, so rules, the AGENTS
+pointer and the shared AI context follow the WSL host. The playbook keeps
+Cline's managed configuration deployed on the host (`cline_deploy_enabled:
+true`) even though the cline CLI npm package is not installed there; the CLI
+ships inside the image and the VS Code Cline extension is installed through
+the devcontainer customizations. Settings, rules,
 skills, MCP configuration, sessions and **credential stores** are therefore
 shared with, and visible to, the container, and changes made inside it affect
 the WSL home. Host paths and tools referenced by rules or skills may need

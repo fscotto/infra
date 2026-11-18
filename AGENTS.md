@@ -564,7 +564,7 @@ validated exports of older historical data will use a dedicated Atlas NFS datase
 - Shared agent dotfiles live in `ai_agents_dotfiles`; rendered configs live in `ai_agents_templates`.
 - Every `ai_agents.<agent>` entry has independent `install_enabled`, `deploy_enabled`, and `uninstall_enabled` flags. Installation and removal must not both be true for the same agent; the common pre-task fails before changes when they conflict.
 - Fedora, Void desktop, and WSL workstation profiles consume the shared agent definitions; do not duplicate package entries in profile-specific vars. IBM Bob on the workstation follows its own flags.
-- WSL (`deadalus`) keeps only Claude Code installed; every other managed agent (including IBM Bob) is disabled and selected for removal through host overrides. Existing user state remains untouched.
+- WSL (`deadalus`) keeps only Claude Code installed; every other managed agent (including IBM Bob) is disabled and selected for removal through host overrides. Cline remains deploy-only on WSL: `cline_deploy_enabled: true` keeps its cross-tool AGENTS pointer, global rules, and shared `~/.config/ai` context deployed on the host for the ecaas/cdp devcontainer bind mounts, while the cline CLI package stays absent. Existing user state remains untouched.
 - `dotfiles_common` deploys `ai_agents_dotfiles` and renders `ai_agents_templates` only when deployment is enabled.
 - Removal is limited to the managed npm packages and `/usr/local/bin/bob`; never remove agent dotfiles, instructions, credentials, or user data.
 - Keep `.config/ai/` as the common instruction source; update agent-specific entrypoints to reference it rather than duplicating instruction text.

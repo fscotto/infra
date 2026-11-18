@@ -5,7 +5,11 @@ workstation_ecaas_workspace: "{{ user_home }}/Work/sipo/ecaas"
 workstation_cdp_workspace: "{{ user_home }}/Work/sipo/cdp"
 workstation_ecaas_git_required_ca: ecaas.datacenter.comune.roma.crt
 
-# Claude Code is the only coding agent on WSL; every other managed agent is removed.
+# Claude Code is the only coding agent installed on WSL; every other managed agent
+# is disabled. Cline is the deploy-only exception: its cross-tool instructions
+# (.agents/AGENTS.md, .cline/rules/) and the shared ~/.config/ai context stay
+# deployed on this host so the ecaas/cdp devcontainers bind-mount them, while the
+# cline CLI package stays absent (the npm agent tasks skip workstation_dev_fedora).
 claude_code_install_enabled: true
 claude_code_uninstall_enabled: false
 opencode_install_enabled: false
@@ -18,7 +22,7 @@ gemini_cli_install_enabled: false
 gemini_cli_deploy_enabled: false
 gemini_cli_uninstall_enabled: true
 cline_install_enabled: false
-cline_deploy_enabled: false
+cline_deploy_enabled: true
 cline_uninstall_enabled: true
 ibm_bob_install_enabled: false
 ibm_bob_uninstall_enabled: true

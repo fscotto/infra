@@ -66,6 +66,7 @@
       loop:
         - { path: .claude, mode: "0700" }
         - { path: .cline, mode: "0700" }
+        - { path: .agents, mode: "0755" }
         - { path: .config/ai, mode: "0755" }
         - { path: .config/glab-cli, mode: "0700" }
 

@@ -2,8 +2,8 @@
 
 Same toolset and mounts as the [ecaas container](deadalus-ecaas-devcontainer.md)
 (Git configuration and GitLab CAs, Bash configuration, `~/.m2`, `~/.claude`,
-`~/.cline`, `~/.config/ai`, Docker outside of Docker, Claude Code, Cline, delta,
-Great Icons), with these differences:
+`~/.cline`, `~/.agents`, `~/.config/ai`, Docker outside of Docker, Claude Code,
+Cline, delta, Great Icons), with these differences:
 
 - Java 25 (`mcr.microsoft.com/devcontainers/java:25-bookworm`) is the default JDK
   and also runs the Java and Spring language servers; there is no second JDK.

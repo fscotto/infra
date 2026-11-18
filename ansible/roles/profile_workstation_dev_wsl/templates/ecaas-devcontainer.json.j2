@@ -29,6 +29,7 @@
     {{ ('type=bind,source=' ~ user_home ~ '/.local/state/devcontainer-bash-history/ecaas,target=/home/vscode/.bash_history.d') | to_json }},
     {{ ('type=bind,source=' ~ user_home ~ '/.claude,target=/home/vscode/.claude') | to_json }},
     {{ ('type=bind,source=' ~ user_home ~ '/.cline,target=/home/vscode/.cline') | to_json }},
+    {{ ('type=bind,source=' ~ user_home ~ '/.agents,target=/home/vscode/.agents,readonly') | to_json }},
     {{ ('type=bind,source=' ~ user_home ~ '/.m2,target=/home/vscode/.m2') | to_json }},
     {{ ('type=bind,source=' ~ user_home ~ '/.config/glab-cli,target=/home/vscode/.config/glab-cli') | to_json }}
   ],
@@ -40,6 +41,7 @@
         "vmware.vscode-boot-dev-pack",
         "redhat.vscode-xml",
         "redhat.vscode-yaml",
+        "saoudrizwan.claude-dev",
         "emmanuelbeziat.vscode-great-icons"
       ],
       "settings": {

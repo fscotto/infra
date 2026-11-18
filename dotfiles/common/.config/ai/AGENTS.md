@@ -5,6 +5,7 @@ Always follow:
 - preserve layering
 - avoid duplication
 - validate before applying changes
+- safety directives: always apply `~/.config/ai/rules/safety.md`
 
 Task-specific file loading:
 - For general background on the user, the environment, and stable preferences, read `~/.config/ai/memory/chatgpt/knowledge/00-profilo.md`

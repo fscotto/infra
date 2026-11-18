@@ -130,7 +130,8 @@ vscode_extensions:
   - esbenp.prettier-vscode
   - github.remotehub
   - ms-azuretools.vscode-containers
-  - ms-azuretools.vscode-docker
+  # ms-azuretools.vscode-docker is deprecated: since June 2025 it is just an
+  # extension pack wrapping Container Tools. Only the real extension is kept.
   - ms-vscode-remote.remote-containers
   - ms-vscode-remote.remote-ssh
   - ms-vscode-remote.remote-ssh-edit
@@ -140,11 +141,25 @@ vscode_extensions:
   - ms-vscode.remote-explorer
   - ms-vscode.remote-repositories
   - ms-vscode.remote-server
+  - pkief.material-icon-theme
   - redhat.vscode-xml
   - redhat.vscode-yaml
   - saoudrizwan.claude-dev
   - vscodevim.vim
-vscode_settings: null
+# Managed user settings deploy as a full-file overlay with a timestamped backup;
+# any manual settings.json edit is converged away on the next run. These keys cover
+# the podman Dev Containers engine selection and the Container Tools clients.
+# editor.fontFamily uses the canonical 'JetBrainsMono Nerd Font' family name: the
+# live 'JetBriansMono NF' was a typo whose fallback chain rendered Liberation Mono.
+vscode_settings:
+  containers.containerClient: com.microsoft.visualstudio.containers.podman
+  containers.orchestratorClient: com.microsoft.visualstudio.orchestrators.podmancompose
+  dev.containers.dockerPath: podman
+  editor.cursorStyle: block
+  editor.fontFamily: "'JetBrainsMono Nerd Font', 'Droid Sans Mono', monospace"
+  editor.formatOnPaste: true
+  workbench.iconTheme: material-icon-theme
+  workbench.startupEditor: none
 # User-level keybindings apply to every window, including Dev Containers, SSH and WSL remotes.
 # Keys avoid Ctrl+<letter>, which the Vim extension uses for its motions; Alt is not bound by Vim.
 vscode_keybindings:

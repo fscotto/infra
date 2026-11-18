@@ -10,9 +10,9 @@ var profiles = map[string]profile{
 	"infra":  {Image: "mcr.microsoft.com/devcontainers/python:3.13-bookworm", Packages: "shellcheck shfmt", Extensions: []string{"redhat.ansible", "redhat.vscode-yaml"}},
 }
 var agents = map[string]agent{
-	"codex":    {Package: "@openai/codex", Paths: []string{".codex"}},
-	"cline":    {Package: "cline", Paths: []string{".cline", ".agents"}},
-	"opencode": {Package: "opencode-ai", Paths: []string{".config/opencode", ".local/share/opencode", ".local/state/opencode"}},
-	"claude":   {Package: "@anthropic-ai/claude-code@2.1.312", Paths: []string{".claude"}},
-	"gemini":   {Package: "@google/gemini-cli", Paths: []string{".gemini"}},
+	"codex":    {Package: "@openai/codex", Extension: "openai.chatgpt", Paths: []string{".codex"}},
+	"cline":    {Package: "cline", Extension: "saoudrizwan.claude-dev", Paths: []string{".cline", ".agents"}},
+	"opencode": {Package: "opencode-ai", Extension: "sst-dev.opencode", Paths: []string{".config/opencode", ".local/share/opencode", ".local/state/opencode"}},
+	"claude":   {Package: "@anthropic-ai/claude-code@2.1.312", Extension: "anthropic.claude-code", Paths: []string{".claude"}},
+	"gemini":   {Package: "@google/gemini-cli", Extension: "Google.geminicodeassist", Paths: []string{".gemini"}},
 }

@@ -10,7 +10,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -23,8 +25,9 @@ type profile struct {
 	Extensions      []string
 }
 type agent struct {
-	Package string
-	Paths   []string
+	Package   string
+	Extension string
+	Paths     []string
 }
 type mount struct {
 	Type     string `json:"type"`
@@ -78,7 +81,7 @@ func selectAgents(selection, home string) ([]string, error) {
 	return result, nil
 }
 
-func generate(project, language, home string, selected []string, force bool) (string, error) {
+func generate(project, language, home string, selected []string, local []string, force bool) (string, error) {
 	p, ok := profiles[language]
 	if !ok {
 		return "", fmt.Errorf("unknown language %q", language)
@@ -151,7 +154,21 @@ func generate(project, language, home string, selected []string, force bool) (st
 			mounts = append(mounts, mount{"bind", "${localEnv:HOME}/" + item.path, destination, item.readonly})
 		}
 	}
-	dockerfile := fmt.Sprintf("FROM %s\nUSER root\nRUN apt-get update && apt-get install -y --no-install-recommends \\\n    bash-completion ca-certificates curl fzf git git-lfs gnupg openssh-client ripgrep zoxide %s \\\n    && rm -rf /var/lib/apt/lists/*\n", p.Image, p.Packages)
+	// The devcontainers node feature ships an nvm-based Node outside sudo's
+	// secure_path, which broke the postCreateCommand npm install. Copy the
+	// official Node image binaries into /usr/local instead, exactly like the
+	// ecaas and cdp devcontainers, so sudo npm works in every profile.
+	needsNode := len(selected) > 0
+	dockerfile := ""
+	if needsNode {
+		dockerfile += "FROM docker.io/library/node:22-bookworm-slim AS node\n"
+	}
+	dockerfile += fmt.Sprintf("FROM %s\nUSER root\nRUN apt-get update && apt-get install -y --no-install-recommends \\\n    bash-completion ca-certificates curl fzf git git-lfs gnupg openssh-client ripgrep zoxide %s \\\n    && rm -rf /var/lib/apt/lists/*\n", p.Image, p.Packages)
+	if needsNode {
+		dockerfile += "COPY --from=node /usr/local/bin/node /usr/local/bin/node\n"
+		dockerfile += "COPY --from=node /usr/local/lib/node_modules/npm/ /usr/local/lib/node_modules/npm/\n"
+		dockerfile += "RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \\\n    && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \\\n    && node --version && npm --version\n"
+	}
 	dockerfile += deltaDockerfile
 	if home != "/home/vscode" {
 		dockerfile += "RUN usermod --home " + quote(home) + " --move-home vscode\n"
@@ -165,12 +182,30 @@ func generate(project, language, home string, selected []string, force bool) (st
 	if language == "infra" {
 		dockerfile += "RUN python -m pip install --no-cache-dir ansible-core ansible-lint yamllint\n"
 	}
+	// The container installs the profile extensions, the VS Code extension of
+	// every selected agent and the extensions currently installed in the local
+	// VS Code, captured at generation time. Regenerate to refresh the local set.
+	extensions := append([]string{}, p.Extensions...)
+	addExtension := func(id string) {
+		if !slices.ContainsFunc(extensions, func(e string) bool { return strings.EqualFold(e, id) }) {
+			extensions = append(extensions, id)
+		}
+	}
+	for _, name := range selected {
+		if id := agents[name].Extension; id != "" {
+			addExtension(id)
+		}
+	}
+	for _, id := range local {
+		addExtension(strings.TrimSpace(id))
+	}
+	slices.Sort(extensions)
 	config := map[string]any{
 		"name":       filepath.Base(project) + " — " + language,
 		"build":      map[string]string{"dockerfile": "Dockerfile"},
 		"remoteUser": "vscode", "updateRemoteUserUID": true,
 		"containerEnv": map[string]string{"HOME": home}, "mounts": mounts,
-		"customizations": map[string]any{"vscode": map[string]any{"extensions": p.Extensions}},
+		"customizations": map[string]any{"vscode": map[string]any{"extensions": extensions}},
 	}
 	if len(selected) > 0 {
 		packages := []string{}
@@ -178,9 +213,6 @@ func generate(project, language, home string, selected []string, force bool) (st
 			packages = append(packages, quote(agents[name].Package))
 		}
 		config["postCreateCommand"] = "sudo npm install --global --no-audit --no-fund " + strings.Join(packages, " ")
-		if language != "node" {
-			config["features"] = map[string]any{"ghcr.io/devcontainers/features/node:1": map[string]string{"version": "22"}}
-		}
 	}
 	if claude {
 		config["remoteEnv"] = map[string]string{"ANTHROPIC_AUTH_TOKEN": "${localEnv:ANTHROPIC_AUTH_TOKEN}"}
@@ -239,6 +271,29 @@ func writeAtomic(path, content string) error {
 	return os.Rename(file.Name(), path)
 }
 
+// discoverLocalExtensions lists the extensions installed in the local VS Code.
+// A missing or failing code binary is not fatal: the generated container then
+// only carries the profile and agent extensions.
+func discoverLocalExtensions(stderr io.Writer) []string {
+	path, err := exec.LookPath("code")
+	if err != nil {
+		fmt.Fprintln(stderr, "note: no local VS Code found; skipping locally installed extensions")
+		return nil
+	}
+	out, err := exec.Command(path, "--list-extensions").Output()
+	if err != nil {
+		fmt.Fprintf(stderr, "warning: could not list local VS Code extensions: %v\n", err)
+		return nil
+	}
+	extensions := []string{}
+	for _, line := range strings.Split(string(out), "\n") {
+		if id := strings.TrimSpace(line); id != "" {
+			extensions = append(extensions, id)
+		}
+	}
+	return extensions
+}
+
 func run(args []string, home string, out, stderr io.Writer) error {
 	flags := flag.NewFlagSet("devcontainer", flag.ContinueOnError)
 	flags.SetOutput(stderr)
@@ -264,7 +319,8 @@ func run(args []string, home string, out, stderr io.Writer) error {
 	if err != nil {
 		return err
 	}
-	target, err := generate(flags.Arg(0), *language, home, selected, *force)
+	local := discoverLocalExtensions(stderr)
+	target, err := generate(flags.Arg(0), *language, home, selected, local, *force)
 	if err != nil {
 		return err
 	}
@@ -273,6 +329,9 @@ func run(args []string, home string, out, stderr io.Writer) error {
 		names = "none"
 	}
 	fmt.Fprintf(out, "Created %s; agents: %s\n", target, names)
+	if len(local) > 0 {
+		fmt.Fprintf(out, "Included %d local VS Code extensions.\n", len(local))
+	}
 	fmt.Fprintln(out, "Open the project in VS Code and choose Dev Containers: Reopen in Container.")
 	return nil
 }

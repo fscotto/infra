@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -38,11 +39,28 @@ func put(t *testing.T, path, content string) {
 	}
 }
 
+type vscodeCustomizations struct {
+	Customizations struct {
+		Vscode struct {
+			Extensions []string `json:"extensions"`
+		} `json:"vscode"`
+	} `json:"customizations"`
+}
+
+func extensionsOf(t *testing.T, target string) []string {
+	t.Helper()
+	var config vscodeCustomizations
+	if err := json.Unmarshal([]byte(read(t, filepath.Join(target, "devcontainer.json"))), &config); err != nil {
+		t.Fatal(err)
+	}
+	return config.Customizations.Vscode.Extensions
+}
+
 func TestProfiles(t *testing.T) {
 	for name := range profiles {
 		t.Run(name, func(t *testing.T) {
 			home, project := setup(t)
-			target, err := generate(project, name, home, nil, false)
+			target, err := generate(project, name, home, nil, nil, false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -56,6 +74,11 @@ func TestProfiles(t *testing.T) {
 			if _, ok := config["postCreateCommand"]; ok {
 				t.Fatal("unexpected agent install")
 			}
+			want := append([]string{}, profiles[name].Extensions...)
+			slices.Sort(want)
+			if got := extensionsOf(t, target); !slices.Equal(got, want) {
+				t.Fatalf("wrong extensions: %v", got)
+			}
 			dockerfile := read(t, filepath.Join(target, "Dockerfile"))
 			if !strings.HasPrefix(dockerfile, "FROM "+profiles[name].Image+"\n") || !strings.HasSuffix(dockerfile, "USER vscode\n") {
 				t.Fatal("wrong Dockerfile")
@@ -67,7 +90,7 @@ func TestSharedConfig(t *testing.T) {
 	home, project := setup(t)
 	put(t, filepath.Join(home, ".codex/auth.json"), "secret-value")
 	put(t, filepath.Join(home, ".gitconfig"), "[user]\nname = Test\n")
-	target, err := generate(project, "python", home, []string{"codex"}, false)
+	target, err := generate(project, "python", home, []string{"codex"}, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +102,6 @@ func TestSharedConfig(t *testing.T) {
 	var config struct {
 		Mounts            []mount
 		PostCreateCommand string
-		Features          map[string]any
 	}
 	if err := json.Unmarshal([]byte(configText), &config); err != nil {
 		t.Fatal(err)
@@ -96,18 +118,66 @@ func TestSharedConfig(t *testing.T) {
 	if !foundGit || !foundAgent || !strings.Contains(dockerfile, "include.path /run/host-gitconfig") {
 		t.Fatal("incorrect sharing")
 	}
-	if !strings.Contains(config.PostCreateCommand, "@openai/codex") || len(config.Features) == 0 {
-		t.Fatal("missing CLI or Node feature")
+	if !strings.Contains(config.PostCreateCommand, "@openai/codex") || !strings.Contains(dockerfile, "COPY --from=node /usr/local/bin/node") {
+		t.Fatal("missing CLI install or embedded Node")
+	}
+	if !slices.Contains(extensionsOf(t, target), "openai.chatgpt") {
+		t.Fatal("agent VS Code extension missing")
+	}
+}
+func TestAgentAndLocalExtensions(t *testing.T) {
+	home, project := setup(t)
+	put(t, filepath.Join(home, ".cline/state/config"), "")
+	put(t, filepath.Join(home, ".agents/AGENTS.md"), "")
+	local := []string{"github.remotehub", "SAOUDRIZWAN.claude-dev", "ms-vscode.cpptools"}
+	target, err := generate(project, "python", home, []string{"cline"}, local, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"ms-python.python", "charliermarsh.ruff", "saoudrizwan.claude-dev", "github.remotehub", "ms-vscode.cpptools"}
+	slices.Sort(want)
+	if got := extensionsOf(t, target); !slices.Equal(got, want) {
+		t.Fatalf("extensions mismatch: %v", got)
+	}
+}
+func TestAgentsShipNpmInsideSudoPath(t *testing.T) {
+	for name := range profiles {
+		t.Run(name, func(t *testing.T) {
+			home, project := setup(t)
+			put(t, filepath.Join(home, ".cline/state/config"), "")
+			put(t, filepath.Join(home, ".agents/AGENTS.md"), "")
+			target, err := generate(project, name, home, []string{"cline"}, nil, false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var config map[string]any
+			if err := json.Unmarshal([]byte(read(t, filepath.Join(target, "devcontainer.json"))), &config); err != nil {
+				t.Fatal(err)
+			}
+			if _, hasFeature := config["features"]; hasFeature {
+				t.Fatal("the nvm-based node feature breaks the sudo npm postCreateCommand")
+			}
+			post, _ := config["postCreateCommand"].(string)
+			if !strings.Contains(post, "sudo npm install") {
+				t.Fatalf("missing npm agent install: %q", post)
+			}
+			dockerfile := read(t, filepath.Join(target, "Dockerfile"))
+			if !strings.HasPrefix(dockerfile, "FROM docker.io/library/node:22-bookworm-slim AS node\n") ||
+				!strings.Contains(dockerfile, "COPY --from=node /usr/local/bin/node /usr/local/bin/node") ||
+				!strings.Contains(dockerfile, "ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm") {
+				t.Fatal("npm must be reachable inside sudo's secure_path")
+			}
+		})
 	}
 }
 func TestOverwriteAndSymlinks(t *testing.T) {
 	home, project := setup(t)
-	target, err := generate(project, "go", home, nil, false)
+	target, err := generate(project, "go", home, nil, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 	before := read(t, filepath.Join(target, "Dockerfile"))
-	if _, err := generate(project, "rust", home, nil, false); err == nil {
+	if _, err := generate(project, "rust", home, nil, nil, false); err == nil {
 		t.Fatal("overwrote existing configuration")
 	}
 	path := filepath.Join(target, "devcontainer.json")
@@ -119,7 +189,7 @@ func TestOverwriteAndSymlinks(t *testing.T) {
 	if err := os.Symlink(victim, path); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := generate(project, "rust", home, nil, true); err == nil {
+	if _, err := generate(project, "rust", home, nil, nil, true); err == nil {
 		t.Fatal("accepted symlink")
 	}
 	if read(t, victim) != "keep" || read(t, filepath.Join(target, "Dockerfile")) != before {
@@ -146,7 +216,7 @@ func TestInvalidInputs(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			if _, err := generate(project, language, home, selected, true); err == nil {
+			if _, err := generate(project, language, home, selected, nil, true); err == nil {
 				t.Fatal("invalid input accepted")
 			}
 			if exists(filepath.Join(project, ".devcontainer/Dockerfile")) {
@@ -186,5 +256,26 @@ func TestCLI(t *testing.T) {
 				t.Fatal("missing output")
 			}
 		})
+	}
+}
+func TestLocalExtensionDiscovery(t *testing.T) {
+	bin := t.TempDir()
+	script := filepath.Join(bin, "code")
+	if err := os.WriteFile(script, []byte("#!/bin/sh\necho a.b\necho c.d\n"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	home, project := setup(t)
+	var out bytes.Buffer
+	if err := run([]string{project, "--language", "go", "--agents", "none"}, home, &out, &out); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"a.b", "c.d", "golang.go"}
+	slices.Sort(want)
+	if got := extensionsOf(t, filepath.Join(project, ".devcontainer")); !slices.Equal(got, want) {
+		t.Fatalf("extensions mismatch: %v", got)
+	}
+	if !strings.Contains(out.String(), "Included 2 local VS Code extensions.") {
+		t.Fatal("missing local extensions summary")
 	}
 }

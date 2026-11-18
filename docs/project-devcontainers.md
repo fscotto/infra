@@ -40,7 +40,15 @@ ansible-playbook ansible/site.yml --limit ikaros --tags devcontainer_generator -
 ```
 
 Profiles: `c-cpp`, `go`, `rust`, `python`, `node`, `java`, `infra`. They generate
-`.devcontainer/devcontainer.json` and `Dockerfile`. Open the project in local VS
+`.devcontainer/devcontainer.json` and `Dockerfile`. The generated
+`customizations.vscode.extensions` list combines the profile extensions, the VS
+Code extension of each selected agent (`cline` → `saoudrizwan.claude-dev`,
+`claude` → `anthropic.claude-code`, `codex` → `openai.chatgpt`, `gemini` →
+`Google.geminicodeassist`, `opencode` → `sst-dev.opencode`) and every extension
+installed in the local VS Code, captured through `code --list-extensions` at
+generation time; regenerate after installing or removing extensions on the
+host. Without a local VS Code on PATH only the profile and agent extensions are
+included. Open the project in local VS
 Code (in Fedora WSL on deadalus) and choose **Reopen in Container**. The generator
 never builds or starts a container, selects a Docker context, modifies application
 sources, or removes host packages. Existing `.devcontainer` directories are refused;
@@ -50,6 +58,9 @@ The definitions live centrally in the generator; generated files are standalone.
 Regenerate explicitly to take updates. Profile images select a language version
 or release family, not immutable digests; npm agents other than Claude currently
 resolve the latest release at container creation, matching the host lifecycle.
+Agent containers copy Node from the official `docker.io/library/node` image into
+`/usr/local` instead of using the nvm-based node feature, so the
+`sudo npm install` postCreateCommand works in every profile.
 Rebuilds are therefore not bit-for-bit reproducible. Pin image digests and agent
 versions in generated project files when a project requires that guarantee.
 Project-specific dependencies, ports, services and build commands belong in the
@@ -100,9 +111,15 @@ credential contents, but do contain the host's absolute home path.
 
 Use a local development container engine. Docker CE is currently provisioned on
 deadalus; ikaros explicitly has Podman, while nymph's runtime needs verification.
-Podman requires VS Code's `dev.containers.dockerPath` and compatible rootless/UID
-configuration; generation alone does not configure it. SELinux bind-mount access
-must also be validated on Fedora. Do not recursively relabel the personal home.
+Podman (5+) works through VS Code's `dev.containers.dockerPath: podman` per the
+official Dev Containers documentation: the extension drives the container CLI
+and needs neither the `podman-docker` shim nor a daemon socket or `DOCKER_HOST`.
+Never install `podman-docker` where docker-ce provides the real Docker CLI
+(deadalus). Generation alone does not configure the engine; the `desktop_gnome`
+profile deploys `dev.containers.dockerPath: podman` with its managed VS Code
+settings, while compatible
+rootless/UID configuration and SELinux bind-mount access must be validated on the
+Fedora target host. Do not recursively relabel the personal home.
 No engine socket is mounted inside these containers by default; add access only
 for projects that need to launch sibling containers.
 

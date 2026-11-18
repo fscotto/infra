@@ -91,6 +91,7 @@ fedora_nerd_fonts:
 fedora_flatpak_packages:
   - be.alexandervanhee.gradia
   - com.spotify.Client
+  - org.desktop_plus.desktop-plus
   - org.onlyoffice.desktopeditors
   - org.telegram.desktop
 

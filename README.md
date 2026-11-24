@@ -598,11 +598,11 @@ instructions, credentials, and user data. Installation and removal are mutually
 exclusive per agent: the playbook fails before making changes when both flags are
 true for the same agent. Servers set `ai_agents: {}` and therefore manage none.
 
-On WSL (`deadalus`), every managed coding agent except Claude Code is disabled through
+On WSL (`deadalus`), Claude Code, Codex and the Cline CLI are installed through
+`profile_workstation_dev_common`. Every other managed coding agent is disabled through
 host overrides and its managed npm package or `bob` binary is selected for removal.
-Cline is the deploy-only exception: `cline_deploy_enabled: true` keeps its cross-tool
-AGENTS pointer, global rules, and shared `~/.config/ai` context deployed on the WSL
-host so the ecaas/cdp devcontainers bind-mount them, while the CLI package stays absent.
+`cline_deploy_enabled: true` also keeps Cline's cross-tool AGENTS pointer, global rules,
+and shared `~/.config/ai` context deployed on the WSL host for the ecaas/cdp devcontainers.
 Existing configuration, credentials, and user data are left untouched.
 
 The shared agent context is centralized in `dotfiles/common/.config/ai/` and
